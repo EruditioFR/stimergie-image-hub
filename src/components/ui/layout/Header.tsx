@@ -1,9 +1,12 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, Menu, X } from 'lucide-react';
+import { Search, Menu, X, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+// Simulation de l'état admin (à remplacer par votre logique d'authentification réelle)
+const isAdmin = true; // Cette valeur serait normalement déterminée par votre système d'authentification
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -74,6 +77,20 @@ export function Header() {
           >
             À propos
           </Link>
+          {isAdmin && (
+            <Link 
+              to="/clients" 
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-primary",
+                location.pathname === "/clients" ? "text-primary" : "text-foreground/80"
+              )}
+            >
+              <span className="flex items-center gap-1">
+                <Users className="h-4 w-4" />
+                Clients
+              </span>
+            </Link>
+          )}
           <Button variant="ghost" size="icon" className="ml-2">
             <Search className="h-4 w-4" />
           </Button>
@@ -130,6 +147,20 @@ export function Header() {
             >
               À propos
             </Link>
+            {isAdmin && (
+              <Link 
+                to="/clients" 
+                className={cn(
+                  "text-base font-medium py-2 transition-colors",
+                  location.pathname === "/clients" ? "text-primary" : "text-foreground/80"
+                )}
+              >
+                <span className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Clients
+                </span>
+              </Link>
+            )}
             <div className="relative mt-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input 

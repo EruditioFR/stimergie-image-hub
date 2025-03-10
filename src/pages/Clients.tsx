@@ -1,8 +1,10 @@
 
+import { Header } from "@/components/ui/layout/Header";
+import { Footer } from "@/components/ui/layout/Footer";
 import { ClientsHeader } from "@/components/clients/ClientsHeader";
 import { ClientsList } from "@/components/clients/ClientsList";
 import { ClientForm } from "@/components/clients/ClientForm";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export interface Client {
@@ -19,6 +21,11 @@ export default function Clients() {
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();
 
+  // Scroll to top on page load
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const addClient = (client: Client) => {
     // Génération d'un ID temporaire
     const newClient = { ...client, id: Date.now().toString() };
@@ -31,20 +38,24 @@ export default function Clients() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <ClientsHeader 
-        onAddClick={() => setShowForm(true)} 
-      />
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {showForm ? (
-          <ClientForm 
-            onSubmit={addClient} 
-            onCancel={() => setShowForm(false)} 
-          />
-        ) : (
-          <ClientsList clients={clients} />
-        )}
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header />
+      <div className="pt-16"> {/* Ajout d'un padding-top pour éviter que le contenu soit caché par le header fixe */}
+        <ClientsHeader 
+          onAddClick={() => setShowForm(true)} 
+        />
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          {showForm ? (
+            <ClientForm 
+              onSubmit={addClient} 
+              onCancel={() => setShowForm(false)} 
+            />
+          ) : (
+            <ClientsList clients={clients} />
+          )}
+        </div>
       </div>
+      <Footer />
     </div>
   );
 }
