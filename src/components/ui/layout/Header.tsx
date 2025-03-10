@@ -42,7 +42,7 @@ export function Header() {
   return (
     <header 
       className={cn(
-        "fixed left-0 right-0 z-40 transition-all duration-300 px-6 py-4",
+        "fixed left-0 right-0 z-40 transition-all duration-300 px-6 py-4 mb-[30px]",
         isScrolled 
           ? "bg-background/80 backdrop-blur-md shadow-sm" 
           : "bg-transparent",
