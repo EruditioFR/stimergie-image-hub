@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { UsersHeader } from "@/components/users/UsersHeader";
 import { UsersList } from "@/components/users/UsersList";
 import { UserForm } from "@/components/users/UserForm";
+import { Header } from "@/components/ui/layout/Header";
 
 export type User = {
   id: string;
@@ -166,7 +167,10 @@ export default function Users() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* En-tête de la page */}
+      {/* Page header */}
+      <Header />
+      
+      {/* Users page header */}
       <UsersHeader onAddClick={() => setShowAddForm(true)} />
       
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12">
