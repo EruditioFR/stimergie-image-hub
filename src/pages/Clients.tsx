@@ -1,3 +1,4 @@
+
 import { Header } from "@/components/ui/layout/Header";
 import { Footer } from "@/components/ui/layout/Footer";
 import { ClientsHeader } from "@/components/clients/ClientsHeader";
@@ -41,6 +42,7 @@ export default function Clients() {
         .select('*');
       
       if (error) {
+        console.error("Supabase error details:", error);
         throw error;
       }
       
@@ -90,6 +92,7 @@ export default function Clients() {
         .select();
       
       if (error) {
+        console.error("Supabase insert error details:", error);
         throw error;
       }
       
