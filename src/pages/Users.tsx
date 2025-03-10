@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -8,6 +7,7 @@ import { UsersList } from "@/components/users/UsersList";
 import { UserForm } from "@/components/users/UserForm";
 import { Header } from "@/components/ui/layout/Header";
 import { UserGreetingBar } from "@/components/ui/UserGreetingBar";
+import { useAuth } from "@/context/AuthContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,6 +46,40 @@ export default function Users() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const { toast: uiToast } = useToast();
+  const { user, userRole } = useAuth();
+
+  const isAdmin = userRole === 'admin';
+  const isAdminClient = userRole === 'admin_client';
+  const canSeeClientFilter = isAdmin || isAdminClient;
+
+  const [userClientId, setUserClientId] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchUserClientId() {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id_client")
+        .eq("id", user.id)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching user client ID:", error);
+        return;
+      }
+      
+      if (data?.id_client) {
+        setUserClientId(data.id_client);
+        
+        if (!isAdmin) {
+          setSelectedClientId(data.id_client);
+        }
+      }
+    }
+    
+    fetchUserClientId();
+  }, [user, isAdmin]);
 
   useEffect(() => {
     async function fetchUsers() {
@@ -64,8 +98,14 @@ export default function Users() {
             clients(nom)
           `);
         
-        if (selectedClientId) {
-          query = query.eq('id_client', selectedClientId);
+        if (isAdmin) {
+          if (selectedClientId) {
+            query = query.eq('id_client', selectedClientId);
+          }
+        } else {
+          if (userClientId) {
+            query = query.eq('id_client', userClientId);
+          }
         }
         
         if (selectedRole) {
@@ -117,7 +157,7 @@ export default function Users() {
     
     fetchUsers();
     fetchClients();
-  }, [selectedClientId, selectedRole, uiToast]);
+  }, [selectedClientId, selectedRole, userClientId, isAdmin, uiToast]);
 
   const handleAddUser = async (userData: Omit<User, 'id'>) => {
     try {
@@ -195,7 +235,6 @@ export default function Users() {
         return;
       }
 
-      // Update the user in the local state
       setUsers(prev => prev.map(user => 
         user.id === userData.id 
           ? {
@@ -223,7 +262,6 @@ export default function Users() {
     if (!userToDelete) return;
 
     try {
-      // This would typically be handled by a backend function that deletes both the auth user and profile
       const { error } = await supabase
         .from("profiles")
         .delete()
@@ -283,24 +321,27 @@ export default function Users() {
         )}
         
         <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="client-filter" className="block text-sm font-medium mb-2">
-              Filtrer par client
-            </label>
-            <select
-              id="client-filter"
-              className="w-full rounded-md border border-input px-3 py-2"
-              value={selectedClientId || ""}
-              onChange={(e) => setSelectedClientId(e.target.value || null)}
-            >
-              <option value="">Tous les clients</option>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.nom}
-                </option>
-              ))}
-            </select>
-          </div>
+          {canSeeClientFilter && (
+            <div>
+              <label htmlFor="client-filter" className="block text-sm font-medium mb-2">
+                Filtrer par client
+              </label>
+              <select
+                id="client-filter"
+                className="w-full rounded-md border border-input px-3 py-2"
+                value={selectedClientId || ""}
+                onChange={(e) => setSelectedClientId(e.target.value || null)}
+                disabled={!isAdmin && isAdminClient}
+              >
+                <option value="">Tous les clients</option>
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.nom}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           
           <div>
             <label htmlFor="role-filter" className="block text-sm font-medium mb-2">
