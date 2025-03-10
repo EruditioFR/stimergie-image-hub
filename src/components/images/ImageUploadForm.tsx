@@ -37,6 +37,10 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess }: ImageUploadFormP
   const [analyzing, setAnalyzing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Get Supabase URL from the client configuration
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://mjhbugzaqmtfnbxaqpss.supabase.co";
+  const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qaGJ1Z3phcW10Zm5ieGFxcHNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEzODU2MDQsImV4cCI6MjA1Njk2MTYwNH0.JLcLHyBk3G0wO6MuhJ4WMqv8ImbGxmcExEzGG2xWIsk";
+
   const resetForm = () => {
     setTitle('');
     setDescription('');
@@ -98,11 +102,11 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess }: ImageUploadFormP
     try {
       setAnalyzing(true);
       // Call the Supabase Edge Function for image analysis
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/analyze-image`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/analyze-image`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.supabaseKey}`
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify({ imageUrl })
       });
