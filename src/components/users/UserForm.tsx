@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -25,14 +24,14 @@ interface UserFormProps {
 }
 
 // Define the role type to match the zod schema
-type UserRole = "admin" | "admin_client" | "user" | "administrateur";
+type UserRole = "admin" | "admin_client" | "user";
 
 // Schéma de validation pour le formulaire
 const formSchema = z.object({
   email: z.string().email("L'adresse email est invalide"),
   first_name: z.string().min(1, "Le prénom est requis"),
   last_name: z.string().min(1, "Le nom est requis"),
-  role: z.enum(["admin", "admin_client", "user", "administrateur"], {
+  role: z.enum(["admin", "admin_client", "user"], {
     required_error: "Veuillez sélectionner un rôle",
   }),
   id_client: z.string().optional(),

@@ -287,8 +287,7 @@ export default function Users() {
   const roles = [
     { value: "user", label: "Utilisateur" },
     { value: "admin_client", label: "Admin Client" },
-    { value: "admin", label: "Administrateur" },
-    { value: "administrateur", label: "Administrateur (ancien)" }
+    { value: "admin", label: "Administrateur" }
   ];
 
   return (
