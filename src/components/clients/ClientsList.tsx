@@ -1,12 +1,31 @@
 
 import { Client } from "@/pages/Clients";
 import { UserRound, Building2, Phone, Mail, FileText } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ClientsListProps {
   clients: Client[];
+  loading?: boolean;
 }
 
-export function ClientsList({ clients }: ClientsListProps) {
+export function ClientsList({ clients, loading = false }: ClientsListProps) {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[1, 2, 3, 4, 5, 6].map((item) => (
+          <div key={item} className="bg-white shadow-sm rounded-lg p-6 border border-border">
+            <Skeleton className="h-6 w-3/4 mb-4" />
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   if (clients.length === 0) {
     return (
       <div className="text-center py-20">
