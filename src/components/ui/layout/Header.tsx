@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Menu, X, Users, LogIn, LogOut, UserCircle } from 'lucide-react';
@@ -20,7 +19,6 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const isHomePage = location.pathname === "/";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -43,22 +41,17 @@ export function Header() {
   return (
     <header 
       className={cn(
-        "left-0 right-0 z-40 transition-all duration-300 px-6 py-4 mb-[30px]",
-        isHomePage 
-          ? (isScrolled ? "bg-white shadow-sm" : "bg-transparent") 
-          : "bg-white shadow-sm",
+        "fixed left-0 right-0 z-40 transition-all duration-300 px-6 py-4",
+        isScrolled 
+          ? "bg-background/80 backdrop-blur-md shadow-sm" 
+          : "bg-transparent",
         user ? "top-7" : "top-0"
       )}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <Link 
           to="/" 
-          className={cn(
-            "text-2xl font-semibold tracking-tight transition-colors",
-            isHomePage 
-              ? (isScrolled ? "text-foreground" : "text-white") 
-              : "text-[#191c1fcc]" // Always dark on internal pages
-          )}
+          className="text-2xl font-semibold tracking-tight transition-colors"
         >
           Stimergie
         </Link>
@@ -68,11 +61,7 @@ export function Header() {
             to="/" 
             className={cn(
               "text-sm font-medium transition-colors hover:text-primary",
-              isHomePage
-                ? (location.pathname === "/" 
-                  ? (isScrolled ? "text-primary" : "text-white") 
-                  : (isScrolled ? "text-foreground/80" : "text-white/80"))
-                : "text-[#191c1fcc]" // Always dark on internal pages
+              location.pathname === "/" ? "text-primary" : "text-foreground/80"
             )}
           >
             Accueil
@@ -81,34 +70,20 @@ export function Header() {
             to="/gallery" 
             className={cn(
               "text-sm font-medium transition-colors hover:text-primary",
-              isHomePage
-                ? (location.pathname.includes("/gallery") 
-                  ? (isScrolled ? "text-primary" : "text-white") 
-                  : (isScrolled ? "text-foreground/80" : "text-white/80"))
-                : (location.pathname.includes("/gallery") ? "text-primary" : "text-[#191c1fcc]")
+              location.pathname.includes("/gallery") ? "text-primary" : "text-foreground/80"
             )}
           >
             Galerie
           </Link>
           <Link 
             to="/categories" 
-            className={cn(
-              "text-sm font-medium transition-colors hover:text-primary",
-              isHomePage
-                ? (isScrolled ? "text-foreground/80" : "text-white/80")
-                : "text-[#191c1fcc]"
-            )}
+            className="text-sm font-medium transition-colors hover:text-primary text-foreground/80"
           >
             Catégories
           </Link>
           <Link 
             to="/about" 
-            className={cn(
-              "text-sm font-medium transition-colors hover:text-primary",
-              isHomePage
-                ? (isScrolled ? "text-foreground/80" : "text-white/80")
-                : "text-[#191c1fcc]"
-            )}
+            className="text-sm font-medium transition-colors hover:text-primary text-foreground/80"
           >
             À propos
           </Link>
@@ -118,11 +93,7 @@ export function Header() {
                 to="/clients" 
                 className={cn(
                   "text-sm font-medium transition-colors hover:text-primary",
-                  isHomePage
-                    ? (location.pathname === "/clients" 
-                      ? (isScrolled ? "text-primary" : "text-white") 
-                      : (isScrolled ? "text-foreground/80" : "text-white/80"))
-                    : (location.pathname === "/clients" ? "text-primary" : "text-[#191c1fcc]")
+                  location.pathname === "/clients" ? "text-primary" : "text-foreground/80"
                 )}
               >
                 <span className="flex items-center gap-1">
@@ -134,11 +105,7 @@ export function Header() {
                 to="/users" 
                 className={cn(
                   "text-sm font-medium transition-colors hover:text-primary",
-                  isHomePage
-                    ? (location.pathname === "/users" 
-                      ? (isScrolled ? "text-primary" : "text-white") 
-                      : (isScrolled ? "text-foreground/80" : "text-white/80"))
-                    : (location.pathname === "/users" ? "text-primary" : "text-[#191c1fcc]")
+                  location.pathname === "/users" ? "text-primary" : "text-foreground/80"
                 )}
               >
                 <span className="flex items-center gap-1">
@@ -148,28 +115,14 @@ export function Header() {
               </Link>
             </>
           )}
-          <Button variant="ghost" size="icon" className={cn(
-            "ml-2",
-            isHomePage
-              ? (isScrolled ? "" : "text-white hover:bg-white/10 hover:text-white")
-              : "text-[#191c1fcc]"
-          )}>
+          <Button variant="ghost" size="icon" className="ml-2">
             <Search className="h-4 w-4" />
           </Button>
           
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className={cn(
-                    "ml-2 rounded-full",
-                    isHomePage
-                      ? (isScrolled ? "" : "text-white hover:bg-white/10 hover:text-white")
-                      : "text-[#191c1fcc]"
-                  )}
-                >
+                <Button variant="ghost" size="icon" className="ml-2 rounded-full">
                   <UserCircle className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
@@ -190,15 +143,7 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button 
-              variant={isScrolled || !isHomePage ? "default" : "outline"} 
-              size="sm" 
-              onClick={() => navigate('/auth')} 
-              className={cn(
-                "ml-2",
-                isHomePage && !isScrolled && "border-white text-white hover:bg-white/10"
-              )}
-            >
+            <Button variant="default" size="sm" onClick={() => navigate('/auth')} className="ml-2">
               <LogIn className="h-4 w-4 mr-2" />
               Connexion
             </Button>
@@ -211,11 +156,6 @@ export function Header() {
             size="icon" 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-            className={cn(
-              isHomePage && !isScrolled 
-                ? "text-white hover:bg-white/10 hover:text-white" 
-                : "text-[#191c1fcc]"
-            )}
           >
             {isMobileMenuOpen ? (
               <X className="h-5 w-5" />

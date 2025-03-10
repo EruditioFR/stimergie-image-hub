@@ -19,13 +19,13 @@ const ImageView = () => {
       <UserGreetingBar />
       <Header />
       
-      <main className="flex-grow">
+      <main className="flex-grow pt-20">
         <ImageDetail />
       </main>
       
       <Footer />
     </div>
   );
-}
+};
 
 export default ImageView;
