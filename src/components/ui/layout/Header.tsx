@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const {
@@ -26,8 +27,22 @@ export function Header() {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
+    
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleResize);
+    
+    // Initial checks
+    handleScroll();
+    handleResize();
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   useEffect(() => {
@@ -39,9 +54,9 @@ export function Header() {
     navigate('/');
   };
 
-  // Only use white text on homepage when not scrolled, otherwise use black
+  // Only use white text on homepage when not scrolled AND not on mobile
   const getTextColor = () => {
-    if (isHomePage && !isScrolled) {
+    if (isHomePage && !isScrolled && !isMobile) {
       return "text-white";
     }
     return "text-black";
