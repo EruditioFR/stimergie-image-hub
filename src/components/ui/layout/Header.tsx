@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Menu, X, Users, LogIn, LogOut, UserCircle, FolderOpen } from 'lucide-react';
@@ -55,9 +54,13 @@ export function Header() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <Link 
           to="/" 
-          className="text-2xl font-semibold tracking-tight transition-colors text-black"
+          className="transition-opacity hover:opacity-80"
         >
-          Stimergie
+          <img 
+            src="/lovable-uploads/9ce78881-8c65-4716-ab7f-128bb420c8e9.png" 
+            alt="Stimergie Logo" 
+            className="h-8 w-auto"
+          />
         </Link>
 
         <nav className="hidden md:flex space-x-8 items-center">
@@ -192,6 +195,14 @@ export function Header() {
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur-lg shadow-lg animate-fade-in z-50">
           <nav className="flex flex-col p-6 space-y-4">
+            <div className="flex justify-center mb-4">
+              <img 
+                src="/lovable-uploads/9ce78881-8c65-4716-ab7f-128bb420c8e9.png" 
+                alt="Stimergie Logo" 
+                className="h-8 w-auto"
+              />
+            </div>
+            
             <Link 
               to="/" 
               className={cn(
