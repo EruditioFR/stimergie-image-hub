@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Menu, X, Users, LogIn, LogOut, UserCircle, FolderOpen, Image } from 'lucide-react';
@@ -6,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -17,11 +15,9 @@ export function Header() {
     userRole,
     signOut
   } = useAuth();
-  
   const isHomePage = location.pathname === "/";
   const canAccessClientsPage = userRole === 'admin';
   const canAccessImagesPage = userRole === 'admin' || userRole === 'admin_client';
-  
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -29,18 +25,15 @@ export function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location]);
-  
   const handleLogout = async () => {
     await signOut();
     navigate('/');
   };
-  
   return <header className={cn("transition-all duration-300 px-6 py-4", isHomePage ? isScrolled ? "bg-background/80 backdrop-blur-md text-foreground" : "bg-transparent text-white" : "bg-background text-foreground")}>
-      <div className="max-w-7xl mx-auto flex items-center justify-between py-[21px]">
+      <div className="max-w-7xl mx-auto flex items-center justify-between py-[39px]">
         <Link to="/" className="transition-opacity hover:opacity-80">
           <img src="/lovable-uploads/9ce78881-8c65-4716-ab7f-128bb420c8e9.png" alt="Stimergie Logo" className="h-8 w-auto" />
         </Link>
@@ -183,5 +176,4 @@ export function Header() {
         </div>}
     </header>;
 }
-
 export default Header;
