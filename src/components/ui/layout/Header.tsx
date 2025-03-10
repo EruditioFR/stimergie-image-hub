@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Menu, X, Users, LogIn, LogOut, UserCircle } from 'lucide-react';
@@ -53,7 +54,10 @@ export function Header() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <Link 
           to="/" 
-          className="text-2xl font-semibold tracking-tight transition-colors"
+          className={cn(
+            "text-2xl font-semibold tracking-tight transition-colors",
+            isHomePage && !isScrolled ? "text-white" : "text-black"
+          )}
         >
           Stimergie
         </Link>
