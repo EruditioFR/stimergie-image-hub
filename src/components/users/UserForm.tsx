@@ -18,8 +18,10 @@ import * as z from "zod";
 
 interface UserFormProps {
   clients: Client[];
-  onSubmit: (user: Omit<User, 'id'>) => void;
+  onSubmit: (user: Omit<User, 'id'> | User) => void;
   onCancel: () => void;
+  initialData?: User;
+  isEditing?: boolean;
 }
 
 // Schéma de validation pour le formulaire
@@ -33,10 +35,16 @@ const formSchema = z.object({
   id_client: z.string().optional(),
 });
 
-export function UserForm({ clients, onSubmit, onCancel }: UserFormProps) {
+export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing = false }: UserFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData ? {
+      email: initialData.email,
+      first_name: initialData.first_name || "",
+      last_name: initialData.last_name || "",
+      role: initialData.role,
+      id_client: initialData.id_client || "",
+    } : {
       email: "",
       first_name: "",
       last_name: "",
@@ -45,22 +53,36 @@ export function UserForm({ clients, onSubmit, onCancel }: UserFormProps) {
     },
   });
 
-  // Fixed: Ensure all required properties are passed to onSubmit
+  // Handle submit with proper handling for edit vs create
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    onSubmit({
-      email: values.email,
-      first_name: values.first_name,
-      last_name: values.last_name,
-      role: values.role, // Ensure role is always provided
-      // Convertir la chaîne vide en null pour id_client
-      id_client: values.id_client === "" ? null : values.id_client,
-    });
+    if (isEditing && initialData) {
+      // For editing, pass the full user with ID
+      onSubmit({
+        id: initialData.id,
+        email: values.email,
+        first_name: values.first_name,
+        last_name: values.last_name,
+        role: values.role,
+        id_client: values.id_client === "" ? null : values.id_client,
+      });
+    } else {
+      // For new user, pass without ID
+      onSubmit({
+        email: values.email,
+        first_name: values.first_name,
+        last_name: values.last_name,
+        role: values.role,
+        id_client: values.id_client === "" ? null : values.id_client,
+      });
+    }
   };
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6 mb-8">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Ajouter un nouvel utilisateur</h2>
+        <h2 className="text-xl font-semibold">
+          {isEditing ? "Modifier l'utilisateur" : "Ajouter un nouvel utilisateur"}
+        </h2>
         <Button variant="ghost" size="icon" onClick={onCancel}>
           <X className="h-5 w-5" />
         </Button>
@@ -104,7 +126,12 @@ export function UserForm({ clients, onSubmit, onCancel }: UserFormProps) {
                 <FormItem>
                   <FormLabel>Email *</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="jean.dupont@example.com" {...field} />
+                    <Input 
+                      type="email" 
+                      placeholder="jean.dupont@example.com" 
+                      {...field} 
+                      disabled={isEditing} // Email shouldn't be changed when editing
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -162,7 +189,7 @@ export function UserForm({ clients, onSubmit, onCancel }: UserFormProps) {
               Annuler
             </Button>
             <Button type="submit">
-              Enregistrer
+              {isEditing ? "Mettre à jour" : "Enregistrer"}
             </Button>
           </div>
         </form>
