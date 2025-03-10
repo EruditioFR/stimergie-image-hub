@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +25,7 @@ export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -50,6 +50,10 @@ export default function Users() {
         
         if (selectedClientId) {
           query = query.eq('id_client', selectedClientId);
+        }
+        
+        if (selectedRole) {
+          query = query.eq('role', selectedRole);
         }
         
         const { data, error } = await query;
@@ -99,7 +103,7 @@ export default function Users() {
     
     fetchUsers();
     fetchClients();
-  }, [selectedClientId, toast]);
+  }, [selectedClientId, selectedRole, toast]);
 
   const handleAddUser = async (userData: Omit<User, 'id'>) => {
     try {
@@ -165,6 +169,14 @@ export default function Users() {
     }
   };
 
+  // Les rôles disponibles pour le filtre
+  const roles = [
+    { value: "user", label: "Utilisateur" },
+    { value: "admin_client", label: "Admin Client" },
+    { value: "admin", label: "Administrateur" },
+    { value: "administrateur", label: "Administrateur (ancien)" }
+  ];
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Page header */}
@@ -183,24 +195,47 @@ export default function Users() {
           />
         )}
         
-        {/* Filtre par client */}
-        <div className="mb-8">
-          <label htmlFor="client-filter" className="block text-sm font-medium mb-2">
-            Filtrer par client
-          </label>
-          <select
-            id="client-filter"
-            className="w-full max-w-xs rounded-md border border-input px-3 py-2"
-            value={selectedClientId || ""}
-            onChange={(e) => setSelectedClientId(e.target.value || null)}
-          >
-            <option value="">Tous les clients</option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.nom}
-              </option>
-            ))}
-          </select>
+        {/* Filtres */}
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Filtre par client */}
+          <div>
+            <label htmlFor="client-filter" className="block text-sm font-medium mb-2">
+              Filtrer par client
+            </label>
+            <select
+              id="client-filter"
+              className="w-full rounded-md border border-input px-3 py-2"
+              value={selectedClientId || ""}
+              onChange={(e) => setSelectedClientId(e.target.value || null)}
+            >
+              <option value="">Tous les clients</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.nom}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Filtre par rôle */}
+          <div>
+            <label htmlFor="role-filter" className="block text-sm font-medium mb-2">
+              Filtrer par rôle
+            </label>
+            <select
+              id="role-filter"
+              className="w-full rounded-md border border-input px-3 py-2"
+              value={selectedRole || ""}
+              onChange={(e) => setSelectedRole(e.target.value || null)}
+            >
+              <option value="">Tous les rôles</option>
+              {roles.map((role) => (
+                <option key={role.value} value={role.value}>
+                  {role.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         
         {/* Liste des utilisateurs */}
