@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Menu, X, Users, LogIn, LogOut, UserCircle, FolderOpen } from 'lucide-react';
+import { Search, Menu, X, Users, LogIn, LogOut, UserCircle, FolderOpen, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -13,6 +13,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -22,6 +30,7 @@ export function Header() {
   const { user, userRole, signOut } = useAuth();
   const isHomePage = location.pathname === "/";
   const canAccessClientsPage = userRole === 'admin';
+  const isAdmin = userRole === 'admin';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -85,47 +94,71 @@ export function Header() {
               Banque d'images
             </Link>
           )}
-          {user && (
-            <>
-              {canAccessClientsPage && (
-                <Link 
-                  to="/clients" 
-                  className={cn(
-                    "text-sm font-medium transition-colors hover:text-primary",
-                    location.pathname === "/clients" ? "text-primary" : "text-foreground/80"
-                  )}
-                >
-                  <span className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    Clients
-                  </span>
-                </Link>
-              )}
-              <Link 
-                to="/projects" 
-                className={cn(
-                  "text-sm font-medium transition-colors hover:text-primary",
-                  location.pathname === "/projects" ? "text-primary" : "text-foreground/80"
-                )}
-              >
-                <span className="flex items-center gap-1">
-                  <FolderOpen className="h-4 w-4" />
-                  Projets
-                </span>
-              </Link>
-              <Link 
-                to="/users" 
-                className={cn(
-                  "text-sm font-medium transition-colors hover:text-primary",
-                  location.pathname === "/users" ? "text-primary" : "text-foreground/80"
-                )}
-              >
-                <span className="flex items-center gap-1">
-                  <Users className="h-4 w-4" />
-                  Utilisateurs
-                </span>
-              </Link>
-            </>
+          {user && isAdmin && (
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className={cn(
+                    "text-sm font-medium transition-colors hover:text-primary bg-transparent",
+                    location.pathname === "/clients" || 
+                    location.pathname === "/projects" ||
+                    location.pathname === "/users" 
+                    ? "text-primary" : "text-foreground/80"
+                  )}>
+                    <span className="flex items-center gap-1">
+                      <Settings className="h-4 w-4" />
+                      Administrer
+                    </span>
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent className="p-4 w-[220px]">
+                    <ul className="flex flex-col gap-3">
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link 
+                            to="/clients" 
+                            className={cn(
+                              "flex items-center gap-2 p-2 rounded-md hover:bg-accent text-sm",
+                              location.pathname === "/clients" ? "bg-accent text-primary" : ""
+                            )}
+                          >
+                            <Users className="h-4 w-4" />
+                            <span>Clients</span>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link 
+                            to="/projects" 
+                            className={cn(
+                              "flex items-center gap-2 p-2 rounded-md hover:bg-accent text-sm",
+                              location.pathname === "/projects" ? "bg-accent text-primary" : ""
+                            )}
+                          >
+                            <FolderOpen className="h-4 w-4" />
+                            <span>Projets</span>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link 
+                            to="/users" 
+                            className={cn(
+                              "flex items-center gap-2 p-2 rounded-md hover:bg-accent text-sm",
+                              location.pathname === "/users" ? "bg-accent text-primary" : ""
+                            )}
+                          >
+                            <Users className="h-4 w-4" />
+                            <span>Utilisateurs</span>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
           )}
           <Link 
             to="/about" 
@@ -151,13 +184,18 @@ export function Header() {
                   <Link to="/profile" className="cursor-pointer">Profil</Link>
                 </DropdownMenuItem>
                 {canAccessClientsPage && (
-                  <DropdownMenuItem asChild>
-                    <Link to="/clients" className="cursor-pointer">Clients</Link>
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link to="/clients" className="cursor-pointer">Clients</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/projects" className="cursor-pointer">Projets</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/users" className="cursor-pointer">Utilisateurs</Link>
+                    </DropdownMenuItem>
+                  </>
                 )}
-                <DropdownMenuItem asChild>
-                  <Link to="/projects" className="cursor-pointer">Projets</Link>
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500">
                   <LogOut className="h-4 w-4 mr-2" />
@@ -220,47 +258,45 @@ export function Header() {
                 Banque d'images
               </Link>
             )}
-            {user && (
-              <>
-                {canAccessClientsPage && (
+            {user && isAdmin && (
+              <div className="py-2">
+                <div className="flex items-center gap-2 text-base font-medium mb-2">
+                  <Settings className="h-4 w-4" />
+                  <span>Administrer</span>
+                </div>
+                <div className="pl-6 space-y-2 border-l-2 border-border">
                   <Link 
                     to="/clients" 
                     className={cn(
-                      "text-base font-medium py-2 transition-colors",
+                      "flex items-center gap-2 py-2 text-sm font-medium",
                       location.pathname === "/clients" ? "text-primary" : "text-foreground/80"
                     )}
                   >
-                    <span className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Clients
-                    </span>
+                    <Users className="h-4 w-4" />
+                    Clients
                   </Link>
-                )}
-                <Link 
-                  to="/projects" 
-                  className={cn(
-                    "text-base font-medium py-2 transition-colors",
-                    location.pathname === "/projects" ? "text-primary" : "text-foreground/80"
-                  )}
-                >
-                  <span className="flex items-center gap-2">
+                  <Link 
+                    to="/projects" 
+                    className={cn(
+                      "flex items-center gap-2 py-2 text-sm font-medium",
+                      location.pathname === "/projects" ? "text-primary" : "text-foreground/80"
+                    )}
+                  >
                     <FolderOpen className="h-4 w-4" />
                     Projets
-                  </span>
-                </Link>
-                <Link 
-                  to="/users" 
-                  className={cn(
-                    "text-base font-medium py-2 transition-colors",
-                    location.pathname === "/users" ? "text-primary" : "text-foreground/80"
-                  )}
-                >
-                  <span className="flex items-center gap-2">
+                  </Link>
+                  <Link 
+                    to="/users" 
+                    className={cn(
+                      "flex items-center gap-2 py-2 text-sm font-medium",
+                      location.pathname === "/users" ? "text-primary" : "text-foreground/80"
+                    )}
+                  >
                     <Users className="h-4 w-4" />
                     Utilisateurs
-                  </span>
-                </Link>
-              </>
+                  </Link>
+                </div>
+              </div>
             )}
             <Link 
               to="/about" 
