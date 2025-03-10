@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Menu, X, Users, LogIn, LogOut, UserCircle } from 'lucide-react';
+import { Search, Menu, X, Users, LogIn, LogOut, UserCircle, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -104,6 +105,18 @@ export function Header() {
                 </span>
               </Link>
               <Link 
+                to="/projects" 
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-primary",
+                  location.pathname === "/projects" ? "text-primary" : "text-foreground/80"
+                )}
+              >
+                <span className="flex items-center gap-1">
+                  <FolderOpen className="h-4 w-4" />
+                  Projets
+                </span>
+              </Link>
+              <Link 
                 to="/users" 
                 className={cn(
                   "text-sm font-medium transition-colors hover:text-primary",
@@ -136,6 +149,9 @@ export function Header() {
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/clients" className="cursor-pointer">Clients</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/projects" className="cursor-pointer">Projets</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500">
@@ -213,6 +229,18 @@ export function Header() {
                   <span className="flex items-center gap-2">
                     <Users className="h-4 w-4" />
                     Clients
+                  </span>
+                </Link>
+                <Link 
+                  to="/projects" 
+                  className={cn(
+                    "text-base font-medium py-2 transition-colors",
+                    location.pathname === "/projects" ? "text-primary" : "text-foreground/80"
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <FolderOpen className="h-4 w-4" />
+                    Projets
                   </span>
                 </Link>
                 <Link 

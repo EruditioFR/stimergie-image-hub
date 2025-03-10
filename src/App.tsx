@@ -12,6 +12,7 @@ import Gallery from "@/pages/Gallery";
 import ImageView from "@/pages/ImageView";
 import NotFound from "@/pages/NotFound";
 import Clients from "@/pages/Clients";
+import Projects from "@/pages/Projects";
 import Users from "@/pages/Users";
 import Auth from "@/pages/Auth";
 
@@ -35,6 +36,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Clients />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/projects" 
+                element={
+                  <ProtectedRoute>
+                    <Projects />
                   </ProtectedRoute>
                 } 
               />
