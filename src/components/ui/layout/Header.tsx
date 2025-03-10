@@ -44,9 +44,9 @@ export function Header() {
     <header 
       className={cn(
         "left-0 right-0 z-40 transition-all duration-300 px-6 py-4 mb-[30px]",
-        isScrolled 
-          ? "bg-background/80 backdrop-blur-md shadow-sm" 
-          : "bg-transparent",
+        isHomePage 
+          ? (isScrolled ? "bg-white shadow-sm" : "bg-transparent") 
+          : "bg-white shadow-sm",
         user ? "top-7" : "top-0"
       )}
     >
@@ -191,7 +191,7 @@ export function Header() {
             </DropdownMenu>
           ) : (
             <Button 
-              variant={isScrolled ? "default" : "outline"} 
+              variant={isScrolled || !isHomePage ? "default" : "outline"} 
               size="sm" 
               onClick={() => navigate('/auth')} 
               className={cn(
