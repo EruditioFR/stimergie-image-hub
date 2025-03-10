@@ -160,6 +160,7 @@ export type Database = {
           title: string
           updated_at: string
           url: string
+          url_miniature: string | null
           width: number
         }
         Insert: {
@@ -174,6 +175,7 @@ export type Database = {
           title: string
           updated_at?: string
           url: string
+          url_miniature?: string | null
           width: number
         }
         Update: {
@@ -188,6 +190,7 @@ export type Database = {
           title?: string
           updated_at?: string
           url?: string
+          url_miniature?: string | null
           width?: number
         }
         Relationships: [

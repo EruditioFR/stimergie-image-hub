@@ -15,6 +15,7 @@ import Clients from "@/pages/Clients";
 import Projects from "@/pages/Projects";
 import Users from "@/pages/Users";
 import Auth from "@/pages/Auth";
+import Images from "@/pages/Images";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,14 @@ const App = () => (
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/image/:id" element={<ImageView />} />
               <Route path="/auth" element={<Auth />} />
+              <Route 
+                path="/images" 
+                element={
+                  <ProtectedRoute>
+                    <Images />
+                  </ProtectedRoute>
+                } 
+              />
               <Route 
                 path="/clients" 
                 element={
