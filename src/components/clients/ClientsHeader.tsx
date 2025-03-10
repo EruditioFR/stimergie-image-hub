@@ -1,15 +1,13 @@
-
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Users } from "lucide-react";
-
 interface ClientsHeaderProps {
   onAddClick: () => void;
 }
-
-export function ClientsHeader({ onAddClick }: ClientsHeaderProps) {
-  return (
-    <div className="bg-muted/30 border-b border-border">
-      <div className="max-w-7xl mx-auto px-6 py-16">
+export function ClientsHeader({
+  onAddClick
+}: ClientsHeaderProps) {
+  return <div className="bg-muted/30 border-b border-border">
+      <div className="max-w-7xl mx-auto px-6 py-[6px]">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
             <Users className="h-8 w-8 text-primary" />
@@ -22,6 +20,5 @@ export function ClientsHeader({ onAddClick }: ClientsHeaderProps) {
           </Button>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 }
