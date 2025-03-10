@@ -9,6 +9,7 @@ import Index from "@/pages/Index";
 import Gallery from "@/pages/Gallery";
 import ImageView from "@/pages/ImageView";
 import NotFound from "@/pages/NotFound";
+import Clients from "@/pages/Clients";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/image/:id" element={<ImageView />} />
+            <Route path="/clients" element={<Clients />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
