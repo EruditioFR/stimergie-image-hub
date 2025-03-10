@@ -110,7 +110,7 @@ export function Header() {
                       Administrer
                     </span>
                   </NavigationMenuTrigger>
-                  <NavigationMenuContent className="p-4 w-[220px]">
+                  <NavigationMenuContent className="p-4 w-[300px]">
                     <ul className="flex flex-col gap-3">
                       <li>
                         <NavigationMenuLink asChild>
