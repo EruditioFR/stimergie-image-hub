@@ -46,39 +46,39 @@ export function Header() {
         </Link>
 
         <nav className="hidden md:flex space-x-8 items-center">
-          <Link to="/" className={cn("text-sm font-medium transition-colors hover:text-primary", location.pathname === "/" ? "text-primary" : "text-foreground/80")}>
+          <Link to="/" className={cn("text-sm font-medium transition-colors hover:text-primary", location.pathname === "/" ? "text-primary" : isHomePage && !isScrolled ? "text-white" : "text-black")}>
             Accueil
           </Link>
-          {user && <Link to="/gallery" className={cn("text-sm font-medium transition-colors hover:text-primary", location.pathname.includes("/gallery") ? "text-primary" : "text-foreground/80")}>
+          {user && <Link to="/gallery" className={cn("text-sm font-medium transition-colors hover:text-primary", location.pathname.includes("/gallery") ? "text-primary" : isHomePage && !isScrolled ? "text-white" : "text-black")}>
               Banque d'images
             </Link>}
           {user && <>
-              {canAccessClientsPage && <Link to="/clients" className={cn("text-sm font-medium transition-colors hover:text-primary", location.pathname === "/clients" ? "text-primary" : "text-foreground/80")}>
+              {canAccessClientsPage && <Link to="/clients" className={cn("text-sm font-medium transition-colors hover:text-primary", location.pathname === "/clients" ? "text-primary" : isHomePage && !isScrolled ? "text-white" : "text-black")}>
                   <span className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
                     Clients
                   </span>
                 </Link>}
-              <Link to="/projects" className={cn("text-sm font-medium transition-colors hover:text-primary", location.pathname === "/projects" ? "text-primary" : "text-foreground/80")}>
+              <Link to="/projects" className={cn("text-sm font-medium transition-colors hover:text-primary", location.pathname === "/projects" ? "text-primary" : isHomePage && !isScrolled ? "text-white" : "text-black")}>
                 <span className="flex items-center gap-1">
                   <FolderOpen className="h-4 w-4" />
                   Projets
                 </span>
               </Link>
-              <Link to="/users" className={cn("text-sm font-medium transition-colors hover:text-primary", location.pathname === "/users" ? "text-primary" : "text-foreground/80")}>
+              <Link to="/users" className={cn("text-sm font-medium transition-colors hover:text-primary", location.pathname === "/users" ? "text-primary" : isHomePage && !isScrolled ? "text-white" : "text-black")}>
                 <span className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
                   Utilisateurs
                 </span>
               </Link>
-              {canAccessImagesPage && <Link to="/images" className={cn("text-sm font-medium transition-colors hover:text-primary", location.pathname === "/images" ? "text-primary" : "text-foreground/80")}>
+              {canAccessImagesPage && <Link to="/images" className={cn("text-sm font-medium transition-colors hover:text-primary", location.pathname === "/images" ? "text-primary" : isHomePage && !isScrolled ? "text-white" : "text-black")}>
                 <span className="flex items-center gap-1">
                   <Image className="h-4 w-4" />
                   Images
                 </span>
               </Link>}
             </>}
-          <Link to="/about" className="text-sm font-medium transition-colors hover:text-primary text-foreground/80">
+          <Link to="/about" className={cn("text-sm font-medium transition-colors hover:text-primary", isHomePage && !isScrolled ? "text-white" : "text-black")}>
             À propos
           </Link>
           <Button variant="ghost" size="icon" className="ml-2">
@@ -91,7 +91,7 @@ export function Header() {
                   <UserCircle className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="text-black">
                 <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
@@ -131,32 +131,32 @@ export function Header() {
               <img src="/lovable-uploads/9ce78881-8c65-4716-ab7f-128bb420c8e9.png" alt="Stimergie Logo" className="h-8 w-auto" />
             </div>
             
-            <Link to="/" className={cn("text-base font-medium py-2 transition-colors", location.pathname === "/" ? "text-primary" : "text-black")}>
+            <Link to="/" className={cn("text-base font-medium py-2 transition-colors text-black", location.pathname === "/" ? "text-primary" : "")}>
               Accueil
             </Link>
-            {user && <Link to="/gallery" className={cn("text-base font-medium py-2 transition-colors", location.pathname.includes("/gallery") ? "text-primary" : "text-black")}>
+            {user && <Link to="/gallery" className={cn("text-base font-medium py-2 transition-colors text-black", location.pathname.includes("/gallery") ? "text-primary" : "")}>
                 Banque d'images
               </Link>}
             {user && <>
-                {canAccessClientsPage && <Link to="/clients" className={cn("text-base font-medium py-2 transition-colors", location.pathname === "/clients" ? "text-primary" : "text-black")}>
+                {canAccessClientsPage && <Link to="/clients" className={cn("text-base font-medium py-2 transition-colors text-black", location.pathname === "/clients" ? "text-primary" : "")}>
                     <span className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
                       Clients
                     </span>
                   </Link>}
-                <Link to="/projects" className={cn("text-base font-medium py-2 transition-colors", location.pathname === "/projects" ? "text-primary" : "text-black")}>
+                <Link to="/projects" className={cn("text-base font-medium py-2 transition-colors text-black", location.pathname === "/projects" ? "text-primary" : "")}>
                   <span className="flex items-center gap-2">
                     <FolderOpen className="h-4 w-4" />
                     Projets
                   </span>
                 </Link>
-                <Link to="/users" className={cn("text-base font-medium py-2 transition-colors", location.pathname === "/users" ? "text-primary" : "text-black")}>
+                <Link to="/users" className={cn("text-base font-medium py-2 transition-colors text-black", location.pathname === "/users" ? "text-primary" : "")}>
                   <span className="flex items-center gap-2">
                     <Users className="h-4 w-4" />
                     Utilisateurs
                   </span>
                 </Link>
-                {canAccessImagesPage && <Link to="/images" className={cn("text-base font-medium py-2 transition-colors", location.pathname === "/images" ? "text-primary" : "text-black")}>
+                {canAccessImagesPage && <Link to="/images" className={cn("text-base font-medium py-2 transition-colors text-black", location.pathname === "/images" ? "text-primary" : "")}>
                   <span className="flex items-center gap-2">
                     <Image className="h-4 w-4" />
                     Images
