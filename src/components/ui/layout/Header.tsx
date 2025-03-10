@@ -20,6 +20,7 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const isHomePage = location.pathname === "/";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -54,7 +55,9 @@ export function Header() {
           to="/" 
           className={cn(
             "text-2xl font-semibold tracking-tight transition-colors",
-            isScrolled ? "text-foreground" : "text-white"
+            isHomePage 
+              ? (isScrolled ? "text-foreground" : "text-white") 
+              : "text-[#191c1fcc]" // Always dark on internal pages
           )}
         >
           Stimergie
@@ -65,9 +68,11 @@ export function Header() {
             to="/" 
             className={cn(
               "text-sm font-medium transition-colors hover:text-primary",
-              location.pathname === "/" 
-                ? (isScrolled ? "text-primary" : "text-white") 
-                : (isScrolled ? "text-foreground/80" : "text-white/80")
+              isHomePage
+                ? (location.pathname === "/" 
+                  ? (isScrolled ? "text-primary" : "text-white") 
+                  : (isScrolled ? "text-foreground/80" : "text-white/80"))
+                : "text-[#191c1fcc]" // Always dark on internal pages
             )}
           >
             Accueil
@@ -76,9 +81,11 @@ export function Header() {
             to="/gallery" 
             className={cn(
               "text-sm font-medium transition-colors hover:text-primary",
-              location.pathname.includes("/gallery") 
-                ? (isScrolled ? "text-primary" : "text-white") 
-                : (isScrolled ? "text-foreground/80" : "text-white/80")
+              isHomePage
+                ? (location.pathname.includes("/gallery") 
+                  ? (isScrolled ? "text-primary" : "text-white") 
+                  : (isScrolled ? "text-foreground/80" : "text-white/80"))
+                : (location.pathname.includes("/gallery") ? "text-primary" : "text-[#191c1fcc]")
             )}
           >
             Galerie
@@ -87,7 +94,9 @@ export function Header() {
             to="/categories" 
             className={cn(
               "text-sm font-medium transition-colors hover:text-primary",
-              isScrolled ? "text-foreground/80" : "text-white/80"
+              isHomePage
+                ? (isScrolled ? "text-foreground/80" : "text-white/80")
+                : "text-[#191c1fcc]"
             )}
           >
             Catégories
@@ -96,7 +105,9 @@ export function Header() {
             to="/about" 
             className={cn(
               "text-sm font-medium transition-colors hover:text-primary",
-              isScrolled ? "text-foreground/80" : "text-white/80"
+              isHomePage
+                ? (isScrolled ? "text-foreground/80" : "text-white/80")
+                : "text-[#191c1fcc]"
             )}
           >
             À propos
@@ -107,9 +118,11 @@ export function Header() {
                 to="/clients" 
                 className={cn(
                   "text-sm font-medium transition-colors hover:text-primary",
-                  location.pathname === "/clients" 
-                    ? (isScrolled ? "text-primary" : "text-white") 
-                    : (isScrolled ? "text-foreground/80" : "text-white/80")
+                  isHomePage
+                    ? (location.pathname === "/clients" 
+                      ? (isScrolled ? "text-primary" : "text-white") 
+                      : (isScrolled ? "text-foreground/80" : "text-white/80"))
+                    : (location.pathname === "/clients" ? "text-primary" : "text-[#191c1fcc]")
                 )}
               >
                 <span className="flex items-center gap-1">
@@ -121,9 +134,11 @@ export function Header() {
                 to="/users" 
                 className={cn(
                   "text-sm font-medium transition-colors hover:text-primary",
-                  location.pathname === "/users" 
-                    ? (isScrolled ? "text-primary" : "text-white") 
-                    : (isScrolled ? "text-foreground/80" : "text-white/80")
+                  isHomePage
+                    ? (location.pathname === "/users" 
+                      ? (isScrolled ? "text-primary" : "text-white") 
+                      : (isScrolled ? "text-foreground/80" : "text-white/80"))
+                    : (location.pathname === "/users" ? "text-primary" : "text-[#191c1fcc]")
                 )}
               >
                 <span className="flex items-center gap-1">
@@ -135,7 +150,9 @@ export function Header() {
           )}
           <Button variant="ghost" size="icon" className={cn(
             "ml-2",
-            isScrolled ? "" : "text-white hover:bg-white/10 hover:text-white"
+            isHomePage
+              ? (isScrolled ? "" : "text-white hover:bg-white/10 hover:text-white")
+              : "text-[#191c1fcc]"
           )}>
             <Search className="h-4 w-4" />
           </Button>
@@ -148,7 +165,9 @@ export function Header() {
                   size="icon" 
                   className={cn(
                     "ml-2 rounded-full",
-                    isScrolled ? "" : "text-white hover:bg-white/10 hover:text-white"
+                    isHomePage
+                      ? (isScrolled ? "" : "text-white hover:bg-white/10 hover:text-white")
+                      : "text-[#191c1fcc]"
                   )}
                 >
                   <UserCircle className="h-5 w-5" />
@@ -177,7 +196,7 @@ export function Header() {
               onClick={() => navigate('/auth')} 
               className={cn(
                 "ml-2",
-                !isScrolled && "border-white text-white hover:bg-white/10"
+                isHomePage && !isScrolled && "border-white text-white hover:bg-white/10"
               )}
             >
               <LogIn className="h-4 w-4 mr-2" />
@@ -193,7 +212,9 @@ export function Header() {
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
             className={cn(
-              !isScrolled && "text-white hover:bg-white/10 hover:text-white"
+              isHomePage && !isScrolled 
+                ? "text-white hover:bg-white/10 hover:text-white" 
+                : "text-[#191c1fcc]"
             )}
           >
             {isMobileMenuOpen ? (
