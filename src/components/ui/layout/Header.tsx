@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Menu, X, Users, LogIn, LogOut, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import { UserGreeting } from '@/components/ui/UserGreeting';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +31,6 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    // Close mobile menu when route changes
     setIsMobileMenuOpen(false);
   }, [location]);
 
@@ -57,6 +56,11 @@ export function Header() {
         >
           Stimergie
         </Link>
+
+        {/* User Greeting - Desktop */}
+        <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
+          <UserGreeting />
+        </div>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex space-x-8 items-center">
@@ -160,6 +164,11 @@ export function Header() {
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur-lg shadow-lg animate-fade-in">
           <nav className="flex flex-col p-6 space-y-4">
+            {/* User Greeting - Mobile */}
+            <div className="mb-2">
+              <UserGreeting />
+            </div>
+            
             <Link 
               to="/" 
               className={cn(
