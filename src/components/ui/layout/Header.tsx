@@ -95,18 +95,32 @@ export function Header() {
             À propos
           </Link>
           {user && (
-            <Link 
-              to="/clients" 
-              className={cn(
-                "text-sm font-medium transition-colors hover:text-primary",
-                location.pathname === "/clients" ? "text-primary" : "text-foreground/80"
-              )}
-            >
-              <span className="flex items-center gap-1">
-                <Users className="h-4 w-4" />
-                Clients
-              </span>
-            </Link>
+            <>
+              <Link 
+                to="/clients" 
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-primary",
+                  location.pathname === "/clients" ? "text-primary" : "text-foreground/80"
+                )}
+              >
+                <span className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  Clients
+                </span>
+              </Link>
+              <Link 
+                to="/users" 
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-primary",
+                  location.pathname === "/users" ? "text-primary" : "text-foreground/80"
+                )}
+              >
+                <span className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  Utilisateurs
+                </span>
+              </Link>
+            </>
           )}
           <Button variant="ghost" size="icon" className="ml-2">
             <Search className="h-4 w-4" />
@@ -200,19 +214,34 @@ export function Header() {
               À propos
             </Link>
             {user && (
-              <Link 
-                to="/clients" 
-                className={cn(
-                  "text-base font-medium py-2 transition-colors",
-                  location.pathname === "/clients" ? "text-primary" : "text-foreground/80"
-                )}
-              >
-                <span className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Clients
-                </span>
-              </Link>
+              <>
+                <Link 
+                  to="/clients" 
+                  className={cn(
+                    "text-base font-medium py-2 transition-colors",
+                    location.pathname === "/clients" ? "text-primary" : "text-foreground/80"
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Clients
+                  </span>
+                </Link>
+                <Link 
+                  to="/users" 
+                  className={cn(
+                    "text-base font-medium py-2 transition-colors",
+                    location.pathname === "/users" ? "text-primary" : "text-foreground/80"
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Utilisateurs
+                  </span>
+                </Link>
+              </>
             )}
+            
             <div className="relative mt-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input 
