@@ -22,6 +22,8 @@ serve(async (req) => {
       );
     }
 
+    console.log("Received request to analyze image:", imageUrl.substring(0, 50) + "...");
+
     // Get OpenAI API key from environment variables
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiApiKey) {
@@ -32,6 +34,8 @@ serve(async (req) => {
       );
     }
 
+    console.log("Calling OpenAI API...");
+    
     // Call OpenAI API to analyze the image
     const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -60,7 +64,7 @@ serve(async (req) => {
 
     if (!openaiResponse.ok) {
       const errorData = await openaiResponse.json();
-      console.error("OpenAI API error:", errorData);
+      console.error("OpenAI API error:", JSON.stringify(errorData));
       return new Response(
         JSON.stringify({ error: "Error calling OpenAI API", details: errorData }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
@@ -68,7 +72,10 @@ serve(async (req) => {
     }
 
     const openaiData = await openaiResponse.json();
+    console.log("OpenAI response received:", JSON.stringify(openaiData).substring(0, 200) + "...");
+    
     const tagContent = openaiData.choices[0].message.content;
+    console.log("Raw tag content:", tagContent);
     
     // Parse the tags from the response
     // The response might be in various formats, try to extract an array from it
@@ -93,6 +100,8 @@ serve(async (req) => {
         const defaultTags = ["image", "photo", "media", "visuel", "contenu"];
         tags = [...tags, ...defaultTags.slice(0, 5 - tags.length)];
       }
+      
+      console.log("Final processed tags:", tags);
     } catch (error) {
       console.error("Error parsing tags:", error);
       // Fallback to simple extraction
@@ -107,7 +116,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error:", error.stack || error.message || error);
     return new Response(
       JSON.stringify({ error: "An unexpected error occurred", details: error.message }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }

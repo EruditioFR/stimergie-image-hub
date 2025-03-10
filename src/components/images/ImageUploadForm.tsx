@@ -8,15 +8,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Upload, X, Loader2, ImagePlus } from 'lucide-react';
+import { Upload, X, Loader2, ImagePlus, Tag } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 interface Project {
   id: string;
@@ -32,6 +34,7 @@ interface ImageUploadFormProps {
 
 export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' }: ImageUploadFormProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -45,6 +48,7 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [tagError, setTagError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get Supabase URL and key from environment variables
@@ -108,6 +112,7 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
     setTags([]);
     setSuggestedTags([]);
     setSelectedProject('');
+    setTagError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -157,8 +162,13 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
   };
 
   const analyzeImage = async (imageUrl: string) => {
+    setAnalyzing(true);
+    setTagError(null);
+    setSuggestedTags([]);
+    
     try {
-      setAnalyzing(true);
+      console.log("Analyzing image with URL:", imageUrl);
+      
       // Call the Supabase Edge Function for image analysis with OpenAI
       const response = await fetch(`${SUPABASE_URL}/functions/v1/analyze-image-ai`, {
         method: 'POST',
@@ -170,14 +180,30 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
       });
       
       if (!response.ok) {
-        throw new Error('Failed to analyze image');
+        const errorData = await response.json();
+        console.error("Error from analyze-image-ai function:", errorData);
+        throw new Error(errorData.error || 'Failed to analyze image');
       }
       
       const data = await response.json();
-      setSuggestedTags(data.tags);
+      console.log("Tags received from AI:", data.tags);
+      
+      if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
+        setSuggestedTags(data.tags);
+      } else {
+        console.warn("No tags returned from AI function");
+        setTagError("Aucun tag n'a pu être généré. Essayez d'ajouter des tags manuellement.");
+        setSuggestedTags(["image", "photo", "média", "visuel", "contenu"]);
+      }
     } catch (error) {
       console.error('Error analyzing image:', error);
-      setSuggestedTags([]);
+      setTagError("Erreur lors de l'analyse de l'image. Essayez d'ajouter des tags manuellement.");
+      setSuggestedTags(["image", "photo", "média", "visuel", "contenu"]);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible d'analyser l'image avec l'IA. Des tags par défaut ont été ajoutés."
+      });
     } finally {
       setAnalyzing(false);
     }
@@ -242,10 +268,20 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
         URL.revokeObjectURL(preview);
       }
       
+      toast({
+        title: "Succès",
+        description: "L'image a été téléchargée avec succès"
+      });
+      
       resetForm();
       onSuccess();
     } catch (error) {
       console.error('Error uploading image:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de télécharger l'image. Veuillez réessayer."
+      });
     } finally {
       setUploading(false);
     }
@@ -263,113 +299,122 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
         // Don't reset form immediately to prevent UI flicker
       }
     }}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Ajouter une nouvelle image</DialogTitle>
+          <DialogDescription>
+            Téléchargez une image et ajoutez des informations pour la référencer facilement.
+          </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="flex-grow overflow-auto max-h-[calc(80vh-120px)]">
-          <div className="p-1">
-            <form onSubmit={handleSubmit} className="mt-4 space-y-5">
-              {!preview ? (
-                <div 
-                  className="border-2 border-dashed rounded-lg p-12 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => fileInputRef.current?.click()}
+        <ScrollArea className="flex-grow pr-4 overflow-y-auto" style={{ maxHeight: 'calc(80vh - 200px)' }}>
+          <form id="upload-form" onSubmit={handleSubmit} className="space-y-5 py-2">
+            {!preview ? (
+              <div 
+                className="border-2 border-dashed rounded-lg p-12 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <ImagePlus className="h-10 w-10 mx-auto text-muted-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Cliquez ou glissez-déposez une image
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+              </div>
+            ) : (
+              <div className="relative">
+                <img 
+                  src={preview} 
+                  alt="Aperçu" 
+                  className="w-full rounded-lg max-h-[300px] object-contain bg-muted/30"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  className="absolute top-2 right-2"
+                  onClick={() => {
+                    if (preview) URL.revokeObjectURL(preview);
+                    setPreview(null);
+                    setFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}
                 >
-                  <ImagePlus className="h-10 w-10 mx-auto text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Cliquez ou glissez-déposez une image
-                  </p>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    onChange={handleFileChange}
-                    accept="image/*"
-                    className="hidden"
-                  />
-                </div>
-              ) : (
-                <div className="relative">
-                  <img 
-                    src={preview} 
-                    alt="Aperçu" 
-                    className="w-full rounded-lg max-h-[300px] object-contain bg-muted/30"
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="destructive"
-                    className="absolute top-2 right-2"
-                    onClick={() => {
-                      if (preview) URL.revokeObjectURL(preview);
-                      setPreview(null);
-                      setFile(null);
-                      if (fileInputRef.current) fileInputRef.current.value = '';
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                  
-                  {dimensions && (
-                    <div className="mt-2 text-sm text-muted-foreground flex items-center gap-4">
-                      <span>Dimensions: {dimensions.width} × {dimensions.height}</span>
-                      <span>Orientation: {orientation}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <div className="grid gap-4">
-                <div>
-                  <Label htmlFor="project">Projet</Label>
-                  <Select
-                    value={selectedProject}
-                    onValueChange={setSelectedProject}
-                    disabled={isLoadingProjects}
-                  >
-                    <SelectTrigger id="project" className="w-full">
-                      <SelectValue placeholder={isLoadingProjects ? "Chargement des projets..." : "Sélectionner un projet"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {projects.length > 0 ? (
-                        projects.map((project) => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.nom_projet}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="no-projects" disabled>
-                          Aucun projet disponible
+                  <X className="h-4 w-4" />
+                </Button>
+                
+                {dimensions && (
+                  <div className="mt-2 text-sm text-muted-foreground flex items-center gap-4">
+                    <span>Dimensions: {dimensions.width} × {dimensions.height}</span>
+                    <span>Orientation: {orientation}</span>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className="grid gap-4">
+              <div>
+                <Label htmlFor="project">Projet</Label>
+                <Select
+                  value={selectedProject}
+                  onValueChange={setSelectedProject}
+                  disabled={isLoadingProjects}
+                >
+                  <SelectTrigger id="project" className="w-full">
+                    <SelectValue placeholder={isLoadingProjects ? "Chargement des projets..." : "Sélectionner un projet"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.length > 0 ? (
+                      projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.nom_projet}
                         </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
+                      ))
+                    ) : (
+                      <SelectItem value="no-projects" disabled>
+                        Aucun projet disponible
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="title">Titre</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="description">Description (optionnelle)</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              
+              <div>
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center">
+                    <Tag className="h-4 w-4 mr-2" />
+                    Tags sélectionnés
+                  </Label>
                 </div>
                 
-                <div>
-                  <Label htmlFor="title">Titre</Label>
-                  <Input
-                    id="title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="description">Description (optionnelle)</Label>
-                  <Textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-                
-                <div>
-                  <Label>Tags</Label>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {tags.map((tag, index) => (
+                <div className="mt-2 flex flex-wrap gap-2 min-h-10">
+                  {tags.length > 0 ? (
+                    tags.map((tag, index) => (
                       <Badge 
                         key={index} 
                         variant="secondary" 
@@ -378,40 +423,59 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
                       >
                         {tag} <X className="ml-1 h-3 w-3" />
                       </Badge>
-                    ))}
-                  </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Aucun tag sélectionné</p>
+                  )}
                 </div>
-                
-                {analyzing ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    <span>Analyse de l'image en cours...</span>
+              </div>
+              
+              {analyzing ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  <span>Analyse de l'image en cours...</span>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Label className="flex items-center">
+                      <Tag className="h-4 w-4 mr-2" /> 
+                      Tags suggérés par IA
+                    </Label>
+                    {tagError && <p className="text-xs text-destructive">{tagError}</p>}
                   </div>
-                ) : suggestedTags.length > 0 ? (
-                  <div>
-                    <Label>Tags suggérés</Label>
-                    <div className="h-24 mt-2 p-2 border rounded-lg overflow-auto">
-                      <div className="flex flex-wrap gap-2">
-                        {suggestedTags.map((tag, index) => (
+                  
+                  <div className="mt-2 p-3 border rounded-lg">
+                    <div className="flex flex-wrap gap-2 min-h-16">
+                      {suggestedTags.length > 0 ? (
+                        suggestedTags.map((tag, index) => (
                           <Badge 
                             key={index} 
                             variant={tags.includes(tag) ? "default" : "outline"} 
-                            className="cursor-pointer"
+                            className="cursor-pointer hover:shadow-sm transition-all"
                             onClick={() => toggleTag(tag)}
                           >
                             {tag}
                           </Badge>
-                        ))}
-                      </div>
+                        ))
+                      ) : preview ? (
+                        <p className="text-sm text-muted-foreground">
+                          Aucun tag suggéré disponible
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Téléchargez une image pour obtenir des suggestions de tags
+                        </p>
+                      )}
                     </div>
                   </div>
-                ) : null}
-              </div>
-            </form>
-          </div>
+                </div>
+              )}
+            </div>
+          </form>
         </ScrollArea>
         
-        <DialogFooter className="mt-6 pt-2 border-t">
+        <DialogFooter className="mt-6 pt-4 border-t">
           <Button 
             type="button" 
             variant="outline" 
@@ -422,8 +486,8 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
           </Button>
           <Button 
             type="submit"
+            form="upload-form"
             disabled={!file || !selectedProject || uploading}
-            onClick={handleSubmit}
           >
             {uploading ? (
               <>
