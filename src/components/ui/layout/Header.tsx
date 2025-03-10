@@ -19,6 +19,7 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const isHomePage = location.pathname === "/";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -41,11 +42,12 @@ export function Header() {
   return (
     <header 
       className={cn(
-        "fixed left-0 right-0 z-40 transition-all duration-300 px-6 py-4",
-        isScrolled 
-          ? "bg-background/80 backdrop-blur-md shadow-sm" 
-          : "bg-transparent",
-        user ? "top-7" : "top-0"
+        "transition-all duration-300 px-6 py-4",
+        isHomePage
+          ? isScrolled 
+            ? "bg-background/80 backdrop-blur-md text-foreground" 
+            : "bg-transparent text-white"
+          : "bg-background text-foreground"
       )}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -167,7 +169,7 @@ export function Header() {
       </div>
 
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur-lg shadow-lg animate-fade-in">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur-lg shadow-lg animate-fade-in z-50">
           <nav className="flex flex-col p-6 space-y-4">
             <Link 
               to="/" 

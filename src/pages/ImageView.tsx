@@ -19,7 +19,7 @@ const ImageView = () => {
       <UserGreetingBar />
       <Header />
       
-      <main className="flex-grow pt-20">
+      <main className="flex-grow">
         <ImageDetail />
       </main>
       

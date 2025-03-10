@@ -1,3 +1,4 @@
+
 import { Hero } from "@/components/Hero";
 import { Header } from "@/components/ui/layout/Header";
 import { Footer } from "@/components/ui/layout/Footer";
