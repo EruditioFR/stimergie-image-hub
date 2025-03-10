@@ -24,6 +24,9 @@ interface UserFormProps {
   isEditing?: boolean;
 }
 
+// Define the role type to match the zod schema
+type UserRole = "admin" | "admin_client" | "user" | "administrateur";
+
 // Schéma de validation pour le formulaire
 const formSchema = z.object({
   email: z.string().email("L'adresse email est invalide"),
@@ -36,19 +39,22 @@ const formSchema = z.object({
 });
 
 export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing = false }: UserFormProps) {
+  // Type assertion to ensure role is of the correct type
+  const userRole = initialData?.role as UserRole | undefined;
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
       email: initialData.email,
       first_name: initialData.first_name || "",
       last_name: initialData.last_name || "",
-      role: initialData.role,
+      role: userRole || "user",
       id_client: initialData.id_client || "",
     } : {
       email: "",
       first_name: "",
       last_name: "",
-      role: "user",
+      role: "user" as UserRole,
       id_client: "",
     },
   });
