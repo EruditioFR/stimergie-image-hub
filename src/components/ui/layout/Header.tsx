@@ -53,10 +53,7 @@ export function Header() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <Link 
           to="/" 
-          className={cn(
-            "text-2xl font-semibold tracking-tight transition-colors",
-            isHomePage && !isScrolled ? "text-white" : "text-black"
-          )}
+          className="text-2xl font-semibold tracking-tight transition-colors text-black"
         >
           Stimergie
         </Link>
