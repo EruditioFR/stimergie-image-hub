@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -21,6 +22,7 @@ interface UserFormProps {
   onCancel: () => void;
   initialData?: User;
   isEditing?: boolean;
+  isAdmin?: boolean;
 }
 
 // Define the role type to match the zod schema
@@ -37,7 +39,7 @@ const formSchema = z.object({
   id_client: z.string().optional(),
 });
 
-export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing = false }: UserFormProps) {
+export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing = false, isAdmin = false }: UserFormProps) {
   // Type assertion to ensure role is of the correct type
   const userRole = initialData?.role as UserRole | undefined;
   
@@ -57,6 +59,17 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
       id_client: "",
     },
   });
+
+  // Filter available roles based on user permissions
+  const availableRoles = [
+    { value: "user", label: "Utilisateur" },
+    { value: "admin_client", label: "Admin Client" },
+  ];
+
+  // Only show admin role if user is an admin
+  if (isAdmin) {
+    availableRoles.push({ value: "admin", label: "Administrateur" });
+  }
 
   // Handle submit with proper handling for edit vs create
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
@@ -154,9 +167,11 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
                       className="w-full rounded-md border border-input bg-background px-3 py-2"
                       {...field}
                     >
-                      <option value="user">Utilisateur</option>
-                      <option value="admin_client">Admin Client</option>
-                      <option value="admin">Administrateur</option>
+                      {availableRoles.map(role => (
+                        <option key={role.value} value={role.value}>
+                          {role.label}
+                        </option>
+                      ))}
                     </select>
                   </FormControl>
                   <FormMessage />

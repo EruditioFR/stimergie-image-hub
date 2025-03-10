@@ -284,11 +284,15 @@ export default function Users() {
     }
   };
 
-  const roles = [
+  const allRoles = [
     { value: "user", label: "Utilisateur" },
     { value: "admin_client", label: "Admin Client" },
     { value: "admin", label: "Administrateur" }
   ];
+
+  const visibleRoles = isAdmin 
+    ? allRoles 
+    : allRoles.filter(role => role.value !== "admin");
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -303,6 +307,7 @@ export default function Users() {
             clients={clients}
             onSubmit={handleAddUser}
             onCancel={() => setShowAddForm(false)}
+            isAdmin={isAdmin}
           />
         )}
 
@@ -316,6 +321,7 @@ export default function Users() {
               setCurrentUser(null);
             }}
             isEditing
+            isAdmin={isAdmin}
           />
         )}
         
@@ -353,7 +359,7 @@ export default function Users() {
               onChange={(e) => setSelectedRole(e.target.value || null)}
             >
               <option value="">Tous les rôles</option>
-              {roles.map((role) => (
+              {visibleRoles.map((role) => (
                 <option key={role.value} value={role.value}>
                   {role.label}
                 </option>
