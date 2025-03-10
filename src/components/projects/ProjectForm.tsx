@@ -15,11 +15,12 @@ import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ProjectFormProps {
+  initialData?: Project;
   onSubmit: (project: Project) => void;
   onCancel: () => void;
 }
 
-export function ProjectForm({ onSubmit, onCancel }: ProjectFormProps) {
+export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProps) {
   const [formData, setFormData] = useState<Project>({
     nom_projet: "",
     type_projet: "",
@@ -29,8 +30,12 @@ export function ProjectForm({ onSubmit, onCancel }: ProjectFormProps) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    }
+    
     fetchClients();
-  }, []);
+  }, [initialData]);
 
   const fetchClients = async () => {
     try {
@@ -68,7 +73,9 @@ export function ProjectForm({ onSubmit, onCancel }: ProjectFormProps) {
   return (
     <div className="bg-white shadow-md rounded-lg p-6 mb-8">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Créer un nouveau projet</h2>
+        <h2 className="text-xl font-semibold">
+          {initialData ? "Modifier le projet" : "Créer un nouveau projet"}
+        </h2>
         <Button variant="ghost" size="icon" onClick={onCancel}>
           <X className="h-5 w-5" />
         </Button>
@@ -123,7 +130,7 @@ export function ProjectForm({ onSubmit, onCancel }: ProjectFormProps) {
             Annuler
           </Button>
           <Button type="submit" disabled={!formData.nom_projet || !formData.id_client}>
-            Enregistrer
+            {initialData ? "Mettre à jour" : "Enregistrer"}
           </Button>
         </div>
       </form>

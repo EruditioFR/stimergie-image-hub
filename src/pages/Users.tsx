@@ -1,11 +1,23 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { UsersHeader } from "@/components/users/UsersHeader";
 import { UsersList } from "@/components/users/UsersList";
 import { UserForm } from "@/components/users/UserForm";
 import { Header } from "@/components/ui/layout/Header";
 import { UserGreetingBar } from "@/components/ui/UserGreetingBar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export type User = {
   id: string;
@@ -28,8 +40,12 @@ export default function Users() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const { toast: uiToast } = useToast();
 
   useEffect(() => {
     async function fetchUsers() {
@@ -60,7 +76,7 @@ export default function Users() {
         
         if (error) {
           console.error("Erreur lors du chargement des utilisateurs:", error);
-          toast({
+          uiToast({
             title: "Erreur",
             description: "Impossible de charger la liste des utilisateurs",
             variant: "destructive"
@@ -101,7 +117,7 @@ export default function Users() {
     
     fetchUsers();
     fetchClients();
-  }, [selectedClientId, selectedRole, toast]);
+  }, [selectedClientId, selectedRole, uiToast]);
 
   const handleAddUser = async (userData: Omit<User, 'id'>) => {
     try {
@@ -116,7 +132,7 @@ export default function Users() {
       
       if (error) {
         console.error("Erreur lors de la création de l'utilisateur:", error);
-        toast({
+        uiToast({
           title: "Erreur",
           description: error.message,
           variant: "destructive"
@@ -147,19 +163,86 @@ export default function Users() {
         }]);
       }
       
-      toast({
-        title: "Succès",
-        description: "L'utilisateur a été créé avec succès"
-      });
+      toast.success("L'utilisateur a été créé avec succès");
       
       setShowAddForm(false);
     } catch (err) {
       console.error("Erreur inattendue:", err);
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la création de l'utilisateur",
-        variant: "destructive"
-      });
+      toast.error("Une erreur est survenue lors de la création de l'utilisateur");
+    }
+  };
+
+  const handleEditUser = (user: User) => {
+    setCurrentUser(user);
+    setShowEditForm(true);
+  };
+
+  const handleUpdateUser = async (userData: User) => {
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          first_name: userData.first_name,
+          last_name: userData.last_name,
+          role: userData.role,
+          id_client: userData.id_client
+        })
+        .eq('id', userData.id);
+
+      if (error) {
+        console.error("Erreur lors de la mise à jour de l'utilisateur:", error);
+        toast.error("Impossible de mettre à jour l'utilisateur");
+        return;
+      }
+
+      // Update the user in the local state
+      setUsers(prev => prev.map(user => 
+        user.id === userData.id 
+          ? {
+              ...userData,
+              client_name: clients.find(c => c.id === userData.id_client)?.nom || null
+            }
+          : user
+      ));
+
+      toast.success("L'utilisateur a été mis à jour avec succès");
+      setShowEditForm(false);
+      setCurrentUser(null);
+    } catch (err) {
+      console.error("Erreur inattendue:", err);
+      toast.error("Une erreur est survenue lors de la mise à jour de l'utilisateur");
+    }
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    setUserToDelete(userId);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    try {
+      // This would typically be handled by a backend function that deletes both the auth user and profile
+      const { error } = await supabase
+        .from("profiles")
+        .delete()
+        .eq('id', userToDelete);
+
+      if (error) {
+        console.error("Erreur lors de la suppression de l'utilisateur:", error);
+        toast.error("Impossible de supprimer l'utilisateur");
+        return;
+      }
+
+      setUsers(prev => prev.filter(user => user.id !== userToDelete));
+      toast.success("L'utilisateur a été supprimé avec succès");
+    } catch (err) {
+      console.error("Erreur inattendue:", err);
+      toast.error("Une erreur est survenue lors de la suppression de l'utilisateur");
+    } finally {
+      setShowDeleteDialog(false);
+      setUserToDelete(null);
     }
   };
 
@@ -183,6 +266,19 @@ export default function Users() {
             clients={clients}
             onSubmit={handleAddUser}
             onCancel={() => setShowAddForm(false)}
+          />
+        )}
+
+        {showEditForm && currentUser && (
+          <UserForm 
+            clients={clients}
+            initialData={currentUser}
+            onSubmit={handleUpdateUser}
+            onCancel={() => {
+              setShowEditForm(false);
+              setCurrentUser(null);
+            }}
+            isEditing
           />
         )}
         
@@ -226,7 +322,32 @@ export default function Users() {
           </div>
         </div>
         
-        <UsersList users={users} loading={loading} />
+        <UsersList 
+          users={users} 
+          loading={loading} 
+          onEdit={handleEditUser}
+          onDelete={handleDeleteUser}
+        />
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer cet utilisateur ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Cette action est irréversible. L'utilisateur sera supprimé de façon permanente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={confirmDeleteUser}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Supprimer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

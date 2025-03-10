@@ -2,16 +2,17 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Client } from "@/pages/Clients";
 import { X } from "lucide-react";
 
 interface ClientFormProps {
+  initialData?: Client;
   onSubmit: (client: Client) => void;
   onCancel: () => void;
 }
 
-export function ClientForm({ onSubmit, onCancel }: ClientFormProps) {
+export function ClientForm({ initialData, onSubmit, onCancel }: ClientFormProps) {
   const [formData, setFormData] = useState<Client>({
     nom: "",
     email: "",
@@ -19,6 +20,12 @@ export function ClientForm({ onSubmit, onCancel }: ClientFormProps) {
     entreprise: "",
     notes: ""
   });
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    }
+  }, [initialData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -33,7 +40,9 @@ export function ClientForm({ onSubmit, onCancel }: ClientFormProps) {
   return (
     <div className="bg-white shadow-md rounded-lg p-6 mb-8">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Ajouter un nouveau client</h2>
+        <h2 className="text-xl font-semibold">
+          {initialData ? "Modifier le client" : "Ajouter un nouveau client"}
+        </h2>
         <Button variant="ghost" size="icon" onClick={onCancel}>
           <X className="h-5 w-5" />
         </Button>
@@ -106,7 +115,7 @@ export function ClientForm({ onSubmit, onCancel }: ClientFormProps) {
             Annuler
           </Button>
           <Button type="submit">
-            Enregistrer
+            {initialData ? "Mettre à jour" : "Enregistrer"}
           </Button>
         </div>
       </form>

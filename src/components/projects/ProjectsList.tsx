@@ -1,16 +1,19 @@
 
 import { Project } from "@/pages/Projects";
-import { Folder, Building2, Calendar } from "lucide-react";
+import { Folder, Building2, Calendar, Pencil, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
 
 interface ProjectsListProps {
   projects: Project[];
   loading?: boolean;
+  onEdit?: (project: Project) => void;
+  onDelete?: (projectId: string) => void;
 }
 
-export function ProjectsList({ projects, loading = false }: ProjectsListProps) {
+export function ProjectsList({ projects, loading = false, onEdit, onDelete }: ProjectsListProps) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -54,10 +57,35 @@ export function ProjectsList({ projects, loading = false }: ProjectsListProps) {
           key={project.id} 
           className="bg-white shadow-sm rounded-lg p-6 border border-border hover:shadow-md transition-shadow"
         >
-          <h3 className="font-medium text-lg mb-4 flex items-center gap-2">
-            <Folder size={18} className="text-primary" />
-            {project.nom_projet}
-          </h3>
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="font-medium text-lg flex items-center gap-2">
+              <Folder size={18} className="text-primary" />
+              {project.nom_projet}
+            </h3>
+            <div className="flex gap-2">
+              {onEdit && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => onEdit(project)}
+                  title="Modifier"
+                >
+                  <Pencil size={16} />
+                </Button>
+              )}
+              {onDelete && project.id && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => onDelete(project.id!)}
+                  title="Supprimer"
+                  className="text-destructive hover:text-destructive/90"
+                >
+                  <Trash2 size={16} />
+                </Button>
+              )}
+            </div>
+          </div>
           
           <div className="space-y-3 text-sm">
             <p className="flex items-center gap-2">

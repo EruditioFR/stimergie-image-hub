@@ -1,14 +1,17 @@
 
 import { Client } from "@/pages/Clients";
-import { UserRound, Building2, Phone, Mail, FileText } from "lucide-react";
+import { UserRound, Building2, Phone, Mail, FileText, Pencil, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
 interface ClientsListProps {
   clients: Client[];
   loading?: boolean;
+  onEdit?: (client: Client) => void;
+  onDelete?: (clientId: string) => void;
 }
 
-export function ClientsList({ clients, loading = false }: ClientsListProps) {
+export function ClientsList({ clients, loading = false, onEdit, onDelete }: ClientsListProps) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -44,10 +47,35 @@ export function ClientsList({ clients, loading = false }: ClientsListProps) {
           key={client.id} 
           className="bg-white shadow-sm rounded-lg p-6 border border-border hover:shadow-md transition-shadow"
         >
-          <h3 className="font-medium text-lg mb-4 flex items-center gap-2">
-            <UserRound size={18} className="text-muted-foreground" />
-            {client.nom}
-          </h3>
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="font-medium text-lg flex items-center gap-2">
+              <UserRound size={18} className="text-muted-foreground" />
+              {client.nom}
+            </h3>
+            <div className="flex gap-2">
+              {onEdit && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => onEdit(client)}
+                  title="Modifier"
+                >
+                  <Pencil size={16} />
+                </Button>
+              )}
+              {onDelete && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => onDelete(client.id!)}
+                  title="Supprimer"
+                  className="text-destructive hover:text-destructive/90"
+                >
+                  <Trash2 size={16} />
+                </Button>
+              )}
+            </div>
+          </div>
           
           <div className="space-y-3 text-sm">
             {client.entreprise && (

@@ -1,14 +1,17 @@
 
 import { User } from "@/pages/Users";
-import { UserRound, Building2, Mail, Shield } from "lucide-react";
+import { UserRound, Building2, Mail, Shield, Pencil, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
 interface UsersListProps {
   users: User[];
   loading?: boolean;
+  onEdit?: (user: User) => void;
+  onDelete?: (userId: string) => void;
 }
 
-export function UsersList({ users, loading = false }: UsersListProps) {
+export function UsersList({ users, loading = false, onEdit, onDelete }: UsersListProps) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -44,14 +47,39 @@ export function UsersList({ users, loading = false }: UsersListProps) {
           key={user.id} 
           className="bg-white shadow-sm rounded-lg p-6 border border-border hover:shadow-md transition-shadow"
         >
-          <h3 className="font-medium text-lg mb-4 flex items-center gap-2">
-            <UserRound size={18} className="text-muted-foreground" />
-            {user.first_name || user.last_name ? (
-              `${user.first_name || ''} ${user.last_name || ''}`.trim()
-            ) : (
-              <span className="italic text-muted-foreground">Nom non défini</span>
-            )}
-          </h3>
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="font-medium text-lg flex items-center gap-2">
+              <UserRound size={18} className="text-muted-foreground" />
+              {user.first_name || user.last_name ? (
+                `${user.first_name || ''} ${user.last_name || ''}`.trim()
+              ) : (
+                <span className="italic text-muted-foreground">Nom non défini</span>
+              )}
+            </h3>
+            <div className="flex gap-2">
+              {onEdit && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => onEdit(user)}
+                  title="Modifier"
+                >
+                  <Pencil size={16} />
+                </Button>
+              )}
+              {onDelete && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => onDelete(user.id)}
+                  title="Supprimer"
+                  className="text-destructive hover:text-destructive/90"
+                >
+                  <Trash2 size={16} />
+                </Button>
+              )}
+            </div>
+          </div>
           
           <div className="space-y-3 text-sm">
             <p className="flex items-center gap-2">
