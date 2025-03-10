@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,7 +72,7 @@ serve(async (req) => {
     
     // Parse the tags from the response
     // The response might be in various formats, try to extract an array from it
-    let tags: string[] = [];
+    let tags = [];
     try {
       // First attempt: try to parse as JSON directly
       if (tagContent.trim().startsWith('[') && tagContent.trim().endsWith(']')) {
@@ -82,9 +81,9 @@ serve(async (req) => {
         // Second attempt: extract words, assuming they are separated by commas or newlines
         tags = tagContent
           .split(/[,\n]/)
-          .map((tag: string) => tag.trim())
-          .filter((tag: string) => tag.length > 0 && !tag.startsWith('-'))
-          .map((tag: string) => tag.replace(/^["'\s•-]+|["'\s•-]+$/g, ''));
+          .map((tag) => tag.trim())
+          .filter((tag) => tag.length > 0 && !tag.startsWith('-'))
+          .map((tag) => tag.replace(/^["'\s•-]+|["'\s•-]+$/g, ''));
       }
       
       // Ensure we have reasonable number of tags (5-10)
@@ -99,8 +98,8 @@ serve(async (req) => {
       // Fallback to simple extraction
       tags = tagContent
         .split(/[,\n]/)
-        .map((tag: string) => tag.trim())
-        .filter((tag: string) => tag.length > 0);
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0);
     }
 
     return new Response(
