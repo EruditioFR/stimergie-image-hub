@@ -57,10 +57,12 @@ export function ClientsList({ clients, loading = false }: ClientsListProps) {
               </p>
             )}
             
-            <p className="flex items-center gap-2">
-              <Mail size={16} className="text-muted-foreground" />
-              {client.email}
-            </p>
+            {client.email && (
+              <p className="flex items-center gap-2">
+                <Mail size={16} className="text-muted-foreground" />
+                {client.email}
+              </p>
+            )}
             
             {client.telephone && (
               <p className="flex items-center gap-2">
