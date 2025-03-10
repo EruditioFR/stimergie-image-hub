@@ -4,7 +4,6 @@ import { Search, Menu, X, Users, LogIn, LogOut, UserCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
-import { UserGreeting } from '@/components/ui/UserGreeting';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,14 +41,14 @@ export function Header() {
   return (
     <header 
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-6 py-4",
+        "fixed left-0 right-0 z-40 transition-all duration-300 px-6 py-4",
         isScrolled 
           ? "bg-background/80 backdrop-blur-md shadow-sm" 
-          : "bg-transparent"
+          : "bg-transparent",
+        user ? "top-7" : "top-0"
       )}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        {/* Logo */}
         <Link 
           to="/" 
           className="text-2xl font-semibold tracking-tight transition-colors"
@@ -57,12 +56,6 @@ export function Header() {
           Stimergie
         </Link>
 
-        {/* User Greeting - Desktop */}
-        <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
-          <UserGreeting />
-        </div>
-
-        {/* Desktop Navigation */}
         <nav className="hidden md:flex space-x-8 items-center">
           <Link 
             to="/" 
@@ -157,7 +150,6 @@ export function Header() {
           )}
         </nav>
 
-        {/* Mobile Menu Button */}
         <div className="md:hidden flex items-center">
           <Button 
             variant="ghost" 
@@ -174,15 +166,9 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur-lg shadow-lg animate-fade-in">
           <nav className="flex flex-col p-6 space-y-4">
-            {/* User Greeting - Mobile */}
-            <div className="mb-2">
-              <UserGreeting />
-            </div>
-            
             <Link 
               to="/" 
               className={cn(

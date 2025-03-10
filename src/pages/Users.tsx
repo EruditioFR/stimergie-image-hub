@@ -5,6 +5,7 @@ import { UsersHeader } from "@/components/users/UsersHeader";
 import { UsersList } from "@/components/users/UsersList";
 import { UserForm } from "@/components/users/UserForm";
 import { Header } from "@/components/ui/layout/Header";
+import { UserGreetingBar } from "@/components/ui/UserGreetingBar";
 
 export type User = {
   id: string;
@@ -30,7 +31,6 @@ export default function Users() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Charger la liste des utilisateurs
   useEffect(() => {
     async function fetchUsers() {
       try {
@@ -68,7 +68,6 @@ export default function Users() {
           return;
         }
         
-        // Transformer les données pour inclure le nom du client
         const formattedUsers = data.map(user => ({
           ...user,
           client_name: user.clients ? user.clients.nom : null
@@ -82,7 +81,6 @@ export default function Users() {
       }
     }
     
-    // Charger la liste des clients pour le filtre
     async function fetchClients() {
       try {
         const { data, error } = await supabase
@@ -107,10 +105,9 @@ export default function Users() {
 
   const handleAddUser = async (userData: Omit<User, 'id'>) => {
     try {
-      // Utiliser la fonction create_user_with_profile de Supabase
       const { data, error } = await supabase.rpc('create_user_with_profile', {
         email: userData.email,
-        password: Math.random().toString(36).slice(-8), // Mot de passe temporaire aléatoire
+        password: Math.random().toString(36).slice(-8),
         first_name: userData.first_name || '',
         last_name: userData.last_name || '',
         role: userData.role,
@@ -127,7 +124,6 @@ export default function Users() {
         return;
       }
       
-      // Récupérer l'utilisateur nouvellement créé
       const { data: newUser, error: fetchError } = await supabase
         .from("profiles")
         .select(`
@@ -145,7 +141,6 @@ export default function Users() {
       if (fetchError) {
         console.error("Erreur lors de la récupération du nouvel utilisateur:", fetchError);
       } else {
-        // Ajouter l'utilisateur à la liste
         setUsers(prev => [...prev, {
           ...newUser,
           client_name: newUser.clients ? newUser.clients.nom : null
@@ -157,7 +152,6 @@ export default function Users() {
         description: "L'utilisateur a été créé avec succès"
       });
       
-      // Fermer le formulaire
       setShowAddForm(false);
     } catch (err) {
       console.error("Erreur inattendue:", err);
@@ -169,7 +163,6 @@ export default function Users() {
     }
   };
 
-  // Les rôles disponibles pour le filtre
   const roles = [
     { value: "user", label: "Utilisateur" },
     { value: "admin_client", label: "Admin Client" },
@@ -179,14 +172,12 @@ export default function Users() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Page header */}
+      <UserGreetingBar />
       <Header />
       
-      {/* Users page header */}
       <UsersHeader onAddClick={() => setShowAddForm(true)} />
       
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12">
-        {/* Formulaire d'ajout (conditionnel) */}
         {showAddForm && (
           <UserForm 
             clients={clients}
@@ -195,9 +186,7 @@ export default function Users() {
           />
         )}
         
-        {/* Filtres */}
         <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Filtre par client */}
           <div>
             <label htmlFor="client-filter" className="block text-sm font-medium mb-2">
               Filtrer par client
@@ -217,7 +206,6 @@ export default function Users() {
             </select>
           </div>
           
-          {/* Filtre par rôle */}
           <div>
             <label htmlFor="role-filter" className="block text-sm font-medium mb-2">
               Filtrer par rôle
@@ -238,7 +226,6 @@ export default function Users() {
           </div>
         </div>
         
-        {/* Liste des utilisateurs */}
         <UsersList users={users} loading={loading} />
       </main>
     </div>

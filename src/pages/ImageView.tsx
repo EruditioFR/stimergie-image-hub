@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
 import { ImageDetail } from '@/components/ImageDetail';
+import { UserGreetingBar } from '@/components/ui/UserGreetingBar';
 
 const ImageView = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,7 @@ const ImageView = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <UserGreetingBar />
       <Header />
       
       <main className="flex-grow pt-20">

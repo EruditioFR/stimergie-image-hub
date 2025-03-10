@@ -71,7 +71,7 @@ export function UserGreeting() {
     fetchProfileData();
   }, [user]);
   
-  // Si pas d'utilisateur, ne rien afficher
+  // If pas d'utilisateur, ne rien afficher
   if (!user) return null;
   
   // Afficher les données utilisateur pour le débogage
@@ -80,14 +80,14 @@ export function UserGreeting() {
   
   if (loading) {
     return (
-      <div className="text-sm font-medium text-muted-foreground animate-pulse">
+      <div className="text-sm font-medium text-primary/80 animate-pulse">
         Chargement...
       </div>
     );
   }
   
   return (
-    <div className="text-sm font-medium text-muted-foreground">
+    <div className="text-sm font-medium text-primary-foreground">
       Bonjour {firstName} ({role})
     </div>
   );
