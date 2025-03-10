@@ -1,5 +1,5 @@
 
-import { useState, useRef, ChangeEvent, useEffect } from 'react';
+import { useState, useRef, ChangeEvent, useEffect, KeyboardEvent } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -15,10 +15,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Upload, X, Loader2, ImagePlus, Tag } from 'lucide-react';
+import { Upload, X, Loader2, ImagePlus, Tag, PlusCircle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
 
 interface Project {
   id: string;
@@ -50,6 +51,8 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [tagError, setTagError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [newTag, setNewTag] = useState<string>('');
+  const tagInputRef = useRef<HTMLInputElement>(null);
 
   // Get Supabase URL and key from environment variables
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://mjhbugzaqmtfnbxaqpss.supabase.co";
@@ -113,6 +116,7 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
     setSuggestedTags([]);
     setSelectedProject('');
     setTagError(null);
+    setNewTag('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -236,6 +240,26 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
       setTags(tags.filter(t => t !== tag));
     } else {
       setTags([...tags, tag]);
+    }
+  };
+
+  const addNewTag = () => {
+    const trimmedTag = newTag.trim();
+    if (trimmedTag && !tags.includes(trimmedTag)) {
+      setTags([...tags, trimmedTag]);
+      setNewTag('');
+      // Focus back on the input for better UX
+      if (tagInputRef.current) {
+        tagInputRef.current.focus();
+      }
+    }
+  };
+
+  const handleTagInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    // Handle Enter key press
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addNewTag();
     }
   };
 
@@ -460,6 +484,34 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
                     <p className="text-sm text-muted-foreground">Aucun tag sélectionné</p>
                   )}
                 </div>
+              </div>
+
+              {/* New manual tag input section */}
+              <div>
+                <Label htmlFor="newTag">Ajouter un tag manuellement</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Input
+                    id="newTag"
+                    ref={tagInputRef}
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyDown={handleTagInputKeyDown}
+                    placeholder="Saisissez un tag et appuyez sur Entrée"
+                    maxLength={30}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={addNewTag}
+                    disabled={!newTag.trim()}
+                  >
+                    <PlusCircle className="h-4 w-4 mr-1" />
+                    Ajouter
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Appuyez sur Entrée ou cliquez sur Ajouter pour valider un tag
+                </p>
               </div>
               
               {analyzing ? (
