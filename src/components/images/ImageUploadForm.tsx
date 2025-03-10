@@ -1,3 +1,4 @@
+
 import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -46,7 +47,7 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Get Supabase URL from the client configuration
+  // Get Supabase URL and key from environment variables
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://mjhbugzaqmtfnbxaqpss.supabase.co";
   const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qaGJ1Z3phcW10Zm5ieGFxcHNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEzODU2MDQsImV4cCI6MjA1Njk2MTYwNH0.JLcLHyBk3G0wO6MuhJ4WMqv8ImbGxmcExEzGG2xWIsk";
 
@@ -158,8 +159,8 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
   const analyzeImage = async (imageUrl: string) => {
     try {
       setAnalyzing(true);
-      // Call the Supabase Edge Function for image analysis
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/analyze-image`, {
+      // Call the Supabase Edge Function for image analysis with OpenAI
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/analyze-image-ai`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -262,176 +263,179 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
         // Don't reset form immediately to prevent UI flicker
       }
     }}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Ajouter une nouvelle image</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="mt-4 space-y-5">
-          {!preview ? (
-            <div 
-              className="border-2 border-dashed rounded-lg p-12 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <ImagePlus className="h-10 w-10 mx-auto text-muted-foreground" />
-              <p className="mt-2 text-sm text-muted-foreground">
-                Cliquez ou glissez-déposez une image
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                onChange={handleFileChange}
-                accept="image/*"
-                className="hidden"
-              />
-            </div>
-          ) : (
-            <div className="relative">
-              <img 
-                src={preview} 
-                alt="Aperçu" 
-                className="w-full rounded-lg max-h-[300px] object-contain bg-muted/30"
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="destructive"
-                className="absolute top-2 right-2"
-                onClick={() => {
-                  if (preview) URL.revokeObjectURL(preview);
-                  setPreview(null);
-                  setFile(null);
-                  if (fileInputRef.current) fileInputRef.current.value = '';
-                }}
+        <ScrollArea className="flex-grow pr-4">
+          <form onSubmit={handleSubmit} className="mt-4 space-y-5">
+            {!preview ? (
+              <div 
+                className="border-2 border-dashed rounded-lg p-12 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
               >
-                <X className="h-4 w-4" />
-              </Button>
-              
-              {dimensions && (
-                <div className="mt-2 text-sm text-muted-foreground flex items-center gap-4">
-                  <span>Dimensions: {dimensions.width} × {dimensions.height}</span>
-                  <span>Orientation: {orientation}</span>
-                </div>
-              )}
-            </div>
-          )}
-          
-          <div className="grid gap-4">
-            <div>
-              <Label htmlFor="project">Projet</Label>
-              <Select
-                value={selectedProject}
-                onValueChange={setSelectedProject}
-                disabled={isLoadingProjects}
-              >
-                <SelectTrigger id="project" className="w-full">
-                  <SelectValue placeholder={isLoadingProjects ? "Chargement des projets..." : "Sélectionner un projet"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.length > 0 ? (
-                    projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.nom_projet}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="no-projects" disabled>
-                      Aucun projet disponible
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label htmlFor="title">Titre</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="description">Description (optionnelle)</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
-            
-            <div>
-              <Label>Tags</Label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {tags.map((tag, index) => (
-                  <Badge 
-                    key={index} 
-                    variant="secondary" 
-                    className="cursor-pointer"
-                    onClick={() => toggleTag(tag)}
-                  >
-                    {tag} <X className="ml-1 h-3 w-3" />
-                  </Badge>
-                ))}
+                <ImagePlus className="h-10 w-10 mx-auto text-muted-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Cliquez ou glissez-déposez une image
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
               </div>
-            </div>
-            
-            {analyzing ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                <span>Analyse de l'image en cours...</span>
-              </div>
-            ) : suggestedTags.length > 0 ? (
-              <div>
-                <Label>Tags suggérés</Label>
-                <ScrollArea className="h-24 mt-2 p-2 border rounded-lg">
-                  <div className="flex flex-wrap gap-2">
-                    {suggestedTags.map((tag, index) => (
-                      <Badge 
-                        key={index} 
-                        variant={tags.includes(tag) ? "default" : "outline"} 
-                        className="cursor-pointer"
-                        onClick={() => toggleTag(tag)}
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
+            ) : (
+              <div className="relative">
+                <img 
+                  src={preview} 
+                  alt="Aperçu" 
+                  className="w-full rounded-lg max-h-[300px] object-contain bg-muted/30"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  className="absolute top-2 right-2"
+                  onClick={() => {
+                    if (preview) URL.revokeObjectURL(preview);
+                    setPreview(null);
+                    setFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                
+                {dimensions && (
+                  <div className="mt-2 text-sm text-muted-foreground flex items-center gap-4">
+                    <span>Dimensions: {dimensions.width} × {dimensions.height}</span>
+                    <span>Orientation: {orientation}</span>
                   </div>
-                </ScrollArea>
+                )}
               </div>
-            ) : null}
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onClose}
-              disabled={uploading}
-            >
-              Annuler
-            </Button>
-            <Button 
-              type="submit"
-              disabled={!file || !selectedProject || uploading}
-            >
-              {uploading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Envoi en cours...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Télécharger
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
+            )}
+            
+            <div className="grid gap-4">
+              <div>
+                <Label htmlFor="project">Projet</Label>
+                <Select
+                  value={selectedProject}
+                  onValueChange={setSelectedProject}
+                  disabled={isLoadingProjects}
+                >
+                  <SelectTrigger id="project" className="w-full">
+                    <SelectValue placeholder={isLoadingProjects ? "Chargement des projets..." : "Sélectionner un projet"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.length > 0 ? (
+                      projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.nom_projet}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-projects" disabled>
+                        Aucun projet disponible
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="title">Titre</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="description">Description (optionnelle)</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              
+              <div>
+                <Label>Tags</Label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {tags.map((tag, index) => (
+                    <Badge 
+                      key={index} 
+                      variant="secondary" 
+                      className="cursor-pointer"
+                      onClick={() => toggleTag(tag)}
+                    >
+                      {tag} <X className="ml-1 h-3 w-3" />
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              
+              {analyzing ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  <span>Analyse de l'image en cours...</span>
+                </div>
+              ) : suggestedTags.length > 0 ? (
+                <div>
+                  <Label>Tags suggérés</Label>
+                  <ScrollArea className="h-24 mt-2 p-2 border rounded-lg">
+                    <div className="flex flex-wrap gap-2">
+                      {suggestedTags.map((tag, index) => (
+                        <Badge 
+                          key={index} 
+                          variant={tags.includes(tag) ? "default" : "outline"} 
+                          className="cursor-pointer"
+                          onClick={() => toggleTag(tag)}
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              ) : null}
+            </div>
+          </form>
+        </ScrollArea>
+        
+        <DialogFooter className="mt-6 pt-2 border-t">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onClose}
+            disabled={uploading}
+          >
+            Annuler
+          </Button>
+          <Button 
+            type="submit"
+            disabled={!file || !selectedProject || uploading}
+            onClick={handleSubmit}
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Envoi en cours...
+              </>
+            ) : (
+              <>
+                <Upload className="mr-2 h-4 w-4" />
+                Télécharger
+              </>
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
