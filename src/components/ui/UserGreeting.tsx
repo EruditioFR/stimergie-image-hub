@@ -9,14 +9,10 @@ export function UserGreeting() {
   const [role, setRole] = useState("utilisateur");
   const [loading, setLoading] = useState(true);
   
-  // Si pas d'utilisateur, ne rien afficher
-  if (!user) return null;
-  
-  // Afficher les données utilisateur pour le débogage
-  console.log("User data:", user);
-  console.log("User metadata:", user.user_metadata);
-  
   useEffect(() => {
+    // Ne pas exécuter l'effet si l'utilisateur n'est pas connecté
+    if (!user) return;
+    
     async function fetchProfileData() {
       try {
         setLoading(true);
@@ -74,6 +70,13 @@ export function UserGreeting() {
     
     fetchProfileData();
   }, [user]);
+  
+  // Si pas d'utilisateur, ne rien afficher
+  if (!user) return null;
+  
+  // Afficher les données utilisateur pour le débogage
+  console.log("User data:", user);
+  console.log("User metadata:", user.user_metadata);
   
   if (loading) {
     return (
