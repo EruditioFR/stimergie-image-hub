@@ -35,7 +35,7 @@ const App = () => (
               <Route 
                 path="/images" 
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
                     <Images />
                   </ProtectedRoute>
                 } 

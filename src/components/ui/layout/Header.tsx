@@ -1,10 +1,12 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Menu, X, Users, LogIn, LogOut, UserCircle, FolderOpen } from 'lucide-react';
+import { Search, Menu, X, Users, LogIn, LogOut, UserCircle, FolderOpen, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -15,8 +17,11 @@ export function Header() {
     userRole,
     signOut
   } = useAuth();
+  
   const isHomePage = location.pathname === "/";
   const canAccessClientsPage = userRole === 'admin';
+  const canAccessImagesPage = userRole === 'admin' || userRole === 'admin_client';
+  
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -24,13 +29,16 @@ export function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+  
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location]);
+  
   const handleLogout = async () => {
     await signOut();
     navigate('/');
   };
+  
   return <header className={cn("transition-all duration-300 px-6 py-4", isHomePage ? isScrolled ? "bg-background/80 backdrop-blur-md text-foreground" : "bg-transparent text-white" : "bg-background text-foreground")}>
       <div className="max-w-7xl mx-auto flex items-center justify-between py-[21px]">
         <Link to="/" className="transition-opacity hover:opacity-80">
@@ -63,6 +71,12 @@ export function Header() {
                   Utilisateurs
                 </span>
               </Link>
+              {canAccessImagesPage && <Link to="/images" className={cn("text-sm font-medium transition-colors hover:text-primary", location.pathname === "/images" ? "text-primary" : "text-foreground/80")}>
+                <span className="flex items-center gap-1">
+                  <Image className="h-4 w-4" />
+                  Images
+                </span>
+              </Link>}
             </>}
           <Link to="/about" className="text-sm font-medium transition-colors hover:text-primary text-foreground/80">
             À propos
@@ -89,6 +103,9 @@ export function Header() {
                 <DropdownMenuItem asChild>
                   <Link to="/projects" className="cursor-pointer">Projets</Link>
                 </DropdownMenuItem>
+                {canAccessImagesPage && <DropdownMenuItem asChild>
+                  <Link to="/images" className="cursor-pointer">Images</Link>
+                </DropdownMenuItem>}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500">
                   <LogOut className="h-4 w-4 mr-2" />
@@ -139,6 +156,12 @@ export function Header() {
                     Utilisateurs
                   </span>
                 </Link>
+                {canAccessImagesPage && <Link to="/images" className={cn("text-base font-medium py-2 transition-colors", location.pathname === "/images" ? "text-primary" : "text-foreground/80")}>
+                  <span className="flex items-center gap-2">
+                    <Image className="h-4 w-4" />
+                    Images
+                  </span>
+                </Link>}
               </>}
             <Link to="/about" className="text-base font-medium py-2 transition-colors text-foreground/80">
               À propos
@@ -160,4 +183,5 @@ export function Header() {
         </div>}
     </header>;
 }
+
 export default Header;

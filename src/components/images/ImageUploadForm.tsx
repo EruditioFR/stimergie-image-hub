@@ -1,5 +1,4 @@
-
-import { useState, useRef, ChangeEvent } from 'react';
+import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -16,14 +15,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Upload, X, Loader2, ImagePlus } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+interface Project {
+  id: string;
+  nom_projet: string;
+}
 
 interface ImageUploadFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  userRole?: string;
 }
 
-export function ImageUploadForm({ isOpen, onClose, onSuccess }: ImageUploadFormProps) {
+export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' }: ImageUploadFormProps) {
   const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -35,11 +41,61 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess }: ImageUploadFormP
   const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string>('');
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get Supabase URL from the client configuration
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://mjhbugzaqmtfnbxaqpss.supabase.co";
   const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qaGJ1Z3phcW10Zm5ieGFxcHNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEzODU2MDQsImV4cCI6MjA1Njk2MTYwNH0.JLcLHyBk3G0wO6MuhJ4WMqv8ImbGxmcExEzGG2xWIsk";
+
+  useEffect(() => {
+    if (isOpen && user) {
+      fetchProjects();
+    }
+  }, [isOpen, user]);
+
+  const fetchProjects = async () => {
+    if (!user) return;
+    
+    setIsLoadingProjects(true);
+    try {
+      let query = supabase
+        .from('projets')
+        .select('id, nom_projet');
+      
+      // If user is admin_client, only show projects from their client
+      if (userRole === 'admin_client') {
+        // Get the user's client ID
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id_client')
+          .eq('id', user.id)
+          .single();
+          
+        if (profileError) throw profileError;
+        
+        if (profileData?.id_client) {
+          query = query.eq('id_client', profileData.id_client);
+        }
+      }
+      
+      const { data, error } = await query.order('nom_projet');
+      
+      if (error) throw error;
+      
+      setProjects(data || []);
+      // Auto-select the first project if there's only one
+      if (data && data.length === 1) {
+        setSelectedProject(data[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setIsLoadingProjects(false);
+    }
+  };
 
   const resetForm = () => {
     setTitle('');
@@ -50,6 +106,7 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess }: ImageUploadFormP
     setOrientation('landscape');
     setTags([]);
     setSuggestedTags([]);
+    setSelectedProject('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -134,7 +191,7 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess }: ImageUploadFormP
   };
 
   const uploadImage = async () => {
-    if (!file || !dimensions || !user) return;
+    if (!file || !dimensions || !user || !selectedProject) return;
     
     try {
       setUploading(true);
@@ -172,7 +229,7 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess }: ImageUploadFormP
           orientation: orientation,
           tags: tags.length > 0 ? tags : null,
           created_by: user.id,
-          id_projet: '11111111-1111-1111-1111-111111111111', // Default project ID
+          id_projet: selectedProject,
         });
       
       if (insertError) {
@@ -261,6 +318,32 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess }: ImageUploadFormP
           
           <div className="grid gap-4">
             <div>
+              <Label htmlFor="project">Projet</Label>
+              <Select
+                value={selectedProject}
+                onValueChange={setSelectedProject}
+                disabled={isLoadingProjects}
+              >
+                <SelectTrigger id="project" className="w-full">
+                  <SelectValue placeholder={isLoadingProjects ? "Chargement des projets..." : "Sélectionner un projet"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.length > 0 ? (
+                    projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.nom_projet}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-projects" disabled>
+                      Aucun projet disponible
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
               <Label htmlFor="title">Titre</Label>
               <Input
                 id="title"
@@ -333,7 +416,7 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess }: ImageUploadFormP
             </Button>
             <Button 
               type="submit"
-              disabled={!file || uploading}
+              disabled={!file || !selectedProject || uploading}
             >
               {uploading ? (
                 <>

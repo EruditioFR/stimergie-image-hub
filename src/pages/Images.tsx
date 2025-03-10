@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
 import { ImageUploadForm } from '@/components/images/ImageUploadForm';
@@ -31,14 +31,54 @@ export interface Image {
 const Images = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('card');
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const { toast } = useToast();
 
   const fetchImages = async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from('images')
       .select('*')
       .order('created_at', { ascending: false });
+      
+    // If the user is admin_client, only show images from their client's projects
+    if (userRole === 'admin_client') {
+      // First, get the user's client ID from their profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id_client')
+        .eq('id', user?.id)
+        .single();
+        
+      if (profileError) {
+        throw profileError;
+      }
+      
+      // If they have a client ID, filter images by projects belonging to that client
+      if (profileData?.id_client) {
+        // Get all projects for this client
+        const { data: projectsData, error: projectsError } = await supabase
+          .from('projets')
+          .select('id')
+          .eq('id_client', profileData.id_client);
+          
+        if (projectsError) {
+          throw projectsError;
+        }
+        
+        // Extract project IDs
+        const projectIds = projectsData.map(project => project.id);
+        
+        // Filter images by these project IDs
+        if (projectIds.length > 0) {
+          query = query.in('id_projet', projectIds);
+        } else {
+          // If no projects, return empty array (no images)
+          return [];
+        }
+      }
+    }
+    
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching images:', error);
@@ -54,7 +94,7 @@ const Images = () => {
   };
 
   const { data: images, isLoading, refetch } = useQuery({
-    queryKey: ['images'],
+    queryKey: ['images', userRole],
     queryFn: fetchImages,
   });
 
@@ -119,6 +159,7 @@ const Images = () => {
         isOpen={isUploadOpen} 
         onClose={() => setIsUploadOpen(false)}
         onSuccess={handleUploadSuccess}
+        userRole={userRole}
       />
       
       <Footer />
