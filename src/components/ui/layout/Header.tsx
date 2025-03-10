@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Menu, X, Users, LogIn, LogOut, UserCircle, FolderOpen } from 'lucide-react';
@@ -73,21 +74,17 @@ export function Header() {
           >
             Accueil
           </Link>
-          <Link 
-            to="/gallery" 
-            className={cn(
-              "text-sm font-medium transition-colors hover:text-primary",
-              location.pathname.includes("/gallery") ? "text-primary" : "text-foreground/80"
-            )}
-          >
-            Banque d'images
-          </Link>
-          <Link 
-            to="/about" 
-            className="text-sm font-medium transition-colors hover:text-primary text-foreground/80"
-          >
-            À propos
-          </Link>
+          {user && (
+            <Link 
+              to="/gallery" 
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-primary",
+                location.pathname.includes("/gallery") ? "text-primary" : "text-foreground/80"
+              )}
+            >
+              Banque d'images
+            </Link>
+          )}
           {user && (
             <>
               {canAccessClientsPage && (
@@ -130,6 +127,12 @@ export function Header() {
               </Link>
             </>
           )}
+          <Link 
+            to="/about" 
+            className="text-sm font-medium transition-colors hover:text-primary text-foreground/80"
+          >
+            À propos
+          </Link>
           <Button variant="ghost" size="icon" className="ml-2">
             <Search className="h-4 w-4" />
           </Button>
@@ -206,21 +209,17 @@ export function Header() {
             >
               Accueil
             </Link>
-            <Link 
-              to="/gallery" 
-              className={cn(
-                "text-base font-medium py-2 transition-colors",
-                location.pathname.includes("/gallery") ? "text-primary" : "text-foreground/80"
-              )}
-            >
-              Banque d'images
-            </Link>
-            <Link 
-              to="/about" 
-              className="text-base font-medium py-2 transition-colors text-foreground/80"
-            >
-              À propos
-            </Link>
+            {user && (
+              <Link 
+                to="/gallery" 
+                className={cn(
+                  "text-base font-medium py-2 transition-colors",
+                  location.pathname.includes("/gallery") ? "text-primary" : "text-foreground/80"
+                )}
+              >
+                Banque d'images
+              </Link>
+            )}
             {user && (
               <>
                 {canAccessClientsPage && (
@@ -263,6 +262,12 @@ export function Header() {
                 </Link>
               </>
             )}
+            <Link 
+              to="/about" 
+              className="text-base font-medium py-2 transition-colors text-foreground/80"
+            >
+              À propos
+            </Link>
             
             <div className="relative mt-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

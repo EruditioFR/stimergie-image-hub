@@ -1,8 +1,10 @@
 
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
+  const { user } = useAuth();
 
   return (
     <footer className="w-full bg-background border-t border-border mt-20">
@@ -29,11 +31,13 @@ export function Footer() {
                   Accueil
                 </Link>
               </li>
-              <li>
-                <Link to="/gallery" className="text-foreground/80 hover:text-primary transition-colors">
-                  Banque d'images
-                </Link>
-              </li>
+              {user && (
+                <li>
+                  <Link to="/gallery" className="text-foreground/80 hover:text-primary transition-colors">
+                    Banque d'images
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link to="/about" className="text-foreground/80 hover:text-primary transition-colors">
                   À propos
