@@ -50,9 +50,11 @@ export function LazyImage({
   return (
     <div 
       ref={imgRef}
-      className={cn("lazy-image overflow-hidden", aspectRatio, className)}
+      className={cn("lazy-image overflow-hidden relative", aspectRatio, className)}
     >
-      <div className="lazy-image-placeholder animate-pulse" />
+      {/* Placeholder that shows until image loads */}
+      <div className="lazy-image-placeholder animate-pulse absolute inset-0 bg-muted/50" />
+      
       {isInView && (
         <img
           src={src}
@@ -60,7 +62,7 @@ export function LazyImage({
           className={cn(
             "lazy-image-actual w-full h-full transition-opacity duration-500",
             objectFit,
-            isLoaded ? "loaded" : ""
+            isLoaded ? "opacity-100" : "opacity-0"
           )}
           onLoad={handleImageLoad}
         />
