@@ -13,16 +13,16 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl } = await req.json();
+    const { imageBase64 } = await req.json();
 
-    if (!imageUrl) {
+    if (!imageBase64) {
       return new Response(
-        JSON.stringify({ error: "Image URL is required" }),
+        JSON.stringify({ error: "Image data is required" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
 
-    console.log("Received request to analyze image:", imageUrl.substring(0, 50) + "...");
+    console.log("Received request to analyze image with base64 data");
 
     // Get OpenAI API key from environment variables
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
@@ -48,13 +48,18 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are a helpful image tagging assistant. Generate 5-10 relevant tags for the image URL provided. Return only an array of tags in French, with no additional text or explanation."
+            content: "You are a helpful image tagging assistant. Generate 5-10 relevant tags for the image provided. Return only an array of tags in French, with no additional text or explanation."
           },
           {
             role: "user",
             content: [
               { type: "text", text: "Generate tags for this image:" },
-              { type: "image_url", image_url: { url: imageUrl } }
+              { 
+                type: "image_url", 
+                image_url: { 
+                  url: `data:image/jpeg;base64,${imageBase64}`
+                } 
+              }
             ]
           }
         ],

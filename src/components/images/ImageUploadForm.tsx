@@ -155,19 +155,39 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
       }
       
       // After getting dimensions, analyze the image to suggest tags
-      analyzeImage(previewUrl);
+      analyzeImage(selectedFile);
     };
     
     img.src = previewUrl;
   };
 
-  const analyzeImage = async (imageUrl: string) => {
+  // Convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          // Extract the base64 part from the data URL
+          const base64String = reader.result.split(',')[1];
+          resolve(base64String);
+        } else {
+          reject(new Error('Failed to convert file to base64'));
+        }
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const analyzeImage = async (imageFile: File) => {
     setAnalyzing(true);
     setTagError(null);
     setSuggestedTags([]);
     
     try {
-      console.log("Analyzing image with URL:", imageUrl);
+      console.log("Converting image to base64...");
+      const base64Data = await fileToBase64(imageFile);
+      console.log("Image converted to base64");
       
       // Call the Supabase Edge Function for image analysis with OpenAI
       const response = await fetch(`${SUPABASE_URL}/functions/v1/analyze-image-ai`, {
@@ -176,7 +196,7 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
         },
-        body: JSON.stringify({ imageUrl })
+        body: JSON.stringify({ imageBase64: base64Data })
       });
       
       if (!response.ok) {
@@ -190,6 +210,8 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
       
       if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
         setSuggestedTags(data.tags);
+        // Auto-select the tags
+        setTags(data.tags);
       } else {
         console.warn("No tags returned from AI function");
         setTagError("Aucun tag n'a pu être généré. Essayez d'ajouter des tags manuellement.");
@@ -222,6 +244,16 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
     
     try {
       setUploading(true);
+      
+      // Create the storage bucket if it doesn't exist
+      const { error: bucketError } = await supabase.storage.createBucket('images', {
+        public: true,
+        fileSizeLimit: 10485760, // 10MB
+      });
+      
+      if (bucketError && bucketError.message !== 'Bucket already exists') {
+        throw bucketError;
+      }
       
       // Get a unique filename for the upload
       const fileExt = file.name.split('.').pop();
