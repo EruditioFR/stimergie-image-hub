@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface Client {
   id?: string;
   nom: string;
-  email?: string; // Make email optional since it's not in the database
+  email?: string;
   telephone?: string;
   entreprise?: string;
   notes?: string;
@@ -50,8 +50,10 @@ export default function Clients() {
         const mappedClients: Client[] = data.map(client => ({
           id: client.id,
           nom: client.nom,
+          email: client.email, // Include the email field from database
           secteur_activite: client.secteur_activite,
           contact_principal: client.contact_principal,
+          telephone: client.telephone, // Add telephone if it exists in your table
           created_at: client.created_at,
           updated_at: client.updated_at,
           // Map database fields to our Client interface fields
@@ -80,6 +82,7 @@ export default function Clients() {
         .insert([
           { 
             nom: client.nom,
+            email: client.email, // Include email field in the insert
             telephone: client.telephone,
             secteur_activite: client.entreprise, // Mapping entreprise à secteur_activite
             contact_principal: client.notes      // Mapping notes à contact_principal
@@ -96,12 +99,12 @@ export default function Clients() {
         const newClient: Client = {
           id: data[0].id,
           nom: data[0].nom,
-          telephone: client.telephone,
+          email: data[0].email, // Include email from database response
+          telephone: data[0].telephone,
           entreprise: data[0].secteur_activite,
           notes: data[0].contact_principal,
           secteur_activite: data[0].secteur_activite,
           contact_principal: data[0].contact_principal,
-          email: client.email, // Keep the email from the form
           created_at: data[0].created_at,
           updated_at: data[0].updated_at
         };
