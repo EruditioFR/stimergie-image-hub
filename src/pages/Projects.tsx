@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Header } from "@/components/ui/layout/Header";
 import { Footer } from "@/components/ui/layout/Footer";
@@ -9,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { UserGreetingBar } from "@/components/ui/UserGreetingBar";
+import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,14 +20,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// Project interface matching the database schema
 export interface Project {
   id?: string;
   nom_projet: string;
   type_projet?: string;
   id_client: string;
   created_at?: string;
-  client_name?: string; // For displaying client name in the list
+  client_name?: string;
 }
 
 export default function Projects() {
@@ -38,9 +37,9 @@ export default function Projects() {
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("card");
   const { toast: uiToast } = useToast();
 
-  // Scroll to top on page load
   useEffect(() => {
     window.scrollTo(0, 0);
     fetchProjects();
@@ -50,7 +49,6 @@ export default function Projects() {
     try {
       setLoading(true);
       
-      // Fetch projects with client names using a join query
       const { data, error } = await supabase
         .from('projets')
         .select(`
@@ -64,7 +62,6 @@ export default function Projects() {
       }
       
       if (data) {
-        // Transform the data to include client name directly in the project object
         const mappedProjects: Project[] = data.map(project => ({
           id: project.id,
           nom_projet: project.nom_projet,
@@ -153,14 +150,12 @@ export default function Projects() {
         throw error;
       }
       
-      // Get the updated client name
       const { data: clientData } = await supabase
         .from('clients')
         .select('nom')
         .eq('id', project.id_client)
         .single();
       
-      // Update project in local state
       setProjects(prevProjects => 
         prevProjects.map(p => 
           p.id === project.id ? {
@@ -199,7 +194,6 @@ export default function Projects() {
         throw error;
       }
       
-      // Remove project from local state
       setProjects(prevProjects => prevProjects.filter(p => p.id !== projectToDelete));
       toast.success("Le projet a été supprimé avec succès.");
     } catch (error) {
@@ -241,12 +235,18 @@ export default function Projects() {
               }} 
             />
           ) : (
-            <ProjectsList 
-              projects={projects} 
-              loading={loading} 
-              onEdit={handleEditProject}
-              onDelete={handleDeleteProject}
-            />
+            <>
+              <div className="flex justify-end mb-6">
+                <ViewToggle currentView={viewMode} onViewChange={setViewMode} />
+              </div>
+              <ProjectsList 
+                projects={projects} 
+                loading={loading} 
+                onEdit={handleEditProject}
+                onDelete={handleDeleteProject}
+                viewMode={viewMode}
+              />
+            </>
           )}
         </div>
       </div>

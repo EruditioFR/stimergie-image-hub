@@ -1,4 +1,3 @@
-
 import { Header } from "@/components/ui/layout/Header";
 import { Footer } from "@/components/ui/layout/Footer";
 import { ClientsHeader } from "@/components/clients/ClientsHeader";
@@ -9,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { UserGreetingBar } from "@/components/ui/UserGreetingBar";
+import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +20,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// Update the Client interface to match the Supabase data structure
 export interface Client {
   id?: string;
   nom: string;
@@ -42,9 +41,9 @@ export default function Clients() {
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("card");
   const { toast: uiToast } = useToast();
 
-  // Scroll to top on page load
   useEffect(() => {
     window.scrollTo(0, 0);
     fetchClients();
@@ -63,17 +62,15 @@ export default function Clients() {
       }
       
       if (data) {
-        // Map the Supabase data to our Client interface
         const mappedClients: Client[] = data.map(client => ({
           id: client.id,
           nom: client.nom,
-          email: client.email, // Include the email field from database
+          email: client.email,
           secteur_activite: client.secteur_activite,
           contact_principal: client.contact_principal,
-          telephone: client.telephone, // Add telephone field that we've now added to the table
+          telephone: client.telephone,
           created_at: client.created_at,
           updated_at: client.updated_at,
-          // Map database fields to our Client interface fields
           entreprise: client.secteur_activite,
           notes: client.contact_principal
         }));
@@ -99,10 +96,10 @@ export default function Clients() {
         .insert([
           { 
             nom: client.nom,
-            email: client.email, // Include email field in the insert
-            telephone: client.telephone, // Include telephone field in the insert
-            secteur_activite: client.entreprise, // Mapping entreprise à secteur_activite
-            contact_principal: client.notes      // Mapping notes à contact_principal
+            email: client.email,
+            telephone: client.telephone,
+            secteur_activite: client.entreprise,
+            contact_principal: client.notes
           }
         ])
         .select();
@@ -113,12 +110,11 @@ export default function Clients() {
       }
       
       if (data) {
-        // Map the returned data to match our Client interface
         const newClient: Client = {
           id: data[0].id,
           nom: data[0].nom,
-          email: data[0].email, // Include email from database response
-          telephone: data[0].telephone, // Include telephone from database response
+          email: data[0].email,
+          telephone: data[0].telephone,
           entreprise: data[0].secteur_activite,
           notes: data[0].contact_principal,
           secteur_activite: data[0].secteur_activite,
@@ -161,7 +157,6 @@ export default function Clients() {
         throw error;
       }
       
-      // Update client in local state
       setClients(prevClients => 
         prevClients.map(c => 
           c.id === client.id ? {
@@ -200,7 +195,6 @@ export default function Clients() {
         throw error;
       }
       
-      // Remove client from local state
       setClients(prevClients => prevClients.filter(c => c.id !== clientToDelete));
       toast.success("Le client a été supprimé avec succès.");
     } catch (error) {
@@ -230,7 +224,7 @@ export default function Clients() {
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
       <UserGreetingBar />
-      <div className="pt-16"> {/* Ajout d'un padding-top pour éviter que le contenu soit caché par le header fixe */}
+      <div className="pt-16">
         <ClientsHeader 
           onAddClick={() => {
             setIsEditing(false);
@@ -246,12 +240,18 @@ export default function Clients() {
               onCancel={handleFormCancel} 
             />
           ) : (
-            <ClientsList 
-              clients={clients} 
-              loading={loading} 
-              onEdit={handleEditClient}
-              onDelete={handleDeleteClient}
-            />
+            <>
+              <div className="flex justify-end mb-6">
+                <ViewToggle currentView={viewMode} onViewChange={setViewMode} />
+              </div>
+              <ClientsList 
+                clients={clients} 
+                loading={loading} 
+                onEdit={handleEditClient}
+                onDelete={handleDeleteClient}
+                viewMode={viewMode}
+              />
+            </>
           )}
         </div>
       </div>
