@@ -45,9 +45,13 @@ export function UserForm({ clients, onSubmit, onCancel }: UserFormProps) {
     },
   });
 
+  // Fixed: Ensure all required properties are passed to onSubmit
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
     onSubmit({
-      ...values,
+      email: values.email,
+      first_name: values.first_name,
+      last_name: values.last_name,
+      role: values.role, // Ensure role is always provided
       // Convertir la chaîne vide en null pour id_client
       id_client: values.id_client === "" ? null : values.id_client,
     });
