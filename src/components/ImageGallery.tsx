@@ -77,6 +77,11 @@ export function ImageGallery({ title, subtitle, className, limit }: ImageGallery
     // Fetch images logic would go here
   }, []);
 
+  // Function to split images into columns for masonry layout
+  const getColumnImages = (columnIndex: number, columnCount: number) => {
+    return displayImages.filter((_, index) => index % columnCount === columnIndex);
+  };
+
   return (
     <div className={className}>
       {/* Gallery header */}
@@ -87,20 +92,64 @@ export function ImageGallery({ title, subtitle, className, limit }: ImageGallery
         </div>
       )}
 
-      {/* Image grid */}
+      {/* Masonry layout */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-        {displayImages.map((image, index) => (
-          <div 
-            key={image.id} 
-            className="animate-fade-up opacity-0" 
-            style={{ 
-              animationDelay: `${0.1 * index}s`, 
-              animationFillMode: 'forwards' 
-            }}
-          >
-            <ImageCard {...image} />
-          </div>
-        ))}
+        {/* First column */}
+        <div className="flex flex-col gap-6 md:gap-8">
+          {getColumnImages(0, 3).map((image, index) => (
+            <div 
+              key={image.id}
+              className="animate-fade-up opacity-0" 
+              style={{ 
+                animationDelay: `${0.1 * index}s`, 
+                animationFillMode: 'forwards' 
+              }}
+            >
+              <ImageCard 
+                {...image} 
+                className="h-full"
+              />
+            </div>
+          ))}
+        </div>
+        
+        {/* Second column */}
+        <div className="flex flex-col gap-6 md:gap-8">
+          {getColumnImages(1, 3).map((image, index) => (
+            <div 
+              key={image.id} 
+              className="animate-fade-up opacity-0" 
+              style={{ 
+                animationDelay: `${0.1 * (index + getColumnImages(0, 3).length)}s`, 
+                animationFillMode: 'forwards' 
+              }}
+            >
+              <ImageCard 
+                {...image} 
+                className="h-full"
+              />
+            </div>
+          ))}
+        </div>
+        
+        {/* Third column */}
+        <div className="hidden lg:flex flex-col gap-6 md:gap-8">
+          {getColumnImages(2, 3).map((image, index) => (
+            <div 
+              key={image.id} 
+              className="animate-fade-up opacity-0" 
+              style={{ 
+                animationDelay: `${0.1 * (index + getColumnImages(0, 3).length + getColumnImages(1, 3).length)}s`, 
+                animationFillMode: 'forwards' 
+              }}
+            >
+              <ImageCard 
+                {...image} 
+                className="h-full"
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Load more button */}

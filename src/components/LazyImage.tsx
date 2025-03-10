@@ -14,7 +14,7 @@ export function LazyImage({
   src,
   alt,
   className,
-  aspectRatio = "aspect-[4/3]",
+  aspectRatio,
   objectFit = "object-cover"
 }: LazyImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
