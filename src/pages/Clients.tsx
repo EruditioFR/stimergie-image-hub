@@ -1,4 +1,3 @@
-
 import { Header } from "@/components/ui/layout/Header";
 import { Footer } from "@/components/ui/layout/Footer";
 import { ClientsHeader } from "@/components/clients/ClientsHeader";
@@ -53,7 +52,7 @@ export default function Clients() {
           email: client.email, // Include the email field from database
           secteur_activite: client.secteur_activite,
           contact_principal: client.contact_principal,
-          telephone: client.telephone, // Add telephone if it exists in your table
+          telephone: client.telephone, // Add telephone field that we've now added to the table
           created_at: client.created_at,
           updated_at: client.updated_at,
           // Map database fields to our Client interface fields
@@ -83,7 +82,7 @@ export default function Clients() {
           { 
             nom: client.nom,
             email: client.email, // Include email field in the insert
-            telephone: client.telephone,
+            telephone: client.telephone, // Include telephone field in the insert
             secteur_activite: client.entreprise, // Mapping entreprise à secteur_activite
             contact_principal: client.notes      // Mapping notes à contact_principal
           }
@@ -100,7 +99,7 @@ export default function Clients() {
           id: data[0].id,
           nom: data[0].nom,
           email: data[0].email, // Include email from database response
-          telephone: data[0].telephone,
+          telephone: data[0].telephone, // Include telephone from database response
           entreprise: data[0].secteur_activite,
           notes: data[0].contact_principal,
           secteur_activite: data[0].secteur_activite,
