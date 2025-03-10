@@ -1,17 +1,25 @@
 
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Search, Menu, X, Users } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Search, Menu, X, Users, LogIn, LogOut, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
-// Simulation de l'état admin (à remplacer par votre logique d'authentification réelle)
-const isAdmin = true; // Cette valeur serait normalement déterminée par votre système d'authentification
+import { useAuth } from '@/context/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,6 +34,11 @@ export function Header() {
     // Close mobile menu when route changes
     setIsMobileMenuOpen(false);
   }, [location]);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <header 
@@ -77,7 +90,7 @@ export function Header() {
           >
             À propos
           </Link>
-          {isAdmin && (
+          {user && (
             <Link 
               to="/clients" 
               className={cn(
@@ -94,6 +107,36 @@ export function Header() {
           <Button variant="ghost" size="icon" className="ml-2">
             <Search className="h-4 w-4" />
           </Button>
+          
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="ml-2 rounded-full">
+                  <UserCircle className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="cursor-pointer">Profil</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/clients" className="cursor-pointer">Clients</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Déconnexion
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="default" size="sm" onClick={() => navigate('/auth')} className="ml-2">
+              <LogIn className="h-4 w-4 mr-2" />
+              Connexion
+            </Button>
+          )}
         </nav>
 
         {/* Mobile Menu Button */}
@@ -147,7 +190,7 @@ export function Header() {
             >
               À propos
             </Link>
-            {isAdmin && (
+            {user && (
               <Link 
                 to="/clients" 
                 className={cn(
@@ -169,6 +212,18 @@ export function Header() {
                 className="w-full pl-10 pr-4 py-2 rounded-full bg-muted text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
+            
+            {user ? (
+              <Button variant="destructive" onClick={handleLogout} className="mt-4">
+                <LogOut className="h-4 w-4 mr-2" />
+                Déconnexion
+              </Button>
+            ) : (
+              <Button variant="default" onClick={() => navigate('/auth')} className="mt-4">
+                <LogIn className="h-4 w-4 mr-2" />
+                Connexion
+              </Button>
+            )}
           </nav>
         </div>
       )}
