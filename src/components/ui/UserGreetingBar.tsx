@@ -9,7 +9,7 @@ export function UserGreetingBar() {
   if (!user) return null;
   
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-primary/10 py-1 text-center shadow-sm">
+    <div className="bg-primary/10 py-1 text-center shadow-sm">
       <UserGreeting />
     </div>
   );
