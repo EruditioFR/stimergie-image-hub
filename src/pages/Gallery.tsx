@@ -3,11 +3,11 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
-import { ImageCard } from '@/components/ImageCard';
-import { SearchBar } from '@/components/SearchBar';
 import { Button } from '@/components/ui/button';
 import { useImages } from '@/context/ImageContext';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { GalleryHeader } from '@/components/gallery/GalleryHeader';
+import { MasonryGrid } from '@/components/gallery/MasonryGrid';
+import { EmptyResults } from '@/components/gallery/EmptyResults';
 
 // Mock categories for filters
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
@@ -70,11 +70,6 @@ const Gallery = () => {
       setIsLoading(false);
     }, 1000);
   };
-
-  // Function to split images into columns for masonry layout
-  const getColumnImages = (columnIndex: number, columnCount: number) => {
-    return filteredImages.filter((_, index) => index % columnCount === columnIndex);
-  };
   
   // Page title based on filters
   const getPageTitle = () => {
@@ -91,107 +86,19 @@ const Gallery = () => {
       <Header />
       
       <main className="flex-grow pt-20">
-        {/* Gallery Header */}
-        <div className="bg-muted/30 border-b border-border">
-          <div className="max-w-7xl mx-auto px-6 py-16">
-            <h1 className="text-3xl font-bold mb-6">{getPageTitle()}</h1>
-            
-            <SearchBar className="mb-8" />
-            
-            {/* Category Tabs */}
-            <Tabs 
-              defaultValue={activeTab} 
-              value={activeTab}
-              onValueChange={handleTabChange}
-              className="w-full"
-            >
-              <TabsList className="w-full max-w-full overflow-x-auto flex-wrap sm:flex-nowrap no-scrollbar py-1">
-                <TabsTrigger value="all" className="flex-shrink-0">
-                  Toutes
-                </TabsTrigger>
-                {categories.slice(1).map(category => (
-                  <TabsTrigger 
-                    key={category} 
-                    value={category.toLowerCase()}
-                    className="flex-shrink-0"
-                  >
-                    {category}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          </div>
-        </div>
+        <GalleryHeader 
+          title={getPageTitle()}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          categories={categories}
+        />
         
-        {/* Gallery Content */}
         <div className="max-w-7xl mx-auto px-6 py-12">
           {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 animate-pulse">
-              {[1, 2, 3, 4, 5, 6].map((_, index) => (
-                <div key={index} className="h-64 rounded-xl bg-muted"></div>
-              ))}
-            </div>
+            <MasonryGrid images={[]} isLoading={true} />
           ) : filteredImages.length > 0 ? (
             <>
-              {/* Masonry layout */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                {/* First column */}
-                <div className="flex flex-col gap-6 md:gap-8">
-                  {getColumnImages(0, 3).map((image, index) => (
-                    <div 
-                      key={image.id}
-                      className="animate-fade-up opacity-0" 
-                      style={{ 
-                        animationDelay: `${0.05 * index}s`, 
-                        animationFillMode: 'forwards' 
-                      }}
-                    >
-                      <ImageCard 
-                        {...image} 
-                        className="h-full"
-                      />
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Second column */}
-                <div className="flex flex-col gap-6 md:gap-8">
-                  {getColumnImages(1, 3).map((image, index) => (
-                    <div 
-                      key={image.id} 
-                      className="animate-fade-up opacity-0" 
-                      style={{ 
-                        animationDelay: `${0.05 * (index + getColumnImages(0, 3).length)}s`, 
-                        animationFillMode: 'forwards' 
-                      }}
-                    >
-                      <ImageCard 
-                        {...image} 
-                        className="h-full"
-                      />
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Third column */}
-                <div className="hidden lg:flex flex-col gap-6 md:gap-8">
-                  {getColumnImages(2, 3).map((image, index) => (
-                    <div 
-                      key={image.id} 
-                      className="animate-fade-up opacity-0" 
-                      style={{ 
-                        animationDelay: `${0.05 * (index + getColumnImages(0, 3).length + getColumnImages(1, 3).length)}s`, 
-                        animationFillMode: 'forwards' 
-                      }}
-                    >
-                      <ImageCard 
-                        {...image} 
-                        className="h-full"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <MasonryGrid images={filteredImages} />
               
               {/* Load More Button */}
               <div className="mt-16 text-center">
@@ -206,18 +113,7 @@ const Gallery = () => {
               </div>
             </>
           ) : (
-            <div className="text-center py-20">
-              <h3 className="text-xl font-medium mb-2">Aucun résultat trouvé</h3>
-              <p className="text-muted-foreground mb-8">
-                Essayez d'autres termes de recherche ou explorez nos catégories
-              </p>
-              <Button 
-                variant="outline"
-                onClick={() => handleTabChange('all')}
-              >
-                Voir toutes les images
-              </Button>
-            </div>
+            <EmptyResults onReset={() => handleTabChange('all')} />
           )}
         </div>
       </main>
