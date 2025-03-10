@@ -80,13 +80,7 @@ export function Header() {
               location.pathname.includes("/gallery") ? "text-primary" : "text-foreground/80"
             )}
           >
-            Galerie
-          </Link>
-          <Link 
-            to="/categories" 
-            className="text-sm font-medium transition-colors hover:text-primary text-foreground/80"
-          >
-            Catégories
+            Banque d'images
           </Link>
           <Link 
             to="/about" 
@@ -219,13 +213,7 @@ export function Header() {
                 location.pathname.includes("/gallery") ? "text-primary" : "text-foreground/80"
               )}
             >
-              Galerie
-            </Link>
-            <Link 
-              to="/categories" 
-              className="text-base font-medium py-2 transition-colors text-foreground/80"
-            >
-              Catégories
+              Banque d'images
             </Link>
             <Link 
               to="/about" 

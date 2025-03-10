@@ -31,12 +31,7 @@ export function Footer() {
               </li>
               <li>
                 <Link to="/gallery" className="text-foreground/80 hover:text-primary transition-colors">
-                  Galerie
-                </Link>
-              </li>
-              <li>
-                <Link to="/categories" className="text-foreground/80 hover:text-primary transition-colors">
-                  Catégories
+                  Banque d'images
                 </Link>
               </li>
               <li>
