@@ -19,8 +19,9 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, userRole, signOut } = useAuth();
   const isHomePage = location.pathname === "/";
+  const canAccessClientsPage = userRole === 'admin';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -92,18 +93,20 @@ export function Header() {
           </Link>
           {user && (
             <>
-              <Link 
-                to="/clients" 
-                className={cn(
-                  "text-sm font-medium transition-colors hover:text-primary",
-                  location.pathname === "/clients" ? "text-primary" : "text-foreground/80"
-                )}
-              >
-                <span className="flex items-center gap-1">
-                  <Users className="h-4 w-4" />
-                  Clients
-                </span>
-              </Link>
+              {canAccessClientsPage && (
+                <Link 
+                  to="/clients" 
+                  className={cn(
+                    "text-sm font-medium transition-colors hover:text-primary",
+                    location.pathname === "/clients" ? "text-primary" : "text-foreground/80"
+                  )}
+                >
+                  <span className="flex items-center gap-1">
+                    <Users className="h-4 w-4" />
+                    Clients
+                  </span>
+                </Link>
+              )}
               <Link 
                 to="/projects" 
                 className={cn(
@@ -147,9 +150,11 @@ export function Header() {
                 <DropdownMenuItem asChild>
                   <Link to="/profile" className="cursor-pointer">Profil</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/clients" className="cursor-pointer">Clients</Link>
-                </DropdownMenuItem>
+                {canAccessClientsPage && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/clients" className="cursor-pointer">Clients</Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild>
                   <Link to="/projects" className="cursor-pointer">Projets</Link>
                 </DropdownMenuItem>
@@ -219,18 +224,20 @@ export function Header() {
             </Link>
             {user && (
               <>
-                <Link 
-                  to="/clients" 
-                  className={cn(
-                    "text-base font-medium py-2 transition-colors",
-                    location.pathname === "/clients" ? "text-primary" : "text-foreground/80"
-                  )}
-                >
-                  <span className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Clients
-                  </span>
-                </Link>
+                {canAccessClientsPage && (
+                  <Link 
+                    to="/clients" 
+                    className={cn(
+                      "text-base font-medium py-2 transition-colors",
+                      location.pathname === "/clients" ? "text-primary" : "text-foreground/80"
+                    )}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Clients
+                    </span>
+                  </Link>
+                )}
                 <Link 
                   to="/projects" 
                   className={cn(
