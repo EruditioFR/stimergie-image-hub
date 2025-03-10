@@ -53,7 +53,7 @@ export function Header() {
   return (
     <header 
       className={cn(
-        "transition-all duration-300 px-6 py-4",
+        "transition-all duration-300 px-6 py-4 relative",
         isHomePage
           ? isScrolled 
             ? "bg-background/80 backdrop-blur-md text-foreground" 
@@ -95,7 +95,7 @@ export function Header() {
             </Link>
           )}
           {user && isAdmin && (
-            <NavigationMenu>
+            <NavigationMenu className="z-[10000]">
               <NavigationMenuList>
                 <NavigationMenuItem>
                   <NavigationMenuTrigger className={cn(
@@ -110,7 +110,7 @@ export function Header() {
                       Administrer
                     </span>
                   </NavigationMenuTrigger>
-                  <NavigationMenuContent className="w-screen left-0 p-6">
+                  <NavigationMenuContent className="w-screen left-0 p-6 z-[10000]">
                     <div className="max-w-7xl mx-auto grid grid-cols-3 gap-8">
                       <Link 
                         to="/clients" 
@@ -221,7 +221,7 @@ export function Header() {
                   <UserCircle className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="z-[10000]">
                 <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
@@ -272,7 +272,7 @@ export function Header() {
       </div>
 
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur-lg shadow-lg animate-fade-in z-50">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur-lg shadow-lg animate-fade-in z-[10000]">
           <nav className="flex flex-col p-6 space-y-4">
             <div className="flex justify-center mb-4">
               <img 
