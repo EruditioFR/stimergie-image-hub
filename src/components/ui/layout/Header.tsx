@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Menu, X, Users, LogIn, LogOut, UserCircle, FolderOpen, Settings } from 'lucide-react';
+import { Search, Menu, X, Users, LogIn, LogOut, UserCircle, FolderOpen, Settings, LayoutDashboard, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -110,51 +110,95 @@ export function Header() {
                       Administrer
                     </span>
                   </NavigationMenuTrigger>
-                  <NavigationMenuContent className="p-4 w-[300px]">
-                    <ul className="flex flex-col gap-3">
-                      <li>
-                        <NavigationMenuLink asChild>
-                          <Link 
-                            to="/clients" 
-                            className={cn(
-                              "flex items-center gap-2 p-2 rounded-md hover:bg-accent text-sm",
-                              location.pathname === "/clients" ? "bg-accent text-primary" : ""
-                            )}
-                          >
-                            <Users className="h-4 w-4" />
-                            <span>Clients</span>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                      <li>
-                        <NavigationMenuLink asChild>
-                          <Link 
-                            to="/projects" 
-                            className={cn(
-                              "flex items-center gap-2 p-2 rounded-md hover:bg-accent text-sm",
-                              location.pathname === "/projects" ? "bg-accent text-primary" : ""
-                            )}
-                          >
-                            <FolderOpen className="h-4 w-4" />
-                            <span>Projets</span>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                      <li>
-                        <NavigationMenuLink asChild>
-                          <Link 
-                            to="/users" 
-                            className={cn(
-                              "flex items-center gap-2 p-2 rounded-md hover:bg-accent text-sm",
-                              location.pathname === "/users" ? "bg-accent text-primary" : ""
-                            )}
-                          >
-                            <Users className="h-4 w-4" />
-                            <span>Utilisateurs</span>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                    </ul>
+                  <NavigationMenuContent className="w-screen left-0 p-6">
+                    <div className="max-w-7xl mx-auto grid grid-cols-3 gap-8">
+                      <Link 
+                        to="/clients" 
+                        className={cn(
+                          "group flex flex-col items-center gap-4 p-6 rounded-lg transition-all hover:bg-accent",
+                          location.pathname === "/clients" ? "bg-accent/50" : ""
+                        )}
+                      >
+                        <div className="p-4 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                          <Users className="h-10 w-10 text-primary" />
+                        </div>
+                        <div className="text-center">
+                          <h3 className="text-lg font-medium mb-1">Clients</h3>
+                          <p className="text-sm text-muted-foreground">Gérer les clients et leurs informations</p>
+                        </div>
+                      </Link>
+                      
+                      <Link 
+                        to="/projects" 
+                        className={cn(
+                          "group flex flex-col items-center gap-4 p-6 rounded-lg transition-all hover:bg-accent",
+                          location.pathname === "/projects" ? "bg-accent/50" : ""
+                        )}
+                      >
+                        <div className="p-4 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                          <FolderOpen className="h-10 w-10 text-primary" />
+                        </div>
+                        <div className="text-center">
+                          <h3 className="text-lg font-medium mb-1">Projets</h3>
+                          <p className="text-sm text-muted-foreground">Suivre et gérer les projets en cours</p>
+                        </div>
+                      </Link>
+                      
+                      <Link 
+                        to="/users" 
+                        className={cn(
+                          "group flex flex-col items-center gap-4 p-6 rounded-lg transition-all hover:bg-accent",
+                          location.pathname === "/users" ? "bg-accent/50" : ""
+                        )}
+                      >
+                        <div className="p-4 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                          <Users className="h-10 w-10 text-primary" />
+                        </div>
+                        <div className="text-center">
+                          <h3 className="text-lg font-medium mb-1">Utilisateurs</h3>
+                          <p className="text-sm text-muted-foreground">Gérer les utilisateurs et leurs droits</p>
+                        </div>
+                      </Link>
+                      
+                      <Link 
+                        to="/dashboard" 
+                        className="group flex flex-col items-center gap-4 p-6 rounded-lg transition-all hover:bg-accent"
+                      >
+                        <div className="p-4 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                          <LayoutDashboard className="h-10 w-10 text-primary" />
+                        </div>
+                        <div className="text-center">
+                          <h3 className="text-lg font-medium mb-1">Tableau de bord</h3>
+                          <p className="text-sm text-muted-foreground">Aperçu des statistiques et activités</p>
+                        </div>
+                      </Link>
+                      
+                      <Link 
+                        to="/global" 
+                        className="group flex flex-col items-center gap-4 p-6 rounded-lg transition-all hover:bg-accent"
+                      >
+                        <div className="p-4 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                          <Globe className="h-10 w-10 text-primary" />
+                        </div>
+                        <div className="text-center">
+                          <h3 className="text-lg font-medium mb-1">Vue globale</h3>
+                          <p className="text-sm text-muted-foreground">Aperçu global de toutes les activités</p>
+                        </div>
+                      </Link>
+                      
+                      <Link 
+                        to="/settings" 
+                        className="group flex flex-col items-center gap-4 p-6 rounded-lg transition-all hover:bg-accent"
+                      >
+                        <div className="p-4 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                          <Settings className="h-10 w-10 text-primary" />
+                        </div>
+                        <div className="text-center">
+                          <h3 className="text-lg font-medium mb-1">Paramètres</h3>
+                          <p className="text-sm text-muted-foreground">Configuration et personnalisation</p>
+                        </div>
+                      </Link>
+                    </div>
                   </NavigationMenuContent>
                 </NavigationMenuItem>
               </NavigationMenuList>
