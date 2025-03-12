@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Menu, X, Users, LogIn, LogOut, UserCircle, FolderOpen, Image } from 'lucide-react';
@@ -35,7 +34,6 @@ export function Header() {
     window.addEventListener('scroll', handleScroll);
     window.addEventListener('resize', handleResize);
     
-    // Initial checks
     handleScroll();
     handleResize();
     
@@ -54,60 +52,53 @@ export function Header() {
     navigate('/');
   };
 
-  // Only use white text on homepage when not scrolled AND not on mobile
-  const getTextColor = () => {
-    if (isHomePage && !isScrolled && !isMobile) {
-      return "text-white";
-    }
-    return "text-black";
-  };
-
-  return <header className={cn("transition-all duration-300 px-6 py-4", isHomePage ? isScrolled ? "bg-background/80 backdrop-blur-md text-foreground" : "bg-transparent text-white" : "bg-background text-foreground")}>
+  return <header className={cn("transition-all duration-300 px-6 py-4", 
+    isHomePage ? isScrolled ? "bg-background/80 backdrop-blur-md" : "bg-transparent" : "bg-background")}>
       <div className="max-w-7xl mx-auto flex items-center justify-between py-[39px]">
         <Link to="/" className="transition-opacity hover:opacity-80">
           <img src="/lovable-uploads/9ce78881-8c65-4716-ab7f-128bb420c8e9.png" alt="Stimergie Logo" className="h-8 w-auto" />
         </Link>
 
         <nav className="hidden md:flex space-x-8 items-center">
-          <Link to="/" className={cn("text-sm font-medium transition-colors hover:text-primary", 
-            location.pathname === "/" ? "text-primary" : getTextColor())}>
+          <Link to="/" className={cn("text-sm font-medium transition-colors hover:text-primary text-black", 
+            location.pathname === "/" ? "text-primary" : "")}>
             Accueil
           </Link>
-          {user && <Link to="/gallery" className={cn("text-sm font-medium transition-colors hover:text-primary", 
-            location.pathname.includes("/gallery") ? "text-primary" : getTextColor())}>
+          {user && <Link to="/gallery" className={cn("text-sm font-medium transition-colors hover:text-primary text-black", 
+            location.pathname.includes("/gallery") ? "text-primary" : "")}>
               Banque d'images
             </Link>}
           {user && <>
-              {canAccessClientsPage && <Link to="/clients" className={cn("text-sm font-medium transition-colors hover:text-primary", 
-                location.pathname === "/clients" ? "text-primary" : getTextColor())}>
+              {canAccessClientsPage && <Link to="/clients" className={cn("text-sm font-medium transition-colors hover:text-primary text-black", 
+                location.pathname === "/clients" ? "text-primary" : "")}>
                   <span className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
                     Clients
                   </span>
                 </Link>}
-              <Link to="/projects" className={cn("text-sm font-medium transition-colors hover:text-primary", 
-                location.pathname === "/projects" ? "text-primary" : getTextColor())}>
+              <Link to="/projects" className={cn("text-sm font-medium transition-colors hover:text-primary text-black", 
+                location.pathname === "/projects" ? "text-primary" : "")}>
                 <span className="flex items-center gap-1">
                   <FolderOpen className="h-4 w-4" />
                   Projets
                 </span>
               </Link>
-              <Link to="/users" className={cn("text-sm font-medium transition-colors hover:text-primary", 
-                location.pathname === "/users" ? "text-primary" : getTextColor())}>
+              <Link to="/users" className={cn("text-sm font-medium transition-colors hover:text-primary text-black", 
+                location.pathname === "/users" ? "text-primary" : "")}>
                 <span className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
                   Utilisateurs
                 </span>
               </Link>
-              {canAccessImagesPage && <Link to="/images" className={cn("text-sm font-medium transition-colors hover:text-primary", 
-                location.pathname === "/images" ? "text-primary" : getTextColor())}>
+              {canAccessImagesPage && <Link to="/images" className={cn("text-sm font-medium transition-colors hover:text-primary text-black", 
+                location.pathname === "/images" ? "text-primary" : "")}>
                 <span className="flex items-center gap-1">
                   <Image className="h-4 w-4" />
                   Images
                 </span>
               </Link>}
             </>}
-          <Link to="/about" className={cn("text-sm font-medium transition-colors hover:text-primary", getTextColor())}>
+          <Link to="/about" className="text-sm font-medium transition-colors hover:text-primary text-black">
             À propos
           </Link>
           <Button variant="ghost" size="icon" className="ml-2">
@@ -214,3 +205,4 @@ export function Header() {
 }
 
 export default Header;
+
