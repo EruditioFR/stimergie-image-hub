@@ -60,7 +60,7 @@ export function LazyImage({
           src={src}
           alt={alt}
           className={cn(
-            "lazy-image-actual w-full h-full transition-opacity duration-500",
+            "lazy-image-actual w-full h-full transition-opacity duration-500 opacity-100",
             objectFit,
             isLoaded ? "opacity-100" : "opacity-0"
           )}
