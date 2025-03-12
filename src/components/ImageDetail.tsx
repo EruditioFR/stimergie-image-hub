@@ -1,39 +1,70 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Download, Heart, Share2, ArrowLeft, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LazyImage } from '@/components/LazyImage';
 import { ImageGallery } from '@/components/ImageGallery';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+import { Image } from '@/pages/Images';
 
-// Mock data
-const mockImageDetails = {
-  id: '1',
-  src: 'https://images.unsplash.com/photo-1649972904349-6e44c42644a7?auto=format&fit=crop&w=1920&q=80',
-  alt: 'A woman sitting on a bed using a laptop',
-  title: 'Travail à distance',
-  author: 'Anna Johnson',
-  authorAvatar: 'https://images.unsplash.com/profile-1649972904349-6e44c42644a7?auto=format&fit=crop&w=150&h=150&q=80',
-  description: 'Une femme travaillant depuis son domicile sur son ordinateur portable, représentant le nouveau mode de travail moderne et flexible.',
-  date: '15 juin 2023',
-  tags: ['travail', 'technologie', 'lifestyle', 'remote'],
-  downloads: 1250,
-  likes: 432,
-  views: 5643
+// Parse tags from string if needed
+const parseTagsString = (tagsString: string | null): string[] | null => {
+  if (!tagsString) return null;
+  try {
+    if (tagsString.startsWith('[')) {
+      return JSON.parse(tagsString);
+    }
+    return tagsString.split(',').map(tag => tag.trim());
+  } catch (e) {
+    console.error('Error parsing tags:', e);
+    return [tagsString];
+  }
 };
 
 export function ImageDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [liked, setLiked] = useState(false);
-  const [imageDetails, setImageDetails] = useState(mockImageDetails);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const { toast } = useToast();
 
-  // In a real app, you would fetch the image details based on the id
-  
+  // Fetch image data from Supabase
+  const { data: imageDetails, isLoading } = useQuery({
+    queryKey: ['image-detail', id],
+    queryFn: async () => {
+      if (!id) throw new Error("Image ID is required");
+      
+      const { data, error } = await supabase
+        .from('images')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching image details:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Erreur',
+          description: 'Impossible de charger les détails de l\'image'
+        });
+        throw error;
+      }
+      
+      // Parse tags if they're stored as a string
+      return {
+        ...data,
+        tags: typeof data.tags === 'string' ? parseTagsString(data.tags) : data.tags
+      } as Image;
+    },
+    enabled: !!id
+  });
+
   const handleDownload = () => {
-    // Logic to download the image
-    window.open(imageDetails.src, '_blank');
+    if (!imageDetails) return;
+    window.open(imageDetails.url, '_blank');
   };
 
   const handleLike = () => {
@@ -42,10 +73,11 @@ export function ImageDetail() {
   };
 
   const handleShare = () => {
-    // Share logic would go here
     navigator.clipboard.writeText(window.location.href);
-    // Would show a toast notification in a real app
-    alert('Lien copié dans le presse-papier');
+    toast({
+      title: 'Lien copié',
+      description: 'Lien copié dans le presse-papier'
+    });
   };
 
   const toggleFullscreen = () => {
@@ -55,6 +87,35 @@ export function ImageDetail() {
   const goBack = () => {
     navigate(-1);
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-12 animate-fade-up">
+        <Button variant="ghost" className="mb-6 pl-0 text-muted-foreground" onClick={goBack}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Retour
+        </Button>
+        <div className="h-96 w-full flex items-center justify-center">
+          <p className="text-muted-foreground">Chargement de l'image...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!imageDetails) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-12 animate-fade-up">
+        <Button variant="ghost" className="mb-6 pl-0 text-muted-foreground" onClick={goBack}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Retour
+        </Button>
+        <div className="h-96 w-full flex items-center justify-center flex-col gap-4">
+          <p className="text-muted-foreground">Image non trouvée</p>
+          <Button onClick={goBack}>Retourner à la galerie</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -71,8 +132,8 @@ export function ImageDetail() {
           </Button>
           <div className="w-full h-full p-4 md:p-8 flex items-center justify-center">
             <img 
-              src={imageDetails.src} 
-              alt={imageDetails.alt} 
+              src={imageDetails.url} 
+              alt={imageDetails.title} 
               className="max-w-full max-h-full object-contain animate-fade-in" 
             />
           </div>
@@ -98,8 +159,8 @@ export function ImageDetail() {
               onClick={toggleFullscreen}
             >
               <LazyImage 
-                src={imageDetails.src} 
-                alt={imageDetails.alt} 
+                src={imageDetails.url} 
+                alt={imageDetails.title} 
                 className="w-full aspect-auto"
                 aspectRatio="aspect-auto"
               />
@@ -115,7 +176,7 @@ export function ImageDetail() {
                   onClick={handleLike}
                 >
                   <Heart className={`h-4 w-4 ${liked ? 'fill-red-500 text-red-500' : ''}`} />
-                  <span>{liked ? imageDetails.likes + 1 : imageDetails.likes}</span>
+                  <span>{liked ? '1' : '0'}</span>
                 </Button>
                 <Button 
                   variant="outline" 
@@ -139,32 +200,34 @@ export function ImageDetail() {
             {/* Image Information */}
             <div className="bg-card rounded-xl p-6 shadow-sm">
               <h1 className="text-2xl font-bold mb-2">{imageDetails.title}</h1>
-              <p className="text-muted-foreground mb-6">{imageDetails.description}</p>
+              <p className="text-muted-foreground mb-6">{imageDetails.description || 'Aucune description disponible'}</p>
               
-              <div className="flex flex-wrap gap-2 mb-6">
-                {imageDetails.tags.map(tag => (
-                  <Link 
-                    key={tag} 
-                    to={`/gallery?tag=${tag}`}
-                    className="py-1 px-3 text-xs rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
-                  >
-                    #{tag}
-                  </Link>
-                ))}
-              </div>
+              {imageDetails.tags && imageDetails.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {imageDetails.tags.map(tag => (
+                    <Link 
+                      key={tag} 
+                      to={`/gallery?tag=${tag}`}
+                      className="py-1 px-3 text-xs rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+                    >
+                      #{tag}
+                    </Link>
+                  ))}
+                </div>
+              )}
               
               <div className="flex flex-wrap gap-x-8 gap-y-4 text-sm text-muted-foreground">
                 <div>
                   <span className="block text-foreground font-medium">Date ajoutée</span>
-                  <span>{imageDetails.date}</span>
+                  <span>{new Date(imageDetails.created_at).toLocaleDateString('fr-FR')}</span>
                 </div>
                 <div>
-                  <span className="block text-foreground font-medium">Vues</span>
-                  <span>{imageDetails.views}</span>
+                  <span className="block text-foreground font-medium">Dimensions</span>
+                  <span>{imageDetails.width} × {imageDetails.height}</span>
                 </div>
                 <div>
-                  <span className="block text-foreground font-medium">Téléchargements</span>
-                  <span>{imageDetails.downloads}</span>
+                  <span className="block text-foreground font-medium">Orientation</span>
+                  <span className="capitalize">{imageDetails.orientation}</span>
                 </div>
               </div>
             </div>
@@ -175,14 +238,12 @@ export function ImageDetail() {
             {/* Author Information */}
             <div className="bg-card rounded-xl p-6 shadow-sm">
               <div className="flex items-center space-x-4 mb-4">
-                <img 
-                  src={imageDetails.authorAvatar} 
-                  alt={imageDetails.author}
-                  className="w-12 h-12 rounded-full object-cover" 
-                />
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                  <span className="text-xl font-medium">U</span>
+                </div>
                 <div>
-                  <h3 className="font-medium">{imageDetails.author}</h3>
-                  <p className="text-sm text-muted-foreground">Photographe</p>
+                  <h3 className="font-medium">Utilisateur</h3>
+                  <p className="text-sm text-muted-foreground">Contributeur</p>
                 </div>
               </div>
               <Button variant="outline" className="w-full">Voir le profil</Button>
