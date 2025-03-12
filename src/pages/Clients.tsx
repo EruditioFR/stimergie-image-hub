@@ -64,6 +64,7 @@ export default function Clients() {
     if (result.success) {
       setShowDeleteDialog(false);
       setClientToDelete(null);
+      setDeleteError(null);
     } else {
       setDeleteError(result.error);
     }

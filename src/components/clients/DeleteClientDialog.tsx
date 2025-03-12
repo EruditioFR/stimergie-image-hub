@@ -39,12 +39,9 @@ export function DeleteClientDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Annuler</AlertDialogCancel>
+          <AlertDialogCancel onClick={() => onOpenChange(false)}>Annuler</AlertDialogCancel>
           {!error && (
-            <AlertDialogAction
-              onClick={onConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogAction onClick={onConfirm}>
               Supprimer
             </AlertDialogAction>
           )}
