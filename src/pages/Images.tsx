@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
@@ -11,6 +12,7 @@ import { MasonryGrid } from '@/components/gallery/MasonryGrid';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+
 export interface Image {
   id: number;
   title: string;
@@ -19,12 +21,15 @@ export interface Image {
   width: number;
   height: number;
   orientation: string;
+  // Modification ici : tags peut être une string (de la BDD) qu'on va parser en tableau
   tags: string[] | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
   id_projet: string;
+  url_miniature?: string | null;
 }
+
 const Images = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('card');
@@ -35,6 +40,7 @@ const Images = () => {
   const {
     toast
   } = useToast();
+  
   const fetchImages = async () => {
     let query = supabase.from('images').select('*').order('created_at', {
       ascending: false
@@ -74,10 +80,12 @@ const Images = () => {
         }
       }
     }
+    
     const {
       data,
       error
     } = await query;
+    
     if (error) {
       console.error('Error fetching images:', error);
       toast({
@@ -87,8 +95,30 @@ const Images = () => {
       });
       throw error;
     }
-    return data as Image[];
+    
+    // Convertir les tags de string à string[] en parsant la valeur JSON si nécessaire
+    return data.map(img => ({
+      ...img,
+      tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
+    })) as Image[];
   };
+  
+  // Fonction utilitaire pour parser les tags depuis une string
+  const parseTagsString = (tagsString: string | null): string[] | null => {
+    if (!tagsString) return null;
+    try {
+      // Si c'est déjà un JSON (format "[tag1, tag2]"), on le parse
+      if (tagsString.startsWith('[')) {
+        return JSON.parse(tagsString);
+      }
+      // Sinon, on le split par virgule (si c'est un format "tag1,tag2")
+      return tagsString.split(',').map(tag => tag.trim());
+    } catch (e) {
+      console.error('Error parsing tags:', e);
+      return [tagsString]; // Fallback à un tableau avec la string originale
+    }
+  };
+  
   const {
     data: images,
     isLoading,
@@ -97,6 +127,7 @@ const Images = () => {
     queryKey: ['images', userRole],
     queryFn: fetchImages
   });
+  
   const handleUploadSuccess = () => {
     setIsUploadOpen(false);
     refetch();
@@ -117,6 +148,7 @@ const Images = () => {
       tags: image.tags
     }));
   };
+  
   return <div className="min-h-screen flex flex-col">
       <UserGreetingBar />
       <Header />
@@ -138,4 +170,5 @@ const Images = () => {
       <Footer />
     </div>;
 };
+
 export default Images;

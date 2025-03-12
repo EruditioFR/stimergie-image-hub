@@ -20,6 +20,22 @@ const Gallery = () => {
   const tagFilter = searchParams.get('tag') || '';
   const [activeTab, setActiveTab] = useState('all');
 
+  // Fonction utilitaire pour parser les tags depuis une string
+  const parseTagsString = (tagsString: string | null): string[] | null => {
+    if (!tagsString) return null;
+    try {
+      // Si c'est déjà un JSON (format "[tag1, tag2]"), on le parse
+      if (tagsString.startsWith('[')) {
+        return JSON.parse(tagsString);
+      }
+      // Sinon, on le split par virgule (si c'est un format "tag1,tag2")
+      return tagsString.split(',').map(tag => tag.trim());
+    } catch (e) {
+      console.error('Error parsing tags:', e);
+      return [tagsString]; // Fallback à un tableau avec la string originale
+    }
+  };
+
   // Fetch images from Supabase
   const { data: images = [], isLoading } = useQuery({
     queryKey: ['gallery-images', searchQuery, tagFilter],
@@ -34,7 +50,7 @@ const Gallery = () => {
       }
 
       if (tagFilter && tagFilter.toLowerCase() !== 'toutes') {
-        query = query.contains('tags', [tagFilter.toLowerCase()]);
+        query = query.ilike('tags', `%${tagFilter.toLowerCase()}%`);
       }
 
       const { data, error } = await query;
@@ -44,7 +60,11 @@ const Gallery = () => {
         return [];
       }
 
-      return data as Image[];
+      // Convertir les tags de string à string[] en parsant la valeur
+      return data.map(img => ({
+        ...img,
+        tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
+      })) as Image[];
     }
   });
 

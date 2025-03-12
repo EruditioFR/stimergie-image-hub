@@ -300,6 +300,9 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
       
       const publicUrl = urlData.publicUrl;
       
+      // Convertir le tableau de tags en chaîne JSON pour la base de données
+      const tagsString = tags.length > 0 ? JSON.stringify(tags) : null;
+      
       // Save the image metadata to the database
       const { error: insertError } = await supabase
         .from('images')
@@ -310,7 +313,7 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
           width: dimensions.width,
           height: dimensions.height,
           orientation: orientation,
-          tags: tags.length > 0 ? tags : null,
+          tags: tagsString,
           created_by: user.id,
           id_projet: selectedProject,
         });
