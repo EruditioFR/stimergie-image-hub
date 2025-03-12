@@ -86,7 +86,7 @@ const Gallery = () => {
   const formatImagesForGrid = (images: Image[] = []) => {
     return images.map(image => ({
       id: image.id.toString(),
-      src: image.url,
+      src: image.url_miniature || image.url, // Utiliser la miniature si disponible
       alt: image.title,
       title: image.title,
       author: 'User',
