@@ -39,6 +39,79 @@ export const useClients = () => {
     }
   };
 
+  const checkClientAssociations = async (clientId: string) => {
+    try {
+      // Vérifier les profils associés
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id_client', clientId);
+        
+      if (profilesError) throw profilesError;
+      
+      if (profilesData && profilesData.length > 0) {
+        return {
+          canDelete: false,
+          error: `Ce client ne peut pas être supprimé car ${profilesData.length} utilisateur(s) y sont associés.`
+        };
+      }
+
+      // Vérifier les projets associés
+      const { data: projetsData, error: projetsError } = await supabase
+        .from('projets')
+        .select('id')
+        .eq('id_client', clientId);
+        
+      if (projetsError) throw projetsError;
+      
+      if (projetsData && projetsData.length > 0) {
+        return {
+          canDelete: false,
+          error: `Ce client ne peut pas être supprimé car ${projetsData.length} projet(s) y sont associés.`
+        };
+      }
+
+      return { canDelete: true, error: null };
+    } catch (error) {
+      console.error("Erreur lors de la vérification des associations:", error);
+      return {
+        canDelete: false,
+        error: "Erreur lors de la vérification des associations du client."
+      };
+    }
+  };
+
+  const deleteClient = async (clientId: string) => {
+    try {
+      const checkResult = await checkClientAssociations(clientId);
+      
+      if (!checkResult.canDelete) {
+        return {
+          success: false,
+          error: checkResult.error
+        };
+      }
+
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientId);
+        
+      if (error) throw error;
+      
+      setClients(prevClients => prevClients.filter(c => c.id !== clientId));
+      toast.success("Le client a été supprimé avec succès.");
+      return { success: true };
+      
+    } catch (error) {
+      console.error("Erreur lors de la suppression du client:", error);
+      return {
+        success: false,
+        error: "Impossible de supprimer le client."
+      };
+    }
+  };
+
   const addClient = async (client: Client) => {
     try {
       const { data, error } = await supabase
@@ -106,56 +179,6 @@ export const useClients = () => {
       console.error("Erreur lors de la mise à jour du client:", error);
       toast.error("Impossible de mettre à jour le client.");
       return false;
-    }
-  };
-
-  const deleteClient = async (clientId: string) => {
-    try {
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id_client', clientId);
-        
-      if (profilesError) throw profilesError;
-      
-      if (profilesData && profilesData.length > 0) {
-        return {
-          success: false,
-          error: `Impossible de supprimer ce client car ${profilesData.length} utilisateur(s) y sont associés.`
-        };
-      }
-      
-      const { data: projetsData, error: projetsError } = await supabase
-        .from('projets')
-        .select('id')
-        .eq('id_client', clientId);
-        
-      if (projetsError) throw projetsError;
-      
-      if (projetsData && projetsData.length > 0) {
-        return {
-          success: false,
-          error: `Impossible de supprimer ce client car ${projetsData.length} projet(s) y sont associés.`
-        };
-      }
-
-      const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', clientId);
-        
-      if (error) throw error;
-      
-      setClients(prevClients => prevClients.filter(c => c.id !== clientId));
-      toast.success("Le client a été supprimé avec succès.");
-      return { success: true };
-      
-    } catch (error) {
-      console.error("Erreur lors de la suppression du client:", error);
-      return {
-        success: false,
-        error: "Impossible de supprimer le client."
-      };
     }
   };
 
