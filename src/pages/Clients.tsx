@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { UserGreetingBar } from "@/components/ui/UserGreetingBar";
 import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
 export interface Client {
   id?: string;
   nom: string;
@@ -22,6 +23,7 @@ export interface Client {
   created_at?: string;
   updated_at?: string;
 }
+
 export default function Clients() {
   const [clients, setClients] = useState<Client[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -31,13 +33,17 @@ export default function Clients() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("card");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  
   const {
     toast: uiToast
   } = useToast();
+
   useEffect(() => {
     window.scrollTo(0, 0);
     fetchClients();
   }, []);
+
   const fetchClients = async () => {
     try {
       setLoading(true);
@@ -75,6 +81,7 @@ export default function Clients() {
       setLoading(false);
     }
   };
+
   const addClient = async (client: Client) => {
     try {
       const {
@@ -113,11 +120,13 @@ export default function Clients() {
       toast.error("Impossible d'ajouter le client.");
     }
   };
+
   const handleEditClient = (client: Client) => {
     setCurrentClient(client);
     setIsEditing(true);
     setShowForm(true);
   };
+
   const updateClient = async (client: Client) => {
     try {
       const {
@@ -146,30 +155,65 @@ export default function Clients() {
       toast.error("Impossible de mettre à jour le client.");
     }
   };
+
   const handleDeleteClient = (clientId: string) => {
     setClientToDelete(clientId);
+    setDeleteError(null);
     setShowDeleteDialog(true);
   };
+
   const confirmDeleteClient = async () => {
     if (!clientToDelete) return;
+    
     try {
-      const {
-        error
-      } = await supabase.from('clients').delete().eq('id', clientToDelete);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id_client', clientToDelete);
+        
+      if (profilesError) {
+        throw profilesError;
+      }
+      
+      if (profilesData && profilesData.length > 0) {
+        setDeleteError(`Impossible de supprimer ce client car ${profilesData.length} utilisateur(s) y sont associés. Veuillez d'abord dissocier ces utilisateurs.`);
+        return;
+      }
+      
+      const { data: projetsData, error: projetsError } = await supabase
+        .from('projets')
+        .select('id')
+        .eq('id_client', clientToDelete);
+        
+      if (projetsError) {
+        throw projetsError;
+      }
+      
+      if (projetsData && projetsData.length > 0) {
+        setDeleteError(`Impossible de supprimer ce client car ${projetsData.length} projet(s) y sont associés. Veuillez d'abord supprimer ces projets.`);
+        return;
+      }
+
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientToDelete);
+        
       if (error) {
-        console.error("Supabase delete error details:", error);
         throw error;
       }
+      
       setClients(prevClients => prevClients.filter(c => c.id !== clientToDelete));
       toast.success("Le client a été supprimé avec succès.");
+      setShowDeleteDialog(false);
+      setClientToDelete(null);
+      
     } catch (error) {
       console.error("Erreur lors de la suppression du client:", error);
       toast.error("Impossible de supprimer le client.");
-    } finally {
-      setShowDeleteDialog(false);
-      setClientToDelete(null);
     }
   };
+
   const handleFormSubmit = (client: Client) => {
     if (isEditing && currentClient) {
       updateClient(client);
@@ -177,11 +221,13 @@ export default function Clients() {
       addClient(client);
     }
   };
+
   const handleFormCancel = () => {
     setShowForm(false);
     setIsEditing(false);
     setCurrentClient(null);
   };
+
   return <div className="min-h-screen bg-background flex flex-col">
       <Header />
       <UserGreetingBar />
@@ -207,14 +253,20 @@ export default function Clients() {
           <AlertDialogHeader>
             <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce client ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Toutes les données associées à ce client seront perdues.
+              {deleteError ? (
+                <div className="text-destructive font-medium">{deleteError}</div>
+              ) : (
+                "Cette action est irréversible. Toutes les données associées à ce client seront perdues."
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteClient} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Supprimer
-            </AlertDialogAction>
+            {!deleteError && (
+              <AlertDialogAction onClick={confirmDeleteClient} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Supprimer
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
