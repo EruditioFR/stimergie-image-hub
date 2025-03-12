@@ -156,7 +156,7 @@ export type Database = {
           id: number
           id_projet: string
           orientation: string
-          tags: string[] | null
+          tags: string | null
           title: string
           updated_at: string
           url: string
@@ -171,7 +171,7 @@ export type Database = {
           id?: number
           id_projet: string
           orientation: string
-          tags?: string[] | null
+          tags?: string | null
           title: string
           updated_at?: string
           url: string
@@ -186,7 +186,7 @@ export type Database = {
           id?: number
           id_projet?: string
           orientation?: string
-          tags?: string[] | null
+          tags?: string | null
           title?: string
           updated_at?: string
           url?: string

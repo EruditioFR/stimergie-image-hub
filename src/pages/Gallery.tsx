@@ -4,10 +4,12 @@ import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
 import { Button } from '@/components/ui/button';
-import { useImages } from '@/context/ImageContext';
 import { GalleryHeader } from '@/components/gallery/GalleryHeader';
 import { MasonryGrid } from '@/components/gallery/MasonryGrid';
 import { EmptyResults } from '@/components/gallery/EmptyResults';
+import { supabase } from '@/integrations/supabase/client';
+import { Image } from '@/pages/Images';
+import { useQuery } from '@tanstack/react-query';
 
 // Mock categories for filters
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
@@ -16,69 +18,60 @@ const Gallery = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const tagFilter = searchParams.get('tag') || '';
-  const { images, searchImages, getImagesByTag } = useImages();
-  
   const [activeTab, setActiveTab] = useState('all');
-  const [filteredImages, setFilteredImages] = useState(images);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Apply filters based on URL parameters
-  useEffect(() => {
-    setIsLoading(true);
-    
-    let result = images;
-    
-    if (searchQuery) {
-      result = searchImages(searchQuery);
-    } else if (tagFilter) {
-      result = getImagesByTag(tagFilter);
-      // Find and set the active tab based on the tag
-      const tabIndex = categories.findIndex(cat => 
-        cat.toLowerCase() === tagFilter.toLowerCase()
-      );
-      
-      if (tabIndex > 0) {
-        setActiveTab(categories[tabIndex].toLowerCase());
+
+  // Fetch images from Supabase
+  const { data: images = [], isLoading } = useQuery({
+    queryKey: ['gallery-images', searchQuery, tagFilter],
+    queryFn: async () => {
+      let query = supabase
+        .from('images')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (searchQuery) {
+        query = query.ilike('title', `%${searchQuery}%`);
       }
+
+      if (tagFilter && tagFilter.toLowerCase() !== 'toutes') {
+        query = query.contains('tags', [tagFilter.toLowerCase()]);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching images:', error);
+        return [];
+      }
+
+      return data as Image[];
     }
-    
-    // Simulate loading delay
-    setTimeout(() => {
-      setFilteredImages(result);
-      setIsLoading(false);
-    }, 500);
-    
-    // Scroll to top
-    window.scrollTo(0, 0);
-  }, [searchQuery, tagFilter, images, searchImages, getImagesByTag]);
-  
+  });
+
+  // Filter images based on active tab
+  const getFilteredImages = () => {
+    if (activeTab === 'all') return images;
+    return images.filter(image => 
+      image.tags?.some(tag => 
+        tag.toLowerCase() === activeTab.toLowerCase()
+      )
+    );
+  };
+
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    
-    if (value === 'all') {
-      setFilteredImages(images);
-    } else {
-      setFilteredImages(getImagesByTag(value));
-    }
   };
-  
-  const loadMore = () => {
-    setIsLoading(true);
-    // Simulate loading more images
-    setTimeout(() => {
-      // In a real app, you'd fetch more images here
-      setIsLoading(false);
-    }, 1000);
-  };
-  
-  // Page title based on filters
-  const getPageTitle = () => {
-    if (searchQuery) {
-      return `Résultats pour "${searchQuery}"`;
-    } else if (tagFilter) {
-      return `Images de ${tagFilter}`;
-    }
-    return 'Toutes les images';
+
+  // Format images for MasonryGrid
+  const formatImagesForGrid = (images: Image[] = []) => {
+    return images.map(image => ({
+      id: image.id.toString(),
+      src: image.url,
+      alt: image.title,
+      title: image.title,
+      author: 'User',
+      tags: image.tags
+    }));
   };
 
   return (
@@ -87,7 +80,7 @@ const Gallery = () => {
       
       <main className="flex-grow pt-20">
         <GalleryHeader 
-          title={getPageTitle()}
+          title={searchQuery ? `Résultats pour "${searchQuery}"` : 'Galerie d\'images'}
           activeTab={activeTab}
           onTabChange={handleTabChange}
           categories={categories}
@@ -96,22 +89,11 @@ const Gallery = () => {
         <div className="max-w-7xl mx-auto px-6 py-12">
           {isLoading ? (
             <MasonryGrid images={[]} isLoading={true} />
-          ) : filteredImages.length > 0 ? (
-            <>
-              <MasonryGrid images={filteredImages} />
-              
-              {/* Load More Button */}
-              <div className="mt-16 text-center">
-                <Button 
-                  onClick={loadMore} 
-                  disabled={isLoading}
-                  variant="outline"
-                  className="px-8"
-                >
-                  {isLoading ? 'Chargement...' : 'Afficher plus'}
-                </Button>
-              </div>
-            </>
+          ) : getFilteredImages().length > 0 ? (
+            <MasonryGrid 
+              images={formatImagesForGrid(getFilteredImages())} 
+              isLoading={false}
+            />
           ) : (
             <EmptyResults onReset={() => handleTabChange('all')} />
           )}
