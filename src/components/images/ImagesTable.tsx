@@ -45,7 +45,7 @@ export function ImagesTable({ images }: ImagesTableProps) {
                     <img 
                       src={image.url_miniature || image.url} 
                       alt={image.title} 
-                      className="object-cover h-full w-full"
+                      className="object-cover h-full w-full opacity-100" 
                     />
                   </div>
                 </TableCell>
