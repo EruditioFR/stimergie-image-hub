@@ -30,13 +30,13 @@ export function DeleteClientDialog({
           <AlertDialogTitle>
             Êtes-vous sûr de vouloir supprimer ce client ?
           </AlertDialogTitle>
-          <AlertDialogDescription>
-            {error ? (
-              <div className="text-destructive font-medium">{error}</div>
-            ) : (
-              "Cette action est irréversible. Toutes les données associées à ce client seront perdues."
-            )}
-          </AlertDialogDescription>
+          {error ? (
+            <div className="text-destructive font-medium mt-2">{error}</div>
+          ) : (
+            <AlertDialogDescription>
+              Cette action est irréversible. Toutes les données associées à ce client seront perdues.
+            </AlertDialogDescription>
+          )}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => onOpenChange(false)}>Annuler</AlertDialogCancel>
