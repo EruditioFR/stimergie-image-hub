@@ -39,9 +39,8 @@ export function Header() {
     // Removed "Clients" and "Administration" items
   ];
 
-  const filteredNavItems = navigationItems.filter(item => 
-    !item.hasOwnProperty('access') || item.access === true
-  );
+  // Since we no longer have the 'access' property, we don't need to filter based on it
+  const filteredNavItems = navigationItems;
 
   return (
     <header 
