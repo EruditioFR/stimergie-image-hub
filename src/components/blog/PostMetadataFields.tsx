@@ -60,8 +60,8 @@ export function PostMetadataFields({ form, clients }: PostMetadataFieldsProps) {
           <FormItem>
             <FormLabel>Client associé</FormLabel>
             <Select 
-              onValueChange={field.onChange} 
-              defaultValue={field.value || ''}
+              onValueChange={(value) => field.onChange(value || null)} 
+              defaultValue={field.value || undefined}
             >
               <FormControl>
                 <SelectTrigger>
@@ -69,9 +69,9 @@ export function PostMetadataFields({ form, clients }: PostMetadataFieldsProps) {
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value="">Aucun client</SelectItem>
+                <SelectItem value="null">Aucun client</SelectItem>
                 {clients?.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
+                  <SelectItem key={client.id} value={client.id || ''}>
                     {client.nom}
                   </SelectItem>
                 ))}

@@ -55,11 +55,17 @@ export function BlogPostEditor({ post, onSave }: BlogPostEditorProps) {
       return;
     }
 
+    // Convertir la valeur "null" (string) en null (valeur)
+    const processedData = {
+      ...data,
+      client_id: data.client_id === "null" ? null : data.client_id
+    };
+
     if (post) {
       updatePost(
         { 
           id: post.id, 
-          postData: data
+          postData: processedData
         }, 
         {
           onSuccess: () => {
@@ -70,7 +76,7 @@ export function BlogPostEditor({ post, onSave }: BlogPostEditorProps) {
       );
     } else {
       createPost(
-        data,
+        processedData,
         {
           onSuccess: () => {
             if (onSave) onSave();
