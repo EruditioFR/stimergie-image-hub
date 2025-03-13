@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +11,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Header } from "@/components/ui/layout/Header";
 import { Footer } from "@/components/ui/layout/Footer";
-import { UserGreetingBar } from "@/components/ui/UserGreetingBar";
 
 // Login form schema
 const loginSchema = z.object({
@@ -53,7 +53,6 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <UserGreetingBar />
       <Header />
       <div className="pt-32 pb-20 px-6 flex-grow flex items-center justify-center">
         <Card className="w-full max-w-md">

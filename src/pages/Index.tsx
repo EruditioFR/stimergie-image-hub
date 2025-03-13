@@ -2,12 +2,10 @@
 import { Hero } from "@/components/Hero";
 import { Header } from "@/components/ui/layout/Header";
 import { Footer } from "@/components/ui/layout/Footer";
-import { UserGreetingBar } from "@/components/ui/UserGreetingBar";
 
 export default function Index() {
   return (
     <div className="min-h-screen flex flex-col">
-      <UserGreetingBar />
       <Header />
       <main className="flex-grow">
         <Hero />

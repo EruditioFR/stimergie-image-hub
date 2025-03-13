@@ -7,7 +7,6 @@ import { ProjectForm } from "@/components/projects/ProjectForm";
 import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { UserGreetingBar } from "@/components/ui/UserGreetingBar";
 import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
 import {
   AlertDialog,
@@ -216,7 +215,6 @@ export default function Projects() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <UserGreetingBar />
       <div className="pt-16">
         <ProjectsHeader onAddClick={() => {
           setIsEditing(false);

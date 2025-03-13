@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
@@ -6,7 +5,6 @@ import { ImageUploadForm } from '@/components/images/ImageUploadForm';
 import { ImagesTable } from '@/components/images/ImagesTable';
 import { ImagesHeader } from '@/components/images/ImagesHeader';
 import { useAuth } from '@/context/AuthContext';
-import { UserGreetingBar } from '@/components/ui/UserGreetingBar';
 import { ViewMode, ViewToggle } from '@/components/ui/ViewToggle';
 import { MasonryGrid } from '@/components/gallery/MasonryGrid';
 import { useToast } from '@/hooks/use-toast';
@@ -21,7 +19,6 @@ export interface Image {
   width: number;
   height: number;
   orientation: string;
-  // Modification ici : tags peut être une string (de la BDD) qu'on va parser en tableau
   tags: string[] | null;
   created_by: string | null;
   created_at: string;
@@ -46,9 +43,7 @@ const Images = () => {
       ascending: false
     });
 
-    // If the user is admin_client, only show images from their client's projects
     if (userRole === 'admin_client') {
-      // First, get the user's client ID from their profile
       const {
         data: profileData,
         error: profileError
@@ -57,9 +52,7 @@ const Images = () => {
         throw profileError;
       }
 
-      // If they have a client ID, filter images by projects belonging to that client
       if (profileData?.id_client) {
-        // Get all projects for this client
         const {
           data: projectsData,
           error: projectsError
@@ -68,14 +61,11 @@ const Images = () => {
           throw projectsError;
         }
 
-        // Extract project IDs
         const projectIds = projectsData.map(project => project.id);
 
-        // Filter images by these project IDs
         if (projectIds.length > 0) {
           query = query.in('id_projet', projectIds);
         } else {
-          // If no projects, return empty array (no images)
           return [];
         }
       }
@@ -96,26 +86,22 @@ const Images = () => {
       throw error;
     }
     
-    // Convertir les tags de string à string[] en parsant la valeur JSON si nécessaire
     return data.map(img => ({
       ...img,
       tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
     })) as Image[];
   };
   
-  // Fonction utilitaire pour parser les tags depuis une string
   const parseTagsString = (tagsString: string | null): string[] | null => {
     if (!tagsString) return null;
     try {
-      // Si c'est déjà un JSON (format "[tag1, tag2]"), on le parse
       if (tagsString.startsWith('[')) {
         return JSON.parse(tagsString);
       }
-      // Sinon, on le split par virgule (si c'est un format "tag1,tag2")
       return tagsString.split(',').map(tag => tag.trim());
     } catch (e) {
       console.error('Error parsing tags:', e);
-      return [tagsString]; // Fallback à un tableau avec la string originale
+      return [tagsString];
     }
   };
   
@@ -137,11 +123,10 @@ const Images = () => {
     });
   };
 
-  // Adapt images format for MasonryGrid component
   const formatImagesForGrid = (images: Image[] = []) => {
     return images.map(image => ({
       id: image.id.toString(),
-      src: image.url_miniature || image.url, // Utiliser la miniature si disponible
+      src: image.url_miniature || image.url,
       alt: image.title,
       title: image.title,
       author: 'User',
@@ -150,7 +135,6 @@ const Images = () => {
   };
   
   return <div className="min-h-screen flex flex-col">
-      <UserGreetingBar />
       <Header />
       
       <main className="flex-grow pt-20 py-0">

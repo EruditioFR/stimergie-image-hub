@@ -1,10 +1,8 @@
-
 import { Header } from "@/components/ui/layout/Header";
 import { Footer } from "@/components/ui/layout/Footer";
 import { ClientsHeader } from "@/components/clients/ClientsHeader";
 import { ClientsList } from "@/components/clients/ClientsList";
 import { useState } from "react";
-import { UserGreetingBar } from "@/components/ui/UserGreetingBar";
 import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
 import { useClients } from "@/hooks/useClients";
 import { DeleteClientDialog } from "@/components/clients/DeleteClientDialog";
@@ -73,7 +71,6 @@ export default function Clients() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <UserGreetingBar />
       <div className="pt-16 py-0">
         <ClientsHeader
           onAddClick={() => {
