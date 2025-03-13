@@ -11,35 +11,116 @@ interface Image {
 }
 
 /**
- * Solution pour contourner les problèmes CORS avec Dropbox
- * Modifier l'URL pour utiliser dl=1 et convertir vers un format CORS-friendly
+ * Vérifie si une URL est une URL Dropbox
+ */
+function isDropboxUrl(url: string): boolean {
+  return url.includes('dropbox.com');
+}
+
+/**
+ * Extrait le chemin du fichier à partir d'une URL Dropbox
+ */
+function extractDropboxFilePath(url: string): string | null {
+  try {
+    // Format typique: https://www.dropbox.com/scl/fi/[id]/[filename]?[params]
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/');
+    // Le nom de fichier est généralement le dernier élément du chemin
+    return pathParts[pathParts.length - 1];
+  } catch (error) {
+    console.error("Erreur lors de l'extraction du chemin Dropbox:", error);
+    return null;
+  }
+}
+
+/**
+ * Convertit une URL Dropbox en URL d'API Dropbox pour le téléchargement direct
+ */
+function getDropboxApiUrl(url: string): string {
+  // Remplacer www.dropbox.com par content.dropboxapi.com et ajuster le chemin
+  // Format de l'API pour téléchargement direct: https://content.dropboxapi.com/2/files/download
+  if (url.includes('?')) {
+    // Extract the shared link parameters if present
+    url = url.split('?')[0];
+  }
+  
+  // L'URL de l'API Dropbox pour téléchargement direct
+  return 'https://content.dropboxapi.com/2/files/download';
+}
+
+/**
+ * Solution pour contourner les problèmes CORS avec les sources externes
  */
 function getProxiedUrl(url: string): string {
-  // Cas 1: URLs Dropbox - tenter d'utiliser une approche différente
-  if (url.includes('dropbox.com')) {
-    // Convertir l'URL pour utiliser le dl=1 (téléchargement direct)
-    const urlWithDownload = url.includes('dl=0') 
+  // Cas 1: Si ce n'est pas une URL Dropbox, utiliser un proxy CORS générique
+  if (!isDropboxUrl(url) && url.startsWith('http') && !url.includes(window.location.hostname)) {
+    const corsProxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+    console.log(`URL externe convertie via proxy: ${corsProxyUrl}`);
+    return corsProxyUrl;
+  }
+  
+  // Cas 2: URLs internes ou déjà traitées - retourner telles quelles
+  return url;
+}
+
+/**
+ * Télécharge une image depuis Dropbox en utilisant l'API Dropbox
+ */
+async function downloadFromDropbox(url: string): Promise<Blob | null> {
+  try {
+    // Pour une URL partagée, nous utilisons un différent endpoint
+    const sharedLinkPath = extractDropboxFilePath(url);
+    if (!sharedLinkPath) {
+      throw new Error("Impossible d'extraire le chemin du fichier Dropbox");
+    }
+    
+    console.log(`Tentative de téléchargement Dropbox pour: ${url}`);
+    
+    // Pour une URL partagée publique, utiliser la version dl=1
+    // Cette approche fonctionne pour les liens partagés sans avoir besoin d'authentification
+    const directDownloadUrl = url.includes('dl=0') 
       ? url.replace('dl=0', 'dl=1') 
       : url.includes('dl=1') 
         ? url 
         : `${url}${url.includes('?') ? '&' : '?'}dl=1`;
     
-    // Utiliser un proxy CORS pour contourner les restrictions
-    // Note: Dans un environnement de production, vous devriez utiliser votre propre proxy
-    const corsProxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(urlWithDownload);
-    console.log(`URL Dropbox convertie: ${corsProxyUrl}`);
-    return corsProxyUrl;
+    // Utiliser un proxy CORS pour les téléchargements Dropbox
+    const corsProxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(directDownloadUrl);
+    console.log(`URL Dropbox pour téléchargement direct: ${corsProxyUrl}`);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 secondes timeout
+    
+    const response = await fetch(corsProxyUrl, {
+      method: 'GET',
+      mode: 'cors',
+      credentials: 'omit',
+      cache: 'no-store',
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 Application'
+      }
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      console.error(`Échec du téléchargement Dropbox: ${response.status} ${response.statusText}`);
+      return null;
+    }
+    
+    const blob = await response.blob();
+    if (blob.size === 0) {
+      console.error("Blob de téléchargement Dropbox vide");
+      return null;
+    }
+    
+    console.log(`Image Dropbox téléchargée avec succès, taille: ${blob.size} octets`);
+    return blob;
+  } catch (error) {
+    console.error("Erreur lors du téléchargement depuis Dropbox:", error);
+    return null;
   }
-  
-  // Cas 2: Autres URLs externes - essayer avec un proxy CORS
-  if (url.startsWith('http') && !url.includes(window.location.hostname)) {
-    const corsProxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
-    console.log(`URL externe convertie: ${corsProxyUrl}`);
-    return corsProxyUrl;
-  }
-  
-  // Cas 3: URLs internes ou déjà traitées - retourner telles quelles
-  return url;
 }
 
 export async function downloadImages(images: Image[]) {
@@ -57,41 +138,58 @@ export async function downloadImages(images: Image[]) {
     
     const fetchPromises = images.map(async (img, index) => {
       try {
-        // Obtenir l'URL compatible CORS
-        const imageUrl = getProxiedUrl(img.src);
-        console.log(`Tentative de téléchargement depuis: ${imageUrl}`);
+        let blob: Blob | null = null;
         
-        // Utiliser un timeout pour éviter les requêtes bloquées trop longtemps
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 secondes timeout
-        
-        const response = await fetch(imageUrl, { 
-          mode: 'cors',
-          credentials: 'omit', // Ne pas envoyer de cookies
-          cache: 'no-store', // Ne pas utiliser le cache
-          signal: controller.signal,
-          headers: {
-            // Définir un User-Agent pour éviter d'être bloqué par certains serveurs
-            'User-Agent': 'Mozilla/5.0 Application'
+        // Traiter différemment les URLs Dropbox et les autres URLs
+        if (isDropboxUrl(img.src)) {
+          console.log(`Utilisation de l'API Dropbox pour: ${img.src}`);
+          blob = await downloadFromDropbox(img.src);
+        } else {
+          // Pour les autres URLs, utiliser l'approche standard avec proxy si nécessaire
+          const imageUrl = getProxiedUrl(img.src);
+          console.log(`Tentative de téléchargement standard depuis: ${imageUrl}`);
+          
+          // Utiliser un timeout pour éviter les requêtes bloquées trop longtemps
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 secondes timeout
+          
+          try {
+            const response = await fetch(imageUrl, { 
+              mode: 'cors',
+              credentials: 'omit', // Ne pas envoyer de cookies
+              cache: 'no-store', // Ne pas utiliser le cache
+              signal: controller.signal,
+              headers: {
+                // Définir un User-Agent pour éviter d'être bloqué par certains serveurs
+                'User-Agent': 'Mozilla/5.0 Application'
+              }
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+              console.error(`Échec lors du téléchargement de ${imageUrl}: ${response.status} ${response.statusText}`);
+              throw new Error(`Échec de téléchargement: ${response.status}`);
+            }
+            
+            blob = await response.blob();
+            if (blob.size === 0) {
+              console.error(`Image téléchargée vide: ${imageUrl}`);
+              throw new Error("Blob vide");
+            }
+            
+            console.log(`Image téléchargée avec succès: ${imageUrl}, taille: ${blob.size} octets`);
+          } catch (error) {
+            console.error(`Erreur lors du téléchargement standard: ${error}`);
+            blob = null;
           }
-        });
+        }
         
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          console.error(`Échec lors du téléchargement de ${imageUrl}: ${response.status} ${response.statusText}`);
+        // Si nous n'avons pas réussi à télécharger l'image, on passe à la suivante
+        if (!blob) {
           errorCount++;
           return false;
         }
-        
-        const blob = await response.blob();
-        if (blob.size === 0) {
-          console.error(`Image téléchargée vide: ${imageUrl}`);
-          errorCount++;
-          return false;
-        }
-        
-        console.log(`Image téléchargée avec succès: ${imageUrl}, taille: ${blob.size} octets`);
         
         // Déterminer l'extension de fichier à partir du type MIME ou de l'URL
         let extension = 'jpg';
