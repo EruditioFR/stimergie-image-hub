@@ -1,7 +1,5 @@
 
 import { Link } from 'react-router-dom';
-import { Search, LogIn } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { UserMenu } from './UserMenu';
 
@@ -32,41 +30,9 @@ export function DesktopNav({
   onNavigate,
   formatRole
 }: DesktopNavProps) {
-  return (
-    <nav className="hidden md:flex space-x-8 items-center">
-      <Link to="/" className={cn("text-sm font-medium transition-colors hover:text-primary text-black", 
-        location.pathname === "/" ? "text-primary" : "")}>
-        Accueil
-      </Link>
-      {user && (
-        <Link to="/gallery" className={cn("text-sm font-medium transition-colors hover:text-primary text-black", 
-          location.pathname.includes("/gallery") ? "text-primary" : "")}>
-          Banque d'images
-        </Link>
-      )}
-      <Link to="/about" className="text-sm font-medium transition-colors hover:text-primary text-black">
-        À propos
-      </Link>
-      <Button variant="ghost" size="icon" className="ml-2">
-        <Search className="h-4 w-4" />
-      </Button>
-      
-      {user ? (
-        <UserMenu 
-          userProfile={userProfile}
-          canAccessClientsPage={canAccessClientsPage}
-          canAccessImagesPage={canAccessImagesPage}
-          onLogout={onLogout}
-          formatRole={formatRole}
-        />
-      ) : (
-        <Button variant="default" size="sm" onClick={() => onNavigate('/auth')} className="ml-2">
-          <LogIn className="h-4 w-4 mr-2" />
-          Connexion
-        </Button>
-      )}
-    </nav>
-  );
+  // Le composant DesktopNav n'est plus utilisé car nous avons intégré 
+  // la navigation directement dans le composant Header
+  return null;
 }
 
 export default DesktopNav;

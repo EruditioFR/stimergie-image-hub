@@ -1,6 +1,6 @@
 
 import { Link } from 'react-router-dom';
-import { Search, LogIn, LogOut } from 'lucide-react';
+import { Home, Image, FileText, Users, FolderOpen, Building, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -35,13 +35,24 @@ export function MobileMenu({
 }: MobileMenuProps) {
   if (!isOpen) return null;
 
+  const navigationItems = [
+    { name: 'Accueil', path: '/', icon: <Home className="h-5 w-5 mr-3" /> },
+    { name: 'Banque d\'images', path: '/gallery', icon: <Image className="h-5 w-5 mr-3" /> },
+    { name: 'Ressources', path: '/resources', icon: <FileText className="h-5 w-5 mr-3" /> },
+    { name: 'Ensemble', path: '/projects', icon: <Users className="h-5 w-5 mr-3" /> },
+    { name: 'Albums partagés', path: '/shared-albums', icon: <FolderOpen className="h-5 w-5 mr-3" /> },
+    { name: 'Clients', path: '/clients', icon: <Users className="h-5 w-5 mr-3" />, access: canAccessClientsPage },
+    { name: 'Agence', path: '/agency', icon: <Building className="h-5 w-5 mr-3" /> },
+    { name: 'Administration', path: '/admin', icon: <Settings className="h-5 w-5 mr-3" />, access: canAccessImagesPage }
+  ];
+
+  const filteredNavItems = navigationItems.filter(item => 
+    !item.hasOwnProperty('access') || item.access === true
+  );
+
   return (
     <div className="md:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur-lg shadow-lg animate-fade-in z-50">
       <nav className="flex flex-col p-6 space-y-4">
-        <div className="flex justify-center mb-4">
-          <img src="/lovable-uploads/9ce78881-8c65-4716-ab7f-128bb420c8e9.png" alt="Stimergie Logo" className="h-8 w-auto" />
-        </div>
-        
         {userProfile && (
           <div className="text-center mb-4 py-2 border-b border-gray-100">
             <div className="font-medium">{userProfile.firstName} {userProfile.lastName}</div>
@@ -49,22 +60,21 @@ export function MobileMenu({
           </div>
         )}
         
-        <Link to="/" className={cn("text-base font-medium py-2 transition-colors text-black", location.pathname === "/" ? "text-primary" : "")}>
-          Accueil
-        </Link>
-        {user && (
-          <Link to="/gallery" className="text-base font-medium py-2 transition-colors text-black">
-            Banque d'images
+        {filteredNavItems.map((item) => (
+          <Link 
+            key={item.name}
+            to={item.path} 
+            className={cn(
+              "flex items-center text-base font-medium py-2 transition-colors",
+              location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path))
+                ? "text-primary"
+                : "text-foreground hover:text-primary"
+            )}
+          >
+            {item.icon}
+            {item.name}
           </Link>
-        )}
-        <Link to="/about" className="text-base font-medium py-2 transition-colors text-black">
-          À propos
-        </Link>
-        
-        <div className="relative mt-2">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input type="text" placeholder="Rechercher..." className="w-full pl-10 pr-4 py-2 rounded-full bg-muted text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
-        </div>
+        ))}
         
         {user ? (
           <Button variant="destructive" onClick={onLogout} className="mt-4">
@@ -73,7 +83,6 @@ export function MobileMenu({
           </Button>
         ) : (
           <Button variant="default" onClick={() => onNavigate('/auth')} className="mt-4">
-            <LogIn className="h-4 w-4 mr-2" />
             Connexion
           </Button>
         )}
