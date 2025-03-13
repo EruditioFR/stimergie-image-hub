@@ -86,9 +86,9 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2">
         {/* First column */}
-        <div className="flex flex-col gap-3 md:gap-4">
+        <div className="flex flex-col gap-1 md:gap-2">
           {getColumnImages(0, 3).map((image) => (
             <div 
               key={image.id}
@@ -104,7 +104,7 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
         </div>
         
         {/* Second column */}
-        <div className="flex flex-col gap-3 md:gap-4">
+        <div className="flex flex-col gap-1 md:gap-2">
           {getColumnImages(1, 3).map((image) => (
             <div 
               key={image.id} 
@@ -120,7 +120,7 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
         </div>
         
         {/* Third column */}
-        <div className="hidden lg:flex flex-col gap-3 md:gap-4">
+        <div className="hidden lg:flex flex-col gap-1 md:gap-2">
           {getColumnImages(2, 3).map((image) => (
             <div 
               key={image.id} 
