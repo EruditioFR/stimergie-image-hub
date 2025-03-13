@@ -49,19 +49,36 @@ const ImageItem = memo(function ImageItem({
   onToggleSelection: () => void;
 }) {
   return (
-    <div className="opacity-100 relative">
+    <div className="opacity-100 relative group">
+      {/* Selection indicator - now larger and more visible */}
       <div 
-        className={`absolute top-2 left-2 w-5 h-5 rounded-full z-10 border-2 cursor-pointer transition-colors ${
-          isSelected 
-            ? 'bg-primary border-white' 
-            : 'bg-white/50 border-white/70 hover:bg-white/80'
-        }`}
+        className={`absolute top-3 left-3 w-7 h-7 rounded-full z-10 border-2 cursor-pointer 
+          flex items-center justify-center transition-colors 
+          ${isSelected 
+            ? 'bg-primary border-white scale-110' 
+            : 'bg-white/60 border-white/70 group-hover:bg-white/90'
+          }`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggleSelection();
+        }}
+      >
+        {isSelected && (
+          <span className="text-white font-bold text-xs">✓</span>
+        )}
+      </div>
+      
+      {/* Invisible larger hit area overlay for better selection UX */}
+      <div 
+        className="absolute top-0 left-0 w-1/4 h-1/4 min-w-[60px] min-h-[60px] z-5 cursor-pointer"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           onToggleSelection();
         }}
       />
+      
       <ImageCard 
         {...image} 
         className={`w-full transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
