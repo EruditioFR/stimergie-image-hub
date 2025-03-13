@@ -67,12 +67,12 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
               className="animate-fade-up opacity-0" 
               style={{ 
                 animationDelay: `${0.05 * index}s`, 
-                animationFillMode: 'forwards' 
+                animationFillMode: 'forwards'
               }}
             >
               <ImageCard 
                 {...image} 
-                className="h-full"
+                className="w-full"
                 orientation={image.orientation}
               />
             </div>
@@ -92,7 +92,7 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
             >
               <ImageCard 
                 {...image} 
-                className="h-full"
+                className="w-full"
                 orientation={image.orientation}
               />
             </div>
@@ -112,7 +112,7 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
             >
               <ImageCard 
                 {...image} 
-                className="h-full"
+                className="w-full"
                 orientation={image.orientation}
               />
             </div>

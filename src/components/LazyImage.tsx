@@ -67,7 +67,6 @@ export function LazyImage({
             objectFit,
             isLoaded ? "opacity-100" : "opacity-0"
           )}
-          style={{ opacity: 1 }}  
           onLoad={handleImageLoad}
         />
       )}

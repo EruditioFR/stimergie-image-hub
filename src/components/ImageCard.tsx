@@ -49,7 +49,7 @@ export function ImageCard({ id, src, alt, title, author, className, orientation 
           src={src} 
           alt={alt} 
           className={`w-full ${getAspectRatio()}`}
-          objectFit="object-contain" 
+          objectFit="object-cover" 
         />
         
         {/* Hover overlay */}
