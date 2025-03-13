@@ -32,8 +32,9 @@ export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
     // Traiter différemment les URLs Dropbox
     if (isDropboxUrl(url)) {
       const directDownloadUrl = getDropboxDownloadUrl(url);
+      console.log(`URL Dropbox convertie en URL directe: ${directDownloadUrl}`);
       fetchUrl = getProxiedUrl(directDownloadUrl);
-      console.log(`URL Dropbox convertie: ${fetchUrl}`);
+      console.log(`URL finale après proxy: ${fetchUrl}`);
     } else {
       fetchUrl = getProxiedUrl(url);
     }
@@ -46,11 +47,13 @@ export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
       mode: 'cors',
       credentials: 'omit',
       cache: 'no-store',
+      redirect: 'follow',
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 Application',
-        // Indiquer explicitement que nous voulons un contenu binaire/image
-        'Accept': 'image/*'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'image/*, */*;q=0.8',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       }
     });
     
@@ -58,6 +61,12 @@ export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
     
     if (!response.ok) {
       console.error(`Échec du téléchargement: ${response.status} ${response.statusText}`);
+      return null;
+    }
+    
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('text/html')) {
+      console.error(`Réponse de type HTML détectée via les en-têtes: ${contentType}`);
       return null;
     }
     

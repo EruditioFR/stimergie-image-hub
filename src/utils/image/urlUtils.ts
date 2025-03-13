@@ -26,13 +26,28 @@ export function extractDropboxFilePath(url: string): string | null {
  * Convertit une URL Dropbox en URL d'API Dropbox pour le téléchargement direct
  */
 export function getDropboxDownloadUrl(url: string): string {
-  // Pour une URL partagée publique, utiliser la version dl=1
-  // Cette approche fonctionne pour les liens partagés sans avoir besoin d'authentification
+  // Transformer l'URL standard en URL de contenu direct
+  // Format: de www.dropbox.com à dl.dropboxusercontent.com
+  if (url.includes('www.dropbox.com')) {
+    // Extraire le chemin de l'URL
+    try {
+      const urlObj = new URL(url);
+      // Remplacer le domaine et adapter le chemin
+      const newPath = urlObj.pathname.replace('/scl/fi/', '/').split('?')[0];
+      return `https://dl.dropboxusercontent.com${newPath}`;
+    } catch (error) {
+      console.error("Erreur lors de la conversion de l'URL Dropbox:", error);
+    }
+  }
+  
+  // Si la conversion échoue ou si ce n'est pas une URL standard, utiliser la méthode de secours
   return url.includes('dl=0') 
-    ? url.replace('dl=0', 'dl=1') 
+    ? url.replace('dl=0', 'raw=1') 
     : url.includes('dl=1') 
-      ? url 
-      : `${url}${url.includes('?') ? '&' : '?'}dl=1`;
+      ? url.replace('dl=1', 'raw=1')
+      : url.includes('raw=1')
+        ? url
+        : `${url}${url.includes('?') ? '&' : '?'}raw=1`;
 }
 
 /**
@@ -41,6 +56,14 @@ export function getDropboxDownloadUrl(url: string): string {
 export function getProxiedUrl(url: string): string {
   // Utiliser un proxy CORS pour toutes les URL externes
   if (url.startsWith('http') && !url.includes(window.location.hostname)) {
+    // Pour Dropbox, utiliser un proxy qui préserve les en-têtes binaires
+    if (url.includes('dropboxusercontent.com')) {
+      const corsProxyUrl = 'https://images.weserv.nl/?url=' + encodeURIComponent(url);
+      console.log(`URL Dropbox convertie via proxy spécial: ${corsProxyUrl}`);
+      return corsProxyUrl;
+    }
+    
+    // Pour les autres URLs
     const corsProxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
     console.log(`URL externe convertie via proxy: ${corsProxyUrl}`);
     return corsProxyUrl;
