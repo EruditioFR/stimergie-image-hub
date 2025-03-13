@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Image } from '@/pages/Images';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from "sonner";
+import { useAuth } from '@/context/AuthContext';
 
 // Mock categories for filters
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
@@ -21,9 +22,12 @@ const Gallery = () => {
   const searchQuery = searchParams.get('q') || '';
   const tagFilter = searchParams.get('tag') || '';
   const [activeTab, setActiveTab] = useState('all');
+  const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [allImages, setAllImages] = useState<Image[]>([]);
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
+  const { userRole } = useAuth();
+  const isAdmin = ['admin', 'admin_client'].includes(userRole);
 
   // Fonction utilitaire pour parser les tags depuis une string
   const parseTagsString = (tagsString: string | null): string[] | null => {
@@ -50,19 +54,25 @@ const Gallery = () => {
     setHasActiveFilters(
       searchQuery !== '' || 
       tagFilter !== '' || 
-      activeTab.toLowerCase() !== 'all'
+      activeTab.toLowerCase() !== 'all' ||
+      selectedClient !== null
     );
-  }, [searchQuery, tagFilter, activeTab]);
+  }, [searchQuery, tagFilter, activeTab, selectedClient]);
 
   // Fetch images from Supabase
   const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['gallery-images', searchQuery, tagFilter, activeTab, page],
+    queryKey: ['gallery-images', searchQuery, tagFilter, activeTab, selectedClient, page],
     queryFn: async () => {
-      console.log('Fetching images with:', { searchQuery, tagFilter, activeTab, page });
+      console.log('Fetching images with:', { searchQuery, tagFilter, activeTab, selectedClient, page });
       
       let query = supabase
         .from('images')
-        .select('*')
+        .select(`
+          *,
+          projets:id_projet (
+            id_client
+          )
+        `)
         .order('created_at', { ascending: false });
       
       if (searchQuery) {
@@ -75,6 +85,10 @@ const Gallery = () => {
       
       if (activeTab.toLowerCase() !== 'all') {
         query = query.ilike('tags', `%${activeTab.toLowerCase()}%`);
+      }
+
+      if (selectedClient && isAdmin) {
+        query = query.eq('projets.id_client', selectedClient);
       }
       
       // Apply pagination
@@ -135,6 +149,7 @@ const Gallery = () => {
       setPage(1);
       setAllImages([]);
       setActiveTab('all');
+      setSelectedClient(null);
       setHasActiveFilters(false);
     };
   }, [refetch]);
@@ -156,9 +171,15 @@ const Gallery = () => {
     setActiveTab(value);
   };
 
+  const handleClientChange = (clientId: string | null) => {
+    console.log('Client changed to:', clientId);
+    setSelectedClient(clientId);
+  };
+
   const handleResetFilters = useCallback(() => {
     console.log('Resetting filters');
     setActiveTab('all');
+    setSelectedClient(null);
     setPage(1);
     setAllImages([]);
     setHasActiveFilters(false);
@@ -202,6 +223,8 @@ const Gallery = () => {
           activeTab={activeTab}
           onTabChange={handleTabChange}
           categories={categories}
+          selectedClient={selectedClient}
+          onClientChange={handleClientChange}
         />
         
         <div className="max-w-7xl mx-auto px-6 py-12">
