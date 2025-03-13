@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ImageCard } from '@/components/ImageCard';
 import { Button } from '@/components/ui/button';
@@ -30,12 +29,10 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const { user } = useAuth();
   
-  // Function to split images into columns for masonry layout
   const getColumnImages = (columnIndex: number, columnCount: number) => {
     return images.filter((_, index) => index % columnCount === columnIndex);
   };
 
-  // Toggle image selection
   const toggleImageSelection = (id: string) => {
     setSelectedImages(prev => {
       if (prev.includes(id)) {
@@ -46,12 +43,10 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
     });
   };
 
-  // Check if image is selected
   const isImageSelected = (id: string) => {
     return selectedImages.includes(id);
   };
 
-  // Download selected images as ZIP
   const downloadSelectedImages = async () => {
     if (selectedImages.length === 0) {
       toast.error("Veuillez sélectionner au moins une image");
@@ -64,40 +59,66 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
       const zip = new JSZip();
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
       
-      // Add each selected image to the zip file
-      const fetchPromises = selectedImagesData.map(async (img) => {
+      const fetchPromises = selectedImagesData.map(async (img, index) => {
         try {
-          const response = await fetch(img.src);
-          if (!response.ok) throw new Error(`Failed to fetch ${img.src}`);
+          const imageUrl = img.src;
+          console.log(`Fetching image: ${imageUrl}`);
+          
+          const response = await fetch(imageUrl, { 
+            mode: 'cors',
+            cache: 'no-cache'
+          });
+          
+          if (!response.ok) {
+            console.error(`Failed to fetch ${imageUrl}: ${response.status} ${response.statusText}`);
+            throw new Error(`Failed to fetch ${imageUrl}`);
+          }
           
           const blob = await response.blob();
-          // Get file extension from URL
-          const extension = img.src.split('.').pop() || 'jpg';
-          // Use image title or id as filename
-          const filename = `${img.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${img.id}.${extension}`;
+          console.log(`Image fetched successfully: ${imageUrl}, size: ${blob.size} bytes`);
+          
+          let extension = 'jpg';
+          if (blob.type) {
+            extension = blob.type.split('/')[1] || 'jpg';
+          } else if (imageUrl.includes('.')) {
+            extension = imageUrl.split('.').pop() || 'jpg';
+          }
+          
+          const filename = `image_${index + 1}.${extension}`;
+          console.log(`Adding to zip as: ${filename}`);
           
           zip.file(filename, blob);
           return true;
         } catch (error) {
-          console.error(`Error fetching ${img.src}:`, error);
+          console.error(`Error processing image ${img.src}:`, error);
           return false;
         }
       });
       
-      await Promise.all(fetchPromises);
-      
-      // Generate the zip file
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      saveAs(zipBlob, `images_selection_${new Date().toISOString().slice(0, 10)}.zip`);
-      
-      toast.success("Téléchargement prêt");
+      try {
+        await Promise.all(fetchPromises);
+        console.log("All fetch promises completed");
+        
+        const zipBlob = await zip.generateAsync({ 
+          type: 'blob',
+          compression: 'DEFLATE',
+          compressionOptions: { level: 6 }
+        });
+        
+        console.log(`ZIP generated, size: ${zipBlob.size} bytes`);
+        
+        saveAs(zipBlob, `images_selection_${new Date().toISOString().slice(0, 10)}.zip`);
+        toast.success("Téléchargement prêt");
+      } catch (error) {
+        console.error("Error processing images:", error);
+        toast.error("Certaines images n'ont pas pu être téléchargées");
+      }
     } catch (error) {
       console.error("Error creating zip:", error);
       toast.error("Une erreur est survenue lors du téléchargement");
     }
   };
 
-  // Open share dialog
   const openShareDialog = () => {
     if (!user) {
       toast.error("Vous devez être connecté pour partager des images");
@@ -112,7 +133,6 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
     setIsShareDialogOpen(true);
   };
 
-  // Handle scroll for infinite loading
   const handleScroll = React.useCallback(() => {
     if (!onLoadMore) return;
     
@@ -120,16 +140,13 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
     const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
     const clientHeight = document.documentElement.clientHeight;
     
-    // Load more when user scrolls to bottom (with a 300px threshold for earlier loading)
     if (scrollHeight - scrollTop - clientHeight < 300 && !isLoading) {
       onLoadMore();
     }
   }, [onLoadMore, isLoading]);
 
-  // Add scroll event listener with debounce
   React.useEffect(() => {
     if (onLoadMore) {
-      // Debounce scroll event to improve performance
       let scrollTimer: number | null = null;
       
       const debouncedScroll = () => {
@@ -145,19 +162,17 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
     }
   }, [onLoadMore, handleScroll]);
 
-  // Preload initial images
   React.useEffect(() => {
-    // Précharger les premières images visibles pour un affichage plus rapide
-    const preloadInitialImages = () => {
-      const imagesToPreload = images.slice(0, 6); // Préchargement des 6 premières images
-      
-      imagesToPreload.forEach(image => {
-        const img = new Image();
-        img.src = image.src;
-      });
-    };
-    
     if (images.length > 0) {
+      const preloadInitialImages = () => {
+        const imagesToPreload = images.slice(0, 6);
+        
+        imagesToPreload.forEach(image => {
+          const img = new Image();
+          img.src = image.src;
+        });
+      };
+      
       preloadInitialImages();
     }
   }, [images]);
@@ -174,7 +189,6 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
 
   return (
     <>
-      {/* Selection Actions Bar */}
       {selectedImages.length > 0 && (
         <div className="sticky top-20 z-10 bg-background/80 backdrop-blur-sm p-4 mb-4 rounded-lg border shadow-sm flex items-center justify-between">
           <div>
@@ -210,7 +224,6 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2">
-        {/* First column */}
         <div className="flex flex-col gap-1 md:gap-2">
           {getColumnImages(0, 3).map((image) => (
             <div 
@@ -238,7 +251,6 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
           ))}
         </div>
         
-        {/* Second column */}
         <div className="flex flex-col gap-1 md:gap-2">
           {getColumnImages(1, 3).map((image) => (
             <div 
@@ -266,7 +278,6 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
           ))}
         </div>
         
-        {/* Third column */}
         <div className="hidden lg:flex flex-col gap-1 md:gap-2">
           {getColumnImages(2, 3).map((image) => (
             <div 
@@ -295,14 +306,12 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
         </div>
       </div>
 
-      {/* Loading indicator for infinite scroll */}
       {isLoading && images.length > 0 && (
         <div className="flex justify-center mt-6">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
       )}
 
-      {/* Share dialog */}
       <CreateAlbumDialog 
         isOpen={isShareDialogOpen}
         onOpenChange={setIsShareDialogOpen}
