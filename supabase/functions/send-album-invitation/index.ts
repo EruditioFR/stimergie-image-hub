@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -101,6 +100,9 @@ const handler = async (req: Request) => {
       year: 'numeric'
     });
 
+    // Récupérer l'URL publique et s'assurer qu'elle n'a pas de slash à la fin
+    const publicUrl = (Deno.env.get("PUBLIC_URL") || "https://votre-domaine.com").replace(/\/$/, "");
+
     // Construction du contenu HTML de l'email
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 5px;">
@@ -108,7 +110,7 @@ const handler = async (req: Request) => {
         <h2 style="color: #555;">${albumName}</h2>
         ${message ? `<p style="color: #666; font-style: italic;">"${message}"</p>` : ''}
         <p style="margin: 20px 0;">Cliquez sur le lien ci-dessous pour accéder à l'album:</p>
-        <a href="${Deno.env.get("PUBLIC_URL") || "https://votre-domaine.com"}/shared-album/${shareKey}" 
+        <a href="${publicUrl}/shared-album/${shareKey}" 
            style="display: inline-block; background-color: #4a90e2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 10px 0;">
            Voir l'album photo
         </a>
@@ -127,7 +129,7 @@ const handler = async (req: Request) => {
       ${message ? `Message: "${message}"` : ''}
       
       Pour y accéder, visitez ce lien:
-      ${Deno.env.get("PUBLIC_URL") || "https://votre-domaine.com"}/shared-album/${shareKey}
+      ${publicUrl}/shared-album/${shareKey}
       
       Cet album est accessible du ${formattedStartDate} au ${formattedEndDate}
     `;

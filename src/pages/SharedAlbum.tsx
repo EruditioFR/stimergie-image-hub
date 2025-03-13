@@ -111,6 +111,14 @@ export function SharedAlbum() {
               </>
             ) : album ? (
               <>
+                <div className="flex flex-col items-center mb-8">
+                  <img 
+                    src="/lovable-uploads/9ce78881-8c65-4716-ab7f-128bb420c8e9.png" 
+                    alt="Stimergie Logo" 
+                    width="200"
+                    className="mb-6"
+                  />
+                </div>
                 <div className="mb-6 text-sm text-muted-foreground">
                   <p>
                     Ceci est un album photo partagé par {album.created_by_name || 'un utilisateur'}. 
