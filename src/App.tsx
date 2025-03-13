@@ -17,6 +17,10 @@ import Users from "@/pages/Users";
 import Auth from "@/pages/Auth";
 import Images from "@/pages/Images";
 import SharedAlbum from "@/pages/SharedAlbum";
+import Resources from "@/pages/Resources";
+import Ensemble from "@/pages/Ensemble";
+import BlogEditor from "@/pages/BlogEditor";
+import BlogPost from "@/pages/BlogPost";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +38,25 @@ const App = () => (
               <Route path="/image/:id" element={<ImageView />} />
               <Route path="/shared-album/:shareKey" element={<SharedAlbum />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/resources" element={<Resources />} />
+              <Route path="/ensemble" element={<Ensemble />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route 
+                path="/blog/new" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
+                    <BlogEditor />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/blog/edit/:id" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
+                    <BlogEditor />
+                  </ProtectedRoute>
+                } 
+              />
               <Route 
                 path="/images" 
                 element={
