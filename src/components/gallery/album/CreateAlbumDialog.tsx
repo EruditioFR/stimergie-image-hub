@@ -44,6 +44,7 @@ export function CreateAlbumDialog({
     }
 
     setIsSubmitting(true);
+    const toastId = toast.loading("Création de l'album et envoi des invitations...");
 
     try {
       // Générer une clé de partage unique
@@ -58,7 +59,8 @@ export function CreateAlbumDialog({
           created_by: user.id,
           access_from: data.accessFrom.toISOString(),
           access_until: data.accessUntil.toISOString(),
-          share_key: shareKey
+          share_key: shareKey,
+          recipients: data.emails.split(',').map(email => email.trim())
         })
         .select('id')
         .single();
@@ -81,16 +83,35 @@ export function CreateAlbumDialog({
         throw new Error(`Erreur lors de l'ajout des images à l'album: ${imagesError.message}`);
       }
 
-      // Envoyer le lien par email - à implémenter dans un edge function
+      // Envoyer les invitations par email via la fonction Edge
       const emails = data.emails.split(',').map(email => email.trim());
       
-      // Appelez ici la fonction d'envoi d'e-mail (en fonction edge)
-      toast.success('Album partagé avec succès!');
+      const { data: invitationResponse, error: invitationError } = await supabase.functions.invoke(
+        'send-album-invitation',
+        {
+          body: {
+            albumId: albumData.id,
+            albumName: data.name,
+            shareKey,
+            recipients: emails,
+            message: data.message,
+            accessFrom: data.accessFrom.toISOString(),
+            accessUntil: data.accessUntil.toISOString()
+          }
+        }
+      );
+      
+      if (invitationError) {
+        console.error("Erreur lors de l'envoi des invitations:", invitationError);
+        toast.error(`Les emails n'ont pas pu être envoyés: ${invitationError.message}`, { id: toastId });
+      } else {
+        toast.success('Album partagé avec succès! Invitations envoyées.', { id: toastId });
+      }
       
       onOpenChange(false);
     } catch (error: any) {
       console.error("Erreur lors du partage:", error);
-      toast.error(`Une erreur est survenue: ${error.message}`);
+      toast.error(`Une erreur est survenue: ${error.message}`, { id: toastId });
     } finally {
       setIsSubmitting(false);
     }
