@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Header } from "@/components/ui/layout/Header";
 import { Footer } from "@/components/ui/layout/Footer";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // Login form schema
 const loginSchema = z.object({
@@ -22,6 +23,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
 
@@ -43,6 +45,7 @@ export default function Auth() {
     try {
       setIsLoading(true);
       await signIn(data.email, data.password);
+      setIsOpen(false);
       navigate("/");
     } catch (error) {
       console.error("Login error:", error);
@@ -51,21 +54,25 @@ export default function Auth() {
     }
   };
 
+  const handleDialogClose = () => {
+    setIsOpen(false);
+    navigate("/");
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <div className="pb-20 px-6 flex-grow flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold">Bienvenue</CardTitle>
-            <CardDescription>
-              Connectez-vous pour accéder à toutes les fonctionnalités
-            </CardDescription>
-          </CardHeader>
-          
-          <Form {...loginForm}>
-            <form onSubmit={loginForm.handleSubmit(onLoginSubmit)}>
-              <CardContent className="space-y-4 pt-4">
+        <Dialog open={isOpen} onOpenChange={handleDialogClose}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold">Bienvenue</DialogTitle>
+              <DialogDescription>
+                Connectez-vous pour accéder à toutes les fonctionnalités
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...loginForm}>
+              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4 pt-4">
                 <FormField
                   control={loginForm.control}
                   name="email"
@@ -92,15 +99,15 @@ export default function Auth() {
                     </FormItem>
                   )}
                 />
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Connexion en cours..." : "Se connecter"}
-                </Button>
-              </CardFooter>
-            </form>
-          </Form>
-        </Card>
+                <div className="pt-2">
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Connexion en cours..." : "Se connecter"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
       <Footer />
     </div>
