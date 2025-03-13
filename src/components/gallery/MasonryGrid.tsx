@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -37,7 +38,14 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
   };
 
   const handleDownload = async () => {
+    if (selectedImages.length === 0) {
+      toast.error("Veuillez sélectionner au moins une image à télécharger");
+      return;
+    }
+    
     const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
+    console.log("Images sélectionnées pour téléchargement:", selectedImagesData);
+    
     await downloadImages(selectedImagesData);
   };
 
