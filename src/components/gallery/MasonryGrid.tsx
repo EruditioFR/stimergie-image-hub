@@ -8,7 +8,7 @@ import { MasonryColumn } from '@/components/gallery/MasonryColumn';
 import { ImageCard } from '@/components/ImageCard';
 import { useImageSelection } from '@/hooks/useImageSelection';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
-import { downloadImages } from '@/utils/imageDownloader';
+import { downloadImages } from '@/utils/image';
 
 interface Image {
   id: string;
