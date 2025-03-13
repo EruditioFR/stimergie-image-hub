@@ -86,9 +86,9 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
 
   if (isLoading && images.length === 0) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0.5 animate-pulse px-0.5">
         {[1, 2, 3, 4, 5, 6].map((_, index) => (
-          <div key={index} className="h-64 rounded-xl bg-muted"></div>
+          <div key={index} className="h-64 rounded-md bg-muted"></div>
         ))}
       </div>
     );
@@ -103,45 +103,15 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
         onShare={openShareDialog}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 md:gap-2">
-        <MasonryColumn 
-          images={getColumnImages(0, 3)} 
-          isImageSelected={isImageSelected}
-          toggleImageSelection={toggleImageSelection}
-        />
-        
-        <MasonryColumn 
-          images={getColumnImages(1, 3)} 
-          isImageSelected={isImageSelected}
-          toggleImageSelection={toggleImageSelection}
-        />
-        
-        <div className="hidden lg:flex flex-col gap-1 md:gap-2">
-          {getColumnImages(2, 3).map((image) => (
-            <div 
-              key={image.id} 
-              className="opacity-100 relative" 
-            >
-              <div 
-                className={`absolute top-2 left-2 w-5 h-5 rounded-full z-10 border-2 cursor-pointer transition-colors ${
-                  isImageSelected(image.id) 
-                    ? 'bg-primary border-white' 
-                    : 'bg-white/50 border-white/70 hover:bg-white/80'
-                }`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  toggleImageSelection(image.id);
-                }}
-              />
-              <ImageCard 
-                {...image} 
-                className={`w-full transition-all ${isImageSelected(image.id) ? 'ring-2 ring-primary ring-offset-2' : ''}`}
-                orientation={image.orientation}
-              />
-            </div>
-          ))}
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-0.5 px-0.5">
+        {[...Array(window.innerWidth >= 1536 ? 5 : window.innerWidth >= 1280 ? 4 : window.innerWidth >= 1024 ? 3 : window.innerWidth >= 640 ? 2 : 1)].map((_, columnIndex) => (
+          <MasonryColumn 
+            key={columnIndex}
+            images={getColumnImages(columnIndex, window.innerWidth >= 1536 ? 5 : window.innerWidth >= 1280 ? 4 : window.innerWidth >= 1024 ? 3 : window.innerWidth >= 640 ? 2 : 1)} 
+            isImageSelected={isImageSelected}
+            toggleImageSelection={toggleImageSelection}
+          />
+        ))}
       </div>
 
       {isLoading && images.length > 0 && (

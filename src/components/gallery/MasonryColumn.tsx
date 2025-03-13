@@ -24,7 +24,7 @@ export function MasonryColumn({
   toggleImageSelection 
 }: MasonryColumnProps) {
   return (
-    <div className="flex flex-col gap-1 md:gap-2">
+    <div className="flex flex-col gap-0.5">
       {images.map((image) => (
         <div 
           key={image.id}
@@ -44,7 +44,7 @@ export function MasonryColumn({
           />
           <ImageCard 
             {...image} 
-            className={`w-full transition-all ${isImageSelected(image.id) ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+            className={`w-full transition-all ${isImageSelected(image.id) ? 'ring-2 ring-primary ring-offset-1' : ''}`}
             orientation={image.orientation}
           />
         </div>

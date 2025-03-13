@@ -36,9 +36,9 @@ export function ImageCard({ id, src, alt, title, author, className, orientation 
   return (
     <div 
       className={cn(
-        "image-card group rounded-xl overflow-hidden bg-card",
+        "image-card group overflow-hidden bg-card",
         "transition-all duration-300 ease-in-out",
-        "shadow-sm hover:shadow-xl",
+        "shadow-none hover:shadow-sm",
         className
       )}
       onMouseEnter={() => setIsHovered(true)}
