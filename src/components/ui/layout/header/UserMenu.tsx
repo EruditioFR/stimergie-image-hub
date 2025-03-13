@@ -53,6 +53,9 @@ export function UserMenu({
           </DropdownMenuItem>
         )}
         <DropdownMenuItem asChild>
+          <Link to="/users" className="cursor-pointer text-black">Utilisateurs</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link to="/projects" className="cursor-pointer text-black">Projets</Link>
         </DropdownMenuItem>
         {canAccessImagesPage && (
