@@ -13,10 +13,25 @@ interface ImageCardProps {
   title: string;
   author: string;
   className?: string;
+  orientation?: string;
 }
 
-export function ImageCard({ id, src, alt, title, author, className }: ImageCardProps) {
+export function ImageCard({ id, src, alt, title, author, className, orientation }: ImageCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+
+  // Get appropriate aspect ratio based on image orientation
+  const getAspectRatio = () => {
+    switch (orientation?.toLowerCase()) {
+      case 'landscape':
+        return 'aspect-[4/3]';
+      case 'portrait':
+        return 'aspect-[3/4]';
+      case 'square':
+        return 'aspect-square';
+      default:
+        return 'aspect-auto'; // Default to auto if orientation is unknown
+    }
+  };
 
   return (
     <div 
@@ -33,7 +48,8 @@ export function ImageCard({ id, src, alt, title, author, className }: ImageCardP
         <LazyImage 
           src={src} 
           alt={alt} 
-          className="w-full aspect-[4/3]" 
+          className={`w-full ${getAspectRatio()}`}
+          objectFit="object-contain" 
         />
         
         {/* Hover overlay */}

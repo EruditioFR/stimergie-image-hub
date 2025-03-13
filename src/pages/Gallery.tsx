@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
-import { Button } from '@/components/ui/button';
 import { GalleryHeader } from '@/components/gallery/GalleryHeader';
 import { MasonryGrid } from '@/components/gallery/MasonryGrid';
 import { EmptyResults } from '@/components/gallery/EmptyResults';
@@ -14,11 +13,15 @@ import { useQuery } from '@tanstack/react-query';
 // Mock categories for filters
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
 
+const IMAGES_PER_PAGE = 15;
+
 const Gallery = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const tagFilter = searchParams.get('tag') || '';
   const [activeTab, setActiveTab] = useState('all');
+  const [page, setPage] = useState(1);
+  const [allImages, setAllImages] = useState<Image[]>([]);
 
   // Fonction utilitaire pour parser les tags depuis une string
   const parseTagsString = (tagsString: string | null): string[] | null => {
@@ -37,13 +40,14 @@ const Gallery = () => {
   };
 
   // Fetch images from Supabase
-  const { data: images = [], isLoading } = useQuery({
-    queryKey: ['gallery-images', searchQuery, tagFilter],
+  const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
+    queryKey: ['gallery-images', searchQuery, tagFilter, page],
     queryFn: async () => {
       let query = supabase
         .from('images')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range((page - 1) * IMAGES_PER_PAGE, page * IMAGES_PER_PAGE - 1);
 
       if (searchQuery) {
         query = query.ilike('title', `%${searchQuery}%`);
@@ -65,13 +69,41 @@ const Gallery = () => {
         ...img,
         tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
       })) as Image[];
-    }
+    },
+    enabled: true,
   });
+
+  // Add newly loaded images to our collection
+  useEffect(() => {
+    if (newImages.length > 0) {
+      if (page === 1) {
+        setAllImages(newImages);
+      } else {
+        // Ensure we don't add duplicates
+        const newImageIds = new Set(newImages.map(img => img.id));
+        const filteredExistingImages = allImages.filter(img => !newImageIds.has(img.id));
+        setAllImages([...filteredExistingImages, ...newImages]);
+      }
+    }
+  }, [newImages, page]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+    setAllImages([]);
+  }, [searchQuery, tagFilter, activeTab]);
+
+  // Handle loading more images
+  const loadMoreImages = () => {
+    if (!isLoading && !isFetching && newImages.length === IMAGES_PER_PAGE) {
+      setPage(prev => prev + 1);
+    }
+  };
 
   // Filter images based on active tab
   const getFilteredImages = () => {
-    if (activeTab === 'all') return images;
-    return images.filter(image => 
+    if (activeTab === 'all') return allImages;
+    return allImages.filter(image => 
       image.tags?.some(tag => 
         tag.toLowerCase() === activeTab.toLowerCase()
       )
@@ -90,7 +122,8 @@ const Gallery = () => {
       alt: image.title,
       title: image.title,
       author: 'User',
-      tags: image.tags
+      tags: image.tags,
+      orientation: image.orientation
     }));
   };
 
@@ -107,12 +140,13 @@ const Gallery = () => {
         />
         
         <div className="max-w-7xl mx-auto px-6 py-12">
-          {isLoading ? (
+          {isLoading && allImages.length === 0 ? (
             <MasonryGrid images={[]} isLoading={true} />
           ) : getFilteredImages().length > 0 ? (
             <MasonryGrid 
               images={formatImagesForGrid(getFilteredImages())} 
-              isLoading={false}
+              isLoading={isLoading || isFetching}
+              onLoadMore={loadMoreImages}
             />
           ) : (
             <EmptyResults onReset={() => handleTabChange('all')} />

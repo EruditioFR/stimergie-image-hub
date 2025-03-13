@@ -40,7 +40,7 @@ export function ImageDetail() {
       const { data, error } = await supabase
         .from('images')
         .select('*')
-        .eq('id', id)
+        .eq('id', parseInt(id))  // Convert string to number here
         .single();
       
       if (error) {
