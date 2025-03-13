@@ -8,6 +8,7 @@ import { MasonryGrid } from '@/components/gallery/MasonryGrid';
 import { EmptyResults } from '@/components/gallery/EmptyResults';
 import { useAuth } from '@/context/AuthContext';
 import { useGalleryImages } from '@/hooks/useGalleryImages';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 // Mock categories for filters
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
@@ -17,6 +18,7 @@ const Gallery = () => {
   const searchQuery = searchParams.get('q') || '';
   const { userRole, user } = useAuth();
   const isAdmin = ['admin', 'admin_client'].includes(userRole);
+  const userProfile = useUserProfile(user, userRole);
 
   const {
     allImages,
@@ -31,9 +33,6 @@ const Gallery = () => {
     handleResetFilters,
     formatImagesForGrid
   } = useGalleryImages(isAdmin);
-
-  const userName = user?.user_metadata?.first_name || user?.user_metadata?.firstName || '';
-  const userLastName = user?.user_metadata?.last_name || user?.user_metadata?.lastName || '';
 
   // Ensure we refetch when component mounts
   useEffect(() => {
@@ -67,8 +66,8 @@ const Gallery = () => {
           categories={categories}
           selectedClient={selectedClient}
           onClientChange={handleClientChange}
-          userName={userName}
-          userLastName={userLastName}
+          userName={userProfile?.firstName || ''}
+          userLastName={userProfile?.lastName || ''}
         />
         
         <div className="max-w-7xl mx-auto px-6 py-12">
