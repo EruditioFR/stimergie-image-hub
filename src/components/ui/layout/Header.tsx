@@ -60,28 +60,30 @@ export function Header() {
           />
         </Link>
 
-        <div className="hidden md:flex flex-1">
-          <NavigationMenu className="mx-auto">
-            <NavigationMenuList className="space-x-1">
-              {filteredNavItems.map((item) => (
-                <NavigationMenuItem key={item.name}>
-                  <Link
-                    to={item.path}
-                    className={cn(
-                      "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                      location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path))
-                        ? "text-primary"
-                        : "text-foreground hover:text-primary hover:bg-accent/50"
-                    )}
-                  >
-                    {item.icon}
-                    {item.name}
-                  </Link>
-                </NavigationMenuItem>
-              ))}
-            </NavigationMenuList>
-          </NavigationMenu>
-        </div>
+        {user && (
+          <div className="hidden md:flex flex-1">
+            <NavigationMenu className="mx-auto">
+              <NavigationMenuList className="space-x-1">
+                {filteredNavItems.map((item) => (
+                  <NavigationMenuItem key={item.name}>
+                    <Link
+                      to={item.path}
+                      className={cn(
+                        "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                        location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path))
+                          ? "text-primary"
+                          : "text-foreground hover:text-primary hover:bg-accent/50"
+                      )}
+                    >
+                      {item.icon}
+                      {item.name}
+                    </Link>
+                  </NavigationMenuItem>
+                ))}
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
+        )}
 
         <div className="flex items-center">
           {user ? (
