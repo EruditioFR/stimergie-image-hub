@@ -111,10 +111,10 @@ const handler = async (req: Request) => {
       Cet album est accessible du ${formattedStartDate} au ${formattedEndDate}
     `;
 
-    // Configuration de l'expéditeur
+    // Configuration de l'expéditeur avec l'adresse email demandée
     const sender = {
-      Email: "noreply@votre-domaine.com",
-      Name: "Galerie Photos"
+      Email: "contact@stimergie.fr",
+      Name: "Galerie Photos Stimergie"
     };
 
     // Envoi des emails avec Mailjet
