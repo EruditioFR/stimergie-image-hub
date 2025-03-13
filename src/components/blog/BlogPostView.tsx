@@ -46,7 +46,7 @@ export function BlogPostView() {
           client_id: data.client_id || null,
           client_name: data.clients?.nom || null,
           featured_image_url: data.featured_image_url || null,
-          content_type: data.content_type || 'Ressource', // Default to 'Ressource' if not specified
+          content_type: (data.content_type as 'Ressource' | 'Ensemble') || 'Ressource', // Ensure proper type
           created_at: data.created_at,
           updated_at: data.updated_at,
           author_id: data.author_id,
