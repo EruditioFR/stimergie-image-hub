@@ -1,8 +1,10 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { nanoid } from 'nanoid';
 
 export interface BlogPost {
   id: string;
@@ -27,6 +29,21 @@ export interface BlogPostFormData {
   content_type: 'Ressource' | 'Ensemble';
   published: boolean;
 }
+
+// Fonction pour générer un slug à partir du titre avec un ID unique
+const generateSlug = (title: string): string => {
+  // Convertir le titre en minuscules et remplacer les caractères spéciaux par des tirets
+  const baseSlug = title
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  
+  // Ajouter un ID unique de 8 caractères à la fin du slug
+  const uniqueId = nanoid(8);
+  return `${baseSlug}-${uniqueId}`;
+};
 
 export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
   const queryClient = useQueryClient();
@@ -76,12 +93,15 @@ export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
         throw new Error("User not authenticated");
       }
 
+      // Générer un slug unique pour le nouvel article
+      const slug = generateSlug(postData.title);
+
       const { data, error } = await supabase
         .from('blog_posts')
         .insert({
           ...postData,
           author_id: user.id,
-          slug: '' // This will be filled by the trigger
+          slug // Utiliser le slug généré
         })
         .select();
 
@@ -103,9 +123,16 @@ export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
 
   const updatePostMutation = useMutation({
     mutationFn: async ({ id, postData }: { id: string; postData: Partial<BlogPostFormData> }) => {
+      // Si le titre est modifié, générer un nouveau slug
+      let updateData = { ...postData };
+      
+      if (postData.title) {
+        updateData.slug = generateSlug(postData.title);
+      }
+
       const { data, error } = await supabase
         .from('blog_posts')
-        .update(postData)
+        .update(updateData)
         .eq('id', id)
         .select();
 
