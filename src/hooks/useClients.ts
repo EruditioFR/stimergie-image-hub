@@ -1,8 +1,20 @@
 
 import { useState, useEffect } from "react";
-import { Client } from "@/pages/Clients";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+export interface Client {
+  id?: string;
+  nom: string;
+  email?: string;
+  telephone?: string;
+  entreprise?: string;
+  notes?: string;
+  secteur_activite?: string;
+  contact_principal?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export const useClients = () => {
   const [clients, setClients] = useState<Client[]>([]);
