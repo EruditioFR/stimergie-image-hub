@@ -15,7 +15,7 @@ const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personne
 const Gallery = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
-  const { userRole } = useAuth();
+  const { userRole, user } = useAuth();
   const isAdmin = ['admin', 'admin_client'].includes(userRole);
 
   const {
@@ -31,6 +31,8 @@ const Gallery = () => {
     handleResetFilters,
     formatImagesForGrid
   } = useGalleryImages(isAdmin);
+
+  const userName = user?.user_metadata?.first_name || user?.user_metadata?.firstName || '';
 
   // Ensure we refetch when component mounts
   useEffect(() => {
@@ -58,12 +60,13 @@ const Gallery = () => {
       
       <main className="flex-grow pt-20">
         <GalleryHeader 
-          title={searchQuery ? `Résultats pour "${searchQuery}"` : 'Galerie d\'images'}
+          title="Banque d'images"
           activeTab={activeTab}
           onTabChange={handleTabChange}
           categories={categories}
           selectedClient={selectedClient}
           onClientChange={handleClientChange}
+          userName={userName}
         />
         
         <div className="max-w-7xl mx-auto px-6 py-12">

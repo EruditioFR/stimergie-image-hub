@@ -11,6 +11,7 @@ interface GalleryHeaderProps {
   categories: string[];
   selectedClient: string | null;
   onClientChange: (clientId: string | null) => void;
+  userName?: string;
 }
 
 export function GalleryHeader({ 
@@ -19,7 +20,8 @@ export function GalleryHeader({
   onTabChange, 
   categories,
   selectedClient,
-  onClientChange
+  onClientChange,
+  userName = ""
 }: GalleryHeaderProps) {
   const { userRole } = useAuth();
   const isAdmin = ['admin', 'admin_client'].includes(userRole);
@@ -33,7 +35,18 @@ export function GalleryHeader({
   return (
     <div className="bg-muted/30 border-b border-border">
       <div className="max-w-7xl mx-auto px-6 py-16">
-        <h1 className="text-3xl font-bold mb-6">{title}</h1>
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold mb-6">{title}</h1>
+          
+          {title === "Banque d'images" && (
+            <p className="text-muted-foreground max-w-3xl mx-auto">
+              Bonjour {userName},
+              <br /><br />
+              Cette galerie vous propose l'ensemble des photos créées par Imprononçable pour vos projets. 
+              Vous pouvez les filtrer par catégorie, par type de droits, puis les prévisualiser et les télécharger.
+            </p>
+          )}
+        </div>
         
         <div className="flex flex-col md:flex-row md:items-center gap-4 mb-8">
           <SearchBar className="md:max-w-sm" variant="minimal" />
