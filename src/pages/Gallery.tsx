@@ -27,7 +27,6 @@ const Gallery = () => {
     hasActiveFilters,
     activeTab,
     selectedClient,
-    allTags,
     loadMoreImages,
     handleTabChange,
     handleClientChange,
@@ -69,7 +68,6 @@ const Gallery = () => {
           onClientChange={handleClientChange}
           userName={userProfile?.firstName || ''}
           userLastName={userProfile?.lastName || ''}
-          availableTags={allTags}
         />
         
         <div className="max-w-7xl mx-auto px-6 py-12">

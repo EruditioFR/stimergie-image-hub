@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Image } from '@/pages/Images';
@@ -27,13 +27,12 @@ const parseTagsString = (tagsString: string | null): string[] | null => {
 export const useGalleryImages = (isAdmin: boolean) => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
-  const tagFilters = searchParams.get('tags')?.split(',') || [];
+  const tagFilter = searchParams.get('tag') || '';
   const [activeTab, setActiveTab] = useState('all');
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [allImages, setAllImages] = useState<Image[]>([]);
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
-  const [allTags, setAllTags] = useState<string[]>([]);
 
   // Reset page when filters change
   useEffect(() => {
@@ -43,17 +42,17 @@ export const useGalleryImages = (isAdmin: boolean) => {
     // Update filter status
     setHasActiveFilters(
       searchQuery !== '' || 
-      tagFilters.length > 0 || 
+      tagFilter !== '' || 
       activeTab.toLowerCase() !== 'all' ||
       selectedClient !== null
     );
-  }, [searchQuery, tagFilters, activeTab, selectedClient]);
+  }, [searchQuery, tagFilter, activeTab, selectedClient]);
 
   // Fetch images from Supabase
   const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['gallery-images', searchQuery, tagFilters, activeTab, selectedClient, page],
+    queryKey: ['gallery-images', searchQuery, tagFilter, activeTab, selectedClient, page],
     queryFn: async () => {
-      console.log('Fetching images with:', { searchQuery, tagFilters, activeTab, selectedClient, page });
+      console.log('Fetching images with:', { searchQuery, tagFilter, activeTab, selectedClient, page });
       
       let query = supabase
         .from('images')
@@ -69,15 +68,8 @@ export const useGalleryImages = (isAdmin: boolean) => {
         query = query.ilike('title', `%${searchQuery}%`);
       }
 
-      // Handle multiple tag filters
-      if (tagFilters.length > 0) {
-        // Create OR conditions for each tag
-        const tagConditions = tagFilters.map(tag => {
-          return `tags.ilike.%${tag.toLowerCase()}%`;
-        });
-        
-        // Apply the OR conditions
-        query = query.or(tagConditions.join(','));
+      if (tagFilter && tagFilter.toLowerCase() !== 'toutes') {
+        query = query.ilike('tags', `%${tagFilter.toLowerCase()}%`);
       }
       
       if (activeTab.toLowerCase() !== 'all') {
@@ -131,40 +123,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     }
   }, [newImages, page]);
 
-  // Fetch all unique tags for filtering
-  useEffect(() => {
-    const fetchAllTags = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('images')
-          .select('tags');
-        
-        if (error) {
-          console.error('Error fetching tags:', error);
-          return;
-        }
-        
-        // Extract all tags from all images
-        const tagsSet = new Set<string>();
-        data.forEach(item => {
-          const tags = parseTagsString(item.tags);
-          if (tags && Array.isArray(tags)) {
-            tags.forEach(tag => tagsSet.add(tag.toLowerCase()));
-          }
-        });
-        
-        // Convert to array and sort
-        const sortedTags = Array.from(tagsSet).sort();
-        setAllTags(sortedTags);
-        
-      } catch (error) {
-        console.error('Error processing tags:', error);
-      }
-    };
-    
-    fetchAllTags();
-  }, []);
-
   // Handle loading more images
   const loadMoreImages = useCallback(() => {
     if (!isLoading && !isFetching && newImages.length === IMAGES_PER_PAGE) {
@@ -190,16 +148,11 @@ export const useGalleryImages = (isAdmin: boolean) => {
     setAllImages([]);
     setHasActiveFilters(false);
     
-    // Clear URL parameters
-    const newSearchParams = new URLSearchParams(searchParams);
-    newSearchParams.delete('tags');
-    window.history.replaceState(null, '', `?${newSearchParams.toString()}`);
-    
     // Force a refetch
     setTimeout(() => {
       refetch();
     }, 0);
-  }, [refetch, searchParams]);
+  }, [refetch]);
 
   // Format images for MasonryGrid
   const formatImagesForGrid = useCallback((images: Image[] = []) => {
@@ -221,7 +174,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     hasActiveFilters,
     activeTab,
     selectedClient,
-    allTags,
     loadMoreImages,
     handleTabChange,
     handleClientChange,
