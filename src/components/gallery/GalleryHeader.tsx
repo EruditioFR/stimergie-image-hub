@@ -92,14 +92,13 @@ export function GalleryHeader({
             <Select 
               value={selectedTag} 
               onValueChange={handleTagChange}
-              defaultValue=""
             >
               <SelectTrigger className="w-full md:w-[200px]">
                 <SelectValue placeholder="Filtrer par mot-clé" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value="">Tous les mots-clés</SelectItem>
+                  <SelectItem value="all">Tous les mots-clés</SelectItem>
                   {availableTags.map((tag) => (
                     <SelectItem key={tag} value={tag}>
                       {tag}
