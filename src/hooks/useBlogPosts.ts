@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,13 +60,13 @@ export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
         client_id: post.client_id,
         client_name: post.clients?.nom || null,
         featured_image_url: post.featured_image_url,
-        content_type: post.content_type,
+        content_type: post.content_type || 'Ressource', // Default to 'Ressource' if not specified
         created_at: post.created_at,
         updated_at: post.updated_at,
         author_id: post.author_id,
         published: post.published,
         slug: post.slug
-      }));
+      })) as BlogPost[];
     },
   });
 

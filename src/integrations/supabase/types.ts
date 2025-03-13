@@ -87,8 +87,11 @@ export type Database = {
       blog_posts: {
         Row: {
           author_id: string
+          client_id: string | null
           content: string
+          content_type: string | null
           created_at: string
+          featured_image_url: string | null
           id: string
           published: boolean
           slug: string
@@ -97,8 +100,11 @@ export type Database = {
         }
         Insert: {
           author_id: string
+          client_id?: string | null
           content: string
+          content_type?: string | null
           created_at?: string
+          featured_image_url?: string | null
           id?: string
           published?: boolean
           slug: string
@@ -107,15 +113,26 @@ export type Database = {
         }
         Update: {
           author_id?: string
+          client_id?: string | null
           content?: string
+          content_type?: string | null
           created_at?: string
+          featured_image_url?: string | null
           id?: string
           published?: boolean
           slug?: string
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "blog_posts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clients: {
         Row: {

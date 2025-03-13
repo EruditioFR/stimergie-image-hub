@@ -39,20 +39,22 @@ export function BlogPostView() {
         }
 
         // Transform the data to match the BlogPost interface
-        setPost({
+        const blogPost: BlogPost = {
           id: data.id,
           title: data.title,
           content: data.content,
-          client_id: data.client_id,
+          client_id: data.client_id || null,
           client_name: data.clients?.nom || null,
-          featured_image_url: data.featured_image_url,
-          content_type: data.content_type,
+          featured_image_url: data.featured_image_url || null,
+          content_type: data.content_type || 'Ressource', // Default to 'Ressource' if not specified
           created_at: data.created_at,
           updated_at: data.updated_at,
           author_id: data.author_id,
           published: data.published,
           slug: data.slug
-        });
+        };
+        setPost(blogPost);
+
       } catch (err) {
         console.error('Error fetching post:', err);
         setError('Une erreur est survenue lors du chargement de l\'article');
