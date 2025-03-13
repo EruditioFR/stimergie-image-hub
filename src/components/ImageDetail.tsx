@@ -40,7 +40,7 @@ export function ImageDetail() {
       const { data, error } = await supabase
         .from('images')
         .select('*')
-        .eq('id', parseInt(id))  // Convert string to number here
+        .eq('id', parseInt(id))
         .single();
       
       if (error) {
@@ -159,7 +159,7 @@ export function ImageDetail() {
               onClick={toggleFullscreen}
             >
               <LazyImage 
-                src={imageDetails.url} 
+                src={imageDetails.url_miniature || imageDetails.url} 
                 alt={imageDetails.title} 
                 className="w-full aspect-auto"
                 aspectRatio="aspect-auto"
