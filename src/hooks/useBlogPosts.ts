@@ -124,7 +124,7 @@ export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
   const updatePostMutation = useMutation({
     mutationFn: async ({ id, postData }: { id: string; postData: Partial<BlogPostFormData> }) => {
       // Si le titre est modifié, générer un nouveau slug
-      let updateData = { ...postData };
+      let updateData: any = { ...postData };
       
       if (postData.title) {
         updateData.slug = generateSlug(postData.title);
