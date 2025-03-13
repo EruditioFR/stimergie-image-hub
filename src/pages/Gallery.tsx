@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
@@ -9,6 +9,7 @@ import { EmptyResults } from '@/components/gallery/EmptyResults';
 import { supabase } from '@/integrations/supabase/client';
 import { Image } from '@/pages/Images';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from "sonner";
 
 // Mock categories for filters
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
@@ -22,6 +23,7 @@ const Gallery = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [page, setPage] = useState(1);
   const [allImages, setAllImages] = useState<Image[]>([]);
+  const [hasActiveFilters, setHasActiveFilters] = useState(false);
 
   // Fonction utilitaire pour parser les tags depuis une string
   const parseTagsString = (tagsString: string | null): string[] | null => {
@@ -39,16 +41,30 @@ const Gallery = () => {
     }
   };
 
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+    setAllImages([]);
+    
+    // Update filter status
+    setHasActiveFilters(
+      searchQuery !== '' || 
+      tagFilter !== '' || 
+      activeTab.toLowerCase() !== 'all'
+    );
+  }, [searchQuery, tagFilter, activeTab]);
+
   // Fetch images from Supabase
   const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['gallery-images', searchQuery, tagFilter, page],
+    queryKey: ['gallery-images', searchQuery, tagFilter, activeTab, page],
     queryFn: async () => {
+      console.log('Fetching images with:', { searchQuery, tagFilter, activeTab, page });
+      
       let query = supabase
         .from('images')
         .select('*')
-        .order('created_at', { ascending: false })
-        .range((page - 1) * IMAGES_PER_PAGE, page * IMAGES_PER_PAGE - 1);
-
+        .order('created_at', { ascending: false });
+      
       if (searchQuery) {
         query = query.ilike('title', `%${searchQuery}%`);
       }
@@ -56,13 +72,23 @@ const Gallery = () => {
       if (tagFilter && tagFilter.toLowerCase() !== 'toutes') {
         query = query.ilike('tags', `%${tagFilter.toLowerCase()}%`);
       }
+      
+      if (activeTab.toLowerCase() !== 'all') {
+        query = query.ilike('tags', `%${activeTab.toLowerCase()}%`);
+      }
+      
+      // Apply pagination
+      query = query.range((page - 1) * IMAGES_PER_PAGE, page * IMAGES_PER_PAGE - 1);
 
       const { data, error } = await query;
       
       if (error) {
         console.error('Error fetching images:', error);
+        toast.error("Erreur lors du chargement des images");
         return [];
       }
+
+      console.log(`Fetched ${data.length} images`);
 
       // Convertir les tags de string à string[] en parsant la valeur
       return data.map(img => ({
@@ -78,6 +104,7 @@ const Gallery = () => {
 
   // Add newly loaded images to our collection
   useEffect(() => {
+    console.log('New images loaded:', newImages.length);
     if (newImages.length > 0) {
       if (page === 1) {
         setAllImages(newImages);
@@ -87,17 +114,30 @@ const Gallery = () => {
         const filteredExistingImages = allImages.filter(img => !newImageIds.has(img.id));
         setAllImages([...filteredExistingImages, ...newImages]);
       }
-    } else if (page === 1 && newImages.length === 0) {
+    } else if (page === 1) {
       // Si nous sommes à la première page et qu'il n'y a pas d'images, vider la collection
       setAllImages([]);
     }
   }, [newImages, page]);
 
-  // Reset page when filters change
+  // Ensure we refetch when component mounts
   useEffect(() => {
-    setPage(1);
-    setAllImages([]);
-  }, [searchQuery, tagFilter, activeTab]);
+    const loadInitialData = async () => {
+      console.log('Component mounted, loading initial data');
+      await refetch();
+    };
+    
+    loadInitialData();
+    
+    // Reset state when unmounting (for when we return to the page)
+    return () => {
+      console.log('Component unmounting, resetting state');
+      setPage(1);
+      setAllImages([]);
+      setActiveTab('all');
+      setHasActiveFilters(false);
+    };
+  }, [refetch]);
 
   // Handle loading more images
   const loadMoreImages = () => {
@@ -106,37 +146,28 @@ const Gallery = () => {
     }
   };
 
-  // Reset to initial state when component mounts or unmounts
-  useEffect(() => {
-    // Refetch images when mounting
-    refetch();
-    
-    // Reset state when unmounting (for when we return to the page)
-    return () => {
-      setPage(1);
-      setAllImages([]);
-      setActiveTab('all');
-    };
-  }, [refetch]);
-
   // Filter images based on active tab
-  const getFilteredImages = () => {
-    if (activeTab === 'all') return allImages;
-    return allImages.filter(image => 
-      image.tags?.some(tag => 
-        tag.toLowerCase() === activeTab.toLowerCase()
-      )
-    );
-  };
+  const getFilteredImages = useCallback(() => {
+    return allImages;
+  }, [allImages]);
 
   const handleTabChange = (value: string) => {
+    console.log('Tab changed to:', value);
     setActiveTab(value);
   };
 
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
+    console.log('Resetting filters');
     setActiveTab('all');
-    refetch();
-  };
+    setPage(1);
+    setAllImages([]);
+    setHasActiveFilters(false);
+    
+    // Force a refetch
+    setTimeout(() => {
+      refetch();
+    }, 0);
+  }, [refetch]);
 
   // Format images for MasonryGrid
   const formatImagesForGrid = (images: Image[] = []) => {
@@ -150,6 +181,16 @@ const Gallery = () => {
       orientation: image.orientation
     }));
   };
+
+  const displayedImages = getFilteredImages();
+  const shouldShowEmptyState = !isLoading && displayedImages.length === 0;
+
+  console.log('Render state:', { 
+    hasImages: displayedImages.length > 0, 
+    isLoading, 
+    hasActiveFilters,
+    imagesCount: allImages.length
+  });
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -166,14 +207,17 @@ const Gallery = () => {
         <div className="max-w-7xl mx-auto px-6 py-12">
           {isLoading && allImages.length === 0 ? (
             <MasonryGrid images={[]} isLoading={true} />
-          ) : getFilteredImages().length > 0 ? (
+          ) : displayedImages.length > 0 ? (
             <MasonryGrid 
-              images={formatImagesForGrid(getFilteredImages())} 
+              images={formatImagesForGrid(displayedImages)} 
               isLoading={isLoading || isFetching}
               onLoadMore={loadMoreImages}
             />
           ) : (
-            <EmptyResults onReset={handleResetFilters} />
+            <EmptyResults 
+              onReset={handleResetFilters} 
+              hasFilters={hasActiveFilters}
+            />
           )}
         </div>
       </main>

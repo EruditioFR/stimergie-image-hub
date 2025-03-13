@@ -15,6 +15,12 @@ export function GalleryHeader({
   onTabChange, 
   categories 
 }: GalleryHeaderProps) {
+  const handleTabChange = (value: string) => {
+    // Convert category name to lowercase or 'all' for consistent filtering
+    const normalizedValue = value.toLowerCase() === 'toutes' ? 'all' : value.toLowerCase();
+    onTabChange(normalizedValue);
+  };
+  
   return (
     <div className="bg-muted/30 border-b border-border">
       <div className="max-w-7xl mx-auto px-6 py-16">
@@ -26,7 +32,7 @@ export function GalleryHeader({
         <Tabs 
           defaultValue={activeTab} 
           value={activeTab}
-          onValueChange={onTabChange}
+          onValueChange={handleTabChange}
           className="w-full"
         >
           <TabsList className="w-full max-w-full overflow-x-auto flex-wrap sm:flex-nowrap no-scrollbar py-1">
