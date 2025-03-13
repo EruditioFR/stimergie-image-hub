@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Image } from '@/pages/Images';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -28,6 +28,7 @@ const parseTagsString = (tagsString: string | null): string[] | null => {
 export const useGalleryImages = (isAdmin: boolean) => {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const searchQuery = searchParams.get('q') || '';
   const tagFilter = searchParams.get('tag') || '';
   const [activeTab, setActiveTab] = useState('all');
@@ -84,11 +85,11 @@ export const useGalleryImages = (isAdmin: boolean) => {
         projets:id_projet (
           id_client
         )
-      `)
-      .order('created_at', { ascending: false });
+      `);
     
-    if (search) {
-      query = query.ilike('title', `%${search}%`);
+    if (search && search.trim() !== '') {
+      // Add OR condition for title and tags for better search results
+      query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%`);
     }
 
     if (tag && tag.toLowerCase() !== 'toutes') {
@@ -102,6 +103,9 @@ export const useGalleryImages = (isAdmin: boolean) => {
     if (client && isAdmin) {
       query = query.eq('projets.id_client', client);
     }
+    
+    // Apply ordering
+    query = query.order('created_at', { ascending: false });
     
     // Apply pagination
     query = query.range((pageNum - 1) * IMAGES_PER_PAGE, pageNum * IMAGES_PER_PAGE - 1);
@@ -171,15 +175,21 @@ export const useGalleryImages = (isAdmin: boolean) => {
     console.log('Resetting filters');
     setActiveTab('all');
     setSelectedClient(null);
+    
+    // Clear URL search params
+    navigate('/gallery', { replace: true });
+    
+    // Reset state 
     setPage(1);
     setAllImages([]);
     setHasActiveFilters(false);
     
-    // Force a refetch
+    // Force a refetch with cleared filters
     setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ['gallery-images'] });
       refetch();
     }, 0);
-  }, [refetch]);
+  }, [navigate, queryClient, refetch]);
 
   // Invalidate cache and force refresh
   const refreshGallery = useCallback(() => {

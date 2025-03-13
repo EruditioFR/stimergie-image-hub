@@ -1,6 +1,6 @@
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -11,18 +11,31 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ className, variant = 'default' }: SearchBarProps) {
+  const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+
+  // Synchronize with URL parameters when component mounts
+  useEffect(() => {
+    const query = searchParams.get('q');
+    if (query) {
+      setSearchQuery(query);
+    }
+  }, [searchParams]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/gallery?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      // If search is empty, remove query parameter
+      navigate('/gallery');
     }
   };
 
   const clearSearch = () => {
     setSearchQuery('');
+    navigate('/gallery');
   };
 
   return (
