@@ -1,5 +1,5 @@
 
-import { Project } from "@/pages/Projects";
+import { Project } from "@/types/project";
 import { Folder, Building2, Calendar, Pencil, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";

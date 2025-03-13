@@ -9,7 +9,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
-import { Project } from "@/pages/Projects";
+import { Project } from "@/types/project";
 import { Client } from "@/pages/Clients";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
