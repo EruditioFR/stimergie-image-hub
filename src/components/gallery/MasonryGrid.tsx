@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { ImageCard } from '@/components/ImageCard';
 import { Button } from '@/components/ui/button';
 import { Download, Share } from 'lucide-react';
-import { CreateAlbumDialog } from '@/components/gallery/CreateAlbumDialog';
+import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import JSZip from 'jszip';
