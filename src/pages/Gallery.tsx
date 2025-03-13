@@ -71,6 +71,9 @@ const Gallery = () => {
       })) as Image[];
     },
     enabled: true,
+    staleTime: 0, // Ne pas mettre en cache les données
+    refetchOnWindowFocus: true, // Refetch quand la fenêtre reprend le focus
+    refetchOnMount: true, // Refetch quand le composant est monté
   });
 
   // Add newly loaded images to our collection
@@ -84,6 +87,9 @@ const Gallery = () => {
         const filteredExistingImages = allImages.filter(img => !newImageIds.has(img.id));
         setAllImages([...filteredExistingImages, ...newImages]);
       }
+    } else if (page === 1 && newImages.length === 0) {
+      // Si nous sommes à la première page et qu'il n'y a pas d'images, vider la collection
+      setAllImages([]);
     }
   }, [newImages, page]);
 
@@ -100,6 +106,19 @@ const Gallery = () => {
     }
   };
 
+  // Reset to initial state when component mounts or unmounts
+  useEffect(() => {
+    // Refetch images when mounting
+    refetch();
+    
+    // Reset state when unmounting (for when we return to the page)
+    return () => {
+      setPage(1);
+      setAllImages([]);
+      setActiveTab('all');
+    };
+  }, [refetch]);
+
   // Filter images based on active tab
   const getFilteredImages = () => {
     if (activeTab === 'all') return allImages;
@@ -112,6 +131,11 @@ const Gallery = () => {
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+  };
+
+  const handleResetFilters = () => {
+    setActiveTab('all');
+    refetch();
   };
 
   // Format images for MasonryGrid
@@ -149,7 +173,7 @@ const Gallery = () => {
               onLoadMore={loadMoreImages}
             />
           ) : (
-            <EmptyResults onReset={() => handleTabChange('all')} />
+            <EmptyResults onReset={handleResetFilters} />
           )}
         </div>
       </main>

@@ -1,5 +1,6 @@
 
 import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 
 interface EmptyResultsProps {
   onReset: () => void;
@@ -15,7 +16,9 @@ export function EmptyResults({ onReset }: EmptyResultsProps) {
       <Button 
         variant="outline"
         onClick={onReset}
+        className="flex items-center gap-2"
       >
+        <RefreshCw className="h-4 w-4" />
         Voir toutes les images
       </Button>
     </div>
