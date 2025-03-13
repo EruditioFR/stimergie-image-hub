@@ -1,10 +1,10 @@
-
 import React, { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { SelectionToolbar } from '@/components/gallery/SelectionToolbar';
 import { MasonryColumn } from '@/components/gallery/MasonryColumn';
+import { ImageCard } from '@/components/ImageCard';
 import { useImageSelection } from '@/hooks/useImageSelection';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { downloadImages } from '@/utils/imageDownloader';
@@ -30,7 +30,6 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
   const { user } = useAuth();
   const { selectedImages, toggleImageSelection, isImageSelected, clearSelection } = useImageSelection();
   
-  // Use our custom hook for infinite scrolling
   useInfiniteScroll(onLoadMore, isLoading);
   
   const getColumnImages = (columnIndex: number, columnCount: number) => {
