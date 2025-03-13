@@ -29,6 +29,7 @@ export async function downloadImages(images: Image[]) {
         // Si le téléchargement a échoué, passer à l'image suivante
         if (!blob) {
           console.error(`Impossible de télécharger l'image: ${img.src}`);
+          toast.error(`Échec de téléchargement: ${img.title || 'Image ' + (index + 1)}`);
           errorCount++;
           return false;
         }
