@@ -1,9 +1,10 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAutocomplete } from '@/hooks/useAutocomplete';
 
 interface SearchBarProps {
   className?: string;
@@ -13,7 +14,13 @@ interface SearchBarProps {
 export function SearchBar({ className, variant = 'default' }: SearchBarProps) {
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const navigate = useNavigate();
+  const suggestionRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Get search suggestions based on input
+  const { suggestions, isLoading } = useAutocomplete(searchQuery);
 
   // Synchronize with URL parameters when component mounts
   useEffect(() => {
@@ -23,6 +30,21 @@ export function SearchBar({ className, variant = 'default' }: SearchBarProps) {
     }
   }, [searchParams]);
 
+  // Handle click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionRef.current && !suggestionRef.current.contains(event.target as Node) &&
+          inputRef.current && !inputRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -31,11 +53,22 @@ export function SearchBar({ className, variant = 'default' }: SearchBarProps) {
       // If search is empty, remove query parameter
       navigate('/gallery');
     }
+    setShowSuggestions(false);
   };
 
   const clearSearch = () => {
     setSearchQuery('');
     navigate('/gallery');
+    setShowSuggestions(false);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchQuery(suggestion);
+    navigate(`/gallery?q=${encodeURIComponent(suggestion)}`);
+    setShowSuggestions(false);
   };
 
   return (
@@ -53,9 +86,22 @@ export function SearchBar({ className, variant = 'default' }: SearchBarProps) {
         )} />
         
         <input
+          ref={inputRef}
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            if (e.target.value.trim().length > 0) {
+              setShowSuggestions(true);
+            } else {
+              setShowSuggestions(false);
+            }
+          }}
+          onFocus={() => {
+            if (searchQuery.trim().length > 0) {
+              setShowSuggestions(true);
+            }
+          }}
           placeholder="Recherchez des images..."
           className={cn(
             "w-full pr-10 pl-10 rounded-full focus:outline-none focus:ring-2 focus:ring-primary/50",
@@ -87,6 +133,30 @@ export function SearchBar({ className, variant = 'default' }: SearchBarProps) {
           {variant === 'default' ? 'Rechercher' : <Search className="h-4 w-4" />}
         </Button>
       </div>
+
+      {/* Autocomplete suggestions */}
+      {showSuggestions && suggestions.length > 0 && (
+        <div 
+          ref={suggestionRef}
+          className="absolute z-10 w-full mt-1 bg-background shadow-lg rounded-md border border-border max-h-60 overflow-y-auto"
+        >
+          {isLoading ? (
+            <div className="p-2 text-sm text-muted-foreground">Chargement...</div>
+          ) : (
+            <ul>
+              {suggestions.map((suggestion, index) => (
+                <li 
+                  key={index}
+                  className="px-4 py-2 text-sm hover:bg-muted cursor-pointer"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                >
+                  {suggestion}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </form>
   );
 }
