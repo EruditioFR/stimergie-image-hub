@@ -86,6 +86,16 @@ export function CreateAlbumDialog({
       // Envoyer les invitations par email via la fonction Edge
       const emails = data.emails.split(',').map(email => email.trim());
       
+      console.log("Envoi des invitations avec les données:", {
+        albumId: albumData.id,
+        albumName: data.name,
+        shareKey,
+        recipients: emails,
+        message: data.message,
+        accessFrom: data.accessFrom.toISOString(),
+        accessUntil: data.accessUntil.toISOString()
+      });
+      
       const { data: invitationResponse, error: invitationError } = await supabase.functions.invoke(
         'send-album-invitation',
         {
@@ -105,6 +115,7 @@ export function CreateAlbumDialog({
         console.error("Erreur lors de l'envoi des invitations:", invitationError);
         toast.error(`Les emails n'ont pas pu être envoyés: ${invitationError.message}`, { id: toastId });
       } else {
+        console.log("Réponse de la fonction d'invitation:", invitationResponse);
         toast.success('Album partagé avec succès! Invitations envoyées.', { id: toastId });
       }
       

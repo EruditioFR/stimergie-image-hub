@@ -11,6 +11,9 @@ const sendMailWithMailjet = async (recipients, subject, htmlContent, textContent
     throw new Error("Les clés API Mailjet ne sont pas configurées");
   }
   
+  console.log(`Préparation de l'envoi d'emails à ${recipients.length} destinataires via Mailjet`);
+  console.log(`Expéditeur: ${sender.Email} (${sender.Name})`);
+  
   // Préparer les données pour Mailjet
   const mailjetData = {
     Messages: recipients.map(recipient => ({
@@ -23,36 +26,54 @@ const sendMailWithMailjet = async (recipients, subject, htmlContent, textContent
     }))
   };
 
-  // Envoyer la requête à l'API Mailjet
-  const response = await fetch("https://api.mailjet.com/v3.1/send", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Basic ${btoa(`${mailjetApiKey}:${mailjetApiSecret}`)}`
-    },
-    body: JSON.stringify(mailjetData)
-  });
+  console.log("Données Mailjet préparées:", JSON.stringify(mailjetData));
 
-  if (!response.ok) {
-    const error = await response.json();
-    console.error("Erreur Mailjet:", error);
-    throw new Error(`Erreur d'envoi d'email: ${response.status} ${response.statusText}`);
+  try {
+    // Envoyer la requête à l'API Mailjet
+    console.log("Envoi de la requête à l'API Mailjet...");
+    const response = await fetch("https://api.mailjet.com/v3.1/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Basic ${btoa(`${mailjetApiKey}:${mailjetApiSecret}`)}`
+      },
+      body: JSON.stringify(mailjetData)
+    });
+
+    console.log(`Réponse de l'API Mailjet: ${response.status} ${response.statusText}`);
+    
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("Erreur Mailjet:", error);
+      throw new Error(`Erreur d'envoi d'email: ${response.status} ${response.statusText}`);
+    }
+
+    const responseData = await response.json();
+    console.log("Détails de la réponse Mailjet:", JSON.stringify(responseData));
+    return responseData;
+  } catch (error) {
+    console.error("Exception lors de l'envoi via Mailjet:", error);
+    throw error;
   }
-
-  return await response.json();
 };
 
 const handler = async (req: Request) => {
+  console.log("Fonction send-album-invitation invoquée");
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { albumId, albumName, shareKey, recipients, message, accessFrom, accessUntil } = await req.json();
+    const requestBody = await req.text();
+    console.log(`Corps de la requête reçu: ${requestBody}`);
+    
+    const { albumId, albumName, shareKey, recipients, message, accessFrom, accessUntil } = JSON.parse(requestBody);
 
     // Valider les données reçues
     if (!albumId || !shareKey || !recipients || !Array.isArray(recipients) || recipients.length === 0) {
+      console.error("Données invalides:", { albumId, shareKey, recipients });
       return new Response(
         JSON.stringify({ error: "Données invalides" }),
         { 
@@ -116,6 +137,8 @@ const handler = async (req: Request) => {
       Email: "contact@stimergie.fr",
       Name: "Galerie Photos Stimergie"
     };
+
+    console.log("Vérification de la variable d'environnement PUBLIC_URL:", Deno.env.get("PUBLIC_URL"));
 
     // Envoi des emails avec Mailjet
     try {
