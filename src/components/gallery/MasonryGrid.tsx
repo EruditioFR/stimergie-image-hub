@@ -61,14 +61,10 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         {/* First column */}
         <div className="flex flex-col gap-6 md:gap-8">
-          {getColumnImages(0, 3).map((image, index) => (
+          {getColumnImages(0, 3).map((image) => (
             <div 
               key={image.id}
-              className="animate-fade-up opacity-0" 
-              style={{ 
-                animationDelay: `${0.05 * index}s`, 
-                animationFillMode: 'forwards'
-              }}
+              className="opacity-100" 
             >
               <ImageCard 
                 {...image} 
@@ -81,14 +77,10 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
         
         {/* Second column */}
         <div className="flex flex-col gap-6 md:gap-8">
-          {getColumnImages(1, 3).map((image, index) => (
+          {getColumnImages(1, 3).map((image) => (
             <div 
               key={image.id} 
-              className="animate-fade-up opacity-0" 
-              style={{ 
-                animationDelay: `${0.05 * (index + getColumnImages(0, 3).length)}s`, 
-                animationFillMode: 'forwards' 
-              }}
+              className="opacity-100" 
             >
               <ImageCard 
                 {...image} 
@@ -101,14 +93,10 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
         
         {/* Third column */}
         <div className="hidden lg:flex flex-col gap-6 md:gap-8">
-          {getColumnImages(2, 3).map((image, index) => (
+          {getColumnImages(2, 3).map((image) => (
             <div 
               key={image.id} 
-              className="animate-fade-up opacity-0" 
-              style={{ 
-                animationDelay: `${0.05 * (index + getColumnImages(0, 3).length + getColumnImages(1, 3).length)}s`, 
-                animationFillMode: 'forwards' 
-              }}
+              className="opacity-100" 
             >
               <ImageCard 
                 {...image} 
