@@ -95,14 +95,19 @@ export function BlogPostView() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <Button 
-        variant="outline" 
-        className="mb-6"
-        onClick={() => navigate(post?.content_type === 'Ressource' ? '/resources' : '/ensemble')}
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Retour aux {post?.content_type === 'Ressource' ? 'ressources' : 'articles'}
-      </Button>
+      <div className="mb-6 flex justify-between items-center">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate(post?.content_type === 'Ressource' ? '/resources' : '/ensemble')}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Retour aux {post?.content_type === 'Ressource' ? 'ressources' : 'articles'}
+        </Button>
+        
+        <h1 className="text-xl font-medium">
+          {post?.content_type === 'Ressource' ? 'Article Ressource' : 'Article Ensemble'}
+        </h1>
+      </div>
 
       <Card>
         {post?.featured_image_url && (
