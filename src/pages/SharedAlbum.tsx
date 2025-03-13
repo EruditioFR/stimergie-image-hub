@@ -1,13 +1,13 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Header } from '@/components/ui/layout/Header';
-import { Footer } from '@/components/ui/layout/Footer';
 import { MasonryGrid } from '@/components/gallery/MasonryGrid';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 // Define types for the album data
 interface AlbumImage {
@@ -27,6 +27,7 @@ interface Album {
   description: string | null;
   access_from: string;
   access_until: string;
+  created_by_name?: string;
   images: AlbumImage[];
 }
 
@@ -72,6 +73,16 @@ export function SharedAlbum() {
     }
   }, [error, navigate]);
   
+  // Format dates for display
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'd MMMM yyyy', { locale: fr });
+    } catch (e) {
+      console.error('Error formatting date:', e);
+      return dateString;
+    }
+  };
+  
   // Format images for display in the MasonryGrid
   const formatImagesForGrid = () => {
     if (!album || !album.images) return [];
@@ -89,10 +100,8 @@ export function SharedAlbum() {
   const formattedImages = album ? formatImagesForGrid() : [];
   
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      
-      <main className="flex-grow pt-20">
+    <div className="min-h-screen flex flex-col bg-background">
+      <main className="flex-grow">
         <div className="bg-muted/30 border-b border-border">
           <div className="max-w-7xl mx-auto px-6 py-16">
             {isLoading ? (
@@ -102,6 +111,12 @@ export function SharedAlbum() {
               </>
             ) : album ? (
               <>
+                <div className="mb-6 text-sm text-muted-foreground">
+                  <p>
+                    Ceci est un album photo partagé par {album.created_by_name || 'un utilisateur'}. 
+                    Vous bénéficiez d'un accès du {formatDate(album.access_from)} au {formatDate(album.access_until)}.
+                  </p>
+                </div>
                 <h1 className="text-3xl font-bold mb-4">{album.name}</h1>
                 {album.description && (
                   <p className="text-muted-foreground max-w-2xl">{album.description}</p>
@@ -127,8 +142,6 @@ export function SharedAlbum() {
           ) : null}
         </div>
       </main>
-      
-      <Footer />
     </div>
   );
 }
