@@ -11,21 +11,34 @@ interface Image {
 }
 
 /**
- * Convertit une URL Dropbox en URL de téléchargement direct
+ * Solution pour contourner les problèmes CORS avec Dropbox
+ * Modifier l'URL pour utiliser dl=1 et convertir vers un format CORS-friendly
  */
-function convertDropboxUrl(url: string): string {
-  // Si c'est une URL Dropbox, assurons-nous qu'elle est configurée pour le téléchargement direct
-  if (url.includes('dropbox.com') && url.includes('?')) {
-    // Remplacer le paramètre dl=1 ou ajouter le paramètre si manquant
-    if (url.includes('dl=0')) {
-      return url.replace('dl=0', 'dl=1');
-    } else if (url.includes('dl=1')) {
-      return url; // Déjà correctement formatée
-    } else {
-      // Ajouter le paramètre dl=1 à l'URL
-      return `${url}&dl=1`;
-    }
+function getProxiedUrl(url: string): string {
+  // Cas 1: URLs Dropbox - tenter d'utiliser une approche différente
+  if (url.includes('dropbox.com')) {
+    // Convertir l'URL pour utiliser le dl=1 (téléchargement direct)
+    const urlWithDownload = url.includes('dl=0') 
+      ? url.replace('dl=0', 'dl=1') 
+      : url.includes('dl=1') 
+        ? url 
+        : `${url}${url.includes('?') ? '&' : '?'}dl=1`;
+    
+    // Utiliser un proxy CORS pour contourner les restrictions
+    // Note: Dans un environnement de production, vous devriez utiliser votre propre proxy
+    const corsProxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(urlWithDownload);
+    console.log(`URL Dropbox convertie: ${corsProxyUrl}`);
+    return corsProxyUrl;
   }
+  
+  // Cas 2: Autres URLs externes - essayer avec un proxy CORS
+  if (url.startsWith('http') && !url.includes(window.location.hostname)) {
+    const corsProxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+    console.log(`URL externe convertie: ${corsProxyUrl}`);
+    return corsProxyUrl;
+  }
+  
+  // Cas 3: URLs internes ou déjà traitées - retourner telles quelles
   return url;
 }
 
@@ -44,13 +57,13 @@ export async function downloadImages(images: Image[]) {
     
     const fetchPromises = images.map(async (img, index) => {
       try {
-        // Convertir l'URL pour le téléchargement direct si nécessaire
-        const imageUrl = convertDropboxUrl(img.src);
+        // Obtenir l'URL compatible CORS
+        const imageUrl = getProxiedUrl(img.src);
         console.log(`Tentative de téléchargement depuis: ${imageUrl}`);
         
         // Utiliser un timeout pour éviter les requêtes bloquées trop longtemps
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 secondes timeout
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 secondes timeout
         
         const response = await fetch(imageUrl, { 
           mode: 'cors',
@@ -84,8 +97,8 @@ export async function downloadImages(images: Image[]) {
         let extension = 'jpg';
         if (blob.type) {
           extension = blob.type.split('/')[1] || 'jpg';
-        } else if (imageUrl.includes('.')) {
-          const urlParts = imageUrl.split('?')[0]; // Ignorer les paramètres
+        } else if (img.src.includes('.')) {
+          const urlParts = img.src.split('?')[0]; // Ignorer les paramètres
           extension = urlParts.split('.').pop()?.toLowerCase() || 'jpg';
         }
         

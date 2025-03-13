@@ -46,6 +46,12 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
     const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
     console.log("Images sélectionnées pour téléchargement:", selectedImagesData);
     
+    // Logs supplémentaires pour déboguer
+    console.log("URLs des images à télécharger:");
+    selectedImagesData.forEach((img, index) => {
+      console.log(`Image ${index+1}: ${img.src}`);
+    });
+    
     await downloadImages(selectedImagesData);
   };
 
