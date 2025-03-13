@@ -27,7 +27,7 @@ const parseTagsString = (tagsString: string | null): string[] | null => {
 export const useGalleryImages = (isAdmin: boolean) => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
-  const tagFilter = searchParams.get('tag') || '';
+  const tagFilters = searchParams.get('tags')?.split(',') || [];
   const [activeTab, setActiveTab] = useState('all');
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -43,17 +43,17 @@ export const useGalleryImages = (isAdmin: boolean) => {
     // Update filter status
     setHasActiveFilters(
       searchQuery !== '' || 
-      tagFilter !== '' || 
+      tagFilters.length > 0 || 
       activeTab.toLowerCase() !== 'all' ||
       selectedClient !== null
     );
-  }, [searchQuery, tagFilter, activeTab, selectedClient]);
+  }, [searchQuery, tagFilters, activeTab, selectedClient]);
 
   // Fetch images from Supabase
   const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['gallery-images', searchQuery, tagFilter, activeTab, selectedClient, page],
+    queryKey: ['gallery-images', searchQuery, tagFilters, activeTab, selectedClient, page],
     queryFn: async () => {
-      console.log('Fetching images with:', { searchQuery, tagFilter, activeTab, selectedClient, page });
+      console.log('Fetching images with:', { searchQuery, tagFilters, activeTab, selectedClient, page });
       
       let query = supabase
         .from('images')
@@ -69,8 +69,15 @@ export const useGalleryImages = (isAdmin: boolean) => {
         query = query.ilike('title', `%${searchQuery}%`);
       }
 
-      if (tagFilter && tagFilter.toLowerCase() !== 'toutes') {
-        query = query.ilike('tags', `%${tagFilter.toLowerCase()}%`);
+      // Handle multiple tag filters
+      if (tagFilters.length > 0) {
+        // Create OR conditions for each tag
+        const tagConditions = tagFilters.map(tag => {
+          return `tags.ilike.%${tag.toLowerCase()}%`;
+        });
+        
+        // Apply the OR conditions
+        query = query.or(tagConditions.join(','));
       }
       
       if (activeTab.toLowerCase() !== 'all') {
@@ -185,7 +192,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     
     // Clear URL parameters
     const newSearchParams = new URLSearchParams(searchParams);
-    newSearchParams.delete('tag');
+    newSearchParams.delete('tags');
     window.history.replaceState(null, '', `?${newSearchParams.toString()}`);
     
     // Force a refetch
