@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Image, FileText, Users, FolderOpen, Building, Settings } from 'lucide-react';
+import { Home, Image, FileText, Users, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -36,9 +36,7 @@ export function Header() {
     { name: 'Banque d\'images', path: '/gallery', icon: <Image className="h-4 w-4 mr-2" /> },
     { name: 'Ressources', path: '/resources', icon: <FileText className="h-4 w-4 mr-2" /> },
     { name: 'Ensemble', path: '/projects', icon: <Users className="h-4 w-4 mr-2" /> },
-    { name: 'Albums partagés', path: '/shared-albums', icon: <FolderOpen className="h-4 w-4 mr-2" /> },
     { name: 'Clients', path: '/clients', icon: <Users className="h-4 w-4 mr-2" />, access: canAccessClientsPage },
-    { name: 'Agence', path: '/agency', icon: <Building className="h-4 w-4 mr-2" /> },
     { name: 'Administration', path: '/admin', icon: <Settings className="h-4 w-4 mr-2" />, access: canAccessImagesPage }
   ];
 
