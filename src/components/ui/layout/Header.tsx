@@ -35,7 +35,7 @@ export function Header() {
     { name: 'Accueil', path: '/', icon: <Home className="h-4 w-4 mr-2" /> },
     { name: 'Banque d\'images', path: '/gallery', icon: <Image className="h-4 w-4 mr-2" /> },
     { name: 'Ressources', path: '/resources', icon: <FileText className="h-4 w-4 mr-2" /> },
-    { name: 'Ensemble', path: '/projects', icon: <Users className="h-4 w-4 mr-2" /> }
+    { name: 'Ensemble', path: '/ensemble', icon: <Users className="h-4 w-4 mr-2" /> }
     // Removed "Clients" and "Administration" items
   ];
 
