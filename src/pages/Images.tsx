@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
@@ -137,7 +138,7 @@ const Images = () => {
   return <div className="min-h-screen flex flex-col">
       <Header />
       
-      <main className="flex-grow pt-20 py-0">
+      <main className="flex-grow py-0">
         <ImagesHeader onAddClick={() => setIsUploadOpen(true)} viewToggle={<ViewToggle currentView={viewMode} onViewChange={setViewMode} />} />
         
         <div className="max-w-7xl mx-auto px-6 py-12">

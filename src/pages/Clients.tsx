@@ -1,3 +1,4 @@
+
 import { Header } from "@/components/ui/layout/Header";
 import { Footer } from "@/components/ui/layout/Footer";
 import { ClientsHeader } from "@/components/clients/ClientsHeader";
@@ -71,7 +72,7 @@ export default function Clients() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <div className="pt-16 py-0">
+      <div className="py-0">
         <ClientsHeader
           onAddClick={() => {
             setIsEditing(false);

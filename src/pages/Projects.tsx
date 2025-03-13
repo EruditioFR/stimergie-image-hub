@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Header } from "@/components/ui/layout/Header";
 import { Footer } from "@/components/ui/layout/Footer";
@@ -215,7 +216,7 @@ export default function Projects() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <div className="pt-16">
+      <div>
         <ProjectsHeader onAddClick={() => {
           setIsEditing(false);
           setCurrentProject(null);

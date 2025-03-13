@@ -54,7 +54,7 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <div className="pt-32 pb-20 px-6 flex-grow flex items-center justify-center">
+      <div className="pb-20 px-6 flex-grow flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold">Bienvenue</CardTitle>
