@@ -39,20 +39,7 @@ export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
     queryFn: async () => {
       let query = supabase
         .from('blog_posts')
-        .select(`
-          id, 
-          title, 
-          content, 
-          client_id, 
-          clients(nom), 
-          featured_image_url, 
-          content_type, 
-          created_at, 
-          updated_at, 
-          author_id, 
-          published, 
-          slug
-        `)
+        .select('*, clients(nom)')
         .order('created_at', { ascending: false });
 
       if (contentType) {

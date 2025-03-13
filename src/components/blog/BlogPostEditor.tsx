@@ -36,14 +36,14 @@ import { ImageSelector } from './ImageSelector';
 import { AlertCircle, Eye, Save } from 'lucide-react';
 
 interface BlogPostEditorProps {
-  post?: BlogPost;
+  post?: BlogPost | null;
   onSave?: () => void;
 }
 
 export function BlogPostEditor({ post, onSave }: BlogPostEditorProps) {
   const { createPost, updatePost } = useBlogPosts();
   const { user } = useAuth();
-  const { clients, isLoading: isLoadingClients } = useClients();
+  const { clients, loading } = useClients(); // Use 'loading' property instead of 'isLoading'
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState<string | null>(post?.featured_image_url || null);
   

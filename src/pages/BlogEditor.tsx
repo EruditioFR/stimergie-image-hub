@@ -21,20 +21,7 @@ export default function BlogEditor() {
       try {
         const { data, error } = await supabase
           .from('blog_posts')
-          .select(`
-            id, 
-            title, 
-            content, 
-            client_id, 
-            clients(nom), 
-            featured_image_url, 
-            content_type, 
-            created_at, 
-            updated_at, 
-            author_id, 
-            published, 
-            slug
-          `)
+          .select('*, clients(nom)')
           .eq('id', id)
           .single();
 
@@ -42,9 +29,20 @@ export default function BlogEditor() {
           throw error;
         }
 
+        // Transform the data to match the BlogPost interface
         setPost({
-          ...data,
+          id: data.id,
+          title: data.title,
+          content: data.content,
+          client_id: data.client_id,
           client_name: data.clients?.nom || null,
+          featured_image_url: data.featured_image_url,
+          content_type: data.content_type,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+          author_id: data.author_id,
+          published: data.published,
+          slug: data.slug
         });
       } catch (err) {
         console.error('Error fetching post:', err);
