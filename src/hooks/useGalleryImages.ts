@@ -3,10 +3,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Image } from '@/pages/Images';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from "sonner";
 
 const IMAGES_PER_PAGE = 15;
+const CACHE_TIME = 5 * 60 * 1000; // 5 minutes en millisecondes
 
 // Fonction utilitaire pour parser les tags depuis une string
 const parseTagsString = (tagsString: string | null): string[] | null => {
@@ -25,6 +26,7 @@ const parseTagsString = (tagsString: string | null): string[] | null => {
 };
 
 export const useGalleryImages = (isAdmin: boolean) => {
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const tagFilter = searchParams.get('tag') || '';
@@ -33,6 +35,23 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const [page, setPage] = useState(1);
   const [allImages, setAllImages] = useState<Image[]>([]);
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
+
+  // Créer une clé de cache unique basée sur les filtres actuels
+  const cacheKey = useCallback(() => {
+    return ['gallery-images', searchQuery, tagFilter, activeTab, selectedClient, page];
+  }, [searchQuery, tagFilter, activeTab, selectedClient, page]);
+
+  // Précharger la page suivante dès que la page actuelle est chargée
+  useEffect(() => {
+    if (page > 0) {
+      const nextPageKey = ['gallery-images', searchQuery, tagFilter, activeTab, selectedClient, page + 1];
+      queryClient.prefetchQuery({
+        queryKey: nextPageKey,
+        queryFn: () => fetchGalleryImages(searchQuery, tagFilter, activeTab, selectedClient, page + 1),
+        staleTime: CACHE_TIME,
+      });
+    }
+  }, [queryClient, page, searchQuery, tagFilter, activeTab, selectedClient]);
 
   // Reset page when filters change
   useEffect(() => {
@@ -48,61 +67,69 @@ export const useGalleryImages = (isAdmin: boolean) => {
     );
   }, [searchQuery, tagFilter, activeTab, selectedClient]);
 
-  // Fetch images from Supabase
+  // Fonction de récupération des images extraite pour être réutilisable
+  const fetchGalleryImages = async (
+    search: string, 
+    tag: string, 
+    tab: string, 
+    client: string | null, 
+    pageNum: number
+  ): Promise<Image[]> => {
+    console.log('Fetching images with:', { search, tag, tab, client, pageNum });
+    
+    let query = supabase
+      .from('images')
+      .select(`
+        *,
+        projets:id_projet (
+          id_client
+        )
+      `)
+      .order('created_at', { ascending: false });
+    
+    if (search) {
+      query = query.ilike('title', `%${search}%`);
+    }
+
+    if (tag && tag.toLowerCase() !== 'toutes') {
+      query = query.ilike('tags', `%${tag.toLowerCase()}%`);
+    }
+    
+    if (tab.toLowerCase() !== 'all') {
+      query = query.ilike('tags', `%${tab.toLowerCase()}%`);
+    }
+
+    if (client && isAdmin) {
+      query = query.eq('projets.id_client', client);
+    }
+    
+    // Apply pagination
+    query = query.range((pageNum - 1) * IMAGES_PER_PAGE, pageNum * IMAGES_PER_PAGE - 1);
+
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching images:', error);
+      toast.error("Erreur lors du chargement des images");
+      return [];
+    }
+
+    console.log(`Fetched ${data.length} images for page ${pageNum}`);
+
+    // Convertir les tags de string à string[] en parsant la valeur
+    return data.map(img => ({
+      ...img,
+      tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
+    })) as Image[];
+  };
+
+  // Fetch images from Supabase with caching
   const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['gallery-images', searchQuery, tagFilter, activeTab, selectedClient, page],
-    queryFn: async () => {
-      console.log('Fetching images with:', { searchQuery, tagFilter, activeTab, selectedClient, page });
-      
-      let query = supabase
-        .from('images')
-        .select(`
-          *,
-          projets:id_projet (
-            id_client
-          )
-        `)
-        .order('created_at', { ascending: false });
-      
-      if (searchQuery) {
-        query = query.ilike('title', `%${searchQuery}%`);
-      }
-
-      if (tagFilter && tagFilter.toLowerCase() !== 'toutes') {
-        query = query.ilike('tags', `%${tagFilter.toLowerCase()}%`);
-      }
-      
-      if (activeTab.toLowerCase() !== 'all') {
-        query = query.ilike('tags', `%${activeTab.toLowerCase()}%`);
-      }
-
-      if (selectedClient && isAdmin) {
-        query = query.eq('projets.id_client', selectedClient);
-      }
-      
-      // Apply pagination
-      query = query.range((page - 1) * IMAGES_PER_PAGE, page * IMAGES_PER_PAGE - 1);
-
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error('Error fetching images:', error);
-        toast.error("Erreur lors du chargement des images");
-        return [];
-      }
-
-      console.log(`Fetched ${data.length} images`);
-
-      // Convertir les tags de string à string[] en parsant la valeur
-      return data.map(img => ({
-        ...img,
-        tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
-      })) as Image[];
-    },
-    enabled: true,
-    staleTime: 0, // Ne pas mettre en cache les données
-    refetchOnWindowFocus: true, // Refetch quand la fenêtre reprend le focus
-    refetchOnMount: true, // Refetch quand le composant est monté
+    queryKey: cacheKey(),
+    queryFn: () => fetchGalleryImages(searchQuery, tagFilter, activeTab, selectedClient, page),
+    staleTime: CACHE_TIME,
+    gcTime: CACHE_TIME * 2, // Conserver dans le cache pendant deux fois plus longtemps
+    refetchOnWindowFocus: false, // Ne pas refetch quand la fenêtre reprend le focus, sauf manuel
   });
 
   // Add newly loaded images to our collection
@@ -154,6 +181,14 @@ export const useGalleryImages = (isAdmin: boolean) => {
     }, 0);
   }, [refetch]);
 
+  // Invalidate cache and force refresh
+  const refreshGallery = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['gallery-images'] });
+    setPage(1);
+    setAllImages([]);
+    refetch();
+  }, [queryClient, refetch]);
+
   // Format images for MasonryGrid
   const formatImagesForGrid = useCallback((images: Image[] = []) => {
     return images.map(image => ({
@@ -178,6 +213,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     handleTabChange,
     handleClientChange,
     handleResetFilters,
+    refreshGallery,
     formatImagesForGrid
   };
 };

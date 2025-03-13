@@ -11,6 +11,9 @@ interface LazyImageProps {
   objectFit?: string;
 }
 
+// Cache global pour les images
+const imageCache = new Map<string, string>();
+
 export function LazyImage({
   src,
   alt,
@@ -21,7 +24,21 @@ export function LazyImage({
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
+  const [cachedSrc, setCachedSrc] = useState<string | null>(null);
   const imgRef = useRef<HTMLDivElement>(null);
+  
+  // Vérifier si l'image est déjà en cache au montage
+  useEffect(() => {
+    if (imageCache.has(src)) {
+      setCachedSrc(imageCache.get(src) || null);
+      // Si l'image est en cache, on simule un chargement rapide
+      setLoadProgress(70);
+      setTimeout(() => {
+        setLoadProgress(100);
+        setIsLoaded(true);
+      }, 100);
+    }
+  }, [src]);
   
   // On utilise une URL optimisée pour le chargement initial (résolution plus basse)
   const getLowQualitySrc = (originalSrc: string): string => {
@@ -29,8 +46,11 @@ export function LazyImage({
     if (originalSrc.includes('unsplash.com')) {
       return originalSrc.replace(/&w=\d+/, '&w=20').replace(/&q=\d+/, '&q=20');
     }
-    // Pour les autres sources, on retourne l'URL d'origine
-    return originalSrc;
+    // Pour les autres sources, on retourne l'URL d'origine avec une taille réduite si possible
+    if (originalSrc.includes('?')) {
+      return `${originalSrc}&w=20&q=20`;
+    }
+    return `${originalSrc}?w=20&q=20`;
   };
   
   const [lowQualitySrc] = useState(getLowQualitySrc(src));
@@ -45,8 +65,8 @@ export function LazyImage({
       },
       {
         root: null,
-        rootMargin: '200px', // Augmenté pour précharger les images plus tôt
-        threshold: 0.01 // Réduit pour déclencher plus rapidement
+        rootMargin: '200px', // Précharger les images plus tôt (200px avant d'entrer dans la vue)
+        threshold: 0.01
       }
     );
     
@@ -57,23 +77,36 @@ export function LazyImage({
     };
   }, []);
 
-  // Simuler le chargement progressif
+  // Simuler le chargement progressif quand l'image entre dans la vue
   useEffect(() => {
-    if (isInView && !isLoaded) {
+    if (isInView && !isLoaded && !cachedSrc) {
+      // Initialiser la progression à une valeur aléatoire entre 10 et 30
+      setLoadProgress(Math.floor(Math.random() * 20) + 10);
+      
       const interval = setInterval(() => {
         setLoadProgress(prev => {
-          const newProgress = prev + Math.random() * 15;
-          return newProgress >= 100 ? 100 : newProgress;
+          // Ralentir la progression à mesure qu'on approche de 90%
+          const increment = prev < 30 ? 10 : prev < 60 ? 5 : prev < 80 ? 2 : 1;
+          const newProgress = prev + Math.random() * increment;
+          return newProgress >= 90 ? 90 : newProgress; // Plafonner à 90% jusqu'au chargement réel
         });
-      }, 100);
+      }, 150);
       
       return () => clearInterval(interval);
     }
-  }, [isInView, isLoaded]);
+  }, [isInView, isLoaded, cachedSrc]);
 
-  const handleImageLoad = () => {
-    setIsLoaded(true);
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    // Ajouter l'image au cache global
+    if (!imageCache.has(src) && e.currentTarget.src === src) {
+      imageCache.set(src, src);
+    }
+    
+    // Finaliser le chargement
     setLoadProgress(100);
+    setTimeout(() => {
+      setIsLoaded(true);
+    }, 100); // Petit délai pour l'animation
   };
 
   return (
@@ -81,7 +114,7 @@ export function LazyImage({
       ref={imgRef}
       className={cn("lazy-image overflow-hidden relative", aspectRatio, className)}
     >
-      {/* Placeholder à faible résolution */}
+      {/* Image basse résolution comme placeholder */}
       {isInView && !isLoaded && (
         <img
           src={lowQualitySrc}
@@ -89,9 +122,8 @@ export function LazyImage({
           className={cn(
             "lazy-image-placeholder absolute inset-0 w-full h-full blur-md scale-105",
             objectFit,
-            isLoaded ? "opacity-0" : "opacity-100"
+            "opacity-100 transition-opacity duration-500"
           )}
-          style={{ transition: 'opacity 500ms ease-in-out' }}
         />
       )}
       
@@ -102,10 +134,10 @@ export function LazyImage({
         </div>
       )}
       
-      {/* Image principale */}
+      {/* Image principale (image en cache ou image à charger) */}
       {isInView && (
         <img
-          src={src}
+          src={cachedSrc || src}
           alt={alt}
           className={cn(
             "lazy-image-actual w-full h-full transition-opacity duration-500",
