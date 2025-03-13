@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Image } from '@/pages/Images';
@@ -33,6 +33,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const [page, setPage] = useState(1);
   const [allImages, setAllImages] = useState<Image[]>([]);
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
+  const [allTags, setAllTags] = useState<string[]>([]);
 
   // Reset page when filters change
   useEffect(() => {
@@ -123,6 +124,40 @@ export const useGalleryImages = (isAdmin: boolean) => {
     }
   }, [newImages, page]);
 
+  // Fetch all unique tags for filtering
+  useEffect(() => {
+    const fetchAllTags = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('images')
+          .select('tags');
+        
+        if (error) {
+          console.error('Error fetching tags:', error);
+          return;
+        }
+        
+        // Extract all tags from all images
+        const tagsSet = new Set<string>();
+        data.forEach(item => {
+          const tags = parseTagsString(item.tags);
+          if (tags && Array.isArray(tags)) {
+            tags.forEach(tag => tagsSet.add(tag.toLowerCase()));
+          }
+        });
+        
+        // Convert to array and sort
+        const sortedTags = Array.from(tagsSet).sort();
+        setAllTags(sortedTags);
+        
+      } catch (error) {
+        console.error('Error processing tags:', error);
+      }
+    };
+    
+    fetchAllTags();
+  }, []);
+
   // Handle loading more images
   const loadMoreImages = useCallback(() => {
     if (!isLoading && !isFetching && newImages.length === IMAGES_PER_PAGE) {
@@ -148,11 +183,16 @@ export const useGalleryImages = (isAdmin: boolean) => {
     setAllImages([]);
     setHasActiveFilters(false);
     
+    // Clear URL parameters
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.delete('tag');
+    window.history.replaceState(null, '', `?${newSearchParams.toString()}`);
+    
     // Force a refetch
     setTimeout(() => {
       refetch();
     }, 0);
-  }, [refetch]);
+  }, [refetch, searchParams]);
 
   // Format images for MasonryGrid
   const formatImagesForGrid = useCallback((images: Image[] = []) => {
@@ -174,6 +214,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     hasActiveFilters,
     activeTab,
     selectedClient,
+    allTags,
     loadMoreImages,
     handleTabChange,
     handleClientChange,

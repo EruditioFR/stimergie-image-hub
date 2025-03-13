@@ -3,6 +3,16 @@ import { SearchBar } from '@/components/SearchBar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClientsFilter } from './ClientsFilter';
 import { useAuth } from '@/context/AuthContext';
+import { useState, useEffect } from 'react';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useSearchParams } from 'react-router-dom';
 
 interface GalleryHeaderProps {
   title: string;
@@ -13,6 +23,7 @@ interface GalleryHeaderProps {
   onClientChange: (clientId: string | null) => void;
   userName?: string;
   userLastName?: string;
+  availableTags?: string[];
 }
 
 export function GalleryHeader({ 
@@ -23,16 +34,40 @@ export function GalleryHeader({
   selectedClient,
   onClientChange,
   userName = "",
-  userLastName = ""
+  userLastName = "",
+  availableTags = []
 }: GalleryHeaderProps) {
   const { userRole } = useAuth();
   const isAdmin = ['admin', 'admin_client'].includes(userRole);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedTag, setSelectedTag] = useState<string>(searchParams.get('tag') || '');
   
   const handleTabChange = (value: string) => {
     // Convert category name to lowercase or 'all' for consistent filtering
     const normalizedValue = value.toLowerCase() === 'toutes' ? 'all' : value.toLowerCase();
     onTabChange(normalizedValue);
   };
+
+  // Update URL when tag changes
+  const handleTagChange = (tag: string) => {
+    setSelectedTag(tag);
+    
+    // Update URL search params
+    if (tag) {
+      searchParams.set('tag', tag);
+    } else {
+      searchParams.delete('tag');
+    }
+    setSearchParams(searchParams);
+  };
+  
+  // When URL changes externally, update the local state
+  useEffect(() => {
+    const tagParam = searchParams.get('tag');
+    if (tagParam !== selectedTag) {
+      setSelectedTag(tagParam || '');
+    }
+  }, [searchParams]);
   
   return (
     <div className="bg-muted/30 border-b border-border">
@@ -52,6 +87,28 @@ export function GalleryHeader({
         
         <div className="flex flex-col md:flex-row md:items-center gap-4 mb-8">
           <SearchBar className="md:max-w-sm" variant="minimal" />
+          
+          {availableTags.length > 0 && (
+            <Select 
+              value={selectedTag} 
+              onValueChange={handleTagChange}
+              defaultValue=""
+            >
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Filtrer par mot-clé" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="">Tous les mots-clés</SelectItem>
+                  {availableTags.map((tag) => (
+                    <SelectItem key={tag} value={tag}>
+                      {tag}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          )}
           
           {isAdmin && (
             <ClientsFilter 
