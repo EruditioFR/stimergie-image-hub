@@ -1,0 +1,172 @@
+
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Project } from "@/types/project";
+
+export function useProjects() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast: uiToast } = useToast();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase
+        .from('projets')
+        .select(`
+          *,
+          clients:id_client (nom)
+        `);
+      
+      if (error) {
+        console.error("Supabase error details:", error);
+        throw error;
+      }
+      
+      if (data) {
+        const mappedProjects: Project[] = data.map(project => ({
+          id: project.id,
+          nom_projet: project.nom_projet,
+          type_projet: project.type_projet,
+          id_client: project.id_client,
+          created_at: project.created_at,
+          client_name: project.clients?.nom
+        }));
+        
+        setProjects(mappedProjects);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la récupération des projets:", error);
+      uiToast({
+        title: "Erreur",
+        description: "Impossible de récupérer les projets.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addProject = async (project: Project) => {
+    try {
+      const { data, error } = await supabase
+        .from('projets')
+        .insert([
+          { 
+            nom_projet: project.nom_projet,
+            type_projet: project.type_projet,
+            id_client: project.id_client
+          }
+        ])
+        .select(`
+          *,
+          clients:id_client (nom)
+        `);
+      
+      if (error) {
+        console.error("Supabase insert error details:", error);
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        const newProject: Project = {
+          id: data[0].id,
+          nom_projet: data[0].nom_projet,
+          type_projet: data[0].type_projet,
+          id_client: data[0].id_client,
+          created_at: data[0].created_at,
+          client_name: data[0].clients?.nom
+        };
+        
+        setProjects(prevProjects => [...prevProjects, newProject]);
+        toast.success(`${project.nom_projet} a été ajouté avec succès.`);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Erreur lors de l'ajout du projet:", error);
+      toast.error("Impossible d'ajouter le projet.");
+      return false;
+    }
+  };
+
+  const updateProject = async (project: Project) => {
+    if (!project.id) return false;
+    
+    try {
+      const { error } = await supabase
+        .from('projets')
+        .update({
+          nom_projet: project.nom_projet,
+          type_projet: project.type_projet,
+          id_client: project.id_client
+        })
+        .eq('id', project.id);
+      
+      if (error) {
+        console.error("Supabase update error details:", error);
+        throw error;
+      }
+      
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('nom')
+        .eq('id', project.id_client)
+        .single();
+      
+      setProjects(prevProjects => 
+        prevProjects.map(p => 
+          p.id === project.id ? {
+            ...project,
+            client_name: clientData?.nom
+          } : p
+        )
+      );
+      
+      toast.success(`${project.nom_projet} a été mis à jour avec succès.`);
+      return true;
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du projet:", error);
+      toast.error("Impossible de mettre à jour le projet.");
+      return false;
+    }
+  };
+
+  const deleteProject = async (projectId: string) => {
+    try {
+      const { error } = await supabase
+        .from('projets')
+        .delete()
+        .eq('id', projectId);
+      
+      if (error) {
+        console.error("Supabase delete error details:", error);
+        throw error;
+      }
+      
+      setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
+      toast.success("Le projet a été supprimé avec succès.");
+      return true;
+    } catch (error) {
+      console.error("Erreur lors de la suppression du projet:", error);
+      toast.error("Impossible de supprimer le projet.");
+      return false;
+    }
+  };
+
+  return {
+    projects,
+    loading,
+    addProject,
+    updateProject,
+    deleteProject,
+  };
+}
