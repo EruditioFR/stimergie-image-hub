@@ -6,7 +6,7 @@ export default function BlogPost() {
   return (
     <>
       <Header />
-      <div className="mt-16">
+      <div>
         <BlogPostView />
       </div>
     </>
