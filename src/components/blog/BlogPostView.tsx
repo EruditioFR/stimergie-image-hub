@@ -96,14 +96,14 @@ export function BlogPostView() {
       <Button 
         variant="outline" 
         className="mb-6"
-        onClick={() => navigate(post.content_type === 'Ressource' ? '/resources' : '/ensemble')}
+        onClick={() => navigate(post?.content_type === 'Ressource' ? '/resources' : '/ensemble')}
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Retour aux {post.content_type === 'Ressource' ? 'ressources' : 'articles'}
+        Retour aux {post?.content_type === 'Ressource' ? 'ressources' : 'articles'}
       </Button>
 
       <Card>
-        {post.featured_image_url && (
+        {post?.featured_image_url && (
           <div 
             className="w-full h-64 md:h-80 bg-cover bg-center"
             style={{ backgroundImage: `url(${post.featured_image_url})` }}
@@ -113,14 +113,14 @@ export function BlogPostView() {
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
-              <CardTitle className="text-2xl md:text-3xl">{post.title}</CardTitle>
+              <CardTitle className="text-2xl md:text-3xl">{post?.title}</CardTitle>
               <p className="text-muted-foreground mt-2">
-                Publié le {formatDate(post.created_at)}
-                {post.client_name && ` · Client: ${post.client_name}`}
+                Publié le {post ? formatDate(post.created_at) : ''}
+                {post?.client_name && ` · Client: ${post.client_name}`}
               </p>
             </div>
 
-            {!post.published && (
+            {post && !post.published && (
               <span className="text-sm font-medium px-3 py-1 rounded-full bg-yellow-100 text-yellow-800">
                 Brouillon
               </span>
@@ -130,13 +130,13 @@ export function BlogPostView() {
 
         <CardContent>
           <div className="prose prose-lg max-w-none">
-            {post.content.split('\n').map((paragraph, index) => (
+            {post?.content.split('\n').map((paragraph, index) => (
               <p key={index}>{paragraph}</p>
             ))}
           </div>
         </CardContent>
 
-        {canEdit && (
+        {user && ['admin', 'admin_client'].includes(userRole) && post && (
           <CardFooter>
             <Button 
               variant="outline" 

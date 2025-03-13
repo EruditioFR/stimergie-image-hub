@@ -55,8 +55,18 @@ export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
 
       // Transform the data to match the BlogPost interface
       return data.map(post => ({
-        ...post,
+        id: post.id,
+        title: post.title,
+        content: post.content,
+        client_id: post.client_id,
         client_name: post.clients?.nom || null,
+        featured_image_url: post.featured_image_url,
+        content_type: post.content_type,
+        created_at: post.created_at,
+        updated_at: post.updated_at,
+        author_id: post.author_id,
+        published: post.published,
+        slug: post.slug
       }));
     },
   });
