@@ -16,6 +16,7 @@ import Projects from "@/pages/Projects";
 import Users from "@/pages/Users";
 import Auth from "@/pages/Auth";
 import Images from "@/pages/Images";
+import SharedAlbum from "@/pages/SharedAlbum";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/gallery" element={<Gallery />} />
               <Route path="/image/:id" element={<ImageView />} />
+              <Route path="/shared-album/:shareKey" element={<SharedAlbum />} />
               <Route path="/auth" element={<Auth />} />
               <Route 
                 path="/images" 
