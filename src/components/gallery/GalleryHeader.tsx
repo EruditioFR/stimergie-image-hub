@@ -1,8 +1,7 @@
 
 import { SearchBar } from '@/components/SearchBar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ClientsFilter } from './ClientsFilter';
 import { useAuth } from '@/context/AuthContext';
+import { ClientsFilter } from './ClientsFilter';
 
 interface GalleryHeaderProps {
   title: string;
@@ -50,7 +49,7 @@ export function GalleryHeader({
           )}
         </div>
         
-        <div className="flex flex-col md:flex-row md:items-center gap-4 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
           <SearchBar className="md:max-w-sm" variant="minimal" />
           
           {isAdmin && (
