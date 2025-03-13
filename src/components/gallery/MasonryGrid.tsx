@@ -25,26 +25,54 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
   };
 
   // Check if we should load more images based on scroll position
-  const handleScroll = () => {
+  const handleScroll = React.useCallback(() => {
     if (!onLoadMore) return;
     
     const scrollHeight = document.documentElement.scrollHeight;
     const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
     const clientHeight = document.documentElement.clientHeight;
     
-    // Load more when user scrolls to bottom (with a 200px threshold)
-    if (scrollHeight - scrollTop - clientHeight < 200 && !isLoading) {
+    // Load more when user scrolls to bottom (with a 300px threshold for earlier loading)
+    if (scrollHeight - scrollTop - clientHeight < 300 && !isLoading) {
       onLoadMore();
     }
-  };
+  }, [onLoadMore, isLoading]);
 
-  // Add scroll event listener
+  // Add scroll event listener with debounce
   React.useEffect(() => {
     if (onLoadMore) {
-      window.addEventListener('scroll', handleScroll);
-      return () => window.removeEventListener('scroll', handleScroll);
+      // Debounce scroll event to improve performance
+      let scrollTimer: number | null = null;
+      
+      const debouncedScroll = () => {
+        if (scrollTimer) window.clearTimeout(scrollTimer);
+        scrollTimer = window.setTimeout(handleScroll, 100);
+      };
+      
+      window.addEventListener('scroll', debouncedScroll);
+      return () => {
+        if (scrollTimer) window.clearTimeout(scrollTimer);
+        window.removeEventListener('scroll', debouncedScroll);
+      };
     }
-  }, [onLoadMore, isLoading]);
+  }, [onLoadMore, handleScroll]);
+
+  // Preload initial images
+  React.useEffect(() => {
+    // Précharger les premières images visibles pour un affichage plus rapide
+    const preloadInitialImages = () => {
+      const imagesToPreload = images.slice(0, 6); // Préchargement des 6 premières images
+      
+      imagesToPreload.forEach(image => {
+        const img = new Image();
+        img.src = image.src;
+      });
+    };
+    
+    if (images.length > 0) {
+      preloadInitialImages();
+    }
+  }, [images]);
 
   if (isLoading && images.length === 0) {
     return (
