@@ -1,6 +1,6 @@
 
 import { Link } from 'react-router-dom';
-import { Search, Users, LogIn, FolderOpen, Image } from 'lucide-react';
+import { Search, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { UserMenu } from './UserMenu';
@@ -43,42 +43,6 @@ export function DesktopNav({
           location.pathname.includes("/gallery") ? "text-primary" : "")}>
           Banque d'images
         </Link>
-      )}
-      {user && (
-        <>
-          {canAccessClientsPage && (
-            <Link to="/clients" className={cn("text-sm font-medium transition-colors hover:text-primary text-black", 
-              location.pathname === "/clients" ? "text-primary" : "")}>
-              <span className="flex items-center gap-1">
-                <Users className="h-4 w-4" />
-                Clients
-              </span>
-            </Link>
-          )}
-          <Link to="/projects" className={cn("text-sm font-medium transition-colors hover:text-primary text-black", 
-            location.pathname === "/projects" ? "text-primary" : "")}>
-            <span className="flex items-center gap-1">
-              <FolderOpen className="h-4 w-4" />
-              Projets
-            </span>
-          </Link>
-          <Link to="/users" className={cn("text-sm font-medium transition-colors hover:text-primary text-black", 
-            location.pathname === "/users" ? "text-primary" : "")}>
-            <span className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              Utilisateurs
-            </span>
-          </Link>
-          {canAccessImagesPage && (
-            <Link to="/images" className={cn("text-sm font-medium transition-colors hover:text-primary text-black", 
-              location.pathname === "/images" ? "text-primary" : "")}>
-              <span className="flex items-center gap-1">
-                <Image className="h-4 w-4" />
-                Images
-              </span>
-            </Link>
-          )}
-        </>
       )}
       <Link to="/about" className="text-sm font-medium transition-colors hover:text-primary text-black">
         À propos

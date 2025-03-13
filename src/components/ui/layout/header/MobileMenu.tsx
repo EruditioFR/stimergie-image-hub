@@ -1,6 +1,6 @@
 
 import { Link } from 'react-router-dom';
-import { Search, Users, LogIn, LogOut, FolderOpen, Image } from 'lucide-react';
+import { Search, LogIn, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -56,38 +56,6 @@ export function MobileMenu({
           <Link to="/gallery" className="text-base font-medium py-2 transition-colors text-black">
             Banque d'images
           </Link>
-        )}
-        {user && (
-          <>
-            {canAccessClientsPage && (
-              <Link to="/clients" className="text-base font-medium py-2 transition-colors text-black">
-                <span className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Clients
-                </span>
-              </Link>
-            )}
-            <Link to="/projects" className="text-base font-medium py-2 transition-colors text-black">
-              <span className="flex items-center gap-2">
-                <FolderOpen className="h-4 w-4" />
-                Projets
-              </span>
-            </Link>
-            <Link to="/users" className="text-base font-medium py-2 transition-colors text-black">
-              <span className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Utilisateurs
-              </span>
-            </Link>
-            {canAccessImagesPage && (
-              <Link to="/images" className="text-base font-medium py-2 transition-colors text-black">
-                <span className="flex items-center gap-2">
-                  <Image className="h-4 w-4" />
-                  Images
-                </span>
-              </Link>
-            )}
-          </>
         )}
         <Link to="/about" className="text-base font-medium py-2 transition-colors text-black">
           À propos
