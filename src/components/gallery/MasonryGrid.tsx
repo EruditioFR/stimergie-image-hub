@@ -76,7 +76,7 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
 
   if (isLoading && images.length === 0) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 animate-pulse">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
         {[1, 2, 3, 4, 5, 6].map((_, index) => (
           <div key={index} className="h-64 rounded-xl bg-muted"></div>
         ))}
@@ -86,9 +86,9 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
         {/* First column */}
-        <div className="flex flex-col gap-6 md:gap-8">
+        <div className="flex flex-col gap-3 md:gap-4">
           {getColumnImages(0, 3).map((image) => (
             <div 
               key={image.id}
@@ -104,7 +104,7 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
         </div>
         
         {/* Second column */}
-        <div className="flex flex-col gap-6 md:gap-8">
+        <div className="flex flex-col gap-3 md:gap-4">
           {getColumnImages(1, 3).map((image) => (
             <div 
               key={image.id} 
@@ -120,7 +120,7 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
         </div>
         
         {/* Third column */}
-        <div className="hidden lg:flex flex-col gap-6 md:gap-8">
+        <div className="hidden lg:flex flex-col gap-3 md:gap-4">
           {getColumnImages(2, 3).map((image) => (
             <div 
               key={image.id} 
@@ -138,7 +138,7 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
 
       {/* Loading indicator for infinite scroll */}
       {isLoading && images.length > 0 && (
-        <div className="flex justify-center mt-8">
+        <div className="flex justify-center mt-6">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
       )}
