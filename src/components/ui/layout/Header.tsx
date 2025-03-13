@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, Menu, X, Users, LogIn, LogOut, UserCircle, FolderOpen, Image } from 'lucide-react';
@@ -5,11 +6,13 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { supabase } from '@/integrations/supabase/client';
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [userProfile, setUserProfile] = useState<{ firstName: string; lastName: string; role: string } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const {
@@ -47,9 +50,55 @@ export function Header() {
     setIsMobileMenuOpen(false);
   }, [location]);
 
+  // Fetch user profile data
+  useEffect(() => {
+    if (user) {
+      const fetchProfileData = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('first_name, last_name, role')
+            .eq('id', user.id)
+            .single();
+            
+          if (data && !error) {
+            setUserProfile({
+              firstName: data.first_name || '',
+              lastName: data.last_name || '',
+              role: data.role || 'utilisateur'
+            });
+          } else {
+            console.error('Error fetching profile:', error);
+            
+            // Fallback: use metadata from user object
+            setUserProfile({
+              firstName: user.user_metadata?.first_name || '',
+              lastName: user.user_metadata?.last_name || '',
+              role: userRole || 'utilisateur'
+            });
+          }
+        } catch (err) {
+          console.error('Unexpected error fetching profile:', err);
+        }
+      };
+      
+      fetchProfileData();
+    }
+  }, [user, userRole]);
+
   const handleLogout = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const formatRole = (role: string) => {
+    // Convert API role names to user-friendly display names
+    switch(role.toLowerCase()) {
+      case 'admin': return 'Administrateur';
+      case 'admin_client': return 'Admin Client';
+      case 'user': return 'Utilisateur';
+      default: return role;
+    }
   };
 
   return <header className={cn("transition-all duration-300 px-6 py-4", 
@@ -112,7 +161,16 @@ export function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="text-black">
-                <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
+                <DropdownMenuLabel>
+                  {userProfile ? (
+                    <div className="flex flex-col gap-1">
+                      <div className="font-medium">{userProfile.firstName} {userProfile.lastName}</div>
+                      <div className="text-xs text-muted-foreground">{formatRole(userProfile.role)}</div>
+                    </div>
+                  ) : (
+                    "Mon compte"
+                  )}
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link to="/profile" className="cursor-pointer text-black">Profil</Link>
@@ -150,6 +208,13 @@ export function Header() {
             <div className="flex justify-center mb-4">
               <img src="/lovable-uploads/9ce78881-8c65-4716-ab7f-128bb420c8e9.png" alt="Stimergie Logo" className="h-8 w-auto" />
             </div>
+            
+            {userProfile && (
+              <div className="text-center mb-4 py-2 border-b border-gray-100">
+                <div className="font-medium">{userProfile.firstName} {userProfile.lastName}</div>
+                <div className="text-sm text-muted-foreground">{formatRole(userProfile.role)}</div>
+              </div>
+            )}
             
             <Link to="/" className={cn("text-base font-medium py-2 transition-colors text-black", location.pathname === "/" ? "text-primary" : "")}>
               Accueil
@@ -205,4 +270,3 @@ export function Header() {
 }
 
 export default Header;
-
