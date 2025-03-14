@@ -70,14 +70,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
 
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="max-w-7xl w-[95vw] h-[90vh] p-0 overflow-auto">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="absolute top-4 right-4 z-10"
-            onClick={onClose}
-          >
-            <X className="h-6 w-6" />
-          </Button>
+          {/* Suppression du bouton en double, on laisse uniquement celui du DialogContent qui est par défaut */}
 
           <div className="p-6 md:p-10">
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
@@ -175,6 +168,18 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                       <h3 className="font-medium">Utilisateur</h3>
                       <p className="text-sm text-muted-foreground">Contributeur</p>
                     </div>
+                  </div>
+                </div>
+
+                {/* Miniature de l'image */}
+                <div className="bg-card rounded-xl p-6 shadow-sm hidden lg:block">
+                  <h3 className="font-medium mb-4">Aperçu</h3>
+                  <div className="aspect-square overflow-hidden rounded-lg border border-muted">
+                    <img 
+                      src={image.url_miniature || image.url} 
+                      alt={image.title} 
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 </div>
 
