@@ -92,7 +92,7 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
             <NameFields form={form} />
             <EmailField form={form} isEditing={isEditing} />
             <RoleField form={form} availableRoles={availableRoles} />
-            <ClientField form={form} clients={clients} />
+            <ClientField form={form} />
             <PasswordField form={form} isEditing={isEditing} />
           </div>
 

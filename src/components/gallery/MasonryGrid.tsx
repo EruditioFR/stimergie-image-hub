@@ -48,7 +48,7 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
           const { data, error } = await supabase
             .from('images')
             .select('*')
-            .eq('id', imageId)
+            .eq('id', parseInt(imageId)) // Convert to number here
             .single();
             
           if (error) throw error;

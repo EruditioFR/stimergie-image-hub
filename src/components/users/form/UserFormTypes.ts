@@ -20,10 +20,6 @@ export interface RoleFieldProps extends UserFormFieldProps {
   availableRoles: Array<{value: UserRole, label: string}>;
 }
 
-export interface ClientFieldProps extends UserFormFieldProps {
-  clients: Client[];
-}
-
 export interface PasswordFieldProps extends UserFormFieldProps {
   isEditing: boolean;
 }
