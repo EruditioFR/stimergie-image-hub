@@ -89,7 +89,7 @@ export function SharedAlbum() {
     
     return album.images.map(image => ({
       id: image.id.toString(),
-      src: image.url_miniature || image.url,
+      src: image.url_miniature || image.url, // Prioritize url_miniature, fallback to url
       alt: image.title,
       title: image.title,
       author: 'User',
