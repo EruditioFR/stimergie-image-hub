@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: "Bienvenue sur votre tableau de bord",
       });
       
-      return data;
+      // Don't return data to match the Promise<void> type
     } catch (error) {
       console.error('Login error:', error);
       throw error;
