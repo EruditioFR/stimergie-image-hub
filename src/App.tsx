@@ -21,6 +21,7 @@ import Resources from "@/pages/Resources";
 import Ensemble from "@/pages/Ensemble";
 import BlogEditor from "@/pages/BlogEditor";
 import BlogPost from "@/pages/BlogPost";
+import ResetPassword from "@/pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/image/:id" element={<ImageView />} />
               <Route path="/shared-album/:shareKey" element={<SharedAlbum />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/resources" element={<Resources />} />
               <Route path="/ensemble" element={<Ensemble />} />
               <Route path="/blog/:slug" element={<BlogPost />} />

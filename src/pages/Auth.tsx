@@ -13,6 +13,8 @@ import { Footer } from "@/components/ui/layout/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 // Login form schema
 const loginSchema = z.object({
@@ -26,6 +28,7 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [isResetPasswordLoading, setIsResetPasswordLoading] = useState(false);
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
 
@@ -61,6 +64,50 @@ export default function Auth() {
   const handleDialogClose = () => {
     setIsOpen(false);
     navigate("/");
+  };
+
+  const handleForgotPassword = async () => {
+    const email = loginForm.getValues().email;
+
+    if (!email || !z.string().email().safeParse(email).success) {
+      toast({
+        variant: "destructive",
+        title: "Email invalide",
+        description: "Veuillez entrer une adresse email valide"
+      });
+      return;
+    }
+
+    try {
+      setIsResetPasswordLoading(true);
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + "/reset-password",
+      });
+      
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: error.message
+        });
+        return;
+      }
+      
+      toast({
+        title: "Email envoyé",
+        description: "Vérifiez votre boîte de réception pour le lien de réinitialisation"
+      });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible d'envoyer l'email de réinitialisation"
+      });
+    } finally {
+      setIsResetPasswordLoading(false);
+    }
   };
 
   return (
@@ -109,6 +156,17 @@ export default function Auth() {
                     </FormItem>
                   )}
                 />
+                <div className="flex justify-end">
+                  <Button 
+                    type="button" 
+                    variant="link" 
+                    className="px-0 h-auto text-sm text-muted-foreground"
+                    onClick={handleForgotPassword}
+                    disabled={isResetPasswordLoading}
+                  >
+                    {isResetPasswordLoading ? "Envoi en cours..." : "Mot de passe oublié ?"}
+                  </Button>
+                </div>
                 <div className="pt-2">
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Connexion en cours..." : "Se connecter"}
