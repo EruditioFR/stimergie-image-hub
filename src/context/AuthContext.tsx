@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +14,11 @@ type AuthContextType = {
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   signOut: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  isAdmin: () => boolean;
+  isAdminClient: () => boolean;
+  isRegularUser: () => boolean;
+  canAccessClient: (clientId: string | null) => boolean;
+  canEditClient: (clientId: string | null) => boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<UserRole>('user');
   const [loading, setLoading] = useState(true);
+  const [userClientId, setUserClientId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -36,6 +41,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         // Get user role via RPC function
         fetchUserRoleViaRPC(session.user.id);
+        // Récupérer le client ID associé à l'utilisateur
+        fetchUserClientId(session.user.id);
       } else {
         setLoading(false);
       }
@@ -51,8 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           // Get user role via RPC when auth state changes
           fetchUserRoleViaRPC(session.user.id);
+          // Récupérer le client ID associé à l'utilisateur
+          fetchUserClientId(session.user.id);
         } else {
           setUserRole('user');
+          setUserClientId(null);
           setLoading(false);
         }
       }
@@ -60,6 +70,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserClientId = async (userId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('get_user_client_id', {
+        user_id: userId
+      });
+      
+      if (error) {
+        console.error("Error fetching user client ID:", error);
+        return;
+      }
+      
+      setUserClientId(data);
+    } catch (error) {
+      console.error("Error in fetchUserClientId:", error);
+    }
+  };
 
   const fetchUserRoleViaRPC = async (userId: string) => {
     try {
@@ -190,6 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setSession(null);
         setUserRole('user');
+        setUserClientId(null);
         
         toast({
           title: "Déconnecté avec succès",
@@ -220,6 +248,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setSession(null);
       setUserRole('user');
+      setUserClientId(null);
       
       // Only throw if it's not an AuthSessionMissingError
       if (error instanceof Error && !error.message.includes('Auth session missing')) {
@@ -274,6 +303,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Fonctions de vérification des permissions
+  const isAdmin = () => userRole === 'admin';
+  
+  const isAdminClient = () => userRole === 'admin_client';
+  
+  const isRegularUser = () => userRole === 'user';
+  
+  // Vérifie si l'utilisateur peut accéder à un client spécifique
+  const canAccessClient = (clientId: string | null) => {
+    // Admin peut accéder à tous les clients
+    if (isAdmin()) return true;
+    
+    // Admin client et utilisateur ne peuvent accéder qu'à leur propre client
+    if ((isAdminClient() || isRegularUser()) && userClientId === clientId) {
+      return true;
+    }
+    
+    return false;
+  };
+  
+  // Vérifie si l'utilisateur peut modifier un client spécifique
+  const canEditClient = (clientId: string | null) => {
+    // Admin peut modifier tous les clients
+    if (isAdmin()) return true;
+    
+    // Admin client ne peut modifier que son propre client
+    if (isAdminClient() && userClientId === clientId) {
+      return true;
+    }
+    
+    // Utilisateur régulier ne peut pas modifier de client
+    return false;
+  };
+
   return (
     <AuthContext.Provider value={{ 
       session, 
@@ -283,7 +346,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn, 
       signUp, 
       signOut,
-      changePassword 
+      changePassword,
+      isAdmin,
+      isAdminClient,
+      isRegularUser,
+      canAccessClient,
+      canEditClient
     }}>
       {children}
     </AuthContext.Provider>
@@ -299,3 +367,4 @@ export function useAuth() {
   
   return context;
 }
+

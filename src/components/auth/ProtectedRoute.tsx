@@ -5,10 +5,26 @@ import { useAuth } from "@/context/AuthContext";
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: string[];
+  requiresClient?: boolean;
+  clientId?: string | null;
+  requiresEditPermission?: boolean;
 }
 
-export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, userRole, loading } = useAuth();
+export function ProtectedRoute({ 
+  children, 
+  allowedRoles,
+  requiresClient = false,
+  clientId = null,
+  requiresEditPermission = false
+}: ProtectedRouteProps) {
+  const { 
+    user, 
+    userRole, 
+    loading, 
+    isAdmin, 
+    canAccessClient, 
+    canEditClient 
+  } = useAuth();
 
   // Show loading state while checking authentication
   if (loading) {
@@ -29,6 +45,20 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/" replace />;
   }
 
-  // Render children if authenticated and has permission
+  // Check client access permissions
+  if (requiresClient && clientId) {
+    if (!canAccessClient(clientId)) {
+      return <Navigate to="/" replace />;
+    }
+  }
+
+  // Check edit permissions
+  if (requiresEditPermission && clientId) {
+    if (!canEditClient(clientId)) {
+      return <Navigate to="/" replace />;
+    }
+  }
+
+  // Render children if all permission checks pass
   return <>{children}</>;
 }
