@@ -29,6 +29,8 @@ export function LazyImage({
   
   // Vérifier si l'image est déjà en cache au montage
   useEffect(() => {
+    if (!src) return; // Add early return when src is undefined
+    
     if (imageCache.has(src)) {
       setCachedSrc(imageCache.get(src) || null);
       // Si l'image est en cache, on simule un chargement rapide
@@ -42,6 +44,9 @@ export function LazyImage({
   
   // On utilise une URL optimisée pour le chargement initial (résolution plus basse)
   const getLowQualitySrc = (originalSrc: string): string => {
+    // Add safety check to prevent error when originalSrc is undefined
+    if (!originalSrc) return '';
+    
     // Si l'URL est une URL Unsplash, on utilise les paramètres pour charger une version plus petite
     if (originalSrc.includes('unsplash.com')) {
       return originalSrc.replace(/&w=\d+/, '&w=20').replace(/&q=\d+/, '&q=20');
@@ -53,7 +58,7 @@ export function LazyImage({
     return `${originalSrc}?w=20&q=20`;
   };
   
-  const [lowQualitySrc] = useState(getLowQualitySrc(src));
+  const [lowQualitySrc] = useState(src ? getLowQualitySrc(src) : '');
 
   useEffect(() => {
     if (!imgRef.current) return;
@@ -108,6 +113,8 @@ export function LazyImage({
       setIsLoaded(true);
     }, 100); // Petit délai pour l'animation
   };
+
+  if (!src) return null; // Add early return for cases where src is undefined
 
   return (
     <div 
