@@ -16,13 +16,15 @@ interface MasonryColumnProps {
   images: Image[];
   isImageSelected: (id: string) => boolean;
   toggleImageSelection: (id: string) => void;
+  onImageClick?: (image: Image) => void;
 }
 
 // Composant optimisé avec memo pour éviter les re-renders inutiles
 export const MasonryColumn = memo(function MasonryColumn({ 
   images, 
   isImageSelected, 
-  toggleImageSelection 
+  toggleImageSelection,
+  onImageClick 
 }: MasonryColumnProps) {
   return (
     <div className="flex flex-col gap-0.5">
@@ -32,6 +34,7 @@ export const MasonryColumn = memo(function MasonryColumn({
           image={image}
           isSelected={isImageSelected(image.id)}
           onToggleSelection={() => toggleImageSelection(image.id)}
+          onImageClick={onImageClick}
         />
       ))}
     </div>
@@ -42,12 +45,22 @@ export const MasonryColumn = memo(function MasonryColumn({
 const ImageItem = memo(function ImageItem({
   image,
   isSelected,
-  onToggleSelection
+  onToggleSelection,
+  onImageClick
 }: {
   image: Image;
   isSelected: boolean;
   onToggleSelection: () => void;
+  onImageClick?: (image: Image) => void;
 }) {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onImageClick) {
+      onImageClick(image);
+    }
+  };
+  
   return (
     <div className="opacity-100 relative group">
       {/* Selection indicator - now larger and more visible */}
@@ -79,11 +92,14 @@ const ImageItem = memo(function ImageItem({
         }}
       />
       
-      <ImageCard 
-        {...image} 
-        className={`w-full transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
-        orientation={image.orientation}
-      />
+      <div onClick={handleClick}>
+        <ImageCard 
+          {...image} 
+          className={`w-full transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
+          orientation={image.orientation}
+          onClick={handleClick}
+        />
+      </div>
     </div>
   );
 });

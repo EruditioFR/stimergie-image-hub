@@ -1,6 +1,5 @@
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LazyImage } from '@/components/LazyImage';
@@ -14,9 +13,10 @@ interface ImageCardProps {
   author: string;
   className?: string;
   orientation?: string;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
-export function ImageCard({ id, src, alt, title, author, className, orientation }: ImageCardProps) {
+export function ImageCard({ id, src, alt, title, author, className, orientation, onClick }: ImageCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   // Get appropriate aspect ratio based on image orientation
@@ -43,8 +43,9 @@ export function ImageCard({ id, src, alt, title, author, className, orientation 
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={onClick}
     >
-      <Link to={`/image/${id}`} className="block relative">
+      <div className="block relative">
         <LazyImage 
           src={src} 
           alt={alt} 
@@ -61,7 +62,7 @@ export function ImageCard({ id, src, alt, title, author, className, orientation 
           <h3 className="text-white font-medium truncate">{title}</h3>
           <p className="text-white/80 text-sm">Par {author}</p>
         </div>
-      </Link>
+      </div>
       
       {/* Download button */}
       <div className={cn(
