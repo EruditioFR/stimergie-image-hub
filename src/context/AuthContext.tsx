@@ -59,17 +59,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserRole = async (userId: string) => {
     try {
-      // First try to get role from profiles table
-      const { data: profileData, error: profileError } = await supabase
+      // Récupérer directement le rôle de l'utilisateur sans récursion
+      const { data, error } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', userId)
         .single();
 
-      if (profileData && !profileError) {
-        setUserRole(profileData.role || 'user');
+      if (data && !error) {
+        setUserRole(data.role || 'user');
       } else {
-        // Fallback to user metadata
+        // Fallback à user_metadata
         if (user?.user_metadata?.role) {
           setUserRole(user.user_metadata.role);
         } else {
