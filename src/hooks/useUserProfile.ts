@@ -7,6 +7,7 @@ export interface UserProfile {
   firstName: string;
   lastName: string;
   role: string;
+  clientId: string | null;
 }
 
 export function useUserProfile(user: User | null, userRole: string) {
@@ -19,7 +20,7 @@ export function useUserProfile(user: User | null, userRole: string) {
           // Essayer d'utiliser une requête paramétrée pour éviter la récursion RLS
           const { data, error } = await supabase
             .from('profiles')
-            .select('first_name, last_name, role')
+            .select('first_name, last_name, role, id_client')
             .filter('id', 'eq', user.id)
             .maybeSingle();
             
@@ -28,7 +29,8 @@ export function useUserProfile(user: User | null, userRole: string) {
             setUserProfile({
               firstName: data.first_name || '',
               lastName: data.last_name || '',
-              role: data.role || 'utilisateur'
+              role: data.role || 'utilisateur',
+              clientId: data.id_client
             });
           } else {
             console.error('Error fetching profile:', error);
@@ -37,7 +39,8 @@ export function useUserProfile(user: User | null, userRole: string) {
             setUserProfile({
               firstName: user.user_metadata?.first_name || '',
               lastName: user.user_metadata?.last_name || '',
-              role: userRole || 'utilisateur'
+              role: userRole || 'utilisateur',
+              clientId: user.user_metadata?.id_client || null
             });
           }
         } catch (err) {
@@ -46,7 +49,8 @@ export function useUserProfile(user: User | null, userRole: string) {
           setUserProfile({
             firstName: user.user_metadata?.first_name || '',
             lastName: user.user_metadata?.last_name || '',
-            role: userRole || 'utilisateur'
+            role: userRole || 'utilisateur',
+            clientId: user.user_metadata?.id_client || null
           });
         }
       };

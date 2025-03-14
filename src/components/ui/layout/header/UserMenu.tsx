@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Lock, LogOut, Settings, UserCircle } from "lucide-react";
+import { ChevronDown, Lock, LogOut, Settings, UserCircle, Building2 } from "lucide-react";
 import { useState } from "react";
 import { ChangePasswordForm } from "@/components/users/ChangePasswordForm";
 import { useNavigate } from "react-router-dom";
@@ -64,12 +64,24 @@ export function UserMenu() {
           <div className="px-2 py-1.5 text-sm md:hidden">
             <p className="font-medium leading-none">{userProfile?.firstName} {userProfile?.lastName}</p>
             <p className="text-xs text-muted-foreground pt-0.5">{formatRole(userProfile?.role || userRole)}</p>
+            {userProfile?.clientId && (
+              <p className="text-xs text-muted-foreground pt-0.5 flex items-center gap-1">
+                <Building2 className="h-3 w-3" />
+                Client ID: {userProfile.clientId}
+              </p>
+            )}
           </div>
           <DropdownMenuSeparator className="md:hidden" />
           <DropdownMenuItem className="flex items-center gap-2">
             <UserCircle className="h-4 w-4" />
             <span>Mon profil</span>
           </DropdownMenuItem>
+          {userProfile?.clientId && (
+            <DropdownMenuItem className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              <span>Mon client: {userProfile.clientId}</span>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem className="flex items-center gap-2" onSelect={() => setShowChangePasswordForm(true)}>
             <Lock className="h-4 w-4" />
             <span>Changer de mot de passe</span>
