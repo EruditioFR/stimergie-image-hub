@@ -98,6 +98,20 @@
   }
 }
 
+/* Loading animations */
+@keyframes pulse-fade {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.pulse-animation {
+  animation: pulse-fade 2s infinite ease-in-out;
+}
+
 /* Custom styles */
 .image-card {
   transition: transform 0.3s ease, box-shadow 0.3s ease;

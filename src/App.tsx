@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ImageProvider } from "@/context/ImageContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { useState, useEffect } from "react";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import Index from "@/pages/Index";
 import Gallery from "@/pages/Gallery";
 import ImageView from "@/pages/ImageView";
@@ -25,80 +27,87 @@ import ResetPassword from "@/pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <ImageProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/gallery" element={<Gallery />} />
-              <Route path="/image/:id" element={<ImageView />} />
-              <Route path="/shared-album/:shareKey" element={<SharedAlbum />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/resources" element={<Resources />} />
-              <Route path="/ensemble" element={<Ensemble />} />
-              <Route path="/blog/:slug" element={<BlogPost />} />
-              <Route 
-                path="/blog/new" 
-                element={
-                  <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
-                    <BlogEditor />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/blog/edit/:id" 
-                element={
-                  <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
-                    <BlogEditor />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/images" 
-                element={
-                  <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
-                    <Images />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/clients" 
-                element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <Clients />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/projects" 
-                element={
-                  <ProtectedRoute>
-                    <Projects />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/users" 
-                element={
-                  <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
-                    <Users />
-                  </ProtectedRoute>
-                } 
-              />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </ImageProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [isLoading, setIsLoading] = useState(true);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <ImageProvider>
+            <Toaster />
+            <Sonner />
+            {isLoading && <LoadingScreen onFinished={() => setIsLoading(false)} />}
+            <div style={{ visibility: isLoading ? 'hidden' : 'visible' }}>
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/gallery" element={<Gallery />} />
+                  <Route path="/image/:id" element={<ImageView />} />
+                  <Route path="/shared-album/:shareKey" element={<SharedAlbum />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route path="/resources" element={<Resources />} />
+                  <Route path="/ensemble" element={<Ensemble />} />
+                  <Route path="/blog/:slug" element={<BlogPost />} />
+                  <Route 
+                    path="/blog/new" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
+                        <BlogEditor />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/blog/edit/:id" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
+                        <BlogEditor />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/images" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
+                        <Images />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/clients" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <Clients />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/projects" 
+                    element={
+                      <ProtectedRoute>
+                        <Projects />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/users" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
+                        <Users />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </div>
+          </ImageProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
