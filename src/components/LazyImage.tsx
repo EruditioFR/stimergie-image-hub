@@ -12,14 +12,17 @@ interface LazyImageProps {
   priority?: boolean;
 }
 
-// Global image cache for faster loading of previously viewed images
+// Cache global pour un chargement plus rapide des images déjà visionnées
 const imageCache = new Map<string, string>();
 
-// Global IntersectionObserver instance for performance
+// Cache pour garder une trace des images demandées pour éviter les doublons
+const requestedImagesCache = new Set<string>();
+
+// Instance globale d'IntersectionObserver pour des performances optimales
 let globalObserver: IntersectionObserver | null = null;
 const observedElements = new WeakMap<Element, (isIntersecting: boolean) => void>();
 
-// Create or get the global observer
+// Créer ou obtenir l'observateur global
 const getObserver = () => {
   if (globalObserver === null) {
     globalObserver = new IntersectionObserver(
@@ -31,13 +34,34 @@ const getObserver = () => {
       },
       {
         root: null,
-        rootMargin: '200px', // Preload images 200px before they enter viewport
+        rootMargin: '300px', // Précharger les images 300px avant qu'elles n'entrent dans le viewport
         threshold: 0.01
       }
     );
   }
   return globalObserver;
 };
+
+// Précharger un lot d'images pour une expérience utilisateur plus fluide
+export function preloadImages(urls: string[]): void {
+  if (!urls.length) return;
+  
+  // Limiter le nombre d'images préchargées simultanément
+  const batchSize = 5;
+  const priorityUrls = urls.slice(0, batchSize);
+  
+  priorityUrls.forEach(url => {
+    if (!requestedImagesCache.has(url)) {
+      requestedImagesCache.add(url);
+      
+      const img = new Image();
+      img.onload = () => {
+        imageCache.set(url, url);
+      };
+      img.src = url;
+    }
+  });
+}
 
 export function LazyImage({
   src,
@@ -48,28 +72,60 @@ export function LazyImage({
   priority = false
 }: LazyImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isInView, setIsInView] = useState(priority); // If priority, consider in view immediately
+  const [isInView, setIsInView] = useState(priority); // Si prioritaire, considérer immédiatement dans la vue
   const [loadProgress, setLoadProgress] = useState(0);
   const [cachedSrc, setCachedSrc] = useState<string | null>(null);
   const imgRef = useRef<HTMLDivElement>(null);
   const imgElRef = useRef<HTMLImageElement>(null);
   const progressIntervalRef = useRef<number | null>(null);
   
-  // Check if image is already cached on mount
+  // Vérifier si l'image est déjà mise en cache au montage
   useEffect(() => {
     if (!src) return;
     
+    // Si l'image est dans notre cache d'application
     if (imageCache.has(src)) {
       setCachedSrc(imageCache.get(src) || null);
-      // Simulate fast loading for cached images
-      setLoadProgress(70);
+      // Simuler un chargement rapide pour les images mises en cache
+      setLoadProgress(80);
       setTimeout(() => {
         setLoadProgress(100);
         setIsLoaded(true);
-      }, 50); // Faster timeout for cached images
+      }, 30); // Timeout plus rapide pour les images mises en cache
     }
     
-    // Clean up any interval on unmount
+    // Vérifier si l'image est dans le cache du navigateur
+    const checkBrowserCache = async () => {
+      try {
+        if ('caches' in window) {
+          const cache = await caches.open('images-cache-v1');
+          const response = await cache.match(src);
+          if (response) {
+            const blob = await response.blob();
+            if (blob.size > 0) {
+              const objectURL = URL.createObjectURL(blob);
+              setCachedSrc(objectURL);
+              imageCache.set(src, objectURL);
+              setLoadProgress(90);
+              setTimeout(() => {
+                setLoadProgress(100);
+                setIsLoaded(true);
+              }, 20);
+              return true;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to check browser cache:", e);
+      }
+      return false;
+    };
+    
+    if (!imageCache.has(src)) {
+      checkBrowserCache();
+    }
+    
+    // Nettoyer tout intervalle au démontage
     return () => {
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current);
@@ -78,27 +134,27 @@ export function LazyImage({
     };
   }, [src]);
   
-  // Generate optimized low-quality placeholder URL
+  // Générer URL de placeholder de basse qualité optimisée
   const getLowQualitySrc = (originalSrc: string): string => {
     if (!originalSrc) return '';
     
-    // For Unsplash, use their built-in resizing parameters
+    // Pour Unsplash, utiliser leurs paramètres de redimensionnement intégrés
     if (originalSrc.includes('unsplash.com')) {
-      return originalSrc.replace(/&w=\d+/, '&w=10').replace(/&q=\d+/, '&q=10');
+      return originalSrc.replace(/&w=\d+/, '&w=20').replace(/&q=\d+/, '&q=20');
     }
     
-    // For other sources, add size parameters
+    // Pour les autres sources, ajouter des paramètres de taille
     if (originalSrc.includes('?')) {
-      return `${originalSrc}&w=10&q=10`;
+      return `${originalSrc}&w=20&q=20`;
     }
-    return `${originalSrc}?w=10&q=10`;
+    return `${originalSrc}?w=20&q=20`;
   };
   
   const [lowQualitySrc] = useState(src ? getLowQualitySrc(src) : '');
 
-  // Set up intersection observer
+  // Configurer l'observateur d'intersection
   useEffect(() => {
-    if (!imgRef.current || priority) return; // Skip if priority
+    if (!imgRef.current || priority) return; // Ignorer si prioritaire
     
     const observer = getObserver();
     const currentRef = imgRef.current;
@@ -106,7 +162,7 @@ export function LazyImage({
     const callback = (isIntersecting: boolean) => {
       if (isIntersecting) {
         setIsInView(true);
-        observer.unobserve(currentRef); // Stop observing once in view
+        observer.unobserve(currentRef); // Arrêter d'observer une fois dans la vue
         observedElements.delete(currentRef);
       }
     };
@@ -120,11 +176,11 @@ export function LazyImage({
     };
   }, [priority]);
 
-  // Simulate loading progress
+  // Simuler la progression du chargement pour une meilleure UX
   useEffect(() => {
     if ((isInView || priority) && !isLoaded && !cachedSrc) {
-      // Initialize progress with a random value
-      setLoadProgress(Math.floor(Math.random() * 20) + 10);
+      // Initialiser la progression avec une valeur aléatoire
+      setLoadProgress(Math.floor(Math.random() * 30) + 20);
       
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current);
@@ -132,12 +188,12 @@ export function LazyImage({
       
       progressIntervalRef.current = window.setInterval(() => {
         setLoadProgress(prev => {
-          // Slow down progress as it approaches 90%
-          const increment = prev < 30 ? 10 : prev < 60 ? 5 : prev < 80 ? 2 : 1;
+          // Ralentir la progression à l'approche de 90%
+          const increment = prev < 30 ? 8 : prev < 60 ? 4 : prev < 80 ? 2 : 1;
           const newProgress = prev + Math.random() * increment;
-          return newProgress >= 90 ? 90 : newProgress; // Cap at 90% until actual load
+          return newProgress >= 90 ? 90 : newProgress; // Plafonner à 90% jusqu'au chargement réel
         });
-      }, 150);
+      }, 120);
     }
     
     return () => {
@@ -149,12 +205,12 @@ export function LazyImage({
   }, [isInView, isLoaded, cachedSrc, priority]);
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    // Add image to global cache
+    // Ajouter l'image au cache global
     if (!imageCache.has(src) && e.currentTarget.src === src) {
       imageCache.set(src, src);
     }
     
-    // Complete loading
+    // Compléter le chargement
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current);
       progressIntervalRef.current = null;
@@ -163,7 +219,7 @@ export function LazyImage({
     setLoadProgress(100);
     setTimeout(() => {
       setIsLoaded(true);
-    }, 50); // Faster animation for smoother experience
+    }, 30); // Animation plus rapide pour une expérience plus fluide
   };
 
   if (!src) return null;
@@ -173,7 +229,7 @@ export function LazyImage({
       ref={imgRef}
       className={cn("lazy-image overflow-hidden relative", aspectRatio, className)}
     >
-      {/* Low-resolution placeholder */}
+      {/* Placeholder de basse résolution */}
       {(isInView || priority) && !isLoaded && (
         <img
           src={lowQualitySrc}
@@ -181,34 +237,34 @@ export function LazyImage({
           className={cn(
             "lazy-image-placeholder absolute inset-0 w-full h-full blur-md scale-105",
             objectFit,
-            "opacity-100 transition-opacity duration-300" // Faster transition
+            "opacity-100 transition-opacity duration-200" // Transition plus rapide
           )}
-          loading="eager" // Load placeholder eagerly
+          loading="eager" // Charger le placeholder avidement
         />
       )}
       
-      {/* Loading indicator */}
+      {/* Indicateur de chargement */}
       {(isInView || priority) && !isLoaded && (
         <div className="absolute inset-x-0 bottom-0 px-3 py-1 bg-background/50 backdrop-blur-sm">
           <Progress value={loadProgress} className="h-1" />
         </div>
       )}
       
-      {/* Main image */}
+      {/* Image principale */}
       {(isInView || priority) && (
         <img
           ref={imgElRef}
           src={cachedSrc || src}
           alt={alt}
           className={cn(
-            "lazy-image-actual w-full h-full transition-opacity duration-300", // Faster transition
+            "lazy-image-actual w-full h-full transition-opacity duration-200", // Transition plus rapide
             objectFit,
             isLoaded ? "opacity-100" : "opacity-0"
           )}
           onLoad={handleImageLoad}
           loading={priority ? "eager" : "lazy"}
           decoding="async"
-          fetchPriority={priority ? "high" : "auto"}
+          fetchpriority={priority ? "high" : "auto"}
         />
       )}
     </div>

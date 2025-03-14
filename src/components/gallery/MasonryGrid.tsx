@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -12,6 +11,7 @@ import { downloadImages } from '@/utils/image';
 import { ImageDetailModal } from './ImageDetailModal';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { preloadImages } from '@/components/LazyImage';
 
 interface Image {
   id: string;
@@ -39,7 +39,6 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
   
   useInfiniteScroll(onLoadMore, isLoading);
   
-  // Optimize columns calculation to avoid recalculations
   const columnCount = useMemo(() => {
     if (typeof window === 'undefined') return 3;
     return window.innerWidth >= 1536 ? 5 : 
@@ -48,11 +47,9 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
            window.innerWidth >= 640 ? 2 : 1;
   }, []);
   
-  // Memoize column image distribution for better performance
   const columnImages = useMemo(() => {
     const columns = Array(columnCount).fill(0).map(() => []);
     
-    // Distribute images to columns for balanced layout
     images.forEach((image, index) => {
       const columnIndex = index % columnCount;
       columns[columnIndex].push(image);
@@ -61,7 +58,31 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
     return columns;
   }, [images, columnCount]);
   
-  // Handle image query param for direct opening
+  useEffect(() => {
+    if (images.length > 0) {
+      const preloadNextBatch = () => {
+        const initialBatch = images.slice(0, 12).map(img => img.src);
+        preloadImages(initialBatch);
+        
+        if (images.length > 12) {
+          setTimeout(() => {
+            const nextBatch = images.slice(12, 24).map(img => img.src);
+            preloadImages(nextBatch);
+          }, 500);
+          
+          if (images.length > 24) {
+            setTimeout(() => {
+              const laterBatch = images.slice(24, 36).map(img => img.src);
+              preloadImages(laterBatch);
+            }, 1500);
+          }
+        }
+      };
+      
+      preloadNextBatch();
+    }
+  }, [images]);
+  
   useEffect(() => {
     const imageId = searchParams.get('image');
     if (imageId) {
@@ -92,7 +113,6 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
     setSelectedImageDetail(image);
     setIsImageDetailOpen(true);
     
-    // Update URL without navigating
     searchParams.set('image', image.id);
     setSearchParams(searchParams);
   };
@@ -101,7 +121,6 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
     setIsImageDetailOpen(false);
     setSelectedImageDetail(null);
     
-    // Remove image param from URL
     searchParams.delete('image');
     setSearchParams(searchParams);
   };
@@ -130,23 +149,28 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
     setIsShareDialogOpen(true);
   };
 
-  // Preload visible images for better UX
   useEffect(() => {
-    if (images.length > 0) {
-      const preloadInitialImages = () => {
-        // Preload first 12 images for faster initial display
-        const imagesToPreload = images.slice(0, 12);
-        
-        imagesToPreload.forEach((image, index) => {
-          const img = new Image();
-          // Set priority based on position (first 6 are high priority)
-          img.fetchPriority = index < 6 ? 'high' : 'auto';
-          img.src = image.src;
-        });
-      };
+    if (images.length === 0) return;
+    
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
       
-      preloadInitialImages();
-    }
+      if (documentHeight - scrollPosition < 1000) {
+        const visibleImages = images.slice(0, 30);
+        const nextBatchImages = images.slice(30, 50);
+        
+        if (nextBatchImages.length > 0) {
+          preloadImages(nextBatchImages.map(img => img.src));
+        }
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, [images]);
 
   if (isLoading && images.length === 0) {
@@ -193,7 +217,6 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
         selectedImages={images.filter(img => selectedImages.includes(img.id))}
       />
       
-      {/* Image Detail Modal */}
       <ImageDetailModal 
         image={selectedImageDetail}
         isOpen={isImageDetailOpen}
