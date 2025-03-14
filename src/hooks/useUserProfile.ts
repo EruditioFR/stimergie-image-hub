@@ -10,6 +10,13 @@ export interface UserProfile {
   clientId: string | null;
 }
 
+interface UserProfileData {
+  first_name: string | null;
+  last_name: string | null;
+  role: string;
+  id_client: string | null;
+}
+
 export function useUserProfile(user: User | null, userRole: string) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
@@ -41,13 +48,16 @@ export function useUserProfile(user: User | null, userRole: string) {
               return;
             }
             
-            if (data) {
-              console.log("Profile data retrieved from database:", data);
+            if (data && data.length > 0) {
+              // The function returns a table, so we get an array where the first element is our row
+              const profileData = data[0] as UserProfileData;
+              console.log("Profile data retrieved from database:", profileData);
+              
               setUserProfile({
-                firstName: data.first_name || metadataProfile.firstName,
-                lastName: data.last_name || metadataProfile.lastName,
-                role: data.role || metadataProfile.role,
-                clientId: data.id_client || metadataProfile.clientId
+                firstName: profileData.first_name || metadataProfile.firstName,
+                lastName: profileData.last_name || metadataProfile.lastName,
+                role: profileData.role || metadataProfile.role,
+                clientId: profileData.id_client || metadataProfile.clientId
               });
             }
           } catch (profileError) {

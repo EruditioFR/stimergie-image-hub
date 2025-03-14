@@ -356,6 +356,17 @@ export type Database = {
         }
         Returns: string
       }
+      get_user_profile_data: {
+        Args: {
+          user_id: string
+        }
+        Returns: {
+          first_name: string
+          last_name: string
+          role: string
+          id_client: string
+        }[]
+      }
       get_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
