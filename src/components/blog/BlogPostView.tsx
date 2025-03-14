@@ -47,6 +47,7 @@ export function BlogPostView() {
           client_name: data.clients?.nom || null,
           featured_image_url: data.featured_image_url || null,
           content_type: (data.content_type as 'Ressource' | 'Ensemble') || 'Ressource', // Ensure proper type
+          category: data.category || null,
           created_at: data.created_at,
           updated_at: data.updated_at,
           author_id: data.author_id,
@@ -124,6 +125,7 @@ export function BlogPostView() {
               <p className="text-muted-foreground mt-2">
                 Publié le {post ? formatDate(post.created_at) : ''}
                 {post?.client_name && ` · Client: ${post.client_name}`}
+                {post?.category && post.content_type === 'Ensemble' && ` · Catégorie: ${post.category}`}
               </p>
             </div>
 
