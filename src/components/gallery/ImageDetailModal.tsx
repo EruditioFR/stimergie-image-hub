@@ -71,12 +71,12 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
         <DialogContent className="max-w-7xl w-[95vw] h-[90vh] p-0 overflow-auto">
           {/* Ajout d'un DialogTitle caché pour l'accessibilité */}
           <DialogTitle className="sr-only">{image.title}</DialogTitle>
-          {/* Suppression du bouton en double, on laisse uniquement celui du DialogContent qui est par défaut */}
 
           <div className="p-6 md:p-10">
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
-              {/* Main Image Section */}
+              {/* Main Image Section - Now showing the image first before any text */}
               <div className="lg:col-span-3 space-y-6">
+                {/* Image displayed first */}
                 <div 
                   className="rounded-xl overflow-hidden cursor-zoom-in shadow-lg bg-card"
                   onClick={toggleFullscreen}
@@ -120,7 +120,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                   </Button>
                 </div>
 
-                {/* Image Information */}
+                {/* Image Information - Now after the image */}
                 <div className="bg-card rounded-xl p-6 shadow-sm">
                   <h1 className="text-2xl font-bold mb-2">{image.title}</h1>
                   <p className="text-muted-foreground mb-6">{image.description || 'Aucune description disponible'}</p>
@@ -157,7 +157,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                 </div>
               </div>
 
-              {/* Sidebar with Details - Removing user section and thumbnail section */}
+              {/* Sidebar with Details - removing user section and thumbnail section */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Desktop Action Buttons */}
                 <div className="hidden lg:block bg-card rounded-xl p-6 shadow-sm space-y-4">
@@ -203,8 +203,6 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                 </div>
               </div>
             </div>
-            
-            {/* Removed "Similar Images" section */}
           </div>
         </DialogContent>
       </Dialog>
