@@ -13,13 +13,29 @@ export async function fetchClients(userRole: string, userId: string | undefined)
   
   try {
     // Pour les admins, aucun filtre n'est appliqué - ils voient tous les clients
-    let query = supabase
-      .from('clients')
-      .select('id, nom')
-      .order('nom', { ascending: true });
-    
-    // Si c'est un admin_client, on filtre pour n'afficher que son propre client
-    if (userRole === 'admin_client' && userId) {
+    if (userRole === 'admin') {
+      // Utiliser l'endpoint clients directement car les admins peuvent tout voir
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, nom')
+        .order('nom', { ascending: true });
+        
+      if (error) {
+        console.error('Error loading clients for admin:', error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de charger la liste des clients"
+        });
+        return [];
+      }
+      
+      console.log(`Retrieved ${data?.length || 0} clients for admin`);
+      return data || [];
+    } 
+    // Si c'est un admin_client, on utilise la fonction RPC sécurisée
+    else if (userRole === 'admin_client' && userId) {
+      // 1. Récupérer l'ID du client associé à l'utilisateur via RPC
       const { data: clientId, error: profileError } = await supabase.rpc(
         'get_user_client_id',
         { user_id: userId }
@@ -35,25 +51,34 @@ export async function fetchClients(userRole: string, userId: string | undefined)
         return [];
       }
       
-      if (clientId) {
-        query = query.eq('id', clientId);
+      if (!clientId) {
+        console.log('No client associated with this user');
+        return [];
       }
+      
+      // 2. Récupérer les informations du client
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, nom')
+        .eq('id', clientId)
+        .order('nom', { ascending: true });
+      
+      if (error) {
+        console.error('Error loading client:', error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de charger les informations client"
+        });
+        return [];
+      }
+      
+      console.log(`Retrieved client data for admin_client`);
+      return data || [];
     }
     
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error('Error loading clients:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de charger la liste des clients"
-      });
-      return [];
-    }
-    
-    console.log(`Retrieved ${data?.length || 0} clients`);
-    return data || [];
+    // Pour les autres rôles ou cas, retourner un tableau vide
+    return [];
   } catch (error) {
     console.error('Error fetching clients:', error);
     toast({
@@ -70,6 +95,7 @@ export async function fetchClients(userRole: string, userId: string | undefined)
  */
 export async function getAdminClientId(userId: string): Promise<string | null> {
   try {
+    // Utiliser la fonction RPC sécurisée pour éviter les problèmes de RLS
     const { data, error } = await supabase.rpc(
       'get_user_client_id',
       { user_id: userId }
