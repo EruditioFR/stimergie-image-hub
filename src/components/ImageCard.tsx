@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LazyImage } from '@/components/LazyImage';
@@ -16,7 +16,10 @@ interface ImageCardProps {
   onClick?: (e: React.MouseEvent) => void;
 }
 
-export function ImageCard({ id, src, alt, title, author, className, orientation, onClick }: ImageCardProps) {
+// Memoized component to prevent unnecessary re-renders
+export const ImageCard = memo(function ImageCard({ 
+  id, src, alt, title, author, className, orientation, onClick 
+}: ImageCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   // Get appropriate aspect ratio based on image orientation
@@ -29,9 +32,12 @@ export function ImageCard({ id, src, alt, title, author, className, orientation,
       case 'square':
         return 'aspect-square';
       default:
-        return 'aspect-auto'; // Default to auto if orientation is unknown
+        return 'aspect-auto';
     }
   };
+  
+  // Prioritize images toward the top of the page
+  const isPriority = parseInt(id) % 15 < 6; // First 6 in each batch are priority
 
   return (
     <div 
@@ -50,7 +56,8 @@ export function ImageCard({ id, src, alt, title, author, className, orientation,
           src={src} 
           alt={alt} 
           className={`w-full ${getAspectRatio()}`}
-          objectFit="object-cover" 
+          objectFit="object-cover"
+          priority={isPriority}
         />
         
         {/* Hover overlay */}
@@ -77,7 +84,6 @@ export function ImageCard({ id, src, alt, title, author, className, orientation,
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            // Download logic would go here
             window.open(src, '_blank');
           }}
         >
@@ -87,6 +93,6 @@ export function ImageCard({ id, src, alt, title, author, className, orientation,
       </div>
     </div>
   );
-}
+});
 
 export default ImageCard;

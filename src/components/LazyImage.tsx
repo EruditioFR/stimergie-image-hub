@@ -9,151 +9,206 @@ interface LazyImageProps {
   className?: string;
   aspectRatio?: string;
   objectFit?: string;
+  priority?: boolean;
 }
 
-// Cache global pour les images
+// Global image cache for faster loading of previously viewed images
 const imageCache = new Map<string, string>();
+
+// Global IntersectionObserver instance for performance
+let globalObserver: IntersectionObserver | null = null;
+const observedElements = new WeakMap<Element, (isIntersecting: boolean) => void>();
+
+// Create or get the global observer
+const getObserver = () => {
+  if (globalObserver === null) {
+    globalObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          const callback = observedElements.get(entry.target);
+          if (callback) callback(entry.isIntersecting);
+        });
+      },
+      {
+        root: null,
+        rootMargin: '200px', // Preload images 200px before they enter viewport
+        threshold: 0.01
+      }
+    );
+  }
+  return globalObserver;
+};
 
 export function LazyImage({
   src,
   alt,
   className,
   aspectRatio,
-  objectFit = "object-cover"
+  objectFit = "object-cover",
+  priority = false
 }: LazyImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isInView, setIsInView] = useState(false);
+  const [isInView, setIsInView] = useState(priority); // If priority, consider in view immediately
   const [loadProgress, setLoadProgress] = useState(0);
   const [cachedSrc, setCachedSrc] = useState<string | null>(null);
   const imgRef = useRef<HTMLDivElement>(null);
+  const imgElRef = useRef<HTMLImageElement>(null);
+  const progressIntervalRef = useRef<number | null>(null);
   
-  // Vérifier si l'image est déjà en cache au montage
+  // Check if image is already cached on mount
   useEffect(() => {
-    if (!src) return; // Add early return when src is undefined
+    if (!src) return;
     
     if (imageCache.has(src)) {
       setCachedSrc(imageCache.get(src) || null);
-      // Si l'image est en cache, on simule un chargement rapide
+      // Simulate fast loading for cached images
       setLoadProgress(70);
       setTimeout(() => {
         setLoadProgress(100);
         setIsLoaded(true);
-      }, 100);
+      }, 50); // Faster timeout for cached images
     }
+    
+    // Clean up any interval on unmount
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+    };
   }, [src]);
   
-  // On utilise une URL optimisée pour le chargement initial (résolution plus basse)
+  // Generate optimized low-quality placeholder URL
   const getLowQualitySrc = (originalSrc: string): string => {
-    // Add safety check to prevent error when originalSrc is undefined
     if (!originalSrc) return '';
     
-    // Si l'URL est une URL Unsplash, on utilise les paramètres pour charger une version plus petite
+    // For Unsplash, use their built-in resizing parameters
     if (originalSrc.includes('unsplash.com')) {
-      return originalSrc.replace(/&w=\d+/, '&w=20').replace(/&q=\d+/, '&q=20');
+      return originalSrc.replace(/&w=\d+/, '&w=10').replace(/&q=\d+/, '&q=10');
     }
-    // Pour les autres sources, on retourne l'URL d'origine avec une taille réduite si possible
+    
+    // For other sources, add size parameters
     if (originalSrc.includes('?')) {
-      return `${originalSrc}&w=20&q=20`;
+      return `${originalSrc}&w=10&q=10`;
     }
-    return `${originalSrc}?w=20&q=20`;
+    return `${originalSrc}?w=10&q=10`;
   };
   
   const [lowQualitySrc] = useState(src ? getLowQualitySrc(src) : '');
 
+  // Set up intersection observer
   useEffect(() => {
-    if (!imgRef.current) return;
+    if (!imgRef.current || priority) return; // Skip if priority
     
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        setIsInView(entry.isIntersecting);
-      },
-      {
-        root: null,
-        rootMargin: '200px', // Précharger les images plus tôt (200px avant d'entrer dans la vue)
-        threshold: 0.01
+    const observer = getObserver();
+    const currentRef = imgRef.current;
+    
+    const callback = (isIntersecting: boolean) => {
+      if (isIntersecting) {
+        setIsInView(true);
+        observer.unobserve(currentRef); // Stop observing once in view
+        observedElements.delete(currentRef);
       }
-    );
+    };
     
-    observer.observe(imgRef.current);
+    observedElements.set(currentRef, callback);
+    observer.observe(currentRef);
     
     return () => {
-      if (imgRef.current) observer.unobserve(imgRef.current);
+      observer.unobserve(currentRef);
+      observedElements.delete(currentRef);
     };
-  }, []);
+  }, [priority]);
 
-  // Simuler le chargement progressif quand l'image entre dans la vue
+  // Simulate loading progress
   useEffect(() => {
-    if (isInView && !isLoaded && !cachedSrc) {
-      // Initialiser la progression à une valeur aléatoire entre 10 et 30
+    if ((isInView || priority) && !isLoaded && !cachedSrc) {
+      // Initialize progress with a random value
       setLoadProgress(Math.floor(Math.random() * 20) + 10);
       
-      const interval = setInterval(() => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+      
+      progressIntervalRef.current = window.setInterval(() => {
         setLoadProgress(prev => {
-          // Ralentir la progression à mesure qu'on approche de 90%
+          // Slow down progress as it approaches 90%
           const increment = prev < 30 ? 10 : prev < 60 ? 5 : prev < 80 ? 2 : 1;
           const newProgress = prev + Math.random() * increment;
-          return newProgress >= 90 ? 90 : newProgress; // Plafonner à 90% jusqu'au chargement réel
+          return newProgress >= 90 ? 90 : newProgress; // Cap at 90% until actual load
         });
       }, 150);
-      
-      return () => clearInterval(interval);
     }
-  }, [isInView, isLoaded, cachedSrc]);
+    
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+    };
+  }, [isInView, isLoaded, cachedSrc, priority]);
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    // Ajouter l'image au cache global
+    // Add image to global cache
     if (!imageCache.has(src) && e.currentTarget.src === src) {
       imageCache.set(src, src);
     }
     
-    // Finaliser le chargement
+    // Complete loading
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    
     setLoadProgress(100);
     setTimeout(() => {
       setIsLoaded(true);
-    }, 100); // Petit délai pour l'animation
+    }, 50); // Faster animation for smoother experience
   };
 
-  if (!src) return null; // Add early return for cases where src is undefined
+  if (!src) return null;
 
   return (
     <div 
       ref={imgRef}
       className={cn("lazy-image overflow-hidden relative", aspectRatio, className)}
     >
-      {/* Image basse résolution comme placeholder */}
-      {isInView && !isLoaded && (
+      {/* Low-resolution placeholder */}
+      {(isInView || priority) && !isLoaded && (
         <img
           src={lowQualitySrc}
           alt={alt}
           className={cn(
             "lazy-image-placeholder absolute inset-0 w-full h-full blur-md scale-105",
             objectFit,
-            "opacity-100 transition-opacity duration-500"
+            "opacity-100 transition-opacity duration-300" // Faster transition
           )}
+          loading="eager" // Load placeholder eagerly
         />
       )}
       
-      {/* Indicateur de chargement */}
-      {isInView && !isLoaded && (
-        <div className="absolute inset-x-0 bottom-0 px-3 py-2 bg-background/50 backdrop-blur-sm">
-          <Progress value={loadProgress} className="h-1.5" />
+      {/* Loading indicator */}
+      {(isInView || priority) && !isLoaded && (
+        <div className="absolute inset-x-0 bottom-0 px-3 py-1 bg-background/50 backdrop-blur-sm">
+          <Progress value={loadProgress} className="h-1" />
         </div>
       )}
       
-      {/* Image principale (image en cache ou image à charger) */}
-      {isInView && (
+      {/* Main image */}
+      {(isInView || priority) && (
         <img
+          ref={imgElRef}
           src={cachedSrc || src}
           alt={alt}
           className={cn(
-            "lazy-image-actual w-full h-full transition-opacity duration-500",
+            "lazy-image-actual w-full h-full transition-opacity duration-300", // Faster transition
             objectFit,
             isLoaded ? "opacity-100" : "opacity-0"
           )}
           onLoad={handleImageLoad}
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
           decoding="async"
+          fetchPriority={priority ? "high" : "auto"}
         />
       )}
     </div>

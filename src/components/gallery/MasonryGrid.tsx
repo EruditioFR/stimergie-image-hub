@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
@@ -39,6 +39,28 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
   
   useInfiniteScroll(onLoadMore, isLoading);
   
+  // Optimize columns calculation to avoid recalculations
+  const columnCount = useMemo(() => {
+    if (typeof window === 'undefined') return 3;
+    return window.innerWidth >= 1536 ? 5 : 
+           window.innerWidth >= 1280 ? 4 : 
+           window.innerWidth >= 1024 ? 3 : 
+           window.innerWidth >= 640 ? 2 : 1;
+  }, []);
+  
+  // Memoize column image distribution for better performance
+  const columnImages = useMemo(() => {
+    const columns = Array(columnCount).fill(0).map(() => []);
+    
+    // Distribute images to columns for balanced layout
+    images.forEach((image, index) => {
+      const columnIndex = index % columnCount;
+      columns[columnIndex].push(image);
+    });
+    
+    return columns;
+  }, [images, columnCount]);
+  
   // Handle image query param for direct opening
   useEffect(() => {
     const imageId = searchParams.get('image');
@@ -48,7 +70,7 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
           const { data, error } = await supabase
             .from('images')
             .select('*')
-            .eq('id', parseInt(imageId)) // Convert string to number
+            .eq('id', parseInt(imageId))
             .single();
             
           if (error) throw error;
@@ -65,10 +87,6 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
       openImageDetail();
     }
   }, [searchParams]);
-  
-  const getColumnImages = (columnIndex: number, columnCount: number) => {
-    return images.filter((_, index) => index % columnCount === columnIndex);
-  };
 
   const handleImageClick = (image: any) => {
     setSelectedImageDetail(image);
@@ -95,14 +113,6 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
     }
     
     const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
-    console.log("Images sélectionnées pour téléchargement:", selectedImagesData);
-    
-    // Logs supplémentaires pour déboguer
-    console.log("URLs des images à télécharger:");
-    selectedImagesData.forEach((img, index) => {
-      console.log(`Image ${index+1}: ${img.src}`);
-    });
-    
     await downloadImages(selectedImagesData);
   };
 
@@ -120,13 +130,17 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
     setIsShareDialogOpen(true);
   };
 
+  // Preload visible images for better UX
   useEffect(() => {
     if (images.length > 0) {
       const preloadInitialImages = () => {
-        const imagesToPreload = images.slice(0, 6);
+        // Preload first 12 images for faster initial display
+        const imagesToPreload = images.slice(0, 12);
         
-        imagesToPreload.forEach(image => {
+        imagesToPreload.forEach((image, index) => {
           const img = new Image();
+          // Set priority based on position (first 6 are high priority)
+          img.fetchPriority = index < 6 ? 'high' : 'auto';
           img.src = image.src;
         });
       };
@@ -155,10 +169,10 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-0.5 px-0.5">
-        {[...Array(window.innerWidth >= 1536 ? 5 : window.innerWidth >= 1280 ? 4 : window.innerWidth >= 1024 ? 3 : window.innerWidth >= 640 ? 2 : 1)].map((_, columnIndex) => (
+        {columnImages.map((images, columnIndex) => (
           <MasonryColumn 
             key={columnIndex}
-            images={getColumnImages(columnIndex, window.innerWidth >= 1536 ? 5 : window.innerWidth >= 1280 ? 4 : window.innerWidth >= 1024 ? 3 : window.innerWidth >= 640 ? 2 : 1)} 
+            images={images} 
             isImageSelected={isImageSelected}
             toggleImageSelection={toggleImageSelection}
             onImageClick={handleImageClick}
