@@ -86,7 +86,7 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
         last_name: values.last_name,
         role: values.role,
         id_client: values.id_client === "" ? null : values.id_client,
-      });
+      }, values.password); // Pass password even when editing
     } else {
       // For new user, pass without ID and include password
       onSubmit({
@@ -207,25 +207,28 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
               )}
             />
 
-            {!isEditing && (
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mot de passe *</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="password" 
-                        placeholder="Mot de passe" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{isEditing ? "Nouveau mot de passe" : "Mot de passe *"}</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="password" 
+                      placeholder={isEditing ? "Laisser vide pour ne pas changer" : "Mot de passe"} 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  {isEditing && (
+                    <p className="text-xs text-muted-foreground">
+                      Ne remplissez ce champ que si vous souhaitez modifier le mot de passe.
+                    </p>
+                  )}
+                </FormItem>
+              )}
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

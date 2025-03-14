@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -223,8 +224,9 @@ export default function Users() {
     setShowEditForm(true);
   };
 
-  const handleUpdateUser = async (userData: User) => {
+  const handleUpdateUser = async (userData: User, password?: string) => {
     try {
+      // First update the profile information
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -239,6 +241,20 @@ export default function Users() {
         console.error("Erreur lors de la mise à jour de l'utilisateur:", error);
         toast.error("Impossible de mettre à jour l'utilisateur");
         return;
+      }
+
+      // If a password was provided, update the user's password using RPC
+      if (password && password.trim() !== '') {
+        const { error: passwordError } = await supabase.rpc('admin_update_user_password', {
+          user_id: userData.id,
+          new_password: password
+        });
+
+        if (passwordError) {
+          console.error("Erreur lors de la mise à jour du mot de passe:", passwordError);
+          toast.error("Impossible de mettre à jour le mot de passe");
+          return;
+        }
       }
 
       setUsers(prev => prev.map(user => 
