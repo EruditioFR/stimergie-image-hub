@@ -1,9 +1,9 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from "sonner";
-import { fetchGalleryImages, GALLERY_CACHE_TIME } from '@/services/galleryService';
+import { fetchGalleryImages, GALLERY_CACHE_TIME, generateCacheKey } from '@/services/galleryService';
 import { formatImagesForGrid } from '@/utils/imageUtils';
 import { useGalleryFilters } from './useGalleryFilters';
 import { Image } from '@/pages/Images';
@@ -15,6 +15,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const tagFilter = searchParams.get('tag') || '';
   const [page, setPage] = useState(1);
   const [allImages, setAllImages] = useState<Image[]>([]);
+  const previousRequestRef = useRef<string | null>(null);
 
   // Import filter management
   const {
@@ -22,20 +23,39 @@ export const useGalleryImages = (isAdmin: boolean) => {
     selectedClient,
     hasActiveFilters,
     handleTabChange,
-    handleClientChange,
+    handleClientChange: baseHandleClientChange,
     handleResetFilters,
     updateFilterStatus
   } = useGalleryFilters();
 
   // Create a cache key based on current filters
   const cacheKey = useCallback(() => {
-    return ['gallery-images', searchQuery, tagFilter, activeTab, selectedClient, page];
+    return generateCacheKey(searchQuery, tagFilter, activeTab, selectedClient, page);
   }, [searchQuery, tagFilter, activeTab, selectedClient, page]);
+
+  // Override client change handler to reset pagination and cancel any previous requests
+  const handleClientChange = useCallback((clientId: string | null) => {
+    // Cancel previous requests by invalidating the cache
+    if (previousRequestRef.current) {
+      // We don't want to refetch, just invalidate
+      queryClient.cancelQueries({ queryKey: previousRequestRef.current.split(',') });
+    }
+    
+    // Update client filter
+    baseHandleClientChange(clientId);
+    
+    // Reset page to 1 when client changes
+    setPage(1);
+    setAllImages([]);
+    
+    // Set new request reference
+    previousRequestRef.current = generateCacheKey(searchQuery, tagFilter, activeTab, clientId, 1).join(',');
+  }, [baseHandleClientChange, searchQuery, tagFilter, activeTab, queryClient]);
 
   // Prefetch next page when current page is loaded
   useEffect(() => {
     if (page > 0) {
-      const nextPageKey = ['gallery-images', searchQuery, tagFilter, activeTab, selectedClient, page + 1];
+      const nextPageKey = generateCacheKey(searchQuery, tagFilter, activeTab, selectedClient, page + 1);
       queryClient.prefetchQuery({
         queryKey: nextPageKey,
         queryFn: () => fetchGalleryImages(searchQuery, tagFilter, activeTab, selectedClient, page + 1),
@@ -51,7 +71,13 @@ export const useGalleryImages = (isAdmin: boolean) => {
     
     // Update filter status
     updateFilterStatus(searchQuery, tagFilter);
-  }, [searchQuery, tagFilter, activeTab, selectedClient, updateFilterStatus]);
+  }, [searchQuery, tagFilter, activeTab, updateFilterStatus]);
+
+  // When selectedClient changes, we reset and start fresh
+  useEffect(() => {
+    setPage(1);
+    setAllImages([]);
+  }, [selectedClient]);
 
   // Fetch images from Supabase with caching
   const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
@@ -60,6 +86,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     staleTime: GALLERY_CACHE_TIME,
     gcTime: GALLERY_CACHE_TIME * 2, // Keep in cache twice as long
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    enabled: true, // Always enabled, we'll handle manual invalidation
   });
 
   // Add newly loaded images to our collection
@@ -78,7 +105,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
       // If we're on the first page and there are no images, empty the collection
       setAllImages([]);
     }
-  }, [newImages, page, allImages]);
+  }, [newImages, page]);
 
   // Handle loading more images
   const loadMoreImages = useCallback(() => {

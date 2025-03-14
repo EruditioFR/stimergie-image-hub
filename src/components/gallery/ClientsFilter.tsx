@@ -53,6 +53,8 @@ export function ClientsFilter({ selectedClient, onClientChange, className }: Cli
   }, [userRole, user, onClientChange]);
   
   const handleValueChange = (value: string) => {
+    // Immédiatement déclenche le changement de client pour optimiser le chargement
+    console.log(`Client filter changed to: ${value}`);
     onClientChange(value === 'all' ? null : value);
   };
   

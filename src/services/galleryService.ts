@@ -22,7 +22,7 @@ export async function fetchGalleryImages(
     .from('images')
     .select('*');
   
-  // Apply client filter if provided
+  // Apply client filter if provided - prioritizing this filter
   if (client) {
     // Get all projects for this client first
     const { data: projetData, error: projetError } = await supabase
@@ -78,13 +78,18 @@ export async function fetchGalleryImages(
     return [];
   }
   
-  console.log(`Fetched ${data.length} images for page ${pageNum}`);
+  console.log(`Fetched ${data?.length || 0} images for page ${pageNum}`);
   
   // Parse tags from string to array format
-  return data.map(img => ({
+  return (data || []).map(img => ({
     ...img,
     tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
   }));
 }
 
 export const GALLERY_CACHE_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+// Générer une clé de cache unique basée sur les filtres
+export function generateCacheKey(search: string, tag: string, tab: string, client: string | null, page: number) {
+  return ['gallery-images', search, tag, tab, client, page];
+}
