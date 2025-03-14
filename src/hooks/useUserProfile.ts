@@ -17,11 +17,11 @@ export function useUserProfile(user: User | null, userRole: string) {
     if (user) {
       const fetchProfileData = async () => {
         try {
-          // Use the get_user_role RPC function to avoid recursion in RLS policies
+          // Use the get_current_user_role RPC function to avoid recursion in RLS policies
           const { data: rpcData, error: rpcError } = await supabase.rpc('get_current_user_role');
           const role = rpcError ? userRole : rpcData;
           
-          // Use auth.uid() directly in a parameterized query to avoid RLS issues
+          // Use a parameterized query instead of .eq() to avoid RLS issues
           const { data, error } = await supabase
             .from('profiles')
             .select('first_name, last_name, id_client')
