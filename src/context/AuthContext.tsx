@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +13,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   signOut: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -163,8 +163,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      if (!user) {
+        throw new Error("Vous devez être connecté pour changer votre mot de passe");
+      }
+
+      // First verify current password by trying to sign in
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user.email as string,
+        password: currentPassword,
+      });
+
+      if (verifyError) {
+        toast({
+          title: "Erreur",
+          description: "Le mot de passe actuel est incorrect",
+          variant: "destructive"
+        });
+        throw new Error("Le mot de passe actuel est incorrect");
+      }
+
+      // Then update password
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        console.error('Erreur lors du changement de mot de passe:', error);
+        toast({
+          title: "Échec du changement de mot de passe",
+          description: error.message,
+          variant: "destructive"
+        });
+        throw error;
+      }
+
+      toast({
+        title: "Mot de passe modifié",
+        description: "Votre mot de passe a été changé avec succès",
+      });
+    } catch (error) {
+      console.error('Password change error:', error);
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ session, user, userRole, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ 
+      session, 
+      user, 
+      userRole, 
+      loading, 
+      signIn, 
+      signUp, 
+      signOut,
+      changePassword 
+    }}>
       {children}
     </AuthContext.Provider>
   );

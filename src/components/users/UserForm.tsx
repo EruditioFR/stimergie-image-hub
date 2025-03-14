@@ -18,7 +18,7 @@ import * as z from "zod";
 
 interface UserFormProps {
   clients: Client[];
-  onSubmit: (user: Omit<User, 'id'> | User) => void;
+  onSubmit: (user: Omit<User, 'id'> | User, password?: string) => void;
   onCancel: () => void;
   initialData?: User;
   isEditing?: boolean;
@@ -37,6 +37,8 @@ const formSchema = z.object({
     required_error: "Veuillez sélectionner un rôle",
   }),
   id_client: z.string().optional(),
+  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères").optional()
+    .or(z.literal('')),
 });
 
 export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing = false, isAdmin = false }: UserFormProps) {
@@ -51,12 +53,14 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
       last_name: initialData.last_name || "",
       role: userRole || "user",
       id_client: initialData.id_client || "",
+      password: "",
     } : {
       email: "",
       first_name: "",
       last_name: "",
       role: "user" as UserRole,
       id_client: "",
+      password: "",
     },
   });
 
@@ -84,14 +88,14 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
         id_client: values.id_client === "" ? null : values.id_client,
       });
     } else {
-      // For new user, pass without ID
+      // For new user, pass without ID and include password
       onSubmit({
         email: values.email,
         first_name: values.first_name,
         last_name: values.last_name,
         role: values.role,
         id_client: values.id_client === "" ? null : values.id_client,
-      });
+      }, values.password);
     }
   };
 
@@ -202,6 +206,26 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
                 </FormItem>
               )}
             />
+
+            {!isEditing && (
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mot de passe *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="password" 
+                        placeholder="Mot de passe" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

@@ -161,11 +161,16 @@ export default function Users() {
     fetchClients();
   }, [selectedClientId, selectedRole, userClientId, isAdmin, uiToast]);
 
-  const handleAddUser = async (userData: Omit<User, 'id'>) => {
+  const handleAddUser = async (userData: Omit<User, 'id'>, password?: string) => {
     try {
+      if (!password) {
+        toast.error("Un mot de passe est requis pour créer un utilisateur");
+        return;
+      }
+
       const { data, error } = await supabase.rpc('create_user_with_profile', {
         email: userData.email,
-        password: Math.random().toString(36).slice(-8),
+        password: password,
         first_name: userData.first_name || '',
         last_name: userData.last_name || '',
         role: userData.role,

@@ -1,96 +1,90 @@
 
-import { UserCircle, LogOut, Users, FolderOpen, Image } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/context/AuthContext";
+import { useUserProfile, formatRole } from "@/hooks/useUserProfile";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, Lock, LogOut, Settings, UserCircle } from "lucide-react";
+import { useState } from "react";
+import { ChangePasswordForm } from "@/components/users/ChangePasswordForm";
+import { useNavigate } from "react-router-dom";
 
-interface UserProfile {
-  firstName: string;
-  lastName: string;
-  role: string;
-}
+export function UserMenu() {
+  const { user, userRole, signOut } = useAuth();
+  const userProfile = useUserProfile(user, userRole);
+  const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
+  const navigate = useNavigate();
 
-interface UserMenuProps {
-  userProfile: UserProfile | null;
-  canAccessClientsPage: boolean;
-  canAccessImagesPage: boolean;
-  onLogout: () => Promise<void>;
-  formatRole: (role: string) => string;
-}
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
+  };
 
-export function UserMenu({ 
-  userProfile, 
-  canAccessClientsPage, 
-  canAccessImagesPage,
-  onLogout,
-  formatRole
-}: UserMenuProps) {
-  // Determine if user has admin or admin_client role
-  const isAdmin = userProfile?.role === 'admin';
-  const isAdminClient = userProfile?.role === 'admin_client';
-  const hasEditAccess = isAdmin || isAdminClient;
+  // If there's no user, don't render anything
+  if (!user) return null;
+
+  const initials = userProfile?.firstName && userProfile?.lastName
+    ? `${userProfile.firstName[0]}${userProfile.lastName[0]}`.toUpperCase()
+    : user.email ? user.email[0].toUpperCase() : "U";
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="ml-2 rounded-full">
-          <UserCircle className="h-5 w-5" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="text-black">
-        <DropdownMenuLabel>
-          {userProfile ? (
-            <div className="flex flex-col gap-1">
-              <div className="font-medium">{userProfile.firstName} {userProfile.lastName}</div>
-              <div className="text-xs text-muted-foreground">{formatRole(userProfile.role)}</div>
+    <>
+      {showChangePasswordForm ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="w-full max-w-md mx-auto">
+            <ChangePasswordForm onCancel={() => setShowChangePasswordForm(false)} />
+          </div>
+        </div>
+      ) : null}
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="gap-2 flex items-center">
+            <Avatar className="h-8 w-8 border">
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+            <div className="hidden md:flex flex-col items-start">
+              <span className="text-sm font-medium leading-none">
+                {userProfile?.firstName} {userProfile?.lastName}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {formatRole(userProfile?.role || userRole)}
+              </span>
             </div>
-          ) : (
-            "Mon compte"
-          )}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        
-        {/* Profile link - available to all users */}
-        <DropdownMenuItem asChild>
-          <Link to="/profile" className="cursor-pointer text-black">Profil</Link>
-        </DropdownMenuItem>
-        
-        {/* Admin-only access to Clients page */}
-        {canAccessClientsPage && (
-          <DropdownMenuItem asChild>
-            <Link to="/clients" className="cursor-pointer text-black">Clients</Link>
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <div className="px-2 py-1.5 text-sm md:hidden">
+            <p className="font-medium leading-none">{userProfile?.firstName} {userProfile?.lastName}</p>
+            <p className="text-xs text-muted-foreground pt-0.5">{formatRole(userProfile?.role || userRole)}</p>
+          </div>
+          <DropdownMenuSeparator className="md:hidden" />
+          <DropdownMenuItem className="flex items-center gap-2">
+            <UserCircle className="h-4 w-4" />
+            <span>Mon profil</span>
           </DropdownMenuItem>
-        )}
-        
-        {/* Access to Users page for admins and admin_clients */}
-        {hasEditAccess && (
-          <DropdownMenuItem asChild>
-            <Link to="/users" className="cursor-pointer text-black">Utilisateurs</Link>
+          <DropdownMenuItem className="flex items-center gap-2" onSelect={() => setShowChangePasswordForm(true)}>
+            <Lock className="h-4 w-4" />
+            <span>Changer de mot de passe</span>
           </DropdownMenuItem>
-        )}
-        
-        {/* Access to Projects page for admins and admin_clients */}
-        {hasEditAccess && (
-          <DropdownMenuItem asChild>
-            <Link to="/projects" className="cursor-pointer text-black">Projets</Link>
+          <DropdownMenuItem className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            <span>Paramètres</span>
           </DropdownMenuItem>
-        )}
-        
-        {/* Access to Images page for admins and admin_clients */}
-        {canAccessImagesPage && (
-          <DropdownMenuItem asChild>
-            <Link to="/images" className="cursor-pointer text-black">Images</Link>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="flex items-center gap-2" onSelect={handleLogout}>
+            <LogOut className="h-4 w-4" />
+            <span>Déconnexion</span>
           </DropdownMenuItem>
-        )}
-        
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onLogout} className="cursor-pointer text-red-500">
-          <LogOut className="h-4 w-4 mr-2" />
-          Déconnexion
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   );
 }
-
-export default UserMenu;
