@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { X, Download, Heart, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { LazyImage } from '@/components/LazyImage';
 import { ImageGallery } from '@/components/ImageGallery';
 import { useToast } from '@/hooks/use-toast';
@@ -60,7 +60,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
           </Button>
           <div className="w-full h-full p-4 md:p-8 flex items-center justify-center">
             <img 
-              src={image.url} 
+              src={image.url_miniature || image.url} 
               alt={image.title} 
               className="max-w-full max-h-full object-contain animate-fade-in" 
             />
@@ -70,6 +70,8 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
 
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="max-w-7xl w-[95vw] h-[90vh] p-0 overflow-auto">
+          {/* Ajout d'un DialogTitle caché pour l'accessibilité */}
+          <DialogTitle className="sr-only">{image.title}</DialogTitle>
           {/* Suppression du bouton en double, on laisse uniquement celui du DialogContent qui est par défaut */}
 
           <div className="p-6 md:p-10">
