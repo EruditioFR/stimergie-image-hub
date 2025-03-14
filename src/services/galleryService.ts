@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 const IMAGES_PER_PAGE = 15;
 const ADMIN_INITIAL_IMAGES = 100;
+const MIN_PROJECTS = 8;
 
 /**
  * Fetches gallery images with filtering options
@@ -20,22 +21,65 @@ export async function fetchGalleryImages(
 ): Promise<any[]> {
   console.log('Fetching images with:', { search, tag, tab, client, pageNum, isAdmin, isInitialLoad });
   
-  // If this is initial load for admin user, show random images
+  // If this is initial load for admin user, show random images from at least 8 projects
   if (isAdmin && isInitialLoad && !search && !tag && tab.toLowerCase() === 'all' && !client) {
-    console.log('Loading random images for admin user');
+    console.log('Loading random images from multiple projects for admin user');
+    
+    // First, get a list of at least 8 different project IDs
+    const { data: projectData, error: projectError } = await supabase
+      .from('projets')
+      .select('id')
+      .limit(MIN_PROJECTS);
+      
+    if (projectError) {
+      console.error('Error fetching projects:', projectError);
+      toast.error("Erreur lors du chargement des projets");
+      return [];
+    }
+    
+    if (!projectData || projectData.length < MIN_PROJECTS) {
+      console.log(`Not enough projects found (${projectData?.length || 0}), falling back to regular query`);
+      
+      // Fall back to regular random images query if we don't have enough projects
+      const { data, error } = await supabase
+        .from('images')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(ADMIN_INITIAL_IMAGES);
+        
+      if (error) {
+        console.error('Error fetching random images:', error);
+        toast.error("Erreur lors du chargement des images");
+        return [];
+      }
+      
+      console.log(`Fetched ${data?.length || 0} random images for admin (fallback)`);
+      
+      return (data || []).map(img => ({
+        ...img,
+        tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
+      }));
+    }
+    
+    // Extract project IDs
+    const projectIds = projectData.map(project => project.id);
+    console.log('Using projects:', projectIds);
+    
+    // Query random images from these projects
     const { data, error } = await supabase
       .from('images')
       .select('*')
+      .in('id_projet', projectIds)
       .order('created_at', { ascending: false })
       .limit(ADMIN_INITIAL_IMAGES);
       
     if (error) {
-      console.error('Error fetching random images:', error);
+      console.error('Error fetching images from projects:', error);
       toast.error("Erreur lors du chargement des images");
       return [];
     }
     
-    console.log(`Fetched ${data?.length || 0} random images for admin`);
+    console.log(`Fetched ${data?.length || 0} random images from ${MIN_PROJECTS}+ projects for admin`);
     
     // Parse tags from string to array format
     return (data || []).map(img => ({
