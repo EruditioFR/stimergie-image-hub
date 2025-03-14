@@ -17,15 +17,17 @@ export function useUserProfile(user: User | null, userRole: string) {
     if (user) {
       const fetchProfileData = async () => {
         try {
-          // Use the get_current_user_role RPC function to avoid recursion in RLS policies
-          const { data: rpcData, error: rpcError } = await supabase.rpc('get_current_user_role');
-          const role = rpcError ? userRole : rpcData;
+          // First get the role using our security definer function
+          const { data: roleData, error: roleError } = await supabase.rpc('get_current_user_role');
           
-          // Use a parameterized query instead of .eq() to avoid RLS issues
+          // Set the role either from the RPC result or fallback to passed userRole
+          const role = roleError ? userRole : roleData;
+          
+          // Now fetch the profile data - use simple eq which should work with our updated policies
           const { data, error } = await supabase
             .from('profiles')
             .select('first_name, last_name, id_client')
-            .filter('id', 'eq', user.id)
+            .eq('id', user.id)
             .maybeSingle();
           
           if (data && !error) {
