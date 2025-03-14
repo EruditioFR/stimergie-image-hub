@@ -17,8 +17,8 @@ type AuthContextType = {
   isAdmin: () => boolean;
   isAdminClient: () => boolean;
   isRegularUser: () => boolean;
-  canAccessClient: (clientId: string | null) => boolean;
-  canEditClient: (clientId: string | null) => boolean;
+  canAccessClient: (clientId: string | null) => Promise<boolean>;
+  canEditClient: (clientId: string | null) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,23 +32,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log("Initial session:", session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        // Get user role via RPC function
         fetchUserRoleViaRPC(session.user.id);
-        // Récupérer le client ID associé à l'utilisateur
         fetchUserClientId(session.user.id);
       } else {
         setLoading(false);
       }
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log("Auth state change event:", event, "User ID:", session?.user?.id);
@@ -56,9 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Get user role via RPC when auth state changes
           fetchUserRoleViaRPC(session.user.id);
-          // Récupérer le client ID associé à l'utilisateur
           fetchUserClientId(session.user.id);
         } else {
           setUserRole('user');
@@ -91,7 +85,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserRoleViaRPC = async (userId: string) => {
     try {
       console.log("Fetching user role for:", userId);
-      // Use improved RPC to get role (security definer function)
       const { data, error } = await supabase.rpc('get_user_role');
       
       if (error) {
@@ -114,19 +107,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Fallback method for retrieving role
   const fallbackFetchRole = async (userId: string) => {
     try {
       console.log("Using fallback method to fetch role for:", userId);
       
-      // First try to get it from user metadata
       if (user?.user_metadata?.role) {
         console.log("Found role in user metadata:", user.user_metadata.role);
         setUserRole(user.user_metadata.role);
         return;
       }
       
-      // Direct query as a last resort - now using our improved functions
       try {
         const { data: isAdminResult, error: isAdminError } = await supabase.rpc('is_admin');
         
@@ -142,15 +132,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         
-        // Default to user role if no specific role is found
         setUserRole('user');
       } catch (error) {
         console.error("Error calling role check functions:", error);
-        setUserRole('user'); // Default to user role
+        setUserRole('user');
       }
     } catch (error) {
       console.error("Fallback role fetch failed:", error);
-      setUserRole('user'); // Default to user role
+      setUserRole('user');
     }
   };
 
@@ -180,7 +169,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
-      // Include first_name and last_name in the user metadata
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -188,7 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           data: {
             first_name: firstName,
             last_name: lastName,
-            role: 'user' // Default role for new users
+            role: 'user'
           },
         },
       });
@@ -215,11 +203,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Check if we have a session before trying to sign out
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (!sessionData.session) {
-        // If no session exists, just clean up the local state without calling signOut
         console.log('No active session found, cleaning up local state only');
         setUser(null);
         setSession(null);
@@ -232,7 +218,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      // If we have a session, proceed with sign out
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -251,13 +236,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Logout error:', error);
       
-      // Even if there's an error, clear the local state
       setUser(null);
       setSession(null);
       setUserRole('user');
       setUserClientId(null);
       
-      // Only throw if it's not an AuthSessionMissingError
       if (error instanceof Error && !error.message.includes('Auth session missing')) {
         throw error;
       }
@@ -270,7 +253,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Vous devez être connecté pour changer votre mot de passe");
       }
 
-      // First verify current password by trying to sign in
       const { error: verifyError } = await supabase.auth.signInWithPassword({
         email: user.email as string,
         password: currentPassword,
@@ -285,7 +267,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Le mot de passe actuel est incorrect");
       }
 
-      // Use the Supabase API to update the user's password
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -310,21 +291,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Use our improved role check functions
   const isAdmin = () => userRole === 'admin';
   const isAdminClient = () => userRole === 'admin_client';
   const isRegularUser = () => userRole === 'user';
   
-  // Use improved canAccessClient function that leverages our RPC
   const canAccessClient = async (clientId: string | null) => {
-    // Admin can access any client
     if (isAdmin()) return true;
     
-    // If no client ID passed, can't check access
     if (!clientId) return false;
     
     try {
-      // Use our improved RPC function
       const { data, error } = await supabase.rpc('check_can_access_client', {
         client_id: clientId
       });
@@ -340,18 +316,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
   };
-  
-  // Improve canEditClient to use our RPC
-  const canEditClient = (clientId: string | null) => {
-    // Admin can modify all clients
+
+  const canEditClient = async (clientId: string | null) => {
     if (isAdmin()) return true;
     
-    // Admin client can only modify their own client
     if (isAdminClient() && userClientId === clientId) {
       return true;
     }
     
-    // User can't modify any client
     return false;
   };
 
