@@ -19,7 +19,7 @@ import { toast } from "@/hooks/use-toast";
 // Login form schema
 const loginSchema = z.object({
   email: z.string().email("Adresse e-mail invalide"),
-  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+  password: z.string().min(1, "Le mot de passe est requis"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -50,6 +50,7 @@ export default function Auth() {
     try {
       setIsLoading(true);
       setLoginError(null);
+      console.log("Attempting login for:", data.email);
       await signIn(data.email, data.password);
       setIsOpen(false);
       navigate("/");

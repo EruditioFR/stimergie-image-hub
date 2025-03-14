@@ -147,7 +147,7 @@ export function useUsers() {
         clientId: userData.id_client
       });
 
-      // Use RPC function to create user
+      // Use RPC function to create user with improved error handling
       const { data, error } = await supabase.rpc('create_user_with_profile', {
         email: userData.email,
         password: password,
@@ -224,6 +224,8 @@ export function useUsers() {
 
       // Only attempt password update if a password was provided
       if (password && password.trim() !== '') {
+        console.log("Updating password for user:", userData.id);
+        
         // Use the Supabase admin API to update password
         const { error: passwordError } = await supabase.rpc('admin_update_user_password', {
           user_id: userData.id,
@@ -235,6 +237,8 @@ export function useUsers() {
           toast.error("Impossible de mettre à jour le mot de passe");
           return false;
         }
+        
+        console.log("Password updated successfully");
       }
 
       setUsers(prev => prev.map(user => 
