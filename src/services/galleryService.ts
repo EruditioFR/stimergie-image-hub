@@ -80,7 +80,7 @@ export async function fetchGalleryImages(
       tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
     }));
   } else {
-    // Standard case without client filter
+    // Standard case without client filter - simplifié pour éviter les problèmes de RLS
     let query = supabase
       .from('images')
       .select(`*`);

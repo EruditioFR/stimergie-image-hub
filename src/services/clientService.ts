@@ -14,7 +14,7 @@ export async function fetchClients(userRole: string, userId: string | undefined)
   try {
     // Pour les admins, aucun filtre n'est appliqué - ils voient tous les clients
     if (userRole === 'admin') {
-      // Utiliser l'endpoint clients directement car les admins peuvent tout voir
+      // Utiliser une requête simple sans RLS pour les admins
       const { data, error } = await supabase
         .from('clients')
         .select('id, nom')

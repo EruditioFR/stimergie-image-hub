@@ -20,20 +20,27 @@ export function AdminDashboard() {
       try {
         console.log("Fetching admin dashboard stats...");
         
+        // Utilisez des requêtes directes plutôt que des appels de fonction qui pourraient être
+        // limités par les politiques RLS
+        
         // Fetch clients count
-        const { count: clientsCount, error: clientsError } = await supabase
+        const { data: clientsData, error: clientsError } = await supabase
           .from("clients")
-          .select("*", { count: "exact", head: true });
+          .select("id");
 
+        const clientsCount = clientsData ? clientsData.length : 0;
+        
         if (clientsError) {
           console.error("Error fetching clients count:", clientsError);
           toast.error("Erreur lors du chargement des statistiques des clients");
         }
 
         // Fetch projects count
-        const { count: projectsCount, error: projectsError } = await supabase
+        const { data: projectsData, error: projectsError } = await supabase
           .from("projets")
-          .select("*", { count: "exact", head: true });
+          .select("id");
+          
+        const projectsCount = projectsData ? projectsData.length : 0;
 
         if (projectsError) {
           console.error("Error fetching projects count:", projectsError);
@@ -41,9 +48,11 @@ export function AdminDashboard() {
         }
 
         // Fetch images count
-        const { count: imagesCount, error: imagesError } = await supabase
+        const { data: imagesData, error: imagesError } = await supabase
           .from("images")
-          .select("*", { count: "exact", head: true });
+          .select("id");
+          
+        const imagesCount = imagesData ? imagesData.length : 0;
 
         if (imagesError) {
           console.error("Error fetching images count:", imagesError);
@@ -51,9 +60,9 @@ export function AdminDashboard() {
         }
 
         setStats({
-          clientsCount: clientsCount || 0,
-          projectsCount: projectsCount || 0,
-          imagesCount: imagesCount || 0
+          clientsCount,
+          projectsCount,
+          imagesCount
         });
         
         console.log("Stats loaded:", { clientsCount, projectsCount, imagesCount });
