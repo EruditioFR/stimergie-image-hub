@@ -3,9 +3,8 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { ClientFieldProps } from "../UserFormTypes";
 import { useEffect, useState } from "react";
 import { Client } from "@/types/user";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
-import { toast } from "@/hooks/use-toast";
+import { fetchClients, getAdminClientId } from "@/services/clientService";
 
 export function ClientField({ form, clients: initialClients }: ClientFieldProps) {
   const [clients, setClients] = useState<Client[]>(initialClients || []);
@@ -24,55 +23,15 @@ export function ClientField({ form, clients: initialClients }: ClientFieldProps)
       try {
         console.log("Loading clients for ClientField, userRole:", userRole);
         
-        let query = supabase
-          .from('clients')
-          .select('id, nom')
-          .order('nom', { ascending: true });
-        
-        // Si c'est un admin_client, on filtre pour n'afficher que son propre client
-        if (userRole === 'admin_client' && user) {
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('id_client')
-            .eq('id', user.id)
-            .single();
-            
-          if (profileError) {
-            console.error('Error loading user profile:', profileError);
-            return;
-          }
-          
-          if (profileData?.id_client) {
-            query = query.eq('id', profileData.id_client);
-          }
-        }
-        
-        const { data, error } = await query;
-        
-        if (error) {
-          console.error('Error loading clients:', error);
-          toast({
-            variant: "destructive",
-            title: "Erreur",
-            description: "Impossible de charger la liste des clients"
-          });
-          return;
-        }
-        
-        console.log(`Retrieved ${data?.length || 0} clients for ClientField`);
-        setClients(data || []);
+        const clientsData = await fetchClients(userRole, user?.id);
+        setClients(clientsData);
         
         // Si admin_client user, auto-select son client
-        if (userRole === 'admin_client' && data && data.length === 1) {
-          form.setValue('id_client', data[0].id);
+        if (userRole === 'admin_client' && clientsData.length === 1) {
+          form.setValue('id_client', clientsData[0].id);
         }
       } catch (error) {
-        console.error('Error:', error);
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: "Une erreur est survenue lors du chargement des clients"
-        });
+        console.error('Error loading clients:', error);
       } finally {
         setLoading(false);
       }
