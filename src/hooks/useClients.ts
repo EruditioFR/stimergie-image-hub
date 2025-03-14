@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 export interface Client {
   id?: string;
@@ -19,16 +19,22 @@ export interface Client {
 export const useClients = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isAdmin } = useAuth();
 
   const fetchClients = async () => {
     try {
+      console.log("Fetching clients, isAdmin:", isAdmin());
       setLoading(true);
+      
       const { data, error } = await supabase.from('clients').select('*');
+      
       if (error) {
         console.error("Supabase error details:", error);
         throw error;
       }
+      
       if (data) {
+        console.log(`Retrieved ${data.length} clients from database`);
         const mappedClients: Client[] = data.map(client => ({
           id: client.id,
           nom: client.nom,

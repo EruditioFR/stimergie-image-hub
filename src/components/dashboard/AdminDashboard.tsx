@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserPlus, FolderKanban, ImageIcon } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 export function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -17,32 +18,48 @@ export function AdminDashboard() {
     async function fetchStats() {
       setLoading(true);
       try {
+        console.log("Fetching admin dashboard stats...");
+        
         // Fetch clients count
         const { count: clientsCount, error: clientsError } = await supabase
           .from("clients")
           .select("*", { count: "exact", head: true });
+
+        if (clientsError) {
+          console.error("Error fetching clients count:", clientsError);
+          toast.error("Erreur lors du chargement des statistiques des clients");
+        }
 
         // Fetch projects count
         const { count: projectsCount, error: projectsError } = await supabase
           .from("projets")
           .select("*", { count: "exact", head: true });
 
+        if (projectsError) {
+          console.error("Error fetching projects count:", projectsError);
+          toast.error("Erreur lors du chargement des statistiques des projets");
+        }
+
         // Fetch images count
         const { count: imagesCount, error: imagesError } = await supabase
           .from("images")
           .select("*", { count: "exact", head: true });
 
-        if (clientsError || projectsError || imagesError) {
-          console.error("Error fetching stats:", { clientsError, projectsError, imagesError });
-        } else {
-          setStats({
-            clientsCount: clientsCount || 0,
-            projectsCount: projectsCount || 0,
-            imagesCount: imagesCount || 0
-          });
+        if (imagesError) {
+          console.error("Error fetching images count:", imagesError);
+          toast.error("Erreur lors du chargement des statistiques des images");
         }
+
+        setStats({
+          clientsCount: clientsCount || 0,
+          projectsCount: projectsCount || 0,
+          imagesCount: imagesCount || 0
+        });
+        
+        console.log("Stats loaded:", { clientsCount, projectsCount, imagesCount });
       } catch (error) {
         console.error("Unexpected error fetching stats:", error);
+        toast.error("Erreur lors du chargement des statistiques");
       } finally {
         setLoading(false);
       }

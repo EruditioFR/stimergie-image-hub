@@ -4,11 +4,13 @@ import { toast } from "sonner";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Project } from "@/types/project";
+import { useAuth } from "@/context/AuthContext";
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast: uiToast } = useToast();
+  const { isAdmin, userRole, canAccessClient } = useAuth();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -18,13 +20,23 @@ export function useProjects() {
   const fetchProjects = async () => {
     try {
       setLoading(true);
+      console.log("Fetching projects, isAdmin:", isAdmin());
       
-      const { data, error } = await supabase
+      // Build the query - admins can see all projects
+      let query = supabase
         .from('projets')
         .select(`
           *,
           clients:id_client (nom)
         `);
+      
+      // Add user role-specific filters
+      // Note: This is just for logging, RLS policies on the server will enforce this anyway
+      if (!isAdmin()) {
+        console.log("Non-admin user is fetching projects");
+      }
+      
+      const { data, error } = await query;
       
       if (error) {
         console.error("Supabase error details:", error);
@@ -32,6 +44,7 @@ export function useProjects() {
       }
       
       if (data) {
+        console.log(`Retrieved ${data.length} projects from database`);
         const mappedProjects: Project[] = data.map(project => ({
           id: project.id,
           nom_projet: project.nom_projet,

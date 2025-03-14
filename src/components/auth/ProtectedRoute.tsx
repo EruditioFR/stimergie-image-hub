@@ -40,6 +40,11 @@ export function ProtectedRoute({
     return <Navigate to="/auth" replace />;
   }
 
+  // Admin bypass - administrators always have access to everything
+  if (isAdmin()) {
+    return <>{children}</>;
+  }
+
   // Check role permissions if allowedRoles is provided
   if (allowedRoles && !allowedRoles.includes(userRole)) {
     return <Navigate to="/" replace />;
