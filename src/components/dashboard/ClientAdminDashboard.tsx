@@ -25,6 +25,7 @@ export function ClientAdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [clientId, setClientId] = useState<string | null>(null);
+  const [clientName, setClientName] = useState<string>("");
 
   // Récupérer l'ID du client associé à l'utilisateur
   useEffect(() => {
@@ -45,6 +46,19 @@ export function ClientAdminDashboard() {
 
         if (data?.id_client) {
           setClientId(data.id_client);
+          
+          // Fetch client name
+          const { data: clientData, error: clientError } = await supabase
+            .from("clients")
+            .select("nom")
+            .eq("id", data.id_client)
+            .single();
+            
+          if (clientError) {
+            console.error("Erreur lors de la récupération du nom du client:", clientError);
+          } else if (clientData) {
+            setClientName(clientData.nom);
+          }
         }
       } catch (error) {
         console.error("Erreur inattendue:", error);
@@ -142,9 +156,16 @@ export function ClientAdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <h2 className="text-3xl font-bold">
-        Tableau de bord {userProfile?.firstName} {userProfile?.lastName}
-      </h2>
+      <div>
+        <h2 className="text-3xl font-bold">
+          Tableau de bord {userProfile?.firstName} {userProfile?.lastName}
+        </h2>
+        {clientName && (
+          <h3 className="text-2xl font-bold mt-2" style={{ color: "#055e4c" }}>
+            {clientName}
+          </h3>
+        )}
+      </div>
       
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
