@@ -100,8 +100,8 @@ export const useGalleryImages = (isAdmin: boolean) => {
       query = query.ilike('tags', `%${tab.toLowerCase()}%`);
     }
 
-    if (client && isAdmin) {
-      // Important change: Filter by projets.id_client instead of directly using the client ID
+    if (client) {
+      // Filter by projets.id_client through the joined table relationship
       query = query.eq('projets.id_client', client);
     }
     
