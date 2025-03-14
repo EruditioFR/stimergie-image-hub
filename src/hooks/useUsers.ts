@@ -132,10 +132,9 @@ export function useUsers() {
     try {
       if (!password) {
         toast.error("Un mot de passe est requis pour créer un utilisateur");
-        return false;
+        return;
       }
 
-      // Utiliser la fonction RPC create_user_with_profile pour créer l'utilisateur
       const { data, error } = await supabase.rpc('create_user_with_profile', {
         email: userData.email,
         password: password,
@@ -152,10 +151,9 @@ export function useUsers() {
           description: error.message,
           variant: "destructive"
         });
-        return false;
+        return;
       }
       
-      // Récupérer le nouvel utilisateur créé
       const { data: newUser, error: fetchError } = await supabase
         .from("profiles")
         .select(`
