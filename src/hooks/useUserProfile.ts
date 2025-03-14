@@ -17,19 +17,23 @@ export function useUserProfile(user: User | null, userRole: string) {
     if (user) {
       const fetchProfileData = async () => {
         try {
-          // Essayer d'utiliser une requête paramétrée pour éviter la récursion RLS
+          // Use the get_user_role RPC function to avoid recursion in RLS policies
+          const { data: rpcData, error: rpcError } = await supabase.rpc('get_current_user_role');
+          const role = rpcError ? userRole : rpcData;
+          
+          // Use auth.uid() directly in a parameterized query to avoid RLS issues
           const { data, error } = await supabase
             .from('profiles')
-            .select('first_name, last_name, role, id_client')
+            .select('first_name, last_name, id_client')
             .filter('id', 'eq', user.id)
             .maybeSingle();
-            
+          
           if (data && !error) {
-            console.log("Profil récupéré avec succès:", data);
+            console.log("Profile data retrieved successfully:", data);
             setUserProfile({
               firstName: data.first_name || '',
               lastName: data.last_name || '',
-              role: data.role || 'utilisateur',
+              role: role || 'utilisateur',
               clientId: data.id_client
             });
           } else {
@@ -45,7 +49,7 @@ export function useUserProfile(user: User | null, userRole: string) {
           }
         } catch (err) {
           console.error('Unexpected error fetching profile:', err);
-          // Fallback en cas d'erreur
+          // Fallback in case of error
           setUserProfile({
             firstName: user.user_metadata?.first_name || '',
             lastName: user.user_metadata?.last_name || '',
