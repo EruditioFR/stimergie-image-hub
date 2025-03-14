@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { User, Client } from "@/pages/Users";
+import { User, Client } from "@/types/user";
 import { X } from "lucide-react";
 import {
   Form,

@@ -1,5 +1,5 @@
 
-import { User, Client } from "@/pages/Users";
+import { User, Client } from "@/types/user";
 import { UserRole } from "./UserFormValidation";
 
 export interface UserFormProps {

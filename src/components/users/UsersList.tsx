@@ -1,5 +1,5 @@
 
-import { User } from "@/pages/Users";
+import { User } from "@/types/user";
 import { UserRound, Building2, Mail, Shield, Pencil, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
