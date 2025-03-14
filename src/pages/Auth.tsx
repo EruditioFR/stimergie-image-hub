@@ -11,6 +11,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Header } from "@/components/ui/layout/Header";
 import { Footer } from "@/components/ui/layout/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 // Login form schema
 const loginSchema = z.object({
@@ -23,6 +25,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
 
@@ -43,11 +46,13 @@ export default function Auth() {
   const onLoginSubmit = async (data: LoginFormValues) => {
     try {
       setIsLoading(true);
+      setLoginError(null);
       await signIn(data.email, data.password);
       setIsOpen(false);
       navigate("/");
     } catch (error) {
       console.error("Login error:", error);
+      setLoginError("Email ou mot de passe incorrect");
     } finally {
       setIsLoading(false);
     }
@@ -72,6 +77,12 @@ export default function Auth() {
             </DialogHeader>
             <Form {...loginForm}>
               <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4 pt-4">
+                {loginError && (
+                  <Alert variant="destructive" className="my-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{loginError}</AlertDescription>
+                  </Alert>
+                )}
                 <FormField
                   control={loginForm.control}
                   name="email"

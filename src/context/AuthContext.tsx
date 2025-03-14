@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -85,13 +86,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
         console.error('Error signing in:', error);
         toast({
           title: "Échec de connexion",
-          description: error.message,
+          description: "Email ou mot de passe incorrect",
           variant: "destructive"
         });
         throw error;
@@ -101,6 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Connecté avec succès",
         description: "Bienvenue sur votre tableau de bord",
       });
+      
+      return data;
     } catch (error) {
       console.error('Login error:', error);
       throw error;

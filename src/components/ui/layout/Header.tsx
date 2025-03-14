@@ -15,6 +15,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 // Login form schema
 const loginSchema = z.object({
@@ -30,6 +32,7 @@ export function Header() {
   const { user, userRole, signIn, signOut } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   
   const userProfile = useUserProfile(user, userRole);
   const { isScrolled, isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useHeaderState();
@@ -62,10 +65,13 @@ export function Header() {
   const onLoginSubmit = async (data: LoginFormValues) => {
     try {
       setIsLoading(true);
+      setLoginError(null);
       await signIn(data.email, data.password);
       setIsLoginModalOpen(false);
+      loginForm.reset();
     } catch (error) {
       console.error("Login error:", error);
+      setLoginError("Email ou mot de passe incorrect");
     } finally {
       setIsLoading(false);
     }
@@ -144,6 +150,12 @@ export function Header() {
           </DialogHeader>
           <Form {...loginForm}>
             <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4 pt-4">
+              {loginError && (
+                <Alert variant="destructive" className="my-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{loginError}</AlertDescription>
+                </Alert>
+              )}
               <FormField
                 control={loginForm.control}
                 name="email"
