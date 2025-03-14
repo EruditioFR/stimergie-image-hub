@@ -25,6 +25,11 @@ export function UserMenu({
   onLogout,
   formatRole
 }: UserMenuProps) {
+  // Determine if user has admin or admin_client role
+  const isAdmin = userProfile?.role === 'admin';
+  const isAdminClient = userProfile?.role === 'admin_client';
+  const hasEditAccess = isAdmin || isAdminClient;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -44,25 +49,40 @@ export function UserMenu({
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        
+        {/* Profile link - available to all users */}
         <DropdownMenuItem asChild>
           <Link to="/profile" className="cursor-pointer text-black">Profil</Link>
         </DropdownMenuItem>
+        
+        {/* Admin-only access to Clients page */}
         {canAccessClientsPage && (
           <DropdownMenuItem asChild>
             <Link to="/clients" className="cursor-pointer text-black">Clients</Link>
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem asChild>
-          <Link to="/users" className="cursor-pointer text-black">Utilisateurs</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/projects" className="cursor-pointer text-black">Projets</Link>
-        </DropdownMenuItem>
+        
+        {/* Access to Users page for admins and admin_clients */}
+        {hasEditAccess && (
+          <DropdownMenuItem asChild>
+            <Link to="/users" className="cursor-pointer text-black">Utilisateurs</Link>
+          </DropdownMenuItem>
+        )}
+        
+        {/* Access to Projects page for admins and admin_clients */}
+        {hasEditAccess && (
+          <DropdownMenuItem asChild>
+            <Link to="/projects" className="cursor-pointer text-black">Projets</Link>
+          </DropdownMenuItem>
+        )}
+        
+        {/* Access to Images page for admins and admin_clients */}
         {canAccessImagesPage && (
           <DropdownMenuItem asChild>
             <Link to="/images" className="cursor-pointer text-black">Images</Link>
           </DropdownMenuItem>
         )}
+        
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onLogout} className="cursor-pointer text-red-500">
           <LogOut className="h-4 w-4 mr-2" />

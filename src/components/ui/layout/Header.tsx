@@ -35,8 +35,12 @@ export function Header() {
   const { isScrolled, isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useHeaderState();
 
   const isHomePage = location.pathname === "/";
-  const canAccessClientsPage = userRole === 'admin';
-  const canAccessImagesPage = userRole === 'admin' || userRole === 'admin_client';
+  
+  // Determine access rights based on role
+  const isAdmin = userRole === 'admin';
+  const isAdminClient = userRole === 'admin_client';
+  const canAccessClientsPage = isAdmin;
+  const canAccessImagesPage = isAdmin || isAdminClient;
 
   useEffect(() => {
     closeMobileMenu();
@@ -67,6 +71,7 @@ export function Header() {
     }
   };
 
+  // Only show navigation items for users with appropriate roles
   const navigationItems = [
     { name: 'Accueil', path: '/', icon: <Home className="h-4 w-4 mr-2" /> },
     { name: 'Banque d\'images', path: '/gallery', icon: <Image className="h-4 w-4 mr-2" /> },
@@ -74,7 +79,6 @@ export function Header() {
     { name: 'Ensemble', path: '/ensemble', icon: <Users className="h-4 w-4 mr-2" /> }
   ];
 
-  // Since we no longer have the 'access' property, we don't need to filter based on it
   const filteredNavItems = navigationItems;
 
   return (
