@@ -14,16 +14,32 @@ import { ChevronDown, Lock, LogOut, Settings, UserCircle, Building2 } from "luci
 import { useState } from "react";
 import { ChangePasswordForm } from "@/components/users/ChangePasswordForm";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 export function UserMenu() {
   const { user, userRole, signOut } = useAuth();
   const userProfile = useUserProfile(user, userRole);
   const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleLogout = async () => {
-    await signOut();
-    navigate("/");
+    try {
+      setIsLoggingOut(true);
+      await signOut();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast({
+        title: "Déconnexion",
+        description: "Une erreur est survenue mais vous avez été déconnecté",
+      });
+      // Redirect to homepage even on error
+      navigate("/");
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   // If there's no user, don't render anything
@@ -109,9 +125,9 @@ export function UserMenu() {
             <span>Paramètres</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="flex items-center gap-2" onSelect={handleLogout}>
+          <DropdownMenuItem className="flex items-center gap-2" disabled={isLoggingOut} onSelect={handleLogout}>
             <LogOut className="h-4 w-4" />
-            <span>Déconnexion</span>
+            <span>{isLoggingOut ? "Déconnexion..." : "Déconnexion"}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

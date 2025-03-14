@@ -181,6 +181,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
+      // Check if we have a session before trying to sign out
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        // If no session exists, just clean up the local state without calling signOut
+        console.log('No active session found, cleaning up local state only');
+        setUser(null);
+        setSession(null);
+        setUserRole('user');
+        
+        toast({
+          title: "Déconnecté avec succès",
+        });
+        return;
+      }
+      
+      // If we have a session, proceed with sign out
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -198,7 +215,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch (error) {
       console.error('Logout error:', error);
-      throw error;
+      
+      // Even if there's an error, clear the local state
+      setUser(null);
+      setSession(null);
+      setUserRole('user');
+      
+      // Only throw if it's not an AuthSessionMissingError
+      if (error instanceof Error && !error.message.includes('Auth session missing')) {
+        throw error;
+      }
     }
   };
 
