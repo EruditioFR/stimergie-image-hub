@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { useUserProfile, formatRole } from '@/hooks/useUserProfile';
 import { useHeaderState } from '@/hooks/useHeaderState';
-import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink } from '@/components/ui/navigation-menu';
+import { NavigationMenu, NavigationMenuList, NavigationMenuItem } from '@/components/ui/navigation-menu';
 import { UserMenu } from './header/UserMenu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -124,13 +124,7 @@ export function Header() {
 
         <div className="flex items-center">
           {user ? (
-            <UserMenu 
-              userProfile={userProfile}
-              canAccessClientsPage={canAccessClientsPage}
-              canAccessImagesPage={canAccessImagesPage}
-              onLogout={handleLogout}
-              formatRole={formatRole}
-            />
+            <UserMenu />
           ) : (
             <Button variant="default" size="sm" onClick={() => setIsLoginModalOpen(true)}>
               Connexion

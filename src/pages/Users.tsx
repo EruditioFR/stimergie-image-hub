@@ -6,7 +6,6 @@ import { UsersHeader } from "@/components/users/UsersHeader";
 import { UsersList } from "@/components/users/UsersList";
 import { UserForm } from "@/components/users/UserForm";
 import { Header } from "@/components/ui/layout/Header";
-import { UserGreetingBar } from "@/components/ui/UserGreetingBar";
 import { useAuth } from "@/context/AuthContext";
 import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
 import {
@@ -303,7 +302,6 @@ export default function Users() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <UserGreetingBar />
       <Header />
       
       <UsersHeader onAddClick={() => setShowAddForm(true)} />
