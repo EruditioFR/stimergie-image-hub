@@ -350,23 +350,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      get_user_client_id: {
-        Args: {
-          user_id: string
-        }
-        Returns: string
-      }
-      get_user_profile_data: {
-        Args: {
-          user_id: string
-        }
-        Returns: {
-          first_name: string
-          last_name: string
-          role: string
-          id_client: string
-        }[]
-      }
       get_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -375,14 +358,6 @@ export type Database = {
         Args: {
           required_role: Database["public"]["Enums"]["user_role"]
         }
-        Returns: boolean
-      }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_admin_client: {
-        Args: Record<PropertyKey, never>
         Returns: boolean
       }
     }

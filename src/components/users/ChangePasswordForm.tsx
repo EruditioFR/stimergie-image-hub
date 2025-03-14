@@ -16,8 +16,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { X } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
 
 interface ChangePasswordFormProps {
   onCancel: () => void;
@@ -34,7 +32,6 @@ const formSchema = z.object({
 
 export function ChangePasswordForm({ onCancel }: ChangePasswordFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { changePassword } = useAuth();
   const { toast } = useToast();
 
@@ -50,16 +47,11 @@ export function ChangePasswordForm({ onCancel }: ChangePasswordFormProps) {
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
-      setError(null);
       await changePassword(values.currentPassword, values.newPassword);
-      toast({
-        title: "Succès",
-        description: "Votre mot de passe a été mis à jour avec succès",
-      });
       onCancel();
     } catch (error) {
       console.error("Erreur lors du changement de mot de passe:", error);
-      setError(error instanceof Error ? error.message : "Une erreur est survenue");
+      // Errors are handled in the changePassword function
     } finally {
       setIsLoading(false);
     }
@@ -73,13 +65,6 @@ export function ChangePasswordForm({ onCancel }: ChangePasswordFormProps) {
           <X className="h-5 w-5" />
         </Button>
       </div>
-
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">

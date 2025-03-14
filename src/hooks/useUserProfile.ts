@@ -7,14 +7,6 @@ export interface UserProfile {
   firstName: string;
   lastName: string;
   role: string;
-  clientId: string | null;
-}
-
-interface UserProfileData {
-  first_name: string | null;
-  last_name: string | null;
-  role: string;
-  id_client: string | null;
 }
 
 export function useUserProfile(user: User | null, userRole: string) {
@@ -24,49 +16,30 @@ export function useUserProfile(user: User | null, userRole: string) {
     if (user) {
       const fetchProfileData = async () => {
         try {
-          console.log("Fetching profile data for user:", user.id);
-          
-          // Initialize with data from user metadata first
-          const metadataProfile = {
-            firstName: user.user_metadata?.first_name || '',
-            lastName: user.user_metadata?.last_name || '',
-            role: userRole || 'user',
-            clientId: user.user_metadata?.id_client || null
-          };
-          
-          // Set initial profile data from metadata
-          setUserProfile(metadataProfile);
-          
-          // Then try to get the complete profile data from the database
-          try {
-            const { data, error } = await supabase.rpc('get_user_profile_data', {
-              user_id: user.id
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('first_name, last_name, role')
+            .eq('id', user.id)
+            .single();
+            
+          if (data && !error) {
+            setUserProfile({
+              firstName: data.first_name || '',
+              lastName: data.last_name || '',
+              role: data.role || 'utilisateur'
             });
+          } else {
+            console.error('Error fetching profile:', error);
             
-            if (error) {
-              console.error("Error fetching profile data:", error);
-              return;
-            }
-            
-            if (data && data.length > 0) {
-              // The function returns a table, so we get an array where the first element is our row
-              const profileData = data[0] as UserProfileData;
-              console.log("Profile data retrieved from database:", profileData);
-              
-              setUserProfile({
-                firstName: profileData.first_name || metadataProfile.firstName,
-                lastName: profileData.last_name || metadataProfile.lastName,
-                role: profileData.role || metadataProfile.role,
-                clientId: profileData.id_client || metadataProfile.clientId
-              });
-            }
-          } catch (profileError) {
-            console.error("Error in profile data fetch:", profileError);
-            // Already set fallback profile from metadata
+            // Fallback: use metadata from user object
+            setUserProfile({
+              firstName: user.user_metadata?.first_name || '',
+              lastName: user.user_metadata?.last_name || '',
+              role: userRole || 'utilisateur'
+            });
           }
         } catch (err) {
-          console.error('Unexpected error in useUserProfile:', err);
-          // Keep the fallback in place
+          console.error('Unexpected error fetching profile:', err);
         }
       };
       
@@ -79,10 +52,10 @@ export function useUserProfile(user: User | null, userRole: string) {
 
 export function formatRole(role: string): string {
   // Convert API role names to user-friendly display names
-  switch(role?.toLowerCase() || 'user') {
+  switch(role.toLowerCase()) {
     case 'admin': return 'Administrateur';
     case 'admin_client': return 'Admin Client';
     case 'user': return 'Utilisateur';
-    default: return role || 'Utilisateur';
+    default: return role;
   }
 }
