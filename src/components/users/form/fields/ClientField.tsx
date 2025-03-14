@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/select";
 import { fetchClients } from "@/services/clientService";
 import { useQuery } from "@tanstack/react-query";
+import { UserFormFieldProps } from "../UserFormTypes";
 
-export const ClientField = ({ form, disabled = false }) => {
+export const ClientField = ({ form, disabled = false }: UserFormFieldProps) => {
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ['clients'],
     queryFn: fetchClients,

@@ -14,6 +14,7 @@ export interface UserFormProps {
 export interface UserFormFieldProps {
   form: any;
   isEditing?: boolean;
+  disabled?: boolean;
 }
 
 export interface RoleFieldProps extends UserFormFieldProps {
