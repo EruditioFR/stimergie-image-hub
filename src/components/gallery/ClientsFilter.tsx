@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 interface Client {
   id: string;
@@ -29,32 +30,59 @@ export function ClientsFilter({ selectedClient, onClientChange, className }: Cli
   
   useEffect(() => {
     const loadClients = async () => {
-      if (!['admin', 'admin_client'].includes(userRole)) return;
-      
       setIsLoading(true);
       try {
-        console.log("Loading clients for ClientsFilter, isAdmin:", isAdmin());
+        console.log("Loading clients for ClientsFilter, userRole:", userRole);
         
-        // Let RLS handle the access control
-        const { data, error } = await supabase
+        let query = supabase
           .from('clients')
           .select('id, nom')
           .order('nom', { ascending: true });
         
+        // Si c'est un admin_client, on filtre pour n'afficher que son propre client
+        if (userRole === 'admin_client' && user) {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('id_client')
+            .eq('id', user.id)
+            .single();
+            
+          if (profileError) {
+            console.error('Error loading user profile:', profileError);
+            return;
+          }
+          
+          if (profileData?.id_client) {
+            query = query.eq('id', profileData.id_client);
+          }
+        }
+        
+        const { data, error } = await query;
+        
         if (error) {
           console.error('Error loading clients:', error);
+          toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Impossible de charger la liste des clients"
+          });
           return;
         }
         
         console.log(`Retrieved ${data?.length || 0} clients for filter`);
         setClients(data || []);
         
-        // If admin_client user, auto-select their client
+        // Si admin_client user, auto-select son client
         if (userRole === 'admin_client' && data && data.length === 1) {
           onClientChange(data[0].id);
         }
       } catch (error) {
         console.error('Error:', error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Une erreur est survenue lors du chargement des clients"
+        });
       } finally {
         setIsLoading(false);
       }
@@ -67,6 +95,7 @@ export function ClientsFilter({ selectedClient, onClientChange, className }: Cli
     onClientChange(value === 'all' ? null : value);
   };
   
+  // Si aucun client n'est disponible et qu'on n'est pas en train de charger, on ne montre pas le filtre
   if (clients.length === 0 && !isLoading) {
     return null;
   }

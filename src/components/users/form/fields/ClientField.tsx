@@ -14,9 +14,10 @@ export function ClientField({ form, clients }: ClientFieldProps) {
             <select
               className="w-full rounded-md border border-input bg-background px-3 py-2"
               {...field}
+              value={field.value || ""}
             >
               <option value="">Aucun client</option>
-              {clients.map((client) => (
+              {clients.map(client => (
                 <option key={client.id} value={client.id}>
                   {client.nom}
                 </option>
