@@ -8,6 +8,7 @@ import { formatImagesForGrid } from '@/utils/imageUtils';
 import { useGalleryFilters } from './useGalleryFilters';
 import { Image } from '@/pages/Images';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useGalleryImages = (isAdmin: boolean) => {
   const queryClient = useQueryClient();

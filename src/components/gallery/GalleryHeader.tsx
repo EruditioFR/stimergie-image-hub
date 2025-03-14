@@ -12,6 +12,8 @@ interface GalleryHeaderProps {
   onClientChange: (clientId: string | null) => void;
   userName?: string;
   userLastName?: string;
+  userRole?: string;
+  userClientId?: string | null;
 }
 
 export function GalleryHeader({ 
@@ -22,10 +24,12 @@ export function GalleryHeader({
   selectedClient,
   onClientChange,
   userName = "",
-  userLastName = ""
+  userLastName = "",
+  userRole,
+  userClientId
 }: GalleryHeaderProps) {
-  const { userRole } = useAuth();
-  const isAdmin = ['admin', 'admin_client'].includes(userRole);
+  const { userRole: contextUserRole } = useAuth();
+  const isAdmin = ['admin', 'admin_client'].includes(userRole || contextUserRole);
   
   const handleTabChange = (value: string) => {
     // Convert category name to lowercase or 'all' for consistent filtering
@@ -57,6 +61,8 @@ export function GalleryHeader({
               selectedClient={selectedClient}
               onClientChange={onClientChange}
               className="w-full md:w-auto md:ml-auto"
+              userRole={userRole}
+              userClientId={userClientId}
             />
           )}
         </div>
