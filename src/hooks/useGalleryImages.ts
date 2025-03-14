@@ -83,6 +83,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
       .select(`
         *,
         projets:id_projet (
+          id,
           id_client
         )
       `);
@@ -101,7 +102,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     }
 
     if (client) {
-      // Filter by projets.id_client through the joined table relationship
+      // Make sure we're filtering by the client ID in the projets table
       query = query.eq('projets.id_client', client);
     }
     
