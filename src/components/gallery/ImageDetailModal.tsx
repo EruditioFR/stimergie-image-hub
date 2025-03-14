@@ -4,7 +4,6 @@ import { X, Download, Heart, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { LazyImage } from '@/components/LazyImage';
-import { ImageGallery } from '@/components/ImageGallery';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { parseTagsString } from '@/utils/imageUtils';
@@ -158,33 +157,8 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                 </div>
               </div>
 
-              {/* Sidebar with Details */}
+              {/* Sidebar with Details - Removing user section and thumbnail section */}
               <div className="lg:col-span-2 space-y-6">
-                {/* Author Information */}
-                <div className="bg-card rounded-xl p-6 shadow-sm">
-                  <div className="flex items-center space-x-4 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                      <span className="text-xl font-medium">U</span>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Utilisateur</h3>
-                      <p className="text-sm text-muted-foreground">Contributeur</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Miniature de l'image */}
-                <div className="bg-card rounded-xl p-6 shadow-sm hidden lg:block">
-                  <h3 className="font-medium mb-4">Aperçu</h3>
-                  <div className="aspect-square overflow-hidden rounded-lg border border-muted">
-                    <img 
-                      src={image.url_miniature || image.url} 
-                      alt={image.title} 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </div>
-
                 {/* Desktop Action Buttons */}
                 <div className="hidden lg:block bg-card rounded-xl p-6 shadow-sm space-y-4">
                   <h3 className="font-medium mb-4">Actions</h3>
@@ -229,15 +203,8 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                 </div>
               </div>
             </div>
-
-            {/* Related Images */}
-            <div className="mt-20">
-              <ImageGallery 
-                title="Images similaires" 
-                subtitle="Découvrez d'autres images qui pourraient vous intéresser"
-                limit={3}
-              />
-            </div>
+            
+            {/* Removed "Similar Images" section */}
           </div>
         </DialogContent>
       </Dialog>
