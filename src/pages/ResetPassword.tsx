@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,10 +40,21 @@ export default function ResetPassword() {
   const hasValidResetParams = type === "recovery" && (accessToken || refreshToken);
 
   useEffect(() => {
-    if (!hasValidResetParams) {
+    // If valid token exists, set the session with the token
+    if (hasValidResetParams && accessToken) {
+      supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken || '',
+      }).then(({ error }) => {
+        if (error) {
+          console.error("Error setting session:", error);
+          setError("Lien de réinitialisation invalide ou expiré. Veuillez demander un nouveau lien.");
+        }
+      });
+    } else if (!hasValidResetParams) {
       setError("Lien de réinitialisation invalide ou expiré. Veuillez demander un nouveau lien.");
     }
-  }, [hasValidResetParams]);
+  }, [accessToken, refreshToken, hasValidResetParams]);
 
   // Password reset form
   const form = useForm<ResetPasswordFormValues>({
@@ -65,7 +75,7 @@ export default function ResetPassword() {
       setIsLoading(true);
       setError(null);
 
-      // Use the access token to set the new password
+      // Use the updated auth API to change password
       const { error } = await supabase.auth.updateUser({ 
         password: data.password
       });

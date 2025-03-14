@@ -43,7 +43,7 @@ export default function Auth() {
 
   // If user is already logged in, redirect to home
   if (user) {
-    return <Navigate to="/" />;
+    return <Navigate to="/" replace />;
   }
 
   const onLoginSubmit = async (data: LoginFormValues) => {

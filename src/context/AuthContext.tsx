@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserRoleViaRPC = async (userId: string) => {
     try {
       console.log("Fetching user role for:", userId);
-      // Use RPC to get role (security definer function)
+      // Use improved RPC to get role (security definer function)
       const { data, error } = await supabase.rpc('get_user_role');
       
       if (error) {
@@ -126,21 +126,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      // Direct query as a last resort - may trigger RLS but wrapped in try/catch
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-      
-      if (error) {
-        console.error("Error in fallback role fetch:", error);
+      // Direct query as a last resort - now using our improved functions
+      try {
+        const { data: isAdminResult, error: isAdminError } = await supabase.rpc('is_admin');
+        
+        if (!isAdminError && isAdminResult === true) {
+          setUserRole('admin');
+          return;
+        }
+        
+        const { data: isAdminClientResult, error: isAdminClientError } = await supabase.rpc('is_admin_client');
+        
+        if (!isAdminClientError && isAdminClientResult === true) {
+          setUserRole('admin_client');
+          return;
+        }
+        
+        // Default to user role if no specific role is found
+        setUserRole('user');
+      } catch (error) {
+        console.error("Error calling role check functions:", error);
         setUserRole('user'); // Default to user role
-        return;
       }
-      
-      console.log("Role from direct query:", data?.role);
-      setUserRole(data?.role || 'user');
     } catch (error) {
       console.error("Fallback role fetch failed:", error);
       setUserRole('user'); // Default to user role
@@ -303,37 +310,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Fonctions de vérification des permissions
+  // Use our improved role check functions
   const isAdmin = () => userRole === 'admin';
-  
   const isAdminClient = () => userRole === 'admin_client';
-  
   const isRegularUser = () => userRole === 'user';
   
-  // Vérifie si l'utilisateur peut accéder à un client spécifique
-  const canAccessClient = (clientId: string | null) => {
-    // Admin peut accéder à tous les clients
+  // Use improved canAccessClient function that leverages our RPC
+  const canAccessClient = async (clientId: string | null) => {
+    // Admin can access any client
     if (isAdmin()) return true;
     
-    // Admin client et utilisateur ne peuvent accéder qu'à leur propre client
-    if ((isAdminClient() || isRegularUser()) && userClientId === clientId) {
-      return true;
-    }
+    // If no client ID passed, can't check access
+    if (!clientId) return false;
     
-    return false;
+    try {
+      // Use our improved RPC function
+      const { data, error } = await supabase.rpc('check_can_access_client', {
+        client_id: clientId
+      });
+      
+      if (error) {
+        console.error("Error checking client access:", error);
+        return false;
+      }
+      
+      return data === true;
+    } catch (error) {
+      console.error("Error in canAccessClient:", error);
+      return false;
+    }
   };
   
-  // Vérifie si l'utilisateur peut modifier un client spécifique
+  // Improve canEditClient to use our RPC
   const canEditClient = (clientId: string | null) => {
-    // Admin peut modifier tous les clients
+    // Admin can modify all clients
     if (isAdmin()) return true;
     
-    // Admin client ne peut modifier que son propre client
+    // Admin client can only modify their own client
     if (isAdminClient() && userClientId === clientId) {
       return true;
     }
     
-    // Utilisateur régulier ne peut pas modifier de client
+    // User can't modify any client
     return false;
   };
 
@@ -367,4 +385,3 @@ export function useAuth() {
   
   return context;
 }
-

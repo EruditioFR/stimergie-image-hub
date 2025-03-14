@@ -391,6 +391,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_specific_role: {
+        Args: {
+          required_role: string
+        }
+        Returns: boolean
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
