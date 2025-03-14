@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useUserProfile, formatRole } from '@/hooks/useUserProfile';
 import { useHeaderState } from '@/hooks/useHeaderState';
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem } from '@/components/ui/navigation-menu';
+import { User } from '@/types/user';
 import { UserMenu } from './header/UserMenu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -99,7 +100,7 @@ export function Header() {
           <img 
             src="/lovable-uploads/9ce78881-8c65-4716-ab7f-128bb420c8e9.png" 
             alt="Stimergie Logo" 
-            className="h-8 w-auto" 
+            className="h-12 w-auto" // Changed from h-8 to h-12 to make the logo larger
           />
         </Link>
 
