@@ -12,6 +12,7 @@ export async function fetchClients(userRole: string, userId: string | undefined)
   console.log("Fetching clients with userRole:", userRole, "userId:", userId);
   
   try {
+    // Pour les admins, aucun filtre n'est appliqué - ils voient tous les clients
     let query = supabase
       .from('clients')
       .select('id, nom')
