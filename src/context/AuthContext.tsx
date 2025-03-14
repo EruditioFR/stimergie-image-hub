@@ -187,7 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Le mot de passe actuel est incorrect");
       }
 
-      // Then update password
+      // Use the Supabase API to update the user's password
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });

@@ -188,6 +188,7 @@ export function useUsers() {
 
   const handleUpdateUser = async (userData: User, password?: string) => {
     try {
+      // Update profile data first
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -204,11 +205,13 @@ export function useUsers() {
         return false;
       }
 
+      // Only attempt password update if a password was provided
       if (password && password.trim() !== '') {
+        // Use the Supabase admin API to update password
         const { error: passwordError } = await supabase.rpc('admin_update_user_password', {
           user_id: userData.id,
           new_password: password
-        } as any);
+        });
 
         if (passwordError) {
           console.error("Erreur lors de la mise à jour du mot de passe:", passwordError);
