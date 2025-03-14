@@ -264,7 +264,7 @@ export function LazyImage({
           onLoad={handleImageLoad}
           loading={priority ? "eager" : "lazy"}
           decoding="async"
-          fetchpriority={priority ? "high" : "auto"}
+          fetchPriority={priority ? "high" : "auto"}
         />
       )}
     </div>
