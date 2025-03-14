@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { BlogPost, useBlogPosts } from '@/hooks/useBlogPosts';
@@ -10,6 +9,7 @@ import { ClientsFilter } from '@/components/gallery/ClientsFilter';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BlogPostListProps {
   contentType?: 'Ressource' | 'Ensemble';
@@ -22,10 +22,41 @@ export function BlogPostList({ contentType, title, description }: BlogPostListPr
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user, userRole } = useAuth();
+  const [userClientId, setUserClientId] = useState<string | null>(null);
   
-  const filteredPosts = posts?.filter(post => 
-    selectedClient ? post.client_id === selectedClient : true
-  );
+  useEffect(() => {
+    const fetchUserClientId = async () => {
+      if (userRole === 'admin_client' && user) {
+        try {
+          const { data, error } = await supabase.rpc('get_user_client_id', {
+            user_id: user.id
+          });
+          
+          if (error) {
+            console.error('Error fetching user client ID:', error);
+            return;
+          }
+          
+          setUserClientId(data);
+          setSelectedClient(data);
+          console.log('Admin client user client ID fetched:', data);
+        } catch (error) {
+          console.error('Error in fetchUserClientId:', error);
+        }
+      }
+    };
+    
+    fetchUserClientId();
+  }, [user, userRole]);
+  
+  const filteredPosts = posts?.filter(post => {
+    if (userRole === 'admin_client' && userClientId) {
+      return post.client_id === userClientId;
+    } else if (selectedClient) {
+      return post.client_id === selectedClient;
+    }
+    return true;
+  });
 
   const handleDelete = (post: BlogPost) => {
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer l'article "${post.title}" ?`)) {
@@ -34,6 +65,8 @@ export function BlogPostList({ contentType, title, description }: BlogPostListPr
   };
 
   const canEdit = user && ['admin', 'admin_client'].includes(userRole);
+  
+  const canChangeClientFilter = userRole !== 'admin_client';
 
   if (error) {
     return (
@@ -55,11 +88,15 @@ export function BlogPostList({ contentType, title, description }: BlogPostListPr
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          <ClientsFilter 
-            selectedClient={selectedClient}
-            onClientChange={setSelectedClient}
-            className="w-full sm:w-auto"
-          />
+          {userRole === 'admin' && (
+            <ClientsFilter 
+              selectedClient={selectedClient}
+              onClientChange={setSelectedClient}
+              className="w-full sm:w-auto"
+              userRole={userRole}
+              userClientId={userClientId}
+            />
+          )}
           
           {canEdit && (
             <Button onClick={() => navigate('/blog/new')}>
