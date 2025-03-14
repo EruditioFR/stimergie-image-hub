@@ -78,55 +78,109 @@ export const useGalleryImages = (isAdmin: boolean) => {
   ): Promise<Image[]> => {
     console.log('Fetching images with:', { search, tag, tab, client, pageNum });
     
-    let query = supabase
-      .from('images')
-      .select(`
-        *,
-        projets:id_projet (
-          id,
-          id_client
-        )
-      `);
-    
-    if (search && search.trim() !== '') {
-      // Add OR condition for title and tags for better search results
-      query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%`);
-    }
-
-    if (tag && tag.toLowerCase() !== 'toutes') {
-      query = query.ilike('tags', `%${tag.toLowerCase()}%`);
-    }
-    
-    if (tab.toLowerCase() !== 'all') {
-      query = query.ilike('tags', `%${tab.toLowerCase()}%`);
-    }
-
+    // Si un client est sélectionné, d'abord récupérer les ID de projets associés
     if (client) {
-      // Make sure we're filtering by the client ID in the projets table
-      query = query.eq('projets.id_client', client);
+      // 1. Récupérer tous les projets associés à ce client
+      const { data: projetData, error: projetError } = await supabase
+        .from('projets')
+        .select('id')
+        .eq('id_client', client);
+      
+      if (projetError) {
+        console.error('Error fetching projets for client:', projetError);
+        toast.error("Erreur lors du chargement des projets");
+        return [];
+      }
+      
+      // Si aucun projet pour ce client, retourner un tableau vide
+      if (!projetData || projetData.length === 0) {
+        console.log('No projects found for this client');
+        return [];
+      }
+      
+      // 2. Extraire les IDs des projets
+      const projetIds = projetData.map(projet => projet.id);
+      console.log('Project IDs for client:', projetIds);
+      
+      // 3. Chercher les images associées à ces projets
+      let query = supabase
+        .from('images')
+        .select('*')
+        .in('id_projet', projetIds);
+      
+      if (search && search.trim() !== '') {
+        // Add OR condition for title and tags for better search results
+        query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%`);
+      }
+
+      if (tag && tag.toLowerCase() !== 'toutes') {
+        query = query.ilike('tags', `%${tag.toLowerCase()}%`);
+      }
+      
+      if (tab.toLowerCase() !== 'all') {
+        query = query.ilike('tags', `%${tab.toLowerCase()}%`);
+      }
+      
+      // Apply ordering and pagination
+      query = query.order('created_at', { ascending: false })
+                   .range((pageNum - 1) * IMAGES_PER_PAGE, pageNum * IMAGES_PER_PAGE - 1);
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching images by projects:', error);
+        toast.error("Erreur lors du chargement des images");
+        return [];
+      }
+      
+      console.log(`Fetched ${data.length} images for client's projects for page ${pageNum}`);
+      
+      // Convertir les tags de string à string[] en parsant la valeur
+      return data.map(img => ({
+        ...img,
+        tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
+      })) as Image[];
+    } else {
+      // Cas standard sans filtre client
+      let query = supabase
+        .from('images')
+        .select(`*`);
+      
+      if (search && search.trim() !== '') {
+        // Add OR condition for title and tags for better search results
+        query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%`);
+      }
+
+      if (tag && tag.toLowerCase() !== 'toutes') {
+        query = query.ilike('tags', `%${tag.toLowerCase()}%`);
+      }
+      
+      if (tab.toLowerCase() !== 'all') {
+        query = query.ilike('tags', `%${tab.toLowerCase()}%`);
+      }
+      
+      // Apply ordering
+      query = query.order('created_at', { ascending: false });
+      
+      // Apply pagination
+      query = query.range((pageNum - 1) * IMAGES_PER_PAGE, pageNum * IMAGES_PER_PAGE - 1);
+
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching images:', error);
+        toast.error("Erreur lors du chargement des images");
+        return [];
+      }
+
+      console.log(`Fetched ${data.length} images for page ${pageNum}`);
+
+      // Convertir les tags de string à string[] en parsant la valeur
+      return data.map(img => ({
+        ...img,
+        tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
+      })) as Image[];
     }
-    
-    // Apply ordering
-    query = query.order('created_at', { ascending: false });
-    
-    // Apply pagination
-    query = query.range((pageNum - 1) * IMAGES_PER_PAGE, pageNum * IMAGES_PER_PAGE - 1);
-
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error('Error fetching images:', error);
-      toast.error("Erreur lors du chargement des images");
-      return [];
-    }
-
-    console.log(`Fetched ${data.length} images for page ${pageNum}`);
-
-    // Convertir les tags de string à string[] en parsant la valeur
-    return data.map(img => ({
-      ...img,
-      tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
-    })) as Image[];
   };
 
   // Fetch images from Supabase with caching
