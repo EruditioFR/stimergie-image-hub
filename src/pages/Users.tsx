@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -226,7 +225,6 @@ export default function Users() {
 
   const handleUpdateUser = async (userData: User, password?: string) => {
     try {
-      // First update the profile information
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -243,12 +241,11 @@ export default function Users() {
         return;
       }
 
-      // If a password was provided, update the user's password using RPC
       if (password && password.trim() !== '') {
         const { error: passwordError } = await supabase.rpc('admin_update_user_password', {
           user_id: userData.id,
           new_password: password
-        });
+        } as any);
 
         if (passwordError) {
           console.error("Erreur lors de la mise à jour du mot de passe:", passwordError);
