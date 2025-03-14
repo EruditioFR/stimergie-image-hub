@@ -59,7 +59,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
           </Button>
           <div className="w-full h-full p-4 md:p-8 flex items-center justify-center">
             <img 
-              src={image.url_miniature || image.url} 
+              src={image.url} 
               alt={image.title} 
               className="max-w-full max-h-full object-contain animate-fade-in" 
             />
@@ -82,7 +82,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                   onClick={toggleFullscreen}
                 >
                   <LazyImage 
-                    src={image.url_miniature || image.url} 
+                    src={image.url} 
                     alt={image.title} 
                     className="w-full aspect-auto"
                     aspectRatio="aspect-auto"
