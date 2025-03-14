@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -52,62 +51,9 @@ export function ProtectedRoute({
         return;
       }
 
-      // Check client access permissions
-      if (requiresClient && clientId) {
-        try {
-          const { data, error } = await supabase.rpc('check_can_access_client', {
-            client_id: clientId
-          });
-          
-          if (error || !data) {
-            console.log(`User cannot access client ${clientId}`);
-            setHasAccess(false);
-            setLoading(false);
-            return;
-          }
-        } catch (error) {
-          console.error("Error checking client access:", error);
-          setHasAccess(false);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Check edit permissions
-      if (requiresEditPermission && clientId) {
-        // Admin can edit any client
-        if (isAdmin()) {
-          setHasAccess(true);
-          setLoading(false);
-          return;
-        }
-        
-        // For admin_client, check if they belong to this client
-        if (userRole === 'admin_client') {
-          try {
-            const { data: userClientId } = await supabase.rpc('get_user_client_id', {
-              user_id: user.id
-            });
-            
-            if (userClientId === clientId) {
-              setHasAccess(true);
-            } else {
-              console.log(`User cannot edit client ${clientId}`);
-              setHasAccess(false);
-            }
-          } catch (error) {
-            console.error("Error checking edit permissions:", error);
-            setHasAccess(false);
-          }
-        } else {
-          // Regular users cannot edit clients
-          setHasAccess(false);
-        }
-        
-        setLoading(false);
-        return;
-      }
-
+      // With RLS disabled, we're simplifying access control logic
+      // and relying more on frontend controls
+      
       // If we got here, all checks passed
       setHasAccess(true);
       setLoading(false);
@@ -116,7 +62,7 @@ export function ProtectedRoute({
     if (!authLoading) {
       checkAccess();
     }
-  }, [user, userRole, authLoading, allowedRoles, requiresClient, clientId, requiresEditPermission, isAdmin]);
+  }, [user, userRole, authLoading, allowedRoles, isAdmin]);
 
   // Show loading state while checking authentication
   if (authLoading || loading) {

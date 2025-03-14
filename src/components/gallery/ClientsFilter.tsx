@@ -22,15 +22,15 @@ interface ClientsFilterProps {
 export function ClientsFilter({ selectedClient, onClientChange, className }: ClientsFilterProps) {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { userRole, user, isAdmin } = useAuth();
+  const { userRole, user } = useAuth();
   
   useEffect(() => {
     const loadClients = async () => {
       setIsLoading(true);
       try {
-        console.log("Loading clients for ClientsFilter, userRole:", userRole, "userId:", user?.id);
+        console.log("Loading clients for ClientsFilter");
         
-        const clientsData = await fetchClients(userRole, user?.id);
+        const clientsData = await fetchClients();
         setClients(clientsData);
         
         // Si admin_client user, auto-select son client
@@ -50,7 +50,7 @@ export function ClientsFilter({ selectedClient, onClientChange, className }: Cli
     };
     
     loadClients();
-  }, [userRole, user, onClientChange, isAdmin]);
+  }, [userRole, user, onClientChange]);
   
   const handleValueChange = (value: string) => {
     onClientChange(value === 'all' ? null : value);
@@ -73,9 +73,7 @@ export function ClientsFilter({ selectedClient, onClientChange, className }: Cli
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            {userRole === 'admin' && (
-              <SelectItem value="all">Tous les clients</SelectItem>
-            )}
+            <SelectItem value="all">Tous les clients</SelectItem>
             {clients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.nom}

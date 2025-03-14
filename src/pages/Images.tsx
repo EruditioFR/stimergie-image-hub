@@ -31,91 +31,12 @@ export interface Image {
 const Images = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('card');
-  const {
-    user,
-    userRole
-  } = useAuth();
-  const {
-    toast
-  } = useToast();
+  const { userRole } = useAuth();
+  const { toast } = useToast();
   
+  // Simplified query with no RLS restrictions
   const fetchImages = async () => {
-    // Pour les admins, utiliser une requête simple
-    if (userRole === 'admin') {
-      console.log("Fetching all images as admin");
-      const { data, error } = await supabase
-        .from('images')
-        .select('*')
-        .order('created_at', { ascending: false });
-        
-      if (error) {
-        console.error('Error fetching images as admin:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Erreur',
-          description: 'Impossible de charger les images. ' + error.message
-        });
-        throw error;
-      }
-      
-      console.log(`Admin: fetched ${data.length} images`);
-      return data.map(img => ({
-        ...img,
-        tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
-      })) as Image[];
-    }
-    
-    // Pour admin_client, filtrer par leur client_id
-    if (userRole === 'admin_client') {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id_client')
-        .eq('id', user?.id)
-        .single();
-        
-      if (profileError) {
-        console.error('Error fetching user client ID:', profileError);
-        throw profileError;
-      }
-
-      if (profileData?.id_client) {
-        const { data: projectsData, error: projectsError } = await supabase
-          .from('projets')
-          .select('id')
-          .eq('id_client', profileData.id_client);
-          
-        if (projectsError) {
-          console.error('Error fetching projects:', projectsError);
-          throw projectsError;
-        }
-
-        const projectIds = projectsData.map(project => project.id);
-
-        if (projectIds.length > 0) {
-          const { data, error } = await supabase
-            .from('images')
-            .select('*')
-            .in('id_projet', projectIds)
-            .order('created_at', { ascending: false });
-            
-          if (error) {
-            console.error('Error fetching images for projects:', error);
-            throw error;
-          }
-          
-          console.log(`Admin client: fetched ${data.length} images for ${projectIds.length} projects`);
-          return data.map(img => ({
-            ...img,
-            tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
-          })) as Image[];
-        } else {
-          console.log('No projects found for this client');
-          return [];
-        }
-      }
-    }
-    
-    // Pour les utilisateurs réguliers
+    console.log("Fetching all images");
     const { data, error } = await supabase
       .from('images')
       .select('*')
@@ -131,7 +52,7 @@ const Images = () => {
       throw error;
     }
     
-    console.log(`Regular user: fetched ${data.length} images`);
+    console.log(`Fetched ${data.length} images`);
     return data.map(img => ({
       ...img,
       tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
@@ -156,7 +77,7 @@ const Images = () => {
     isLoading,
     refetch
   } = useQuery({
-    queryKey: ['images', userRole],
+    queryKey: ['images'],
     queryFn: fetchImages
   });
   
@@ -180,25 +101,43 @@ const Images = () => {
     }));
   };
   
-  return <div className="min-h-screen flex flex-col">
+  return (
+    <div className="min-h-screen flex flex-col">
       <Header />
       
       <main className="flex-grow py-0">
         <ImagesHeader onAddClick={() => setIsUploadOpen(true)} viewToggle={<ViewToggle currentView={viewMode} onViewChange={setViewMode} />} />
         
         <div className="max-w-7xl mx-auto px-6 py-12">
-          {isLoading ? <div className="text-center py-20">
+          {isLoading ? (
+            <div className="text-center py-20">
               <p>Chargement des images...</p>
-            </div> : <>
-              {viewMode === 'card' ? <MasonryGrid images={formatImagesForGrid(images)} isLoading={isLoading} /> : <ImagesTable images={images || []} />}
-            </>}
+            </div>
+          ) : (
+            <>
+              {viewMode === 'card' ? (
+                <MasonryGrid 
+                  images={formatImagesForGrid(images)} 
+                  isLoading={isLoading} 
+                />
+              ) : (
+                <ImagesTable images={images || []} />
+              )}
+            </>
+          )}
         </div>
       </main>
       
-      <ImageUploadForm isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} onSuccess={handleUploadSuccess} userRole={userRole} />
+      <ImageUploadForm 
+        isOpen={isUploadOpen} 
+        onClose={() => setIsUploadOpen(false)} 
+        onSuccess={handleUploadSuccess} 
+        userRole={userRole} 
+      />
       
       <Footer />
-    </div>;
+    </div>
+  );
 };
 
 export default Images;
