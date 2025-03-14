@@ -38,7 +38,7 @@ export default function BlogEditor() {
           client_name: data.clients?.nom || null,
           featured_image_url: data.featured_image_url || null,
           content_type: (data.content_type as 'Ressource' | 'Ensemble') || 'Ressource', // Ensure proper type
-          category: data.category || null,
+          category: data.category as 'Actualités' | 'Projets' | 'Conseils' | null,
           created_at: data.created_at,
           updated_at: data.updated_at,
           author_id: data.author_id,
