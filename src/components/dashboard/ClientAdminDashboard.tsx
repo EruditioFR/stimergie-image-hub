@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ImageIcon, FolderKanban, FileEdit } from "lucide-react";
+import { ImageIcon, FolderKanban } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ImageGallery } from "@/components/ImageGallery";
 
@@ -16,7 +16,7 @@ interface ClientImage {
 }
 
 export function ClientAdminDashboard() {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const userProfile = useUserProfile(user, "admin_client");
   const [clientImages, setClientImages] = useState<ClientImage[]>([]);
   const [stats, setStats] = useState({

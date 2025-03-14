@@ -7,6 +7,7 @@ import { fetchGalleryImages, GALLERY_CACHE_TIME, generateCacheKey } from '@/serv
 import { formatImagesForGrid } from '@/utils/imageUtils';
 import { useGalleryFilters } from './useGalleryFilters';
 import { Image } from '@/pages/Images';
+import { useAuth } from '@/context/AuthContext';
 
 export const useGalleryImages = (isAdmin: boolean) => {
   const queryClient = useQueryClient();
@@ -17,6 +18,35 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const [allImages, setAllImages] = useState<Image[]>([]);
   const previousRequestRef = useRef<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  // Get user information for filtering
+  const { userRole, user } = useAuth();
+  const [userClientId, setUserClientId] = useState<string | null>(null);
+  
+  // Fetch the user's client ID if they are an admin_client
+  useEffect(() => {
+    const fetchUserClientId = async () => {
+      if (!user || userRole !== 'admin_client') return;
+      
+      try {
+        const { data, error } = await supabase.rpc('get_user_client_id', {
+          user_id: user.id
+        });
+        
+        if (error) {
+          console.error('Error fetching user client ID:', error);
+          return;
+        }
+        
+        setUserClientId(data);
+        console.log('User client ID fetched:', data);
+      } catch (error) {
+        console.error('Error fetching user client ID:', error);
+      }
+    };
+    
+    fetchUserClientId();
+  }, [user, userRole]);
 
   // Import filter management
   const {
@@ -31,11 +61,27 @@ export const useGalleryImages = (isAdmin: boolean) => {
 
   // Create a cache key based on current filters
   const cacheKey = useCallback(() => {
-    return generateCacheKey(searchQuery, tagFilter, activeTab, selectedClient, page, isAdmin, isInitialLoad);
-  }, [searchQuery, tagFilter, activeTab, selectedClient, page, isAdmin, isInitialLoad]);
+    return generateCacheKey(
+      searchQuery, 
+      tagFilter, 
+      activeTab, 
+      selectedClient, 
+      page, 
+      isAdmin, 
+      isInitialLoad,
+      userRole,
+      userClientId
+    );
+  }, [searchQuery, tagFilter, activeTab, selectedClient, page, isAdmin, isInitialLoad, userRole, userClientId]);
 
   // Override client change handler to reset pagination and cancel any previous requests
   const handleClientChange = useCallback((clientId: string | null) => {
+    // Admin_client users can't change their client
+    if (userRole === 'admin_client' && userClientId) {
+      console.log('Admin client users cannot change their client filter');
+      return;
+    }
+    
     // Cancel previous requests by invalidating the cache
     if (previousRequestRef.current) {
       // We don't want to refetch, just invalidate
@@ -53,20 +99,50 @@ export const useGalleryImages = (isAdmin: boolean) => {
     setIsInitialLoad(false);
     
     // Set new request reference
-    previousRequestRef.current = generateCacheKey(searchQuery, tagFilter, activeTab, clientId, 1, isAdmin, false).join(',');
-  }, [baseHandleClientChange, searchQuery, tagFilter, activeTab, queryClient, isAdmin]);
+    previousRequestRef.current = generateCacheKey(
+      searchQuery, 
+      tagFilter, 
+      activeTab, 
+      clientId, 
+      1, 
+      isAdmin, 
+      false,
+      userRole,
+      userClientId
+    ).join(',');
+  }, [baseHandleClientChange, searchQuery, tagFilter, activeTab, queryClient, isAdmin, userRole, userClientId]);
 
   // Prefetch next page when current page is loaded
   useEffect(() => {
     if (page > 0) {
-      const nextPageKey = generateCacheKey(searchQuery, tagFilter, activeTab, selectedClient, page + 1, isAdmin, false);
+      const nextPageKey = generateCacheKey(
+        searchQuery, 
+        tagFilter, 
+        activeTab, 
+        selectedClient, 
+        page + 1, 
+        isAdmin, 
+        false,
+        userRole,
+        userClientId
+      );
       queryClient.prefetchQuery({
         queryKey: nextPageKey,
-        queryFn: () => fetchGalleryImages(searchQuery, tagFilter, activeTab, selectedClient, page + 1, isAdmin, false),
+        queryFn: () => fetchGalleryImages(
+          searchQuery, 
+          tagFilter, 
+          activeTab, 
+          selectedClient, 
+          page + 1, 
+          isAdmin, 
+          false,
+          userRole,
+          userClientId
+        ),
         staleTime: GALLERY_CACHE_TIME,
       });
     }
-  }, [queryClient, page, searchQuery, tagFilter, activeTab, selectedClient, isAdmin]);
+  }, [queryClient, page, searchQuery, tagFilter, activeTab, selectedClient, isAdmin, userRole, userClientId]);
 
   // Reset page when filters change
   useEffect(() => {
@@ -85,10 +161,37 @@ export const useGalleryImages = (isAdmin: boolean) => {
     setIsInitialLoad(false);
   }, [selectedClient]);
 
+  // When userClientId changes (after it's fetched), we reset and start fresh
+  useEffect(() => {
+    if (userClientId) {
+      setPage(1);
+      setAllImages([]);
+      setIsInitialLoad(true);
+    }
+  }, [userClientId]);
+
+  // For admin_client users, automatically set their client ID
+  useEffect(() => {
+    if (userRole === 'admin_client' && userClientId && selectedClient !== userClientId) {
+      console.log('Setting client filter to admin_client user client ID:', userClientId);
+      baseHandleClientChange(userClientId);
+    }
+  }, [userRole, userClientId, baseHandleClientChange, selectedClient]);
+
   // Fetch images from Supabase with caching
   const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
     queryKey: cacheKey(),
-    queryFn: () => fetchGalleryImages(searchQuery, tagFilter, activeTab, selectedClient, page, isAdmin, isInitialLoad),
+    queryFn: () => fetchGalleryImages(
+      searchQuery, 
+      tagFilter, 
+      activeTab, 
+      selectedClient, 
+      page, 
+      isAdmin, 
+      isInitialLoad,
+      userRole,
+      userClientId
+    ),
     staleTime: GALLERY_CACHE_TIME,
     gcTime: GALLERY_CACHE_TIME * 2, // Keep in cache twice as long
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
@@ -146,6 +249,8 @@ export const useGalleryImages = (isAdmin: boolean) => {
     handleClientChange,
     handleResetFilters,
     refreshGallery,
-    formatImagesForGrid
+    formatImagesForGrid,
+    userRole,
+    userClientId
   };
 };

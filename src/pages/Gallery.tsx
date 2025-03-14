@@ -9,6 +9,7 @@ import { EmptyResults } from '@/components/gallery/EmptyResults';
 import { useAuth } from '@/context/AuthContext';
 import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { supabase } from '@/integrations/supabase/client';
 
 // Mock categories for filters
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
@@ -32,7 +33,9 @@ const Gallery = () => {
     handleClientChange,
     handleResetFilters,
     refreshGallery,
-    formatImagesForGrid
+    formatImagesForGrid,
+    userRole: galleryUserRole,
+    userClientId
   } = useGalleryImages(isAdmin);
 
   // Ensure we refetch when component mounts
@@ -53,7 +56,9 @@ const Gallery = () => {
     isLoading, 
     hasActiveFilters,
     imagesCount: allImages.length,
-    isAdmin
+    isAdmin,
+    userRole,
+    userClientId
   });
 
   return (
@@ -70,6 +75,8 @@ const Gallery = () => {
           onClientChange={handleClientChange}
           userName={userProfile?.firstName || ''}
           userLastName={userProfile?.lastName || ''}
+          userRole={userRole}
+          userClientId={userClientId}
         />
         
         <div className="w-full px-1 py-6">

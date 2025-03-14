@@ -17,9 +17,17 @@ export async function fetchGalleryImages(
   client: string | null, 
   pageNum: number,
   isAdmin: boolean = false,
-  isInitialLoad: boolean = false
+  isInitialLoad: boolean = false,
+  userRole: string = "",
+  userClientId: string | null = null
 ): Promise<any[]> {
-  console.log('Fetching images with:', { search, tag, tab, client, pageNum, isAdmin, isInitialLoad });
+  console.log('Fetching images with:', { search, tag, tab, client, pageNum, isAdmin, isInitialLoad, userRole });
+  
+  // For admin_client users, always filter by their client ID
+  if (userRole === 'admin_client' && userClientId) {
+    console.log('Admin client user detected, forcing client filter:', userClientId);
+    client = userClientId;
+  }
   
   // If this is initial load for admin user, show random images from at least 8 projects
   if (isAdmin && isInitialLoad && !search && !tag && tab.toLowerCase() === 'all' && !client) {
@@ -161,6 +169,6 @@ export async function fetchGalleryImages(
 export const GALLERY_CACHE_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // Générer une clé de cache unique basée sur les filtres
-export function generateCacheKey(search: string, tag: string, tab: string, client: string | null, page: number, isAdmin: boolean = false, isInitialLoad: boolean = false) {
-  return ['gallery-images', search, tag, tab, client, page, isAdmin, isInitialLoad];
+export function generateCacheKey(search: string, tag: string, tab: string, client: string | null, page: number, isAdmin: boolean = false, isInitialLoad: boolean = false, userRole: string = "", userClientId: string | null = null) {
+  return ['gallery-images', search, tag, tab, client, page, isAdmin, isInitialLoad, userRole, userClientId];
 }
