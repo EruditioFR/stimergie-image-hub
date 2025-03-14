@@ -14,6 +14,7 @@ export interface BlogPost {
   client_name?: string | null;
   featured_image_url: string | null;
   content_type: 'Ressource' | 'Ensemble';
+  category?: 'Actualités' | 'Projets' | 'Conseils' | null;
   created_at: string;
   updated_at: string;
   author_id: string;
@@ -27,6 +28,7 @@ export interface BlogPostFormData {
   client_id: string | null;
   featured_image_url: string | null;
   content_type: 'Ressource' | 'Ensemble';
+  category?: 'Actualités' | 'Projets' | 'Conseils' | null;
   published: boolean;
 }
 
@@ -78,6 +80,7 @@ export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
         client_name: post.clients?.nom || null,
         featured_image_url: post.featured_image_url,
         content_type: post.content_type || 'Ressource', // Default to 'Ressource' if not specified
+        category: post.category || null,
         created_at: post.created_at,
         updated_at: post.updated_at,
         author_id: post.author_id,

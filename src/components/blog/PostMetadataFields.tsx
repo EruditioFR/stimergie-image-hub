@@ -9,9 +9,10 @@ import { Client } from '@/hooks/useClients';
 interface PostMetadataFieldsProps {
   form: UseFormReturn<BlogPostFormData>;
   clients?: Client[];
+  contentType: 'Ressource' | 'Ensemble';
 }
 
-export function PostMetadataFields({ form, clients }: PostMetadataFieldsProps) {
+export function PostMetadataFields({ form, clients, contentType }: PostMetadataFieldsProps) {
   return (
     <div className="space-y-6">
       <FormField
@@ -52,6 +53,35 @@ export function PostMetadataFields({ form, clients }: PostMetadataFieldsProps) {
           </FormItem>
         )}
       />
+
+      {/* Show category field only when content type is "Ensemble" */}
+      {contentType === 'Ensemble' && (
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Catégorie</FormLabel>
+              <Select 
+                onValueChange={field.onChange} 
+                defaultValue={field.value || undefined}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner une catégorie" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="Actualités">Actualités</SelectItem>
+                  <SelectItem value="Projets">Projets</SelectItem>
+                  <SelectItem value="Conseils">Conseils</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
 
       <FormField
         control={form.control}

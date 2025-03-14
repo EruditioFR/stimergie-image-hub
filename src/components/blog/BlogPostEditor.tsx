@@ -33,9 +33,31 @@ export function BlogPostEditor({ post, onSave }: BlogPostEditorProps) {
       client_id: post?.client_id || null,
       featured_image_url: post?.featured_image_url || null,
       content_type: post?.content_type || 'Ressource',
+      category: post?.category || null,
       published: post?.published || false,
     },
   });
+
+  // Track content type to conditionally show category field
+  const [contentType, setContentType] = useState<'Ressource' | 'Ensemble'>(
+    post?.content_type || 'Ressource'
+  );
+
+  // Watch for content type changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'content_type') {
+        setContentType(value.content_type as 'Ressource' | 'Ensemble');
+        
+        // Reset category when switching from Ensemble to Ressource
+        if (value.content_type === 'Ressource') {
+          form.setValue('category', null);
+        }
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   useEffect(() => {
     if (post) {
@@ -45,8 +67,10 @@ export function BlogPostEditor({ post, onSave }: BlogPostEditorProps) {
         client_id: post.client_id,
         featured_image_url: post.featured_image_url,
         content_type: post.content_type,
+        category: post.category,
         published: post.published,
       });
+      setContentType(post.content_type);
     }
   }, [post, form]);
 
@@ -106,7 +130,11 @@ export function BlogPostEditor({ post, onSave }: BlogPostEditorProps) {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            <PostMetadataFields form={form} clients={clients} />
+            <PostMetadataFields 
+              form={form} 
+              clients={clients} 
+              contentType={contentType}
+            />
             
             <PostContentEditor form={form} />
             
