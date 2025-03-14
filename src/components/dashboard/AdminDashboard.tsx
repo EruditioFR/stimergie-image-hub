@@ -138,26 +138,10 @@ export function AdminDashboard() {
           </Card>
         </Link>
 
-        <Link to="/images">
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <CardTitle>Banque d'images</CardTitle>
-              <CardDescription>
-                Gérer les images et les médias
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Télécharger et organiser les médias des projets
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-
         <Link to="/gallery">
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
-              <CardTitle>Galerie</CardTitle>
+              <CardTitle>Banque d'images</CardTitle>
               <CardDescription>
                 Visualiser toutes les images
               </CardDescription>
