@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useToast } from "@/hooks/use-toast";
@@ -30,11 +29,8 @@ export function useProjects() {
           clients:id_client (nom)
         `);
       
-      // Add user role-specific filters
-      // Note: This is just for logging, RLS policies on the server will enforce this anyway
-      if (!isAdmin()) {
-        console.log("Non-admin user is fetching projects");
-      }
+      // Log user role and access level for debugging
+      console.log(`User role: ${userRole}, isAdmin: ${isAdmin()}`);
       
       const { data, error } = await query;
       

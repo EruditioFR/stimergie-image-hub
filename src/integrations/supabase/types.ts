@@ -315,6 +315,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      check_can_access_client: {
+        Args: {
+          client_id: string
+        }
+        Returns: boolean
+      }
+      check_is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      check_is_admin_client: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       create_user_with_profile: {
         Args: {
           email: string

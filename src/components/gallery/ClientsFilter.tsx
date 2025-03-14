@@ -25,7 +25,7 @@ interface ClientsFilterProps {
 export function ClientsFilter({ selectedClient, onClientChange, className }: ClientsFilterProps) {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { userRole, user } = useAuth();
+  const { userRole, user, isAdmin } = useAuth();
   
   useEffect(() => {
     const loadClients = async () => {
@@ -33,31 +33,20 @@ export function ClientsFilter({ selectedClient, onClientChange, className }: Cli
       
       setIsLoading(true);
       try {
-        let query = supabase
+        console.log("Loading clients for ClientsFilter, isAdmin:", isAdmin());
+        
+        // Let RLS handle the access control
+        const { data, error } = await supabase
           .from('clients')
           .select('id, nom')
           .order('nom', { ascending: true });
-        
-        // If user is admin_client, restrict to their client
-        if (userRole === 'admin_client' && user) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('id_client')
-            .eq('id', user.id)
-            .single();
-          
-          if (profileData?.id_client) {
-            query = query.eq('id', profileData.id_client);
-          }
-        }
-        
-        const { data, error } = await query;
         
         if (error) {
           console.error('Error loading clients:', error);
           return;
         }
         
+        console.log(`Retrieved ${data?.length || 0} clients for filter`);
         setClients(data || []);
         
         // If admin_client user, auto-select their client
@@ -72,7 +61,7 @@ export function ClientsFilter({ selectedClient, onClientChange, className }: Cli
     };
     
     loadClients();
-  }, [userRole, user, onClientChange]);
+  }, [userRole, user, onClientChange, isAdmin]);
   
   const handleValueChange = (value: string) => {
     onClientChange(value === 'all' ? null : value);

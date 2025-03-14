@@ -42,17 +42,20 @@ export function ProtectedRoute({
 
   // Admin bypass - administrators always have access to everything
   if (isAdmin()) {
+    console.log("User is admin, bypassing other permission checks");
     return <>{children}</>;
   }
 
   // Check role permissions if allowedRoles is provided
   if (allowedRoles && !allowedRoles.includes(userRole)) {
+    console.log(`User role ${userRole} not in allowed roles:`, allowedRoles);
     return <Navigate to="/" replace />;
   }
 
   // Check client access permissions
   if (requiresClient && clientId) {
     if (!canAccessClient(clientId)) {
+      console.log(`User cannot access client ${clientId}`);
       return <Navigate to="/" replace />;
     }
   }
@@ -60,6 +63,7 @@ export function ProtectedRoute({
   // Check edit permissions
   if (requiresEditPermission && clientId) {
     if (!canEditClient(clientId)) {
+      console.log(`User cannot edit client ${clientId}`);
       return <Navigate to="/" replace />;
     }
   }

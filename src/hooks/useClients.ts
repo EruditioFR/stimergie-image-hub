@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -19,13 +20,14 @@ export interface Client {
 export const useClients = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const { isAdmin } = useAuth();
+  const { isAdmin, userRole } = useAuth();
 
   const fetchClients = async () => {
     try {
-      console.log("Fetching clients, isAdmin:", isAdmin());
+      console.log("Fetching clients, isAdmin:", isAdmin(), "userRole:", userRole);
       setLoading(true);
       
+      // Let RLS handle the access control
       const { data, error } = await supabase.from('clients').select('*');
       
       if (error) {
