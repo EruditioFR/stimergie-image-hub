@@ -31,6 +31,7 @@ const Gallery = () => {
     handleTabChange,
     handleClientChange,
     handleResetFilters,
+    refreshGallery,
     formatImagesForGrid
   } = useGalleryImages(isAdmin);
 
@@ -51,7 +52,8 @@ const Gallery = () => {
     hasImages: displayedImages.length > 0, 
     isLoading, 
     hasActiveFilters,
-    imagesCount: allImages.length
+    imagesCount: allImages.length,
+    isAdmin
   });
 
   return (

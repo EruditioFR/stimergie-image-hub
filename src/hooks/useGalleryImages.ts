@@ -16,6 +16,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const [page, setPage] = useState(1);
   const [allImages, setAllImages] = useState<Image[]>([]);
   const previousRequestRef = useRef<string | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Import filter management
   const {
@@ -30,8 +31,8 @@ export const useGalleryImages = (isAdmin: boolean) => {
 
   // Create a cache key based on current filters
   const cacheKey = useCallback(() => {
-    return generateCacheKey(searchQuery, tagFilter, activeTab, selectedClient, page);
-  }, [searchQuery, tagFilter, activeTab, selectedClient, page]);
+    return generateCacheKey(searchQuery, tagFilter, activeTab, selectedClient, page, isAdmin, isInitialLoad);
+  }, [searchQuery, tagFilter, activeTab, selectedClient, page, isAdmin, isInitialLoad]);
 
   // Override client change handler to reset pagination and cancel any previous requests
   const handleClientChange = useCallback((clientId: string | null) => {
@@ -48,26 +49,30 @@ export const useGalleryImages = (isAdmin: boolean) => {
     setPage(1);
     setAllImages([]);
     
+    // No longer initial load
+    setIsInitialLoad(false);
+    
     // Set new request reference
-    previousRequestRef.current = generateCacheKey(searchQuery, tagFilter, activeTab, clientId, 1).join(',');
-  }, [baseHandleClientChange, searchQuery, tagFilter, activeTab, queryClient]);
+    previousRequestRef.current = generateCacheKey(searchQuery, tagFilter, activeTab, clientId, 1, isAdmin, false).join(',');
+  }, [baseHandleClientChange, searchQuery, tagFilter, activeTab, queryClient, isAdmin]);
 
   // Prefetch next page when current page is loaded
   useEffect(() => {
     if (page > 0) {
-      const nextPageKey = generateCacheKey(searchQuery, tagFilter, activeTab, selectedClient, page + 1);
+      const nextPageKey = generateCacheKey(searchQuery, tagFilter, activeTab, selectedClient, page + 1, isAdmin, false);
       queryClient.prefetchQuery({
         queryKey: nextPageKey,
-        queryFn: () => fetchGalleryImages(searchQuery, tagFilter, activeTab, selectedClient, page + 1),
+        queryFn: () => fetchGalleryImages(searchQuery, tagFilter, activeTab, selectedClient, page + 1, isAdmin, false),
         staleTime: GALLERY_CACHE_TIME,
       });
     }
-  }, [queryClient, page, searchQuery, tagFilter, activeTab, selectedClient]);
+  }, [queryClient, page, searchQuery, tagFilter, activeTab, selectedClient, isAdmin]);
 
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
     setAllImages([]);
+    setIsInitialLoad(false);
     
     // Update filter status
     updateFilterStatus(searchQuery, tagFilter);
@@ -77,12 +82,13 @@ export const useGalleryImages = (isAdmin: boolean) => {
   useEffect(() => {
     setPage(1);
     setAllImages([]);
+    setIsInitialLoad(false);
   }, [selectedClient]);
 
   // Fetch images from Supabase with caching
   const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
     queryKey: cacheKey(),
-    queryFn: () => fetchGalleryImages(searchQuery, tagFilter, activeTab, selectedClient, page),
+    queryFn: () => fetchGalleryImages(searchQuery, tagFilter, activeTab, selectedClient, page, isAdmin, isInitialLoad),
     staleTime: GALLERY_CACHE_TIME,
     gcTime: GALLERY_CACHE_TIME * 2, // Keep in cache twice as long
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
@@ -105,7 +111,12 @@ export const useGalleryImages = (isAdmin: boolean) => {
       // If we're on the first page and there are no images, empty the collection
       setAllImages([]);
     }
-  }, [newImages, page]);
+    
+    // After first load, set initialLoad to false
+    if (isInitialLoad) {
+      setIsInitialLoad(false);
+    }
+  }, [newImages, page, isInitialLoad]);
 
   // Handle loading more images
   const loadMoreImages = useCallback(() => {
@@ -119,6 +130,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     queryClient.invalidateQueries({ queryKey: ['gallery-images'] });
     setPage(1);
     setAllImages([]);
+    setIsInitialLoad(true);
     refetch();
   }, [queryClient, refetch]);
 

@@ -4,6 +4,7 @@ import { parseTagsString } from "@/utils/imageUtils";
 import { toast } from "sonner";
 
 const IMAGES_PER_PAGE = 15;
+const ADMIN_INITIAL_IMAGES = 100;
 
 /**
  * Fetches gallery images with filtering options
@@ -13,11 +14,37 @@ export async function fetchGalleryImages(
   tag: string, 
   tab: string, 
   client: string | null, 
-  pageNum: number
+  pageNum: number,
+  isAdmin: boolean = false,
+  isInitialLoad: boolean = false
 ): Promise<any[]> {
-  console.log('Fetching images with:', { search, tag, tab, client, pageNum });
+  console.log('Fetching images with:', { search, tag, tab, client, pageNum, isAdmin, isInitialLoad });
   
-  // Build base query
+  // If this is initial load for admin user, show random images
+  if (isAdmin && isInitialLoad && !search && !tag && tab.toLowerCase() === 'all' && !client) {
+    console.log('Loading random images for admin user');
+    const { data, error } = await supabase
+      .from('images')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(ADMIN_INITIAL_IMAGES);
+      
+    if (error) {
+      console.error('Error fetching random images:', error);
+      toast.error("Erreur lors du chargement des images");
+      return [];
+    }
+    
+    console.log(`Fetched ${data?.length || 0} random images for admin`);
+    
+    // Parse tags from string to array format
+    return (data || []).map(img => ({
+      ...img,
+      tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
+    }));
+  }
+  
+  // Build base query for regular filtering
   let query = supabase
     .from('images')
     .select('*');
@@ -90,6 +117,6 @@ export async function fetchGalleryImages(
 export const GALLERY_CACHE_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // Générer une clé de cache unique basée sur les filtres
-export function generateCacheKey(search: string, tag: string, tab: string, client: string | null, page: number) {
-  return ['gallery-images', search, tag, tab, client, page];
+export function generateCacheKey(search: string, tag: string, tab: string, client: string | null, page: number, isAdmin: boolean = false, isInitialLoad: boolean = false) {
+  return ['gallery-images', search, tag, tab, client, page, isAdmin, isInitialLoad];
 }
