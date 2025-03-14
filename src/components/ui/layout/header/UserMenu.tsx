@@ -29,9 +29,27 @@ export function UserMenu() {
   // If there's no user, don't render anything
   if (!user) return null;
 
-  const initials = userProfile?.firstName && userProfile?.lastName
-    ? `${userProfile.firstName[0]}${userProfile.lastName[0]}`.toUpperCase()
-    : user.email ? user.email[0].toUpperCase() : "U";
+  // Safely get initials
+  const getInitials = () => {
+    const firstName = userProfile?.firstName || '';
+    const lastName = userProfile?.lastName || '';
+    
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    } else if (firstName) {
+      return firstName[0].toUpperCase();
+    } else if (user.email) {
+      return user.email[0].toUpperCase();
+    }
+    
+    return "U"; // Default fallback
+  };
+
+  const initials = getInitials();
+  const displayName = userProfile?.firstName && userProfile?.lastName 
+    ? `${userProfile.firstName} ${userProfile.lastName}` 
+    : user.email?.split('@')[0] || 'Utilisateur';
+  const displayRole = formatRole(userProfile?.role || userRole);
 
   return (
     <>
@@ -51,10 +69,10 @@ export function UserMenu() {
             </Avatar>
             <div className="hidden md:flex flex-col items-start">
               <span className="text-sm font-medium leading-none">
-                {userProfile?.firstName} {userProfile?.lastName}
+                {displayName}
               </span>
               <span className="text-xs text-muted-foreground">
-                {formatRole(userProfile?.role || userRole)}
+                {displayRole}
               </span>
             </div>
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -62,8 +80,8 @@ export function UserMenu() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <div className="px-2 py-1.5 text-sm md:hidden">
-            <p className="font-medium leading-none">{userProfile?.firstName} {userProfile?.lastName}</p>
-            <p className="text-xs text-muted-foreground pt-0.5">{formatRole(userProfile?.role || userRole)}</p>
+            <p className="font-medium leading-none">{displayName}</p>
+            <p className="text-xs text-muted-foreground pt-0.5">{displayRole}</p>
             {userProfile?.clientId && (
               <p className="text-xs text-muted-foreground pt-0.5 flex items-center gap-1">
                 <Building2 className="h-3 w-3" />

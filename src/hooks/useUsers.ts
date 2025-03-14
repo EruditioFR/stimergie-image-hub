@@ -139,7 +139,15 @@ export function useUsers() {
         return false;
       }
 
-      // Utiliser la fonction RPC create_user_with_profile pour créer l'utilisateur
+      console.log("Creating user with data:", {
+        email: userData.email,
+        firstName: userData.first_name,
+        lastName: userData.last_name,
+        role: userData.role,
+        clientId: userData.id_client
+      });
+
+      // Use RPC function to create user
       const { data, error } = await supabase.rpc('create_user_with_profile', {
         email: userData.email,
         password: password,
@@ -159,28 +167,31 @@ export function useUsers() {
         return false;
       }
       
-      // Récupérer le nouvel utilisateur créé
-      const { data: newUser, error: fetchError } = await supabase
-        .from("profiles")
-        .select(`
-          id,
-          email,
-          first_name,
-          last_name,
-          role,
-          id_client,
-          clients(nom)
-        `)
-        .eq('id', data)
-        .single();
-        
-      if (fetchError) {
-        console.error("Erreur lors de la récupération du nouvel utilisateur:", fetchError);
-      } else {
-        setUsers(prev => [...prev, {
-          ...newUser,
-          client_name: newUser.clients ? newUser.clients.nom : null
-        }]);
+      // Fetch the new user
+      if (data) {
+        console.log("New user created with ID:", data);
+        const { data: newUser, error: fetchError } = await supabase
+          .from("profiles")
+          .select(`
+            id,
+            email,
+            first_name,
+            last_name,
+            role,
+            id_client,
+            clients(nom)
+          `)
+          .eq('id', data)
+          .single();
+          
+        if (fetchError) {
+          console.error("Erreur lors de la récupération du nouvel utilisateur:", fetchError);
+        } else if (newUser) {
+          setUsers(prev => [...prev, {
+            ...newUser,
+            client_name: newUser.clients ? newUser.clients.nom : null
+          }]);
+        }
       }
       
       toast.success("L'utilisateur a été créé avec succès");
