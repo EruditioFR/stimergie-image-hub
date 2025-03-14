@@ -25,7 +25,7 @@ interface ClientsFilterProps {
 export function ClientsFilter({ selectedClient, onClientChange, className }: ClientsFilterProps) {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { userRole } = useAuth();
+  const { userRole, user } = useAuth();
   
   useEffect(() => {
     const loadClients = async () => {
@@ -33,10 +33,25 @@ export function ClientsFilter({ selectedClient, onClientChange, className }: Cli
       
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('clients')
           .select('id, nom')
           .order('nom', { ascending: true });
+        
+        // If user is admin_client, restrict to their client
+        if (userRole === 'admin_client' && user) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('id_client')
+            .eq('id', user.id)
+            .single();
+          
+          if (profileData?.id_client) {
+            query = query.eq('id', profileData.id_client);
+          }
+        }
+        
+        const { data, error } = await query;
         
         if (error) {
           console.error('Error loading clients:', error);
@@ -44,6 +59,11 @@ export function ClientsFilter({ selectedClient, onClientChange, className }: Cli
         }
         
         setClients(data || []);
+        
+        // If admin_client user, auto-select their client
+        if (userRole === 'admin_client' && data && data.length === 1) {
+          onClientChange(data[0].id);
+        }
       } catch (error) {
         console.error('Error:', error);
       } finally {
@@ -52,13 +72,13 @@ export function ClientsFilter({ selectedClient, onClientChange, className }: Cli
     };
     
     loadClients();
-  }, [userRole]);
+  }, [userRole, user, onClientChange]);
   
   const handleValueChange = (value: string) => {
     onClientChange(value === 'all' ? null : value);
   };
   
-  if (!['admin', 'admin_client'].includes(userRole) || clients.length === 0) {
+  if (clients.length === 0 && !isLoading) {
     return null;
   }
   
@@ -67,14 +87,16 @@ export function ClientsFilter({ selectedClient, onClientChange, className }: Cli
       <Select 
         value={selectedClient || 'all'} 
         onValueChange={handleValueChange}
-        disabled={isLoading}
+        disabled={isLoading || (userRole === 'admin_client' && clients.length === 1)}
       >
         <SelectTrigger className="w-full sm:w-[200px]">
           <SelectValue placeholder="Filtrer par client" />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            <SelectItem value="all">Tous les clients</SelectItem>
+            {userRole === 'admin' && (
+              <SelectItem value="all">Tous les clients</SelectItem>
+            )}
             {clients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.nom}

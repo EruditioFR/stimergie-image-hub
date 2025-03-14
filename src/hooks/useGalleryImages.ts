@@ -101,6 +101,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     }
 
     if (client && isAdmin) {
+      // Important change: Filter by projets.id_client instead of directly using the client ID
       query = query.eq('projets.id_client', client);
     }
     
