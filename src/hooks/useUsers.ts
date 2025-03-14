@@ -27,23 +27,27 @@ export function useUsers() {
     async function fetchUserClientId() {
       if (!user) return;
       
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id_client")
-        .eq("id", user.id)
-        .single();
-      
-      if (error) {
-        console.error("Error fetching user client ID:", error);
-        return;
-      }
-      
-      if (data?.id_client) {
-        setUserClientId(data.id_client);
+      try {
+        // Use the security definer function to get client ID
+        const { data, error } = await supabase.rpc(
+          'get_user_client_id', 
+          { user_id: user.id }
+        );
         
-        if (!isAdmin) {
-          setSelectedClientId(data.id_client);
+        if (error) {
+          console.error("Error fetching user client ID:", error);
+          return;
         }
+        
+        if (data) {
+          setUserClientId(data);
+          
+          if (!isAdmin) {
+            setSelectedClientId(data);
+          }
+        }
+      } catch (err) {
+        console.error("Unexpected error when fetching client ID:", err);
       }
     }
     
@@ -132,9 +136,18 @@ export function useUsers() {
     try {
       if (!password) {
         toast.error("Un mot de passe est requis pour créer un utilisateur");
-        return;
+        return false;
       }
 
+      console.log("Creating user with data:", {
+        email: userData.email,
+        firstName: userData.first_name,
+        lastName: userData.last_name,
+        role: userData.role,
+        clientId: userData.id_client
+      });
+
+      // Use RPC function to create user
       const { data, error } = await supabase.rpc('create_user_with_profile', {
         email: userData.email,
         password: password,
@@ -151,30 +164,34 @@ export function useUsers() {
           description: error.message,
           variant: "destructive"
         });
-        return;
+        return false;
       }
       
-      const { data: newUser, error: fetchError } = await supabase
-        .from("profiles")
-        .select(`
-          id,
-          email,
-          first_name,
-          last_name,
-          role,
-          id_client,
-          clients(nom)
-        `)
-        .eq('id', data)
-        .single();
-        
-      if (fetchError) {
-        console.error("Erreur lors de la récupération du nouvel utilisateur:", fetchError);
-      } else {
-        setUsers(prev => [...prev, {
-          ...newUser,
-          client_name: newUser.clients ? newUser.clients.nom : null
-        }]);
+      // Fetch the new user
+      if (data) {
+        console.log("New user created with ID:", data);
+        const { data: newUser, error: fetchError } = await supabase
+          .from("profiles")
+          .select(`
+            id,
+            email,
+            first_name,
+            last_name,
+            role,
+            id_client,
+            clients(nom)
+          `)
+          .eq('id', data)
+          .single();
+          
+        if (fetchError) {
+          console.error("Erreur lors de la récupération du nouvel utilisateur:", fetchError);
+        } else if (newUser) {
+          setUsers(prev => [...prev, {
+            ...newUser,
+            client_name: newUser.clients ? newUser.clients.nom : null
+          }]);
+        }
       }
       
       toast.success("L'utilisateur a été créé avec succès");
@@ -188,6 +205,7 @@ export function useUsers() {
 
   const handleUpdateUser = async (userData: User, password?: string) => {
     try {
+      // Update profile data first
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -204,11 +222,13 @@ export function useUsers() {
         return false;
       }
 
+      // Only attempt password update if a password was provided
       if (password && password.trim() !== '') {
+        // Use the Supabase admin API to update password
         const { error: passwordError } = await supabase.rpc('admin_update_user_password', {
           user_id: userData.id,
           new_password: password
-        } as any);
+        });
 
         if (passwordError) {
           console.error("Erreur lors de la mise à jour du mot de passe:", passwordError);

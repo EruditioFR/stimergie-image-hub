@@ -29,11 +29,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Initial session:", session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchUserRole(session.user.id);
+        // Get user role via RPC function
+        fetchUserRoleViaRPC(session.user.id);
       } else {
         setLoading(false);
       }
@@ -41,12 +43,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        console.log("Auth state change event:", event, "User ID:", session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          fetchUserRole(session.user.id);
+          // Get user role via RPC when auth state changes
+          fetchUserRoleViaRPC(session.user.id);
         } else {
           setUserRole('user');
           setLoading(false);
@@ -57,30 +61,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserRole = async (userId: string) => {
+  const fetchUserRoleViaRPC = async (userId: string) => {
     try {
-      // First try to get role from profiles table
-      const { data: profileData, error: profileError } = await supabase
+      console.log("Fetching user role for:", userId);
+      // Use RPC to get role (security definer function)
+      const { data, error } = await supabase.rpc('get_user_role');
+      
+      if (error) {
+        console.error("Error fetching user role:", error);
+        await fallbackFetchRole(userId);
+        return;
+      }
+      
+      console.log("User role from RPC:", data);
+      if (data) {
+        setUserRole(data);
+      } else {
+        await fallbackFetchRole(userId);
+      }
+    } catch (error) {
+      console.error("Unexpected error fetching role:", error);
+      await fallbackFetchRole(userId);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fallback method for retrieving role
+  const fallbackFetchRole = async (userId: string) => {
+    try {
+      console.log("Using fallback method to fetch role for:", userId);
+      
+      // First try to get it from user metadata
+      if (user?.user_metadata?.role) {
+        console.log("Found role in user metadata:", user.user_metadata.role);
+        setUserRole(user.user_metadata.role);
+        return;
+      }
+      
+      // Direct query as a last resort - may trigger RLS but wrapped in try/catch
+      const { data, error } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', userId)
         .single();
-
-      if (profileData && !profileError) {
-        setUserRole(profileData.role || 'user');
-      } else {
-        // Fallback to user metadata
-        if (user?.user_metadata?.role) {
-          setUserRole(user.user_metadata.role);
-        } else {
-          setUserRole('user');
-        }
+      
+      if (error) {
+        console.error("Error in fallback role fetch:", error);
+        setUserRole('user'); // Default to user role
+        return;
       }
+      
+      console.log("Role from direct query:", data?.role);
+      setUserRole(data?.role || 'user');
     } catch (error) {
-      console.error('Error fetching user role:', error);
-      setUserRole('user');
-    } finally {
-      setLoading(false);
+      console.error("Fallback role fetch failed:", error);
+      setUserRole('user'); // Default to user role
     }
   };
 
@@ -102,8 +138,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Connecté avec succès",
         description: "Bienvenue sur votre tableau de bord",
       });
-      
-      // Don't return data to match the Promise<void> type
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -112,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
+      // Include first_name and last_name in the user metadata
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -119,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           data: {
             first_name: firstName,
             last_name: lastName,
+            role: 'user' // Default role for new users
           },
         },
       });
@@ -187,7 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Le mot de passe actuel est incorrect");
       }
 
-      // Then update password
+      // Use the Supabase API to update the user's password
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
