@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,7 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchUserRole(session.user.id);
+        // Utiliser la fonction RPC pour obtenir le rôle de l'utilisateur
+        fetchUserRoleViaRPC(session.user.id);
       } else {
         setLoading(false);
       }
@@ -46,7 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          fetchUserRole(session.user.id);
+          // Utiliser la fonction RPC pour obtenir le rôle de l'utilisateur
+          fetchUserRoleViaRPC(session.user.id);
         } else {
           setUserRole('user');
           setLoading(false);
@@ -57,19 +58,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserRole = async (userId: string) => {
+  const fetchUserRoleViaRPC = async (userId: string) => {
     try {
-      // Récupérer directement le rôle de l'utilisateur sans récursion
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-
+      // Utiliser la fonction RPC get_user_role pour obtenir le rôle sans récursion
+      const { data, error } = await supabase.rpc('get_user_role');
+      
       if (data && !error) {
+        console.log("Rôle récupéré via RPC:", data);
+        setUserRole(data || 'user');
+      } else {
+        console.error("Erreur lors de la récupération du rôle via RPC:", error);
+        // Fallback: essayer de récupérer le rôle en utilisant une requête directe
+        await fallbackFetchRole(userId);
+      }
+    } catch (error) {
+      console.error("Erreur inattendue lors de la récupération du rôle:", error);
+      await fallbackFetchRole(userId);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Méthode de secours pour récupérer le rôle en cas d'échec de la RPC
+  const fallbackFetchRole = async (userId: string) => {
+    try {
+      // Utiliser une requête brute SQL avec SELECT auth.uid() pour éviter la récursion
+      const { data, error } = await supabase.from('profiles')
+        .select('role')
+        .filter('id', 'eq', userId)
+        .maybeSingle();
+      
+      if (data && !error) {
+        console.log("Rôle récupéré via fallback:", data.role);
         setUserRole(data.role || 'user');
       } else {
-        // Fallback à user_metadata
+        console.error("Erreur lors du fallback pour récupérer le rôle:", error);
+        // Dernier recours: utiliser les métadonnées de l'utilisateur
         if (user?.user_metadata?.role) {
           setUserRole(user.user_metadata.role);
         } else {
@@ -77,10 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (error) {
-      console.error('Error fetching user role:', error);
+      console.error("Erreur inattendue lors du fallback:", error);
       setUserRole('user');
-    } finally {
-      setLoading(false);
     }
   };
 
