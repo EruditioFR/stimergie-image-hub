@@ -116,8 +116,8 @@ export async function getAdminClientId(userId: string): Promise<string | null> {
     console.error('Error:', error);
     toast({
       variant: "destructive",
-      title: "Erreur",
-      description: "Une erreur est survenue lors de la récupération de l'ID client"
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la récupération de l'ID client"
     });
     return null;
   }
