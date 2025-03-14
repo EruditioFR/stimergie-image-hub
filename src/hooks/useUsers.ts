@@ -27,23 +27,27 @@ export function useUsers() {
     async function fetchUserClientId() {
       if (!user) return;
       
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id_client")
-        .eq("id", user.id)
-        .single();
-      
-      if (error) {
-        console.error("Error fetching user client ID:", error);
-        return;
-      }
-      
-      if (data?.id_client) {
-        setUserClientId(data.id_client);
+      try {
+        // Use the security definer function to get client ID
+        const { data, error } = await supabase.rpc(
+          'get_user_client_id', 
+          { user_id: user.id }
+        );
         
-        if (!isAdmin) {
-          setSelectedClientId(data.id_client);
+        if (error) {
+          console.error("Error fetching user client ID:", error);
+          return;
         }
+        
+        if (data) {
+          setUserClientId(data);
+          
+          if (!isAdmin) {
+            setSelectedClientId(data);
+          }
+        }
+      } catch (err) {
+        console.error("Unexpected error when fetching client ID:", err);
       }
     }
     
