@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Client } from "@/types/user";
 import { useAuth } from "@/context/AuthContext";
 import { fetchClients, getAdminClientId } from "@/services/clientService";
+import { toast } from "@/hooks/use-toast";
 
 export function ClientField({ form, clients: initialClients }: ClientFieldProps) {
   const [clients, setClients] = useState<Client[]>(initialClients || []);
@@ -21,7 +22,7 @@ export function ClientField({ form, clients: initialClients }: ClientFieldProps)
     const loadClients = async () => {
       setLoading(true);
       try {
-        console.log("Loading clients for ClientField, userRole:", userRole);
+        console.log("Loading clients for ClientField, userRole:", userRole, "userId:", user?.id);
         
         const clientsData = await fetchClients(userRole, user?.id);
         setClients(clientsData);
@@ -32,6 +33,11 @@ export function ClientField({ form, clients: initialClients }: ClientFieldProps)
         }
       } catch (error) {
         console.error('Error loading clients:', error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de charger la liste des clients"
+        });
       } finally {
         setLoading(false);
       }

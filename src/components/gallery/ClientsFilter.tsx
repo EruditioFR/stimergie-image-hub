@@ -28,7 +28,7 @@ export function ClientsFilter({ selectedClient, onClientChange, className }: Cli
     const loadClients = async () => {
       setIsLoading(true);
       try {
-        console.log("Loading clients for ClientsFilter, userRole:", userRole);
+        console.log("Loading clients for ClientsFilter, userRole:", userRole, "userId:", user?.id);
         
         const clientsData = await fetchClients(userRole, user?.id);
         setClients(clientsData);
@@ -38,7 +38,12 @@ export function ClientsFilter({ selectedClient, onClientChange, className }: Cli
           onClientChange(clientsData[0].id);
         }
       } catch (error) {
-        console.error('Error:', error);
+        console.error('Error loading clients:', error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de charger la liste des clients"
+        });
       } finally {
         setIsLoading(false);
       }

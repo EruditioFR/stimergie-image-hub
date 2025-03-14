@@ -1,6 +1,5 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/context/AuthContext";
 import { Client } from "@/types/user";
 import { toast } from "@/hooks/use-toast";
 
@@ -20,18 +19,23 @@ export async function fetchClients(userRole: string, userId: string | undefined)
     
     // Si c'est un admin_client, on filtre pour n'afficher que son propre client
     if (userRole === 'admin_client' && userId) {
-      const { data: profileData, error: profileError } = await supabase.rpc(
+      const { data: clientId, error: profileError } = await supabase.rpc(
         'get_user_client_id',
         { user_id: userId }
       );
       
       if (profileError) {
         console.error('Error loading user client ID:', profileError);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de récupérer les informations client"
+        });
         return [];
       }
       
-      if (profileData) {
-        query = query.eq('id', profileData);
+      if (clientId) {
+        query = query.eq('id', clientId);
       }
     }
     
@@ -72,12 +76,22 @@ export async function getAdminClientId(userId: string): Promise<string | null> {
     
     if (error) {
       console.error('Error getting admin client ID:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de récupérer l'ID client"
+      });
       return null;
     }
     
     return data;
   } catch (error) {
     console.error('Error:', error);
+    toast({
+      variant: "destructive",
+      title: "Erreur",
+      description: "Une erreur est survenue lors de la récupération de l'ID client"
+    });
     return null;
   }
 }
