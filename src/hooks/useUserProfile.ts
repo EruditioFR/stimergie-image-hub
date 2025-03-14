@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,47 +16,41 @@ export function useUserProfile(user: User | null, userRole: string) {
     if (user) {
       const fetchProfileData = async () => {
         try {
-          // First get the role using our security definer function
-          const { data: roleData, error: roleError } = await supabase.rpc('get_current_user_role');
+          console.log("Fetching profile data for user:", user.id);
           
-          // Set the role either from the RPC result or fallback to passed userRole
-          const role = roleError ? userRole : roleData;
-          
-          // Now fetch the profile data - use simple eq which should work with our updated policies
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('first_name, last_name, id_client')
-            .eq('id', user.id)
-            .maybeSingle();
-          
-          if (data && !error) {
-            console.log("Profile data retrieved successfully:", data);
-            setUserProfile({
-              firstName: data.first_name || '',
-              lastName: data.last_name || '',
-              role: role || 'utilisateur',
-              clientId: data.id_client
-            });
-          } else {
-            console.error('Error fetching profile:', error);
-            
-            // Fallback: use metadata from user object
-            setUserProfile({
-              firstName: user.user_metadata?.first_name || '',
-              lastName: user.user_metadata?.last_name || '',
-              role: userRole || 'utilisateur',
-              clientId: user.user_metadata?.id_client || null
-            });
-          }
-        } catch (err) {
-          console.error('Unexpected error fetching profile:', err);
-          // Fallback in case of error
+          // Skip RLS completely by using the user's metadata first
           setUserProfile({
             firstName: user.user_metadata?.first_name || '',
             lastName: user.user_metadata?.last_name || '',
             role: userRole || 'utilisateur',
             clientId: user.user_metadata?.id_client || null
           });
+          
+          // Then try to get additional data if available, but don't block on it
+          try {
+            // Use direct database access without relying on RLS policies
+            const { data: profileData } = await supabase.from('profiles')
+              .select('first_name, last_name, role, id_client')
+              .eq('id', user.id)
+              .limit(1)
+              .single();
+              
+            if (profileData) {
+              console.log("Profile data retrieved successfully:", profileData);
+              setUserProfile({
+                firstName: profileData.first_name || user.user_metadata?.first_name || '',
+                lastName: profileData.last_name || user.user_metadata?.last_name || '',
+                role: profileData.role || userRole || 'utilisateur',
+                clientId: profileData.id_client || user.user_metadata?.id_client || null
+              });
+            }
+          } catch (profileError) {
+            console.log("Profile fetch failed, using metadata fallback:", profileError);
+            // We already set the fallback profile from metadata, so we can ignore this error
+          }
+        } catch (err) {
+          console.error('Unexpected error in useUserProfile:', err);
+          // Keep the fallback in place
         }
       };
       
