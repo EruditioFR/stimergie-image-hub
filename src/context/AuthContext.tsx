@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -150,6 +151,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const trimmedEmail = email.trim();
       const trimmedPassword = password.trim();
       
+      // Log the credentials being used (without the password)
+      console.log("Attempting login with email:", trimmedEmail);
+      
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email: trimmedEmail, 
         password: trimmedPassword
@@ -157,12 +161,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (error) {
         console.error('Error signing in (AuthContext):', error);
+        
+        let errorMessage = "Échec de connexion";
+        
+        if (error.message === "Invalid login credentials") {
+          errorMessage = "Email ou mot de passe incorrect";
+        } else if (error.message.includes("Email not confirmed")) {
+          errorMessage = "Veuillez confirmer votre email avant de vous connecter";
+        } else {
+          errorMessage = error.message;
+        }
+        
         toast({
           title: "Échec de connexion",
-          description: error.message === "Invalid login credentials" ? 
-            "Email ou mot de passe incorrect" : error.message,
+          description: errorMessage,
           variant: "destructive"
         });
+        
         throw error;
       }
       

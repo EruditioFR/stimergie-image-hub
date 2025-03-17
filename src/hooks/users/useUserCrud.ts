@@ -23,10 +23,14 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
         clientId: userData.id_client
       });
 
+      // Make sure email and password are properly trimmed
+      const trimmedEmail = userData.email.trim();
+      const trimmedPassword = password.trim();
+
       // Use RPC function to create user with improved error handling
       const { data, error } = await supabase.rpc('create_user_with_profile', {
-        email: userData.email.trim(),
-        password: password.trim(),
+        email: trimmedEmail,
+        password: trimmedPassword,
         first_name: userData.first_name || '',
         last_name: userData.last_name || '',
         role: userData.role,
