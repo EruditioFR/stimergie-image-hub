@@ -22,14 +22,14 @@ export function ProjectFilters({
     <div className="flex flex-col md:flex-row gap-4 mb-6">
       <div className="w-full md:w-1/3">
         <Select
-          value={clientFilter || ""}
-          onValueChange={(value) => onClientFilterChange(value === "" ? null : value)}
+          value={clientFilter || "all"}
+          onValueChange={(value) => onClientFilterChange(value === "all" ? null : value)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Filtrer par client" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Tous les clients</SelectItem>
+            <SelectItem value="all">Tous les clients</SelectItem>
             {clients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.nom}
