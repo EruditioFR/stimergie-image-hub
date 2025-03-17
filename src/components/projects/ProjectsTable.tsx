@@ -17,6 +17,25 @@ interface ProjectsTableProps {
 }
 
 export function ProjectsTable({ projects, onEdit, onDelete }: ProjectsTableProps) {
+  // Sort projects by client_name first, then by nom_projet
+  const sortedProjects = [...projects].sort((a, b) => {
+    // First sort by client name
+    const clientNameA = a.client_name || '';
+    const clientNameB = b.client_name || '';
+    
+    if (clientNameA < clientNameB) return -1;
+    if (clientNameA > clientNameB) return 1;
+    
+    // If client names are equal, sort by project name
+    const projectNameA = a.nom_projet || '';
+    const projectNameB = b.nom_projet || '';
+    
+    if (projectNameA < projectNameB) return -1;
+    if (projectNameA > projectNameB) return 1;
+    
+    return 0;
+  });
+
   return (
     <div className="w-full">
       <Table>
@@ -31,7 +50,7 @@ export function ProjectsTable({ projects, onEdit, onDelete }: ProjectsTableProps
           </TableRow>
         </TableHeader>
         <TableBody>
-          {projects.map((project) => (
+          {sortedProjects.map((project) => (
             <ProjectTableRow 
               key={project.id} 
               project={project} 
