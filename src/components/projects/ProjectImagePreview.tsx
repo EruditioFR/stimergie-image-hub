@@ -31,7 +31,7 @@ export function ProjectImagePreview({
         setLoading(true);
         const { data, error } = await supabase
           .from('images')
-          .select('url')
+          .select('url, url_miniature')
           .eq('id_projet', projectId)
           .order('created_at', { ascending: false })
           .limit(1);
@@ -42,7 +42,8 @@ export function ProjectImagePreview({
         }
         
         if (data && data.length > 0) {
-          setPreviewImage(data[0].url);
+          // Use thumbnail URL if available, otherwise fallback to full image URL
+          setPreviewImage(data[0].url_miniature || data[0].url);
         }
       } catch (error) {
         console.error("Erreur:", error);
