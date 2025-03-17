@@ -8,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { preloadImages } from "@/components/LazyImage";
 
 interface ProjectImagePreviewProps {
   projectId: string;
@@ -43,7 +44,8 @@ export function ProjectImagePreview({
         
         if (data && data.length > 0) {
           // Use thumbnail URL if available, otherwise fallback to full image URL
-          setPreviewImage(data[0].url_miniature || data[0].url);
+          const imageUrl = data[0].url_miniature || data[0].url;
+          setPreviewImage(imageUrl);
         }
       } catch (error) {
         console.error("Erreur:", error);
