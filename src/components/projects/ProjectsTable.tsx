@@ -30,7 +30,7 @@ export function ProjectsTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="">Nom du projet</TableHead>
+            <TableHead className="w-[250px]">Nom du projet</TableHead>
             <TableHead className="w-[200px]">Client</TableHead>
             <TableHead className="w-[150px]">Type</TableHead>
             <TableHead className="w-[200px]">Dossier</TableHead>
