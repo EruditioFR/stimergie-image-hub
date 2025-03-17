@@ -38,15 +38,15 @@ export function ProjectsTable({ projects, onEdit, onDelete }: ProjectsTableProps
 
   return (
     <div className="w-full overflow-x-auto">
-      <Table className="border-collapse table-fixed min-w-full">
+      <Table className="border-collapse min-w-full">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-1/6">Nom du projet</TableHead>
-            <TableHead className="w-[80px]">Logo</TableHead>
-            <TableHead className="w-1/6">Client</TableHead>
-            <TableHead className="w-1/6">Type</TableHead>
-            <TableHead className="w-1/6">Dossier</TableHead>
-            <TableHead className="w-1/6">Date de création</TableHead>
+            <TableHead className="w-[200px]">Nom du projet</TableHead>
+            <TableHead className="w-[100px] text-center">Logo</TableHead>
+            <TableHead className="w-[150px]">Client</TableHead>
+            <TableHead className="w-[150px]">Type</TableHead>
+            <TableHead className="w-[150px]">Dossier</TableHead>
+            <TableHead className="w-[180px]">Date de création</TableHead>
             <TableHead className="w-[100px] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
