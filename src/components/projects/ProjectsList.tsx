@@ -29,11 +29,30 @@ export function ProjectsList({
     return <ProjectsEmptyState isEmpty={true} />;
   }
 
+  // Sort projects by client_name first, then by nom_projet
+  const sortedProjects = [...projects].sort((a, b) => {
+    // First sort by client name
+    const clientNameA = a.client_name || '';
+    const clientNameB = b.client_name || '';
+    
+    if (clientNameA < clientNameB) return -1;
+    if (clientNameA > clientNameB) return 1;
+    
+    // If client names are equal, sort by project name
+    const projectNameA = a.nom_projet || '';
+    const projectNameB = b.nom_projet || '';
+    
+    if (projectNameA < projectNameB) return -1;
+    if (projectNameA > projectNameB) return 1;
+    
+    return 0;
+  });
+
   // Card view
   if (viewMode === "card") {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((project) => (
+        {sortedProjects.map((project) => (
           <ProjectCard 
             key={project.id} 
             project={project} 
@@ -45,6 +64,6 @@ export function ProjectsList({
     );
   }
 
-  // List view
+  // List view (already sorted in ProjectsTable component)
   return <ProjectsTable projects={projects} onEdit={onEdit} onDelete={onDelete} />;
 }
