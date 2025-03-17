@@ -25,8 +25,8 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
 
       // Use RPC function to create user with improved error handling
       const { data, error } = await supabase.rpc('create_user_with_profile', {
-        email: userData.email,
-        password: password,
+        email: userData.email.trim(),
+        password: password.trim(),
         first_name: userData.first_name || '',
         last_name: userData.last_name || '',
         role: userData.role,

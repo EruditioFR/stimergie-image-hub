@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Image, FileText, Users } from 'lucide-react';
@@ -18,7 +17,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { toast } from "@/hooks/use-toast";
 
 // Login form schema
 const loginSchema = z.object({
@@ -31,7 +30,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, userRole, signOut } = useAuth();
+  const { user, userRole, signOut, signIn } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -41,7 +40,6 @@ export function Header() {
 
   const isHomePage = location.pathname === "/";
   
-  // Determine access rights based on role
   const isAdmin = userRole === 'admin';
   const isAdminClient = userRole === 'admin_client';
   const canAccessClientsPage = isAdmin;
@@ -68,35 +66,28 @@ export function Header() {
     try {
       setIsLoading(true);
       setLoginError(null);
+      console.log("Header: Attempting sign in for:", data.email);
       
-      // Direct call to supabase auth with better error handling
-      const { data: authData, error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
+      await signIn(data.email, data.password);
       
-      if (error) {
-        console.error("Login error details:", error);
-        if (error.message.includes("Invalid login credentials")) {
-          setLoginError("Email ou mot de passe incorrect");
-        } else {
-          setLoginError(error.message);
-        }
-        return;
-      }
-      
-      console.log("Login successful:", authData);
+      console.log("Header: Login successful");
       setIsLoginModalOpen(false);
       loginForm.reset();
+      
     } catch (error) {
-      console.error("Login error:", error);
-      setLoginError("Une erreur s'est produite lors de la connexion");
+      console.error("Header: Login error:", error);
+      if (error instanceof Error) {
+        setLoginError(error.message.includes("Invalid login credentials") 
+          ? "Email ou mot de passe incorrect" 
+          : error.message);
+      } else {
+        setLoginError("Une erreur s'est produite lors de la connexion");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Only show navigation items for users with appropriate roles
   const navigationItems = [
     { name: 'Accueil', path: '/', icon: <Home className="h-4 w-4 mr-2" /> },
     { name: 'Banque d\'images', path: '/gallery', icon: <Image className="h-4 w-4 mr-2" /> },
@@ -118,7 +109,7 @@ export function Header() {
           <img 
             src="/lovable-uploads/9ce78881-8c65-4716-ab7f-128bb420c8e9.png" 
             alt="Stimergie Logo" 
-            className="h-12 w-auto" // Changed from h-8 to h-12 to make the logo larger
+            className="h-12 w-auto"
           />
         </Link>
 
@@ -158,7 +149,6 @@ export function Header() {
         </div>
       </div>
 
-      {/* Login Modal */}
       <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

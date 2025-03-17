@@ -145,31 +145,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log("Attempting sign in for:", email);
+      console.log("AuthContext signIn called for:", email);
+      
+      const trimmedEmail = email.trim();
+      const trimmedPassword = password.trim();
       
       const { data, error } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password 
+        email: trimmedEmail, 
+        password: trimmedPassword
       });
       
       if (error) {
-        console.error('Error signing in:', error);
+        console.error('Error signing in (AuthContext):', error);
         toast({
           title: "Échec de connexion",
-          description: "Email ou mot de passe incorrect",
+          description: error.message === "Invalid login credentials" ? 
+            "Email ou mot de passe incorrect" : error.message,
           variant: "destructive"
         });
         throw error;
       }
       
-      console.log("Sign in successful, user data:", data?.user?.id);
+      console.log("Sign in successful in AuthContext, user data:", data?.user?.id);
       
       toast({
         title: "Connecté avec succès",
         description: "Bienvenue sur votre tableau de bord",
       });
     } catch (error) {
-      console.error('Login error details:', error);
+      console.error('Login error details in AuthContext:', error);
       throw error;
     }
   };

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,7 +12,6 @@ import { Footer } from "@/components/ui/layout/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 // Login form schema
@@ -50,34 +48,24 @@ export default function Auth() {
     try {
       setIsLoading(true);
       setLoginError(null);
-      console.log("Attempting login for:", data.email);
+      console.log("Auth page: Attempting login for:", data.email);
       
-      // Use direct supabase call with detailed error handling
-      const { data: authData, error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
+      await signIn(data.email, data.password);
       
-      if (error) {
-        console.error("Login error details:", error);
-        if (error.message.includes("Invalid login credentials")) {
-          setLoginError("Email ou mot de passe incorrect");
-        } else {
-          setLoginError(error.message);
-        }
-        return;
-      }
-      
-      console.log("Login successful:", authData);
+      console.log("Auth page: Login successful");
       setIsOpen(false);
       navigate("/");
-      toast({
-        title: "Connecté avec succès",
-        description: "Bienvenue sur votre tableau de bord",
-      });
+      
     } catch (error) {
-      console.error("Login error:", error);
-      setLoginError("Une erreur s'est produite lors de la connexion");
+      console.error("Auth page: Login error:", error);
+      // Error message is already shown by the AuthContext
+      if (error instanceof Error) {
+        setLoginError(error.message.includes("Invalid login credentials") 
+          ? "Email ou mot de passe incorrect" 
+          : error.message);
+      } else {
+        setLoginError("Une erreur s'est produite lors de la connexion");
+      }
     } finally {
       setIsLoading(false);
     }
