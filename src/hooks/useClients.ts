@@ -9,6 +9,7 @@ export interface Client {
   email?: string;
   telephone?: string;
   notes?: string;
+  logo?: string;
   contact_principal?: string;
   created_at?: string;
   updated_at?: string;
@@ -42,7 +43,8 @@ export const useClients = () => {
           created_at: client.created_at,
           updated_at: client.updated_at,
           notes: client.contact_principal,
-          contact_principal: client.contact_principal
+          contact_principal: client.contact_principal,
+          logo: client.logo
         }));
         
         // Sort clients by name alphabetically
@@ -141,7 +143,8 @@ export const useClients = () => {
           nom: client.nom,
           email: client.email,
           telephone: client.telephone,
-          contact_principal: client.notes
+          contact_principal: client.notes,
+          logo: client.logo
         }])
         .select();
 
@@ -155,6 +158,7 @@ export const useClients = () => {
           telephone: data[0].telephone,
           notes: data[0].contact_principal,
           contact_principal: data[0].contact_principal,
+          logo: data[0].logo,
           created_at: data[0].created_at,
           updated_at: data[0].updated_at
         };
@@ -178,7 +182,8 @@ export const useClients = () => {
           nom: client.nom,
           email: client.email,
           telephone: client.telephone,
-          contact_principal: client.notes
+          contact_principal: client.notes,
+          logo: client.logo
         })
         .eq('id', client.id);
 

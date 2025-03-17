@@ -1,4 +1,3 @@
-
 import { Header } from "@/components/ui/layout/Header";
 import { Footer } from "@/components/ui/layout/Footer";
 import { ClientsHeader } from "@/components/clients/ClientsHeader";
@@ -15,9 +14,8 @@ export interface Client {
   nom: string;
   email?: string;
   telephone?: string;
-  entreprise?: string;
   notes?: string;
-  secteur_activite?: string;
+  logo?: string;
   contact_principal?: string;
   created_at?: string;
   updated_at?: string;

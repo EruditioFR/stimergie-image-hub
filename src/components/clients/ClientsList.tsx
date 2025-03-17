@@ -1,5 +1,6 @@
+
 import { Client } from "@/pages/Clients";
-import { UserRound, Phone, Mail, FileText, Pencil, Trash2 } from "lucide-react";
+import { UserRound, Phone, Mail, FileText, Pencil, Trash2, ImageIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ViewMode } from "@/components/ui/ViewToggle";
@@ -121,6 +122,18 @@ export function ClientsList({
             </CardHeader>
             
             <CardContent>
+              {client.logo && (
+                <div className="mb-4 flex justify-center">
+                  <div className="w-32 h-32 rounded-md border overflow-hidden">
+                    <img 
+                      src={client.logo} 
+                      alt={`Logo de ${client.nom}`} 
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                </div>
+              )}
+              
               <div className="space-y-3 text-sm">
                 {client.email && (
                   <p className="flex items-center gap-2">
@@ -168,7 +181,17 @@ export function ClientsList({
             <TableRow key={client.id}>
               <TableCell className="font-medium">
                 <div className="flex items-center gap-2">
-                  <UserRound size={16} className="text-muted-foreground" />
+                  {client.logo ? (
+                    <div className="w-8 h-8 rounded-full overflow-hidden border">
+                      <img 
+                        src={client.logo} 
+                        alt={`Logo de ${client.nom}`} 
+                        className="w-full h-full object-cover" 
+                      />
+                    </div>
+                  ) : (
+                    <UserRound size={16} className="text-muted-foreground" />
+                  )}
                   {client.nom}
                 </div>
               </TableCell>
