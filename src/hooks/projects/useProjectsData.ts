@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Project } from "@/types/project";
@@ -43,7 +42,9 @@ export function useProjectsData() {
       
       // Apply search filter if provided
       if (searchQuery.trim()) {
-        query = query.or(`nom_projet.ilike.%${searchQuery}%,type_projet.ilike.%${searchQuery}%,nom_dossier.ilike.%${searchQuery}%,clients(nom).ilike.%${searchQuery}%`);
+        // If client filter is active, search within the filtered client's projects
+        // Otherwise search across all projects
+        query = query.or(`nom_projet.ilike.%${searchQuery}%,type_projet.ilike.%${searchQuery}%,nom_dossier.ilike.%${searchQuery}%`);
       }
       
       // Sort by client name and then project name

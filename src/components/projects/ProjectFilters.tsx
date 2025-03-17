@@ -43,7 +43,7 @@ export function ProjectFilters({
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Rechercher un projet..."
+            placeholder={clientFilter ? "Rechercher dans ce client..." : "Rechercher un projet..."}
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
             className="pl-10"

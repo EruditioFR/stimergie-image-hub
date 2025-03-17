@@ -6,7 +6,7 @@ import { ProjectsList } from "@/components/projects/ProjectsList";
 import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
 import { DeleteProjectDialog } from "@/components/projects/DeleteProjectDialog";
 import { ProjectFilters } from "@/components/projects/ProjectFilters";
-import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
+import { ViewMode } from "@/components/ui/ViewToggle";
 import { useProjects } from "@/hooks/useProjects";
 
 export function ProjectsContainer() {
@@ -91,9 +91,6 @@ export function ProjectsContainer() {
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
             />
-            <div className="flex justify-end mb-6">
-              <ViewToggle currentView={viewMode} onViewChange={setViewMode} />
-            </div>
             <ProjectsList 
               projects={projects} 
               loading={loading} 
