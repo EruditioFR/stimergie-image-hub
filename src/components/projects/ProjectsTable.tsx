@@ -42,7 +42,6 @@ export function ProjectsTable({ projects, onEdit, onDelete }: ProjectsTableProps
         <TableHeader>
           <TableRow>
             <TableHead>Nom du projet</TableHead>
-            <TableHead>Logo</TableHead>
             <TableHead>Client</TableHead>
             <TableHead>Type</TableHead>
             <TableHead>Dossier</TableHead>

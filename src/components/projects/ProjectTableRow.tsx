@@ -33,31 +33,23 @@ export function ProjectTableRow({ project, onEdit, onDelete }: ProjectTableRowPr
             <span className="truncate max-w-[200px]">{project.nom_projet}</span>
           </div>
         </TableCell>
-        
-        {/* Logo Column */}
         <TableCell>
-          {project.client_logo ? (
-            <Avatar className="h-10 w-10 flex-shrink-0">
-              <img 
-                src={project.client_logo} 
-                alt={`Logo de ${project.client_name}`}
-                className="h-full w-full object-contain"
-              />
-            </Avatar>
-          ) : (
-            <div className="h-10 w-10 flex-shrink-0" />
-          )}
+          <div className="flex items-center gap-2">
+            {project.client_logo ? (
+              <Avatar className="h-10 w-10 flex-shrink-0">
+                <img 
+                  src={project.client_logo} 
+                  alt={`Logo de ${project.client_name}`}
+                  className="h-full w-full object-contain"
+                />
+              </Avatar>
+            ) : null}
+            <span className="truncate max-w-[150px]">{project.client_name || "Non spécifié"}</span>
+          </div>
         </TableCell>
-        
-        {/* Client Name Column */}
-        <TableCell>
-          <span className="truncate max-w-[150px] block">{project.client_name || "Non spécifié"}</span>
-        </TableCell>
-        
         <TableCell>
           <span className="truncate max-w-[150px] block">{project.type_projet || "Non spécifié"}</span>
         </TableCell>
-        
         <TableCell>
           {project.nom_dossier ? (
             <div className="flex items-center gap-2">
@@ -68,9 +60,7 @@ export function ProjectTableRow({ project, onEdit, onDelete }: ProjectTableRowPr
             "Non spécifié"
           )}
         </TableCell>
-        
         <TableCell>{project.created_at ? formatDate(project.created_at) : "Non spécifié"}</TableCell>
-        
         <TableCell className="text-right">
           <div className="flex justify-end gap-2">
             {onEdit && (
