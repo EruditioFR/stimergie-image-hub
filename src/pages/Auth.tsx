@@ -51,12 +51,33 @@ export default function Auth() {
       setIsLoading(true);
       setLoginError(null);
       console.log("Attempting login for:", data.email);
-      await signIn(data.email, data.password);
+      
+      // Use direct supabase call with detailed error handling
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+      
+      if (error) {
+        console.error("Login error details:", error);
+        if (error.message.includes("Invalid login credentials")) {
+          setLoginError("Email ou mot de passe incorrect");
+        } else {
+          setLoginError(error.message);
+        }
+        return;
+      }
+      
+      console.log("Login successful:", authData);
       setIsOpen(false);
       navigate("/");
+      toast({
+        title: "Connecté avec succès",
+        description: "Bienvenue sur votre tableau de bord",
+      });
     } catch (error) {
       console.error("Login error:", error);
-      setLoginError("Email ou mot de passe incorrect");
+      setLoginError("Une erreur s'est produite lors de la connexion");
     } finally {
       setIsLoading(false);
     }

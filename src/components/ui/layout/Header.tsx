@@ -18,6 +18,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 // Login form schema
 const loginSchema = z.object({
@@ -30,7 +31,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, userRole, signIn, signOut } = useAuth();
+  const { user, userRole, signOut } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -67,12 +68,29 @@ export function Header() {
     try {
       setIsLoading(true);
       setLoginError(null);
-      await signIn(data.email, data.password);
+      
+      // Direct call to supabase auth with better error handling
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+      
+      if (error) {
+        console.error("Login error details:", error);
+        if (error.message.includes("Invalid login credentials")) {
+          setLoginError("Email ou mot de passe incorrect");
+        } else {
+          setLoginError(error.message);
+        }
+        return;
+      }
+      
+      console.log("Login successful:", authData);
       setIsLoginModalOpen(false);
       loginForm.reset();
     } catch (error) {
       console.error("Login error:", error);
-      setLoginError("Email ou mot de passe incorrect");
+      setLoginError("Une erreur s'est produite lors de la connexion");
     } finally {
       setIsLoading(false);
     }
