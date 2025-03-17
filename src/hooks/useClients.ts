@@ -28,7 +28,7 @@ export const useClients = () => {
       setLoading(true);
       
       // Let RLS handle the access control
-      const { data, error } = await supabase.from('clients').select('*');
+      const { data, error } = await supabase.from('clients').select('*').order('nom');
       
       if (error) {
         console.error("Supabase error details:", error);
@@ -49,7 +49,13 @@ export const useClients = () => {
           entreprise: client.secteur_activite,
           notes: client.contact_principal
         }));
-        setClients(mappedClients);
+        
+        // Sort clients by name alphabetically
+        const sortedClients = [...mappedClients].sort((a, b) => 
+          a.nom.localeCompare(b.nom, undefined, { sensitivity: 'base' })
+        );
+        
+        setClients(sortedClients);
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des clients:", error);

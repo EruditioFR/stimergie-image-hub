@@ -1,4 +1,3 @@
-
 import { Client } from "@/pages/Clients";
 import { UserRound, Building2, Phone, Mail, FileText, Pencil, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -69,11 +68,14 @@ export function ClientsList({
     );
   }
 
-  // Card view
+  const sortedClients = [...clients].sort((a, b) => 
+    a.nom.localeCompare(b.nom, undefined, { sensitivity: 'base' })
+  );
+
   if (viewMode === "card") {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {clients.map((client) => (
+        {sortedClients.map((client) => (
           <Card 
             key={client.id} 
             className="hover:shadow-md transition-shadow"
@@ -149,7 +151,6 @@ export function ClientsList({
     );
   }
 
-  // List view
   return (
     <div className="w-full">
       <Table>
@@ -163,7 +164,7 @@ export function ClientsList({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {clients.map((client) => (
+          {sortedClients.map((client) => (
             <TableRow key={client.id}>
               <TableCell className="font-medium">
                 <div className="flex items-center gap-2">
