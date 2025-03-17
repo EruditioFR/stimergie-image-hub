@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Project } from "@/types/project";
@@ -32,7 +33,7 @@ export function useProjectsData() {
         .from('projets')
         .select(`
           *,
-          clients:id_client (nom)
+          clients:id_client (nom, logo)
         `);
       
       // Apply client filter if selected
@@ -66,6 +67,7 @@ export function useProjectsData() {
           id_client: project.id_client,
           created_at: project.created_at,
           client_name: project.clients?.nom,
+          client_logo: project.clients?.logo,
           nom_dossier: project.nom_dossier
         }));
         

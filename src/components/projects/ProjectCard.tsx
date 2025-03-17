@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
+import { Avatar } from "@/components/ui/avatar";
 
 interface ProjectCardProps {
   project: Project;
@@ -64,7 +65,17 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
       <CardContent>
         <div className="space-y-3 text-sm">
           <p className="flex items-center gap-2">
-            <Building2 size={16} className="text-muted-foreground" />
+            {project.client_logo ? (
+              <Avatar className="h-5 w-5">
+                <img 
+                  src={project.client_logo} 
+                  alt={`Logo de ${project.client_name}`}
+                  className="h-full w-full object-contain"
+                />
+              </Avatar>
+            ) : (
+              <Building2 size={16} className="text-muted-foreground" />
+            )}
             {project.client_name || "Client non spécifié"}
           </p>
           

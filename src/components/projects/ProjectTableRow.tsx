@@ -5,6 +5,7 @@ import { fr } from "date-fns/locale";
 import { Project } from "@/types/project";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { Avatar } from "@/components/ui/avatar";
 
 interface ProjectTableRowProps {
   project: Project;
@@ -30,7 +31,20 @@ export function ProjectTableRow({ project, onEdit, onDelete }: ProjectTableRowPr
           {project.nom_projet}
         </div>
       </TableCell>
-      <TableCell>{project.client_name || "Non spécifié"}</TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          {project.client_logo ? (
+            <Avatar className="h-5 w-5">
+              <img 
+                src={project.client_logo} 
+                alt={`Logo de ${project.client_name}`}
+                className="h-full w-full object-contain"
+              />
+            </Avatar>
+          ) : null}
+          {project.client_name || "Non spécifié"}
+        </div>
+      </TableCell>
       <TableCell>{project.type_projet || "Non spécifié"}</TableCell>
       <TableCell>
         {project.nom_dossier ? (
