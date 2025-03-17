@@ -34,7 +34,7 @@ export function ProjectTableRow({ project, onEdit, onDelete }: ProjectTableRowPr
       <TableCell>
         <div className="flex items-center gap-2">
           {project.client_logo ? (
-            <Avatar className="h-5 w-5">
+            <Avatar className="h-10 w-10">
               <img 
                 src={project.client_logo} 
                 alt={`Logo de ${project.client_name}`}

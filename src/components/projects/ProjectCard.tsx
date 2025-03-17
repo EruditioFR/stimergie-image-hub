@@ -66,7 +66,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
         <div className="space-y-3 text-sm">
           <p className="flex items-center gap-2">
             {project.client_logo ? (
-              <Avatar className="h-5 w-5">
+              <Avatar className="h-10 w-10">
                 <img 
                   src={project.client_logo} 
                   alt={`Logo de ${project.client_name}`}
