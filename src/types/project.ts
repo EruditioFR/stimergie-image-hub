@@ -6,4 +6,5 @@ export interface Project {
   id_client: string;
   created_at?: string;
   client_name?: string;
+  nom_dossier?: string;
 }

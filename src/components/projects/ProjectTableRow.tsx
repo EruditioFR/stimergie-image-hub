@@ -1,5 +1,5 @@
 
-import { Folder, Pencil, Trash2 } from "lucide-react";
+import { Folder, Pencil, Trash2, HardDrive } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Project } from "@/types/project";
@@ -32,6 +32,16 @@ export function ProjectTableRow({ project, onEdit, onDelete }: ProjectTableRowPr
       </TableCell>
       <TableCell>{project.client_name || "Non spécifié"}</TableCell>
       <TableCell>{project.type_projet || "Non spécifié"}</TableCell>
+      <TableCell>
+        {project.nom_dossier ? (
+          <div className="flex items-center gap-2">
+            <HardDrive size={16} className="text-muted-foreground" />
+            {project.nom_dossier}
+          </div>
+        ) : (
+          "Non spécifié"
+        )}
+      </TableCell>
       <TableCell>{project.created_at ? formatDate(project.created_at) : "Non spécifié"}</TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">

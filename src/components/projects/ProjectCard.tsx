@@ -1,5 +1,5 @@
 
-import { Folder, Building2, Calendar, Pencil, Trash2 } from "lucide-react";
+import { Folder, Building2, Calendar, Pencil, Trash2, HardDrive } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Project } from "@/types/project";
@@ -72,6 +72,13 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
             <p className="flex items-center gap-2">
               <span className="inline-block w-4 h-4 bg-primary/10 rounded-full"></span>
               {project.type_projet}
+            </p>
+          )}
+          
+          {project.nom_dossier && (
+            <p className="flex items-center gap-2">
+              <HardDrive size={16} className="text-muted-foreground" />
+              Dossier: {project.nom_dossier}
             </p>
           )}
           

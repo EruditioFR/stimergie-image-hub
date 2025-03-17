@@ -24,7 +24,8 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
   const [formData, setFormData] = useState<Project>({
     nom_projet: "",
     type_projet: "",
-    id_client: ""
+    id_client: "",
+    nom_dossier: ""
   });
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
@@ -123,6 +124,18 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
             onChange={handleChange}
             placeholder="Ex: Portrait, Événement, Mariage..."
           />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="nom_dossier" className="text-sm font-medium">Nom du dossier</label>
+          <Input
+            id="nom_dossier"
+            name="nom_dossier"
+            value={formData.nom_dossier || ""}
+            onChange={handleChange}
+            placeholder="Ex: ClientXYZ-2023"
+          />
+          <p className="text-xs text-muted-foreground">Le nom du dossier dans votre espace de stockage</p>
         </div>
 
         <div className="flex justify-end gap-3 pt-4">

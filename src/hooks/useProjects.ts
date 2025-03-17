@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useToast } from "@/hooks/use-toast";
@@ -47,7 +48,8 @@ export function useProjects() {
           type_projet: project.type_projet,
           id_client: project.id_client,
           created_at: project.created_at,
-          client_name: project.clients?.nom
+          client_name: project.clients?.nom,
+          nom_dossier: project.nom_dossier
         }));
         
         setProjects(mappedProjects);
@@ -72,7 +74,8 @@ export function useProjects() {
           { 
             nom_projet: project.nom_projet,
             type_projet: project.type_projet,
-            id_client: project.id_client
+            id_client: project.id_client,
+            nom_dossier: project.nom_dossier
           }
         ])
         .select(`
@@ -92,7 +95,8 @@ export function useProjects() {
           type_projet: data[0].type_projet,
           id_client: data[0].id_client,
           created_at: data[0].created_at,
-          client_name: data[0].clients?.nom
+          client_name: data[0].clients?.nom,
+          nom_dossier: data[0].nom_dossier
         };
         
         setProjects(prevProjects => [...prevProjects, newProject]);
@@ -116,7 +120,8 @@ export function useProjects() {
         .update({
           nom_projet: project.nom_projet,
           type_projet: project.type_projet,
-          id_client: project.id_client
+          id_client: project.id_client,
+          nom_dossier: project.nom_dossier
         })
         .eq('id', project.id);
       

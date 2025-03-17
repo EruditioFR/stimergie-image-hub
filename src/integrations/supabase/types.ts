@@ -279,6 +279,7 @@ export type Database = {
           created_at: string
           id: string
           id_client: string
+          nom_dossier: string | null
           nom_projet: string
           type_projet: string | null
         }
@@ -286,6 +287,7 @@ export type Database = {
           created_at?: string
           id?: string
           id_client: string
+          nom_dossier?: string | null
           nom_projet: string
           type_projet?: string | null
         }
@@ -293,6 +295,7 @@ export type Database = {
           created_at?: string
           id?: string
           id_client?: string
+          nom_dossier?: string | null
           nom_projet?: string
           type_projet?: string | null
         }
