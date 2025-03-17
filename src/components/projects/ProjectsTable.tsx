@@ -1,11 +1,14 @@
+
 import { Project } from "@/types/project";
 import { ProjectTableRow } from "./ProjectTableRow";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 interface ProjectsTableProps {
   projects: Project[];
   onEdit?: (project: Project) => void;
   onDelete?: (projectId: string) => void;
 }
+
 export function ProjectsTable({
   projects,
   onEdit,
@@ -26,7 +29,9 @@ export function ProjectsTable({
     if (projectNameA > projectNameB) return 1;
     return 0;
   });
-  return <div className="w-full">
+  
+  return (
+    <div className="w-full overflow-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -42,5 +47,6 @@ export function ProjectsTable({
           {sortedProjects.map(project => <ProjectTableRow key={project.id} project={project} onEdit={onEdit} onDelete={onDelete} />)}
         </TableBody>
       </Table>
-    </div>;
+    </div>
+  );
 }
