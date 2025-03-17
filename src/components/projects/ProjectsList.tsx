@@ -65,5 +65,5 @@ export function ProjectsList({
   }
 
   // List view (already sorted in ProjectsTable component)
-  return <ProjectsTable projects={projects} onEdit={onEdit} onDelete={onDelete} />;
+  return <ProjectsTable projects={sortedProjects} onEdit={onEdit} onDelete={onDelete} />;
 }

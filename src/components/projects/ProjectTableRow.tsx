@@ -29,14 +29,14 @@ export function ProjectTableRow({ project, onEdit, onDelete }: ProjectTableRowPr
       <TableRow className="cursor-pointer hover:bg-muted/50">
         <TableCell className="font-medium">
           <div className="flex items-center gap-2">
-            <Folder size={16} className="text-primary" />
-            {project.nom_projet}
+            <Folder size={16} className="text-primary flex-shrink-0" />
+            <span className="truncate max-w-[200px]">{project.nom_projet}</span>
           </div>
         </TableCell>
         <TableCell>
           <div className="flex items-center gap-2">
             {project.client_logo ? (
-              <Avatar className="h-10 w-10">
+              <Avatar className="h-10 w-10 flex-shrink-0">
                 <img 
                   src={project.client_logo} 
                   alt={`Logo de ${project.client_name}`}
@@ -44,15 +44,17 @@ export function ProjectTableRow({ project, onEdit, onDelete }: ProjectTableRowPr
                 />
               </Avatar>
             ) : null}
-            {project.client_name || "Non spécifié"}
+            <span className="truncate max-w-[150px]">{project.client_name || "Non spécifié"}</span>
           </div>
         </TableCell>
-        <TableCell>{project.type_projet || "Non spécifié"}</TableCell>
+        <TableCell>
+          <span className="truncate max-w-[150px] block">{project.type_projet || "Non spécifié"}</span>
+        </TableCell>
         <TableCell>
           {project.nom_dossier ? (
             <div className="flex items-center gap-2">
-              <HardDrive size={16} className="text-muted-foreground" />
-              {project.nom_dossier}
+              <HardDrive size={16} className="text-muted-foreground flex-shrink-0" />
+              <span className="truncate max-w-[150px]">{project.nom_dossier}</span>
             </div>
           ) : (
             "Non spécifié"

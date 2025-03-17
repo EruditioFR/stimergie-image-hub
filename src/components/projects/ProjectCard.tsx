@@ -31,14 +31,14 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
 
   return (
     <ProjectImagePreview projectId={project.id!}>
-      <Card className="hover:shadow-md transition-shadow">
+      <Card className="hover:shadow-md transition-shadow h-full flex flex-col">
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
             <CardTitle className="text-lg flex items-center gap-2">
-              <Folder size={18} className="text-primary" />
-              {project.nom_projet}
+              <Folder size={18} className="text-primary flex-shrink-0" />
+              <span className="truncate">{project.nom_projet}</span>
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-shrink-0">
               {onEdit && (
                 <Button 
                   variant="ghost" 
@@ -70,11 +70,11 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
           </div>
         </CardHeader>
         
-        <CardContent>
+        <CardContent className="flex-grow flex flex-col justify-between">
           <div className="space-y-3 text-sm">
             <p className="flex items-center gap-2">
               {project.client_logo ? (
-                <Avatar className="h-10 w-10">
+                <Avatar className="h-10 w-10 flex-shrink-0">
                   <img 
                     src={project.client_logo} 
                     alt={`Logo de ${project.client_name}`}
@@ -82,32 +82,32 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
                   />
                 </Avatar>
               ) : (
-                <Building2 size={16} className="text-muted-foreground" />
+                <Building2 size={16} className="text-muted-foreground flex-shrink-0" />
               )}
-              {project.client_name || "Client non spécifié"}
+              <span className="truncate">{project.client_name || "Client non spécifié"}</span>
             </p>
             
             {project.type_projet && (
               <p className="flex items-center gap-2">
-                <span className="inline-block w-4 h-4 bg-primary/10 rounded-full"></span>
-                {project.type_projet}
+                <span className="inline-block w-4 h-4 bg-primary/10 rounded-full flex-shrink-0"></span>
+                <span className="truncate">{project.type_projet}</span>
               </p>
             )}
             
             {project.nom_dossier && (
               <p className="flex items-center gap-2">
-                <HardDrive size={16} className="text-muted-foreground" />
-                Dossier: {project.nom_dossier}
-              </p>
-            )}
-            
-            {project.created_at && (
-              <p className="flex items-center gap-2 text-muted-foreground">
-                <Calendar size={16} />
-                Créé le {formatDate(project.created_at)}
+                <HardDrive size={16} className="text-muted-foreground flex-shrink-0" />
+                <span className="truncate">Dossier: {project.nom_dossier}</span>
               </p>
             )}
           </div>
+          
+          {project.created_at && (
+            <p className="flex items-center gap-2 text-muted-foreground mt-3 pt-3 border-t border-border">
+              <Calendar size={16} className="flex-shrink-0" />
+              <span className="truncate">Créé le {formatDate(project.created_at)}</span>
+            </p>
+          )}
         </CardContent>
       </Card>
     </ProjectImagePreview>
