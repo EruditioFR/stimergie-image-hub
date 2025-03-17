@@ -1,27 +1,35 @@
 
 import { ProjectForm } from "@/components/projects/ProjectForm";
 import { Project } from "@/types/project";
+import { Client } from "@/pages/Clients";
 
 interface ProjectFormDialogProps {
-  show: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   initialData?: Project;
+  clients: { id: string; nom: string }[];
   onSubmit: (project: Project) => void;
-  onCancel: () => void;
+  project?: Project;
 }
 
 export function ProjectFormDialog({
-  show,
+  open,
+  onOpenChange,
   initialData,
+  clients,
   onSubmit,
-  onCancel,
+  project
 }: ProjectFormDialogProps) {
-  if (!show) return null;
+  if (!open) return null;
+  
+  // Use project prop as initialData if provided (for backward compatibility)
+  const projectData = project || initialData;
   
   return (
     <ProjectForm
-      initialData={initialData}
+      initialData={projectData}
       onSubmit={onSubmit}
-      onCancel={onCancel}
+      onCancel={() => onOpenChange(false)}
     />
   );
 }

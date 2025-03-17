@@ -90,7 +90,7 @@ export function ProjectsContainer() {
         onOpenChange={setIsEditDialogOpen}
         clients={clients}
         onSubmit={updateProject}
-        project={currentProject}
+        initialData={currentProject || undefined}
       />
       
       {/* Delete Project Dialog */}

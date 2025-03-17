@@ -14,18 +14,20 @@ interface DeleteProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
+  projectName?: string;
 }
 
 export function DeleteProjectDialog({
   open,
   onOpenChange,
   onConfirm,
+  projectName = "",
 }: DeleteProjectDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce projet ?</AlertDialogTitle>
+          <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer {projectName ? `"${projectName}"` : "ce projet"} ?</AlertDialogTitle>
           <AlertDialogDescription>
             Cette action est irréversible. Toutes les données associées à ce projet seront perdues.
           </AlertDialogDescription>
