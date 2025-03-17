@@ -99,7 +99,7 @@ export function PostMetadataFields({ form, clients, contentType }: PostMetadataF
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                <SelectItem value="null">Aucun client</SelectItem>
+                <SelectItem value="none">Aucun client</SelectItem>
                 {clients?.map((client) => (
                   <SelectItem key={client.id} value={client.id || ''}>
                     {client.nom}

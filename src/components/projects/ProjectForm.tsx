@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -107,7 +106,7 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
             </SelectTrigger>
             <SelectContent>
               {clients.map((client) => (
-                <SelectItem key={client.id} value={client.id || ""}>
+                <SelectItem key={client.id} value={client.id || "default-client"}>
                   {client.nom}
                 </SelectItem>
               ))}
