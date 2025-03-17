@@ -139,14 +139,16 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
     if (!userToDelete) return false;
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .delete()
-        .eq('id', userToDelete);
+      console.log("Deleting user with ID:", userToDelete);
+      
+      // Use admin function to delete the user from auth.users which will cascade to profiles
+      const { error } = await supabase.rpc('admin_delete_user', {
+        user_id: userToDelete
+      });
 
       if (error) {
         console.error("Erreur lors de la suppression de l'utilisateur:", error);
-        toast.error("Impossible de supprimer l'utilisateur");
+        toast.error("Impossible de supprimer l'utilisateur: " + error.message);
         return false;
       }
 
