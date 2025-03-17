@@ -5,11 +5,24 @@ import { ProjectsHeader } from "@/components/projects/ProjectsHeader";
 import { ProjectsList } from "@/components/projects/ProjectsList";
 import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
 import { DeleteProjectDialog } from "@/components/projects/DeleteProjectDialog";
+import { ProjectFilters } from "@/components/projects/ProjectFilters";
 import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
 import { useProjects } from "@/hooks/useProjects";
 
 export function ProjectsContainer() {
-  const { projects, loading, addProject, updateProject, deleteProject } = useProjects();
+  const { 
+    projects, 
+    loading, 
+    clients,
+    clientFilter,
+    setClientFilter,
+    searchQuery,
+    setSearchQuery,
+    addProject, 
+    updateProject, 
+    deleteProject 
+  } = useProjects();
+  
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
@@ -71,6 +84,13 @@ export function ProjectsContainer() {
           />
         ) : (
           <>
+            <ProjectFilters
+              clients={clients}
+              clientFilter={clientFilter}
+              onClientFilterChange={setClientFilter}
+              searchQuery={searchQuery}
+              onSearchQueryChange={setSearchQuery}
+            />
             <div className="flex justify-end mb-6">
               <ViewToggle currentView={viewMode} onViewChange={setViewMode} />
             </div>

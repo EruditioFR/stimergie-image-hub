@@ -25,6 +25,7 @@ export function ProjectsTable({ projects, onEdit, onDelete }: ProjectsTableProps
             <TableHead>Nom du projet</TableHead>
             <TableHead>Client</TableHead>
             <TableHead>Type</TableHead>
+            <TableHead>Dossier</TableHead>
             <TableHead>Date de création</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>

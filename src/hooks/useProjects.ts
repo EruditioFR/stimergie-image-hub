@@ -9,13 +9,31 @@ import { useAuth } from "@/context/AuthContext";
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [clientFilter, setClientFilter] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [clients, setClients] = useState<{ id: string; nom: string }[]>([]);
   const { toast: uiToast } = useToast();
   const { isAdmin, userRole, canAccessClient } = useAuth();
 
   useEffect(() => {
     window.scrollTo(0, 0);
     fetchProjects();
-  }, []);
+    fetchClients();
+  }, [clientFilter, searchQuery]);
+
+  const fetchClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, nom')
+        .order('nom');
+
+      if (error) throw error;
+      if (data) setClients(data);
+    } catch (error) {
+      console.error("Erreur lors de la récupération des clients:", error);
+    }
+  };
 
   const fetchProjects = async () => {
     try {
@@ -29,6 +47,19 @@ export function useProjects() {
           *,
           clients:id_client (nom)
         `);
+      
+      // Apply client filter if selected
+      if (clientFilter) {
+        query = query.eq('id_client', clientFilter);
+      }
+      
+      // Apply search filter if provided
+      if (searchQuery.trim()) {
+        query = query.or(`nom_projet.ilike.%${searchQuery}%,type_projet.ilike.%${searchQuery}%,nom_dossier.ilike.%${searchQuery}%,clients(nom).ilike.%${searchQuery}%`);
+      }
+      
+      // Sort by client name and then project name
+      query = query.order('id_client').order('nom_projet');
       
       // Log user role and access level for debugging
       console.log(`User role: ${userRole}, isAdmin: ${isAdmin()}`);
@@ -179,6 +210,11 @@ export function useProjects() {
   return {
     projects,
     loading,
+    clients,
+    clientFilter,
+    setClientFilter,
+    searchQuery,
+    setSearchQuery,
     addProject,
     updateProject,
     deleteProject,
