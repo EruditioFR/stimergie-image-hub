@@ -314,6 +314,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_user: {
+        Args: {
+          user_id: string
+        }
+        Returns: undefined
+      }
       admin_update_user_password: {
         Args: {
           user_id: string
