@@ -6,7 +6,6 @@ import { ProjectsList } from "@/components/projects/ProjectsList";
 import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
 import { DeleteProjectDialog } from "@/components/projects/DeleteProjectDialog";
 import { ProjectFilters } from "@/components/projects/ProjectFilters";
-import { ViewMode } from "@/components/ui/ViewToggle";
 import { useProjects } from "@/hooks/useProjects";
 
 export function ProjectsContainer() {
@@ -28,7 +27,6 @@ export function ProjectsContainer() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("card");
 
   const handleEditProject = (project: Project) => {
     setCurrentProject(project);
@@ -90,15 +88,12 @@ export function ProjectsContainer() {
               onClientFilterChange={setClientFilter}
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
             />
             <ProjectsList 
               projects={projects} 
               loading={loading} 
               onEdit={handleEditProject}
               onDelete={handleDeleteProject}
-              viewMode={viewMode}
             />
           </>
         )}

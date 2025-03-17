@@ -2,7 +2,6 @@
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
 
 interface ProjectFiltersProps {
   clients: { id: string; nom: string }[];
@@ -10,8 +9,6 @@ interface ProjectFiltersProps {
   onClientFilterChange: (value: string | null) => void;
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
-  viewMode: ViewMode;
-  onViewModeChange: (view: ViewMode) => void;
 }
 
 export function ProjectFilters({
@@ -19,13 +16,11 @@ export function ProjectFilters({
   clientFilter,
   onClientFilterChange,
   searchQuery,
-  onSearchQueryChange,
-  viewMode,
-  onViewModeChange
+  onSearchQueryChange
 }: ProjectFiltersProps) {
   return (
     <div className="mb-6">
-      <div className="flex flex-col md:flex-row gap-4 mb-4">
+      <div className="flex flex-col md:flex-row gap-4">
         <div className="w-full md:w-1/3">
           <Select
             value={clientFilter || "all"}
@@ -56,10 +51,6 @@ export function ProjectFilters({
             />
           </div>
         </div>
-      </div>
-      
-      <div className="flex justify-end">
-        <ViewToggle currentView={viewMode} onViewChange={onViewModeChange} />
       </div>
     </div>
   );
