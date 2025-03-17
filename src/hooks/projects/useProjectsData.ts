@@ -3,34 +3,25 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Project } from "@/types/project";
 import { useToast } from "@/hooks/use-toast";
+import { useClientsData } from "./useClientsData";
+import { useProjectFilters } from "./useProjectFilters";
 
 export function useProjectsData() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [clients, setClients] = useState<{ id: string; nom: string }[]>([]);
-  const { toast: uiToast } = useToast();
-  const [clientFilter, setClientFilter] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const { toast } = useToast();
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    fetchProjects();
-    fetchClients();
-  }, [clientFilter, searchQuery]);
-
-  const fetchClients = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('id, nom')
-        .order('nom');
-
-      if (error) throw error;
-      if (data) setClients(data);
-    } catch (error) {
-      console.error("Erreur lors de la récupération des clients:", error);
-    }
-  };
+  const { 
+    clients,
+    fetchClients
+  } = useClientsData();
+  
+  const {
+    clientFilter,
+    setClientFilter,
+    searchQuery,
+    setSearchQuery
+  } = useProjectFilters();
 
   const fetchProjects = async () => {
     try {
@@ -81,7 +72,7 @@ export function useProjectsData() {
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des projets:", error);
-      uiToast({
+      toast({
         title: "Erreur",
         description: "Impossible de récupérer les projets.",
         variant: "destructive"
@@ -90,6 +81,10 @@ export function useProjectsData() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProjects();
+  }, [clientFilter, searchQuery]);
 
   return {
     projects,
