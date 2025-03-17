@@ -17,7 +17,6 @@ export function ClientForm({ initialData, onSubmit, onCancel }: ClientFormProps)
     nom: "",
     email: "",
     telephone: "",
-    entreprise: "",
     notes: ""
   });
 
@@ -63,7 +62,7 @@ export function ClientForm({ initialData, onSubmit, onCancel }: ClientFormProps)
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">Email *</label>
+            <label htmlFor="email" className="text-sm font-medium">Email</label>
             <Input
               id="email"
               name="email"
@@ -71,7 +70,6 @@ export function ClientForm({ initialData, onSubmit, onCancel }: ClientFormProps)
               value={formData.email}
               onChange={handleChange}
               placeholder="jean.dupont@example.com"
-              required
             />
           </div>
 
@@ -83,17 +81,6 @@ export function ClientForm({ initialData, onSubmit, onCancel }: ClientFormProps)
               value={formData.telephone}
               onChange={handleChange}
               placeholder="01 23 45 67 89"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="entreprise" className="text-sm font-medium">Entreprise</label>
-            <Input
-              id="entreprise"
-              name="entreprise"
-              value={formData.entreprise}
-              onChange={handleChange}
-              placeholder="Entreprise SAS"
             />
           </div>
         </div>

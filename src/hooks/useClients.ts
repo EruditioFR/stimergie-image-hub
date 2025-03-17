@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -9,9 +8,7 @@ export interface Client {
   nom: string;
   email?: string;
   telephone?: string;
-  entreprise?: string;
   notes?: string;
-  secteur_activite?: string;
   contact_principal?: string;
   created_at?: string;
   updated_at?: string;
@@ -41,13 +38,11 @@ export const useClients = () => {
           id: client.id,
           nom: client.nom,
           email: client.email,
-          secteur_activite: client.secteur_activite,
-          contact_principal: client.contact_principal,
           telephone: client.telephone,
           created_at: client.created_at,
           updated_at: client.updated_at,
-          entreprise: client.secteur_activite,
-          notes: client.contact_principal
+          notes: client.contact_principal,
+          contact_principal: client.contact_principal
         }));
         
         // Sort clients by name alphabetically
@@ -146,7 +141,6 @@ export const useClients = () => {
           nom: client.nom,
           email: client.email,
           telephone: client.telephone,
-          secteur_activite: client.entreprise,
           contact_principal: client.notes
         }])
         .select();
@@ -159,9 +153,7 @@ export const useClients = () => {
           nom: data[0].nom,
           email: data[0].email,
           telephone: data[0].telephone,
-          entreprise: data[0].secteur_activite,
           notes: data[0].contact_principal,
-          secteur_activite: data[0].secteur_activite,
           contact_principal: data[0].contact_principal,
           created_at: data[0].created_at,
           updated_at: data[0].updated_at
@@ -186,7 +178,6 @@ export const useClients = () => {
           nom: client.nom,
           email: client.email,
           telephone: client.telephone,
-          secteur_activite: client.entreprise,
           contact_principal: client.notes
         })
         .eq('id', client.id);

@@ -8,6 +8,7 @@ import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
 import { useClients } from "@/hooks/useClients";
 import { DeleteClientDialog } from "@/components/clients/DeleteClientDialog";
 import { ClientFormDialog } from "@/components/clients/ClientFormDialog";
+import { ClientsSearch } from "@/components/clients/ClientsSearch";
 
 export interface Client {
   id?: string;
@@ -31,6 +32,7 @@ export default function Clients() {
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("card");
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleEditClient = (client: Client) => {
     setCurrentClient(client);
@@ -94,8 +96,16 @@ export default function Clients() {
 
           {!showForm && (
             <>
-              <div className="flex justify-end mb-6">
-                <ViewToggle currentView={viewMode} onViewChange={setViewMode} />
+              <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+                <div className="w-full md:w-2/3">
+                  <ClientsSearch 
+                    value={searchQuery} 
+                    onChange={setSearchQuery} 
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <ViewToggle currentView={viewMode} onViewChange={setViewMode} />
+                </div>
               </div>
               <ClientsList
                 clients={clients}
@@ -103,6 +113,7 @@ export default function Clients() {
                 onEdit={handleEditClient}
                 onDelete={handleDeleteClient}
                 viewMode={viewMode}
+                searchQuery={searchQuery}
               />
             </>
           )}

@@ -1,5 +1,5 @@
 import { Client } from "@/pages/Clients";
-import { UserRound, Building2, Phone, Mail, FileText, Pencil, Trash2 } from "lucide-react";
+import { UserRound, Phone, Mail, FileText, Pencil, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ViewMode } from "@/components/ui/ViewToggle";
@@ -24,6 +24,7 @@ interface ClientsListProps {
   onEdit?: (client: Client) => void;
   onDelete?: (clientId: string) => void;
   viewMode?: ViewMode;
+  searchQuery?: string;
 }
 
 export function ClientsList({ 
@@ -31,7 +32,8 @@ export function ClientsList({
   loading = false, 
   onEdit, 
   onDelete,
-  viewMode = "card"
+  viewMode = "card",
+  searchQuery = ""
 }: ClientsListProps) {
   if (loading) {
     return viewMode === "card" ? (
@@ -68,7 +70,13 @@ export function ClientsList({
     );
   }
 
-  const sortedClients = [...clients].sort((a, b) => 
+  const filteredClients = searchQuery
+    ? clients.filter(client => 
+        client.nom.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : clients;
+
+  const sortedClients = [...filteredClients].sort((a, b) => 
     a.nom.localeCompare(b.nom, undefined, { sensitivity: 'base' })
   );
 
@@ -114,13 +122,6 @@ export function ClientsList({
             
             <CardContent>
               <div className="space-y-3 text-sm">
-                {client.entreprise && (
-                  <p className="flex items-center gap-2">
-                    <Building2 size={16} className="text-muted-foreground" />
-                    {client.entreprise}
-                  </p>
-                )}
-                
                 {client.email && (
                   <p className="flex items-center gap-2">
                     <Mail size={16} className="text-muted-foreground" />
@@ -157,7 +158,6 @@ export function ClientsList({
         <TableHeader>
           <TableRow>
             <TableHead>Nom</TableHead>
-            <TableHead>Entreprise</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Téléphone</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -172,7 +172,6 @@ export function ClientsList({
                   {client.nom}
                 </div>
               </TableCell>
-              <TableCell>{client.entreprise || "Non spécifié"}</TableCell>
               <TableCell>{client.email || "Non spécifié"}</TableCell>
               <TableCell>{client.telephone || "Non spécifié"}</TableCell>
               <TableCell className="text-right">
