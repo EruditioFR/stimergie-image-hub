@@ -1,108 +1,104 @@
 
 import { useState } from "react";
-import { Project } from "@/types/project";
-import { ProjectsHeader } from "@/components/projects/ProjectsHeader";
-import { ProjectsList } from "@/components/projects/ProjectsList";
-import { ProjectFormDialog } from "@/components/projects/ProjectFormDialog";
-import { DeleteProjectDialog } from "@/components/projects/DeleteProjectDialog";
-import { ProjectFilters } from "@/components/projects/ProjectFilters";
+import { ProjectsHeader } from "./ProjectsHeader";
+import { ProjectFilters } from "./ProjectFilters";
+import { ProjectsList } from "./ProjectsList";
 import { useProjects } from "@/hooks/useProjects";
+import { ProjectFormDialog } from "./ProjectFormDialog";
+import { Project } from "@/types/project";
+import { DeleteProjectDialog } from "./DeleteProjectDialog";
+import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
 
 export function ProjectsContainer() {
-  const { 
-    projects, 
-    loading, 
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("card");
+
+  const {
+    projects,
+    loading,
     clients,
     clientFilter,
     setClientFilter,
     searchQuery,
     setSearchQuery,
-    addProject, 
-    updateProject, 
-    deleteProject 
+    addProject,
+    updateProject,
+    deleteProject,
   } = useProjects();
-  
-  const [showForm, setShowForm] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentProject, setCurrentProject] = useState<Project | null>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+
+  const handleAddProject = () => {
+    setIsAddDialogOpen(true);
+  };
 
   const handleEditProject = (project: Project) => {
     setCurrentProject(project);
-    setIsEditing(true);
-    setShowForm(true);
+    setIsEditDialogOpen(true);
   };
 
   const handleDeleteProject = (projectId: string) => {
-    setProjectToDelete(projectId);
-    setShowDeleteDialog(true);
-  };
-
-  const handleFormSubmit = (project: Project) => {
-    const success = isEditing
-      ? updateProject(project)
-      : addProject(project);
-    
-    if (success) {
-      setShowForm(false);
-      setIsEditing(false);
-      setCurrentProject(null);
-    }
-  };
-
-  const confirmDeleteProject = async () => {
-    if (!projectToDelete) return;
-    
-    const success = await deleteProject(projectToDelete);
-    if (success) {
-      setShowDeleteDialog(false);
-      setProjectToDelete(null);
+    const projectToDelete = projects.find(p => p.id === projectId);
+    if (projectToDelete) {
+      setCurrentProject(projectToDelete);
+      setIsDeleteDialogOpen(true);
     }
   };
 
   return (
-    <div>
-      <ProjectsHeader onAddClick={() => {
-        setIsEditing(false);
-        setCurrentProject(null);
-        setShowForm(true);
-      }} />
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {showForm ? (
-          <ProjectFormDialog
-            show={showForm}
-            initialData={isEditing ? currentProject! : undefined}
-            onSubmit={handleFormSubmit}
-            onCancel={() => {
-              setShowForm(false);
-              setIsEditing(false);
-              setCurrentProject(null);
-            }}
+    <div className="max-w-7xl mx-auto px-4 pb-20">
+      <ProjectsHeader 
+        onAddClick={handleAddProject} 
+        viewToggle={
+          <ViewToggle 
+            currentView={viewMode} 
+            onViewChange={setViewMode} 
           />
-        ) : (
-          <>
-            <ProjectFilters
-              clients={clients}
-              clientFilter={clientFilter}
-              onClientFilterChange={setClientFilter}
-              searchQuery={searchQuery}
-              onSearchQueryChange={setSearchQuery}
-            />
-            <ProjectsList 
-              projects={projects} 
-              loading={loading} 
-              onEdit={handleEditProject}
-              onDelete={handleDeleteProject}
-            />
-          </>
-        )}
+        }
+      />
+      
+      <div className="mt-8 mb-6">
+        <ProjectFilters
+          clients={clients}
+          clientFilter={clientFilter}
+          onClientFilterChange={setClientFilter}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+        />
       </div>
-
+      
+      <ProjectsList 
+        projects={projects} 
+        loading={loading} 
+        onEdit={handleEditProject} 
+        onDelete={handleDeleteProject}
+        viewMode={viewMode}
+      />
+      
+      {/* Add Project Dialog */}
+      <ProjectFormDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        clients={clients}
+        onSubmit={addProject}
+      />
+      
+      {/* Edit Project Dialog */}
+      <ProjectFormDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        clients={clients}
+        onSubmit={updateProject}
+        project={currentProject}
+      />
+      
+      {/* Delete Project Dialog */}
       <DeleteProjectDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        onConfirm={confirmDeleteProject}
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        projectName={currentProject?.nom_projet || ""}
+        onConfirm={() => currentProject?.id && deleteProject(currentProject.id)}
       />
     </div>
   );
