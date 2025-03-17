@@ -27,51 +27,53 @@ export function ProjectTableRow({ project, onEdit, onDelete }: ProjectTableRowPr
   return (
     <ProjectImagePreview projectId={project.id!}>
       <TableRow className="cursor-pointer hover:bg-muted/50">
-        <TableCell className="font-medium">
+        <TableCell className="font-medium p-2 align-middle">
           <div className="flex items-center gap-2">
             <Folder size={16} className="text-primary flex-shrink-0" />
-            <span className="truncate max-w-[200px]">{project.nom_projet}</span>
+            <span className="truncate max-w-[150px]">{project.nom_projet}</span>
           </div>
         </TableCell>
         
         {/* Logo Column */}
-        <TableCell>
-          {project.client_logo ? (
-            <Avatar className="h-10 w-10 flex-shrink-0">
-              <img 
-                src={project.client_logo} 
-                alt={`Logo de ${project.client_name}`}
-                className="h-full w-full object-contain"
-              />
-            </Avatar>
-          ) : (
-            <div className="h-10 w-10 flex-shrink-0" />
-          )}
+        <TableCell className="p-2 align-middle">
+          <div className="flex justify-center">
+            {project.client_logo ? (
+              <Avatar className="h-10 w-10 flex-shrink-0">
+                <img 
+                  src={project.client_logo} 
+                  alt={`Logo de ${project.client_name}`}
+                  className="h-full w-full object-contain"
+                />
+              </Avatar>
+            ) : (
+              <div className="h-10 w-10 flex-shrink-0" />
+            )}
+          </div>
         </TableCell>
         
         {/* Client Name Column */}
-        <TableCell>
-          <span className="truncate max-w-[150px] block">{project.client_name || "Non spécifié"}</span>
+        <TableCell className="p-2 align-middle">
+          <span className="truncate max-w-[120px] block">{project.client_name || "Non spécifié"}</span>
         </TableCell>
         
-        <TableCell>
-          <span className="truncate max-w-[150px] block">{project.type_projet || "Non spécifié"}</span>
+        <TableCell className="p-2 align-middle">
+          <span className="truncate max-w-[120px] block">{project.type_projet || "Non spécifié"}</span>
         </TableCell>
         
-        <TableCell>
+        <TableCell className="p-2 align-middle">
           {project.nom_dossier ? (
             <div className="flex items-center gap-2">
               <HardDrive size={16} className="text-muted-foreground flex-shrink-0" />
-              <span className="truncate max-w-[150px]">{project.nom_dossier}</span>
+              <span className="truncate max-w-[120px]">{project.nom_dossier}</span>
             </div>
           ) : (
             "Non spécifié"
           )}
         </TableCell>
         
-        <TableCell>{project.created_at ? formatDate(project.created_at) : "Non spécifié"}</TableCell>
+        <TableCell className="p-2 align-middle">{project.created_at ? formatDate(project.created_at) : "Non spécifié"}</TableCell>
         
-        <TableCell className="text-right">
+        <TableCell className="p-2 align-middle text-right">
           <div className="flex justify-end gap-2">
             {onEdit && (
               <Button 
