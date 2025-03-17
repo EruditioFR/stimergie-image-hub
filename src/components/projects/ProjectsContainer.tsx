@@ -90,6 +90,8 @@ export function ProjectsContainer() {
               onClientFilterChange={setClientFilter}
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
             />
             <ProjectsList 
               projects={projects} 

@@ -2,6 +2,7 @@
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
 
 interface ProjectFiltersProps {
   clients: { id: string; nom: string }[];
@@ -9,6 +10,8 @@ interface ProjectFiltersProps {
   onClientFilterChange: (value: string | null) => void;
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
+  viewMode: ViewMode;
+  onViewModeChange: (view: ViewMode) => void;
 }
 
 export function ProjectFilters({
@@ -16,39 +19,47 @@ export function ProjectFilters({
   clientFilter,
   onClientFilterChange,
   searchQuery,
-  onSearchQueryChange
+  onSearchQueryChange,
+  viewMode,
+  onViewModeChange
 }: ProjectFiltersProps) {
   return (
-    <div className="flex flex-col md:flex-row gap-4 mb-6">
-      <div className="w-full md:w-1/3">
-        <Select
-          value={clientFilter || "all"}
-          onValueChange={(value) => onClientFilterChange(value === "all" ? null : value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Filtrer par client" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les clients</SelectItem>
-            {clients.map((client) => (
-              <SelectItem key={client.id} value={client.id}>
-                {client.nom}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className="mb-6">
+      <div className="flex flex-col md:flex-row gap-4 mb-4">
+        <div className="w-full md:w-1/3">
+          <Select
+            value={clientFilter || "all"}
+            onValueChange={(value) => onClientFilterChange(value === "all" ? null : value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Filtrer par client" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les clients</SelectItem>
+              {clients.map((client) => (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.nom}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="w-full md:w-2/3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder={clientFilter ? "Rechercher dans ce client..." : "Rechercher un projet..."}
+              value={searchQuery}
+              onChange={(e) => onSearchQueryChange(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
       </div>
       
-      <div className="w-full md:w-2/3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder={clientFilter ? "Rechercher dans ce client..." : "Rechercher un projet..."}
-            value={searchQuery}
-            onChange={(e) => onSearchQueryChange(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+      <div className="flex justify-end">
+        <ViewToggle currentView={viewMode} onViewChange={onViewModeChange} />
       </div>
     </div>
   );
