@@ -15,7 +15,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
-import { formSchema, FormValues, UserRole } from "./form/UserFormValidation";
+import { createUserSchema, updateUserSchema, FormValues, UserRole } from "./form/UserFormValidation";
 import { UserFormProps } from "./form/UserFormTypes";
 import { NameFields, EmailField } from "./form/fields/BasicInfoFields";
 import { RoleField } from "./form/fields/RoleField";
@@ -28,8 +28,11 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
   // Type assertion to ensure role is of the correct type
   const userRole = initialData?.role as UserRole | undefined;
   
+  // Use the appropriate schema based on whether we're editing or creating
+  const schema = isEditing ? updateUserSchema : createUserSchema;
+  
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(schema),
     defaultValues: initialData ? {
       email: initialData.email,
       first_name: initialData.first_name || "",

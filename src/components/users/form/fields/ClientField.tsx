@@ -24,6 +24,11 @@ export const ClientField = ({ form, disabled = false }: UserFormFieldProps) => {
     queryFn: fetchClients,
   });
 
+  // When the user selects "none", set the actual value to null
+  const handleValueChange = (value: string) => {
+    form.setValue("id_client", value === "none" ? "" : value);
+  };
+
   return (
     <FormField
       control={form.control}
@@ -33,8 +38,8 @@ export const ClientField = ({ form, disabled = false }: UserFormFieldProps) => {
           <FormLabel>Client</FormLabel>
           <Select 
             disabled={disabled || isLoading} 
-            onValueChange={field.onChange} 
-            defaultValue={field.value}
+            onValueChange={handleValueChange} 
+            value={field.value === "" ? "none" : field.value}
           >
             <FormControl>
               <SelectTrigger>

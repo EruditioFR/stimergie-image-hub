@@ -19,9 +19,13 @@ export function PasswordField({ form, isEditing }: PasswordFieldProps) {
             />
           </FormControl>
           <FormMessage />
-          {isEditing && (
+          {isEditing ? (
             <p className="text-xs text-muted-foreground">
               Ne remplissez ce champ que si vous souhaitez modifier le mot de passe.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Le mot de passe doit contenir au moins 6 caractères.
             </p>
           )}
         </FormItem>
