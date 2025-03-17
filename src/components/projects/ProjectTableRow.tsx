@@ -27,16 +27,16 @@ export function ProjectTableRow({ project, onEdit, onDelete }: ProjectTableRowPr
   return (
     <ProjectImagePreview projectId={project.id!}>
       <TableRow className="cursor-pointer hover:bg-muted/50">
-        <TableCell className="font-medium">
+        <TableCell className="font-medium w-[250px]">
           <div className="flex items-center gap-2">
             <Folder size={16} className="text-primary flex-shrink-0" />
             <span className="truncate max-w-[200px]">{project.nom_projet}</span>
           </div>
         </TableCell>
-        <TableCell>
+        <TableCell className="w-[200px]">
           <div className="flex items-center gap-2">
             {project.client_logo ? (
-              <Avatar className="h-10 w-10 flex-shrink-0">
+              <Avatar className="h-6 w-6 flex-shrink-0">
                 <img 
                   src={project.client_logo} 
                   alt={`Logo de ${project.client_name}`}
@@ -47,10 +47,10 @@ export function ProjectTableRow({ project, onEdit, onDelete }: ProjectTableRowPr
             <span className="truncate max-w-[150px]">{project.client_name || "Non spécifié"}</span>
           </div>
         </TableCell>
-        <TableCell>
+        <TableCell className="w-[150px]">
           <span className="truncate max-w-[150px] block">{project.type_projet || "Non spécifié"}</span>
         </TableCell>
-        <TableCell>
+        <TableCell className="w-[200px]">
           {project.nom_dossier ? (
             <div className="flex items-center gap-2">
               <HardDrive size={16} className="text-muted-foreground flex-shrink-0" />
@@ -60,8 +60,8 @@ export function ProjectTableRow({ project, onEdit, onDelete }: ProjectTableRowPr
             "Non spécifié"
           )}
         </TableCell>
-        <TableCell>{project.created_at ? formatDate(project.created_at) : "Non spécifié"}</TableCell>
-        <TableCell className="text-right">
+        <TableCell className="w-[200px]">{project.created_at ? formatDate(project.created_at) : "Non spécifié"}</TableCell>
+        <TableCell className="text-right w-[100px]">
           <div className="flex justify-end gap-2">
             {onEdit && (
               <Button 

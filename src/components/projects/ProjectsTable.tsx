@@ -41,12 +41,12 @@ export function ProjectsTable({ projects, onEdit, onDelete }: ProjectsTableProps
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nom du projet</TableHead>
-            <TableHead>Client</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Dossier</TableHead>
-            <TableHead>Date de création</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="w-[250px]">Nom du projet</TableHead>
+            <TableHead className="w-[200px]">Client</TableHead>
+            <TableHead className="w-[150px]">Type</TableHead>
+            <TableHead className="w-[200px]">Dossier</TableHead>
+            <TableHead className="w-[200px]">Date de création</TableHead>
+            <TableHead className="text-right w-[100px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
