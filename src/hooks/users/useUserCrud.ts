@@ -27,6 +27,24 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
       const trimmedEmail = userData.email.trim();
       const trimmedPassword = password.trim();
 
+      // Validate password and email
+      if (trimmedPassword.length < 6) {
+        toast.error("Le mot de passe doit contenir au moins 6 caractères");
+        return false;
+      }
+
+      if (!trimmedEmail.includes('@') || !trimmedEmail.includes('.')) {
+        toast.error("Veuillez fournir une adresse email valide");
+        return false;
+      }
+
+      console.log("Calling create_user_with_profile RPC function with:", {
+        email: trimmedEmail,
+        password: "[REDACTED]",
+        role: userData.role,
+        company_id: userData.id_client
+      });
+
       // Use RPC function with improved error handling
       const { data, error } = await supabase.rpc('create_user_with_profile', {
         email: trimmedEmail,
@@ -39,7 +57,18 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
       
       if (error) {
         console.error("Erreur lors de la création de l'utilisateur:", error);
-        toast.error(error.message);
+        
+        // More user-friendly error messages based on the error
+        if (error.message.includes("User with this email already exists")) {
+          toast.error("Un utilisateur avec cet email existe déjà");
+        } else if (error.message.includes("duplicate key")) {
+          toast.error("Un utilisateur avec cet email existe déjà");
+        } else if (error.message.includes("permission denied")) {
+          toast.error("Vous n'avez pas les permissions nécessaires pour créer un utilisateur");
+        } else {
+          toast.error(error.message || "Erreur lors de la création de l'utilisateur");
+        }
+        
         return false;
       }
       
@@ -62,15 +91,21 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
           
         if (fetchError) {
           console.error("Erreur lors de la récupération du nouvel utilisateur:", fetchError);
+          toast.warning("Utilisateur créé, mais erreur lors de la récupération des détails");
         } else if (newUser) {
           setUsers(prev => [...prev, {
             ...newUser,
             client_name: newUser.clients ? newUser.clients.nom : null
           }]);
+          
+          toast.success("L'utilisateur a été créé avec succès");
+          console.log("User added successfully:", newUser);
+          
+          // Add note about email verification
+          toast.info("Note: L'utilisateur devra vérifier son email avant de pouvoir se connecter");
         }
       }
       
-      toast.success("L'utilisateur a été créé avec succès");
       return true;
     } catch (err) {
       console.error("Erreur inattendue:", err);
