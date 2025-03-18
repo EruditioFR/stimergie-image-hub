@@ -261,7 +261,7 @@ export function LazyImage({
         onLoad={handleImageLoad}
         loading="eager" // Change from lazy to eager for immediate loading
         decoding="async"
-        fetchPriority="high" // Prioritize all images
+        fetchpriority="high" // Fixed: Changed from fetchPriority to fetchpriority (lowercase)
       />
     </div>
   );
