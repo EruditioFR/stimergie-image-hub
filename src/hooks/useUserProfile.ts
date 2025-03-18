@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,11 +18,15 @@ interface UserProfileData {
 
 export function useUserProfile(user: User | null, userRole: string) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (user) {
       const fetchProfileData = async () => {
         try {
+          setLoading(true);
+          setError(null);
           console.log("Fetching profile data for user:", user.id);
           
           // Initialize with data from user metadata first
@@ -45,6 +48,7 @@ export function useUserProfile(user: User | null, userRole: string) {
             
             if (error) {
               console.error("Error fetching profile data:", error);
+              // Don't set error state here as we already have fallback profile data
               return;
             }
             
@@ -62,19 +66,26 @@ export function useUserProfile(user: User | null, userRole: string) {
             }
           } catch (profileError) {
             console.error("Error in profile data fetch:", profileError);
+            setError(profileError instanceof Error ? profileError : new Error('Failed to fetch profile data'));
             // Already set fallback profile from metadata
           }
         } catch (err) {
           console.error('Unexpected error in useUserProfile:', err);
+          setError(err instanceof Error ? err : new Error('Unknown error occurred'));
           // Keep the fallback in place
+        } finally {
+          setLoading(false);
         }
       };
       
       fetchProfileData();
+    } else {
+      // Clear profile when user is null
+      setUserProfile(null);
     }
   }, [user, userRole]);
 
-  return userProfile;
+  return { userProfile, error, loading };
 }
 
 export function formatRole(role: string): string {
