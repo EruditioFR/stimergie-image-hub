@@ -15,10 +15,12 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const tagFilter = searchParams.get('tag') || '';
-  const [page, setPage] = useState(1);
+  const pageParam = searchParams.get('page');
+  const [page, setPage] = useState(pageParam ? parseInt(pageParam) : 1);
   const [allImages, setAllImages] = useState<Image[]>([]);
   const previousRequestRef = useRef<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
   
   // Get user information for filtering
   const { userRole, user } = useAuth();
@@ -113,7 +115,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     ).join(',');
   }, [baseHandleClientChange, searchQuery, tagFilter, activeTab, queryClient, isAdmin, userRole, userClientId]);
 
-  // Prefetch next page when current page is loaded
+  // Précharger la page suivante pour une expérience plus fluide
   useEffect(() => {
     if (page > 0) {
       const nextPageKey = generateCacheKey(
@@ -179,6 +181,68 @@ export const useGalleryImages = (isAdmin: boolean) => {
     }
   }, [userRole, userClientId, baseHandleClientChange, selectedClient]);
 
+  // Récupérer le nombre total d'images pour la pagination
+  const fetchTotalCount = useCallback(async () => {
+    try {
+      // Construire une requête de base
+      let query = supabase
+        .from('images')
+        .select('id', { count: 'exact', head: true });
+      
+      // Appliquer filtre client si fourni
+      if (selectedClient) {
+        // Récupérer tous les projets pour ce client d'abord
+        const { data: projetData, error: projetError } = await supabase
+          .from('projets')
+          .select('id')
+          .eq('id_client', selectedClient);
+        
+        if (projetError) {
+          console.error('Error fetching projets for client:', projetError);
+          return 0;
+        }
+        
+        if (!projetData || projetData.length === 0) {
+          return 0;
+        }
+        
+        // Extraire IDs de projet
+        const projetIds = projetData.map(projet => projet.id);
+        
+        // Filtrer images par IDs de projet
+        query = query.in('id_projet', projetIds);
+      }
+      
+      // Appliquer filtre de recherche
+      if (searchQuery && searchQuery.trim() !== '') {
+        query = query.or(`title.ilike.%${searchQuery}%,tags.ilike.%${searchQuery}%`);
+      }
+
+      // Appliquer filtre de tag
+      if (tagFilter && tagFilter.toLowerCase() !== 'toutes') {
+        query = query.ilike('tags', `%${tagFilter.toLowerCase()}%`);
+      }
+      
+      // Appliquer filtre d'onglet
+      if (activeTab.toLowerCase() !== 'all') {
+        query = query.ilike('tags', `%${activeTab.toLowerCase()}%`);
+      }
+      
+      // Exécuter requête
+      const { count, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching image count:', error);
+        return 0;
+      }
+      
+      return count || 0;
+    } catch (error) {
+      console.error('Error count:', error);
+      return 0;
+    }
+  }, [searchQuery, tagFilter, activeTab, selectedClient]);
+
   // Fetch images from Supabase with caching
   const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
     queryKey: cacheKey(),
@@ -199,20 +263,22 @@ export const useGalleryImages = (isAdmin: boolean) => {
     enabled: true, // Always enabled, we'll handle manual invalidation
   });
 
+  // Récupérer le nombre total d'images lors du chargement initial ou du changement de filtres
+  useEffect(() => {
+    const getTotalCount = async () => {
+      const count = await fetchTotalCount();
+      setTotalCount(count);
+    };
+    
+    getTotalCount();
+  }, [fetchTotalCount, searchQuery, tagFilter, activeTab, selectedClient]);
+
   // Add newly loaded images to our collection
   useEffect(() => {
     console.log('New images loaded:', newImages.length);
     if (newImages.length > 0) {
-      if (page === 1) {
-        setAllImages(newImages);
-      } else {
-        // Ensure we don't add duplicates
-        const newImageIds = new Set(newImages.map(img => img.id));
-        const filteredExistingImages = allImages.filter(img => !newImageIds.has(img.id));
-        setAllImages([...filteredExistingImages, ...newImages]);
-      }
-    } else if (page === 1) {
-      // If we're on the first page and there are no images, empty the collection
+      setAllImages(newImages);
+    } else {
       setAllImages([]);
     }
     
@@ -222,7 +288,16 @@ export const useGalleryImages = (isAdmin: boolean) => {
     }
   }, [newImages, page, isInitialLoad]);
 
-  // Handle loading more images
+  // Fonction de changement de page pour la pagination
+  const handlePageChange = useCallback((newPage: number) => {
+    setPage(newPage);
+    // Mettre à jour l'URL avec le paramètre de page
+    const newSearchParams = new URLSearchParams(window.location.search);
+    newSearchParams.set('page', newPage.toString());
+    window.history.pushState(null, '', `?${newSearchParams.toString()}`);
+  }, []);
+
+  // Handle loading more images (pour le scroll infini si besoin)
   const loadMoreImages = useCallback(() => {
     if (!isLoading && !isFetching && newImages.length === 15) { // 15 is the IMAGES_PER_PAGE constant
       setPage(prev => prev + 1);
@@ -245,6 +320,9 @@ export const useGalleryImages = (isAdmin: boolean) => {
     hasActiveFilters,
     activeTab,
     selectedClient,
+    currentPage: page,
+    totalCount,
+    handlePageChange,
     loadMoreImages,
     handleTabChange,
     handleClientChange,

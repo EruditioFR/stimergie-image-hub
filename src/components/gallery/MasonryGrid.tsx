@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -14,6 +15,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { preloadImages, clearOffscreenImagesFromCache } from '@/components/LazyImage';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from '@/components/ui/pagination';
 
 interface Image {
   id: string;
@@ -28,10 +37,20 @@ interface Image {
 interface MasonryGridProps {
   images: Image[];
   isLoading?: boolean;
+  totalCount?: number;
+  currentPage?: number;
+  onPageChange?: (page: number) => void;
   onLoadMore?: () => void;
 }
 
-export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGridProps) {
+export function MasonryGrid({ 
+  images, 
+  isLoading = false, 
+  totalCount = 0,
+  currentPage = 1,
+  onPageChange,
+  onLoadMore 
+}: MasonryGridProps) {
   const [isShareDialogOpen, setIsShareDialogOpen] = React.useState(false);
   const [selectedImageDetail, setSelectedImageDetail] = useState<any>(null);
   const [isImageDetailOpen, setIsImageDetailOpen] = useState(false);
@@ -46,7 +65,10 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
   const isWidescreen = useMediaQuery('(min-width: 1280px) and (max-width: 1535px)');
   const isUltrawide = useMediaQuery('(min-width: 1536px)');
 
-  useInfiniteScroll(onLoadMore, isLoading);
+  // On utilise useInfiniteScroll seulement si onLoadMore est fourni
+  if (onLoadMore) {
+    useInfiniteScroll(onLoadMore, isLoading);
+  }
   
   const columnCount = useMemo(() => {
     if (isUltrawide) return 5;
@@ -66,6 +88,9 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
     
     return columns;
   }, [images, columnCount]);
+
+  const imagesPerPage = 15;
+  const totalPages = totalCount > 0 ? Math.ceil(totalCount / imagesPerPage) : 0;
   
   const handleScroll = useCallback(() => {
     const windowHeight = window.innerHeight;
@@ -194,6 +219,16 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
     setIsShareDialogOpen(true);
   };
 
+  const handlePageClick = (page: number) => {
+    if (onPageChange) {
+      onPageChange(page);
+      // Remonter en haut de la page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Effacer la sélection lors du changement de page
+      clearSelection();
+    }
+  };
+
   if (isLoading && images.length === 0) {
     return (
       <div className="grid grid-cols-3 xs:grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-0.5 animate-pulse px-0.5">
@@ -228,6 +263,57 @@ export function MasonryGrid({ images, isLoading = false, onLoadMore }: MasonryGr
       {isLoading && images.length > 0 && (
         <div className="flex justify-center mt-6">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+
+      {/* Ajout de la pagination */}
+      {totalPages > 0 && onPageChange && (
+        <div className="mt-8 mb-6">
+          <Pagination>
+            <PaginationContent>
+              {currentPage > 1 && (
+                <PaginationItem>
+                  <PaginationPrevious onClick={() => handlePageClick(currentPage - 1)} />
+                </PaginationItem>
+              )}
+              
+              {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                let pageNumber;
+                
+                // Logique pour afficher les bons numéros de page
+                if (totalPages <= 5) {
+                  // Si on a 5 pages ou moins, on les affiche toutes
+                  pageNumber = i + 1;
+                } else if (currentPage <= 3) {
+                  // Si on est au début, on affiche 1, 2, 3, 4, 5
+                  pageNumber = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  // Si on est à la fin, on affiche les 5 dernières pages
+                  pageNumber = totalPages - 4 + i;
+                } else {
+                  // Sinon on affiche 2 pages avant et 2 pages après la page actuelle
+                  pageNumber = currentPage - 2 + i;
+                }
+                
+                return (
+                  <PaginationItem key={pageNumber}>
+                    <PaginationLink
+                      isActive={pageNumber === currentPage}
+                      onClick={() => handlePageClick(pageNumber)}
+                    >
+                      {pageNumber}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+              
+              {currentPage < totalPages && (
+                <PaginationItem>
+                  <PaginationNext onClick={() => handlePageClick(currentPage + 1)} />
+                </PaginationItem>
+              )}
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
 

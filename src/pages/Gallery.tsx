@@ -27,7 +27,9 @@ const Gallery = () => {
     hasActiveFilters,
     activeTab,
     selectedClient,
-    loadMoreImages,
+    currentPage,
+    totalCount,
+    handlePageChange,
     handleTabChange,
     handleClientChange,
     handleResetFilters,
@@ -54,6 +56,8 @@ const Gallery = () => {
     isLoading, 
     hasActiveFilters,
     imagesCount: allImages.length,
+    totalCount,
+    currentPage,
     isAdmin,
     userRole,
     userClientId
@@ -84,7 +88,9 @@ const Gallery = () => {
             <MasonryGrid 
               images={formatImagesForGrid(displayedImages)} 
               isLoading={isLoading || isFetching}
-              onLoadMore={loadMoreImages}
+              totalCount={totalCount}
+              currentPage={currentPage}
+              onPageChange={handlePageChange}
             />
           ) : (
             <EmptyResults 

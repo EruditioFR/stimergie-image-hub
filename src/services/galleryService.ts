@@ -4,8 +4,8 @@ import { parseTagsString } from "@/utils/imageUtils";
 import { toast } from "sonner";
 
 const IMAGES_PER_PAGE = 15;
-const ADMIN_INITIAL_IMAGES = 100;
-const MIN_PROJECTS = 8;
+const ADMIN_INITIAL_IMAGES = 30; // Réduit de 100 à 30 pour limiter les requêtes
+const MIN_PROJECTS = 5; // Réduit de 8 à 5 pour limiter les requêtes
 
 /**
  * Fetches gallery images with filtering options
@@ -29,11 +29,11 @@ export async function fetchGalleryImages(
     client = userClientId;
   }
   
-  // If this is initial load for admin user, show random images from at least 8 projects
+  // If this is initial load for admin user, show random images from at least MIN_PROJECTS projects
   if (isAdmin && isInitialLoad && !search && !tag && tab.toLowerCase() === 'all' && !client) {
     console.log('Loading random images from multiple projects for admin user');
     
-    // First, get a list of at least 8 different project IDs
+    // First, get a list of at least MIN_PROJECTS different project IDs
     const { data: projectData, error: projectError } = await supabase
       .from('projets')
       .select('id')
