@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -17,7 +16,7 @@ interface ClientImage {
 
 export function ClientAdminDashboard() {
   const { user, userRole } = useAuth();
-  const userProfile = useUserProfile(user, "admin_client");
+  const { userProfile } = useUserProfile(user, "admin_client");
   const [clientImages, setClientImages] = useState<ClientImage[]>([]);
   const [stats, setStats] = useState({
     projectsCount: 0,
@@ -27,7 +26,6 @@ export function ClientAdminDashboard() {
   const [clientId, setClientId] = useState<string | null>(null);
   const [clientName, setClientName] = useState<string>("");
 
-  // Récupérer l'ID du client associé à l'utilisateur
   useEffect(() => {
     async function fetchClientId() {
       if (!user) return;
@@ -47,7 +45,6 @@ export function ClientAdminDashboard() {
         if (data?.id_client) {
           setClientId(data.id_client);
           
-          // Fetch client name
           const { data: clientData, error: clientError } = await supabase
             .from("clients")
             .select("nom")
@@ -68,14 +65,12 @@ export function ClientAdminDashboard() {
     fetchClientId();
   }, [user]);
 
-  // Récupérer les statistiques et les images du client
   useEffect(() => {
     if (!clientId) return;
 
     async function fetchClientData() {
       setLoading(true);
       try {
-        // 1. Récupérer les ID des projets associés à ce client
         const { data: projectsData, error: projectsError } = await supabase
           .from("projets")
           .select("id")
@@ -88,13 +83,11 @@ export function ClientAdminDashboard() {
 
         const projectIds = projectsData.map(project => project.id);
         
-        // 2. Récupérer les statistiques
         setStats({
           projectsCount: projectIds.length,
-          imagesCount: 0 // On va le mettre à jour après avoir récupéré les images
+          imagesCount: 0
         });
 
-        // 3. Récupérer les images associées aux projets
         if (projectIds.length > 0) {
           const { data: imagesData, error: imagesError } = await supabase
             .from("images")
@@ -107,7 +100,6 @@ export function ClientAdminDashboard() {
             return;
           }
 
-          // 4. Calculer le nombre total d'images
           const { count: imagesCount, error: countError } = await supabase
             .from("images")
             .select("id", { count: "exact", head: true })
@@ -122,7 +114,6 @@ export function ClientAdminDashboard() {
             }));
           }
 
-          // 5. Formater les images pour l'affichage
           const formattedImages = imagesData.map(img => ({
             id: img.id.toString(),
             src: img.url_miniature || img.url,
@@ -142,7 +133,6 @@ export function ClientAdminDashboard() {
     fetchClientData();
   }, [clientId]);
 
-  // Si aucun ID client n'est trouvé
   if (!loading && !clientId) {
     return (
       <div className="text-center py-10">
@@ -167,7 +157,6 @@ export function ClientAdminDashboard() {
         )}
       </div>
       
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -200,7 +189,6 @@ export function ClientAdminDashboard() {
         </Card>
       </div>
 
-      {/* Quick Links */}
       <h3 className="text-xl font-semibold mt-8 mb-4">Fonctionnalités</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Link to="/projects">
@@ -252,7 +240,6 @@ export function ClientAdminDashboard() {
         </Link>
       </div>
 
-      {/* Gallery Preview */}
       <h3 className="text-xl font-semibold mt-8 mb-4">Vos dernières images</h3>
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

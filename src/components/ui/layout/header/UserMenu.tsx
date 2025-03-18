@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/context/AuthContext";
 import { useUserProfile, formatRole } from "@/hooks/useUserProfile";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -18,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export function UserMenu() {
   const { user, userRole, signOut } = useAuth();
-  const userProfile = useUserProfile(user, userRole);
+  const { userProfile } = useUserProfile(user, userRole);
   const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
@@ -35,17 +34,14 @@ export function UserMenu() {
         title: "Déconnexion",
         description: "Une erreur est survenue mais vous avez été déconnecté",
       });
-      // Redirect to homepage even on error
       navigate("/");
     } finally {
       setIsLoggingOut(false);
     }
   };
 
-  // If there's no user, don't render anything
   if (!user) return null;
 
-  // Safely get initials
   const getInitials = () => {
     const firstName = userProfile?.firstName || '';
     const lastName = userProfile?.lastName || '';
@@ -58,7 +54,7 @@ export function UserMenu() {
       return user.email[0].toUpperCase();
     }
     
-    return "U"; // Default fallback
+    return "U";
   };
 
   const initials = getInitials();

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -14,13 +13,12 @@ interface ClientImage {
 
 export function UserDashboard() {
   const { user } = useAuth();
-  const userProfile = useUserProfile(user, "user");
+  const { userProfile } = useUserProfile(user, "user");
   const [clientImages, setClientImages] = useState<ClientImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [clientId, setClientId] = useState<string | null>(null);
   const [clientName, setClientName] = useState<string>("");
 
-  // Récupérer l'ID du client associé à l'utilisateur
   useEffect(() => {
     async function fetchClientId() {
       if (!user) return;
@@ -40,7 +38,6 @@ export function UserDashboard() {
         if (data?.id_client) {
           setClientId(data.id_client);
           
-          // Récupérer le nom du client
           const { data: clientData, error: clientError } = await supabase
             .from("clients")
             .select("nom")
@@ -61,14 +58,12 @@ export function UserDashboard() {
     fetchClientId();
   }, [user]);
 
-  // Récupérer les images du client
   useEffect(() => {
     if (!clientId) return;
 
     async function fetchClientImages() {
       setLoading(true);
       try {
-        // 1. Récupérer les ID des projets associés à ce client
         const { data: projectsData, error: projectsError } = await supabase
           .from("projets")
           .select("id")
@@ -81,7 +76,6 @@ export function UserDashboard() {
 
         const projectIds = projectsData.map(project => project.id);
         
-        // 2. Récupérer les images associées aux projets
         if (projectIds.length > 0) {
           const { data: imagesData, error: imagesError } = await supabase
             .from("images")
@@ -95,7 +89,6 @@ export function UserDashboard() {
             return;
           }
 
-          // 3. Formater les images pour l'affichage
           const formattedImages = imagesData.map(img => ({
             id: img.id.toString(),
             src: img.url_miniature || img.url,
@@ -115,7 +108,6 @@ export function UserDashboard() {
     fetchClientImages();
   }, [clientId]);
 
-  // Si aucun ID client n'est trouvé
   if (!loading && !clientId) {
     return (
       <div className="text-center py-10">
@@ -142,7 +134,6 @@ export function UserDashboard() {
         </div>
       )}
 
-      {/* Gallery Title */}
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-semibold">Vos images</h3>
         <Link 
@@ -156,7 +147,6 @@ export function UserDashboard() {
         </Link>
       </div>
 
-      {/* Gallery Preview */}
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {[...Array(8)].map((_, index) => (
@@ -182,7 +172,6 @@ export function UserDashboard() {
         <p className="text-muted-foreground">Aucune image disponible pour le moment.</p>
       )}
 
-      {/* Quick Links */}
       <div className="mt-8">
         <h3 className="text-xl font-semibold mb-4">Fonctionnalités</h3>
         <div className="flex flex-wrap gap-4">

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/ui/layout/Header';
@@ -17,7 +18,7 @@ const Gallery = () => {
   const searchQuery = searchParams.get('q') || '';
   const { userRole, user } = useAuth();
   const isAdmin = ['admin', 'admin_client'].includes(userRole);
-  const userProfile = useUserProfile(user, userRole);
+  const { userProfile } = useUserProfile(user, userRole);
 
   const {
     allImages,
