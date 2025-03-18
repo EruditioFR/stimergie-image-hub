@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Ban } from 'lucide-react';
 
 // Define types for the album data
 interface AlbumImage {
@@ -93,7 +94,9 @@ export function SharedAlbum() {
       alt: image.title,
       title: image.title,
       author: 'User',
-      orientation: image.orientation || undefined
+      orientation: image.orientation || undefined,
+      disableShare: true, // Add this property to disable share functionality
+      disableDownload: true // Add this property to disable download functionality
     }));
   };
   
@@ -123,6 +126,9 @@ export function SharedAlbum() {
                   <p>
                     Ceci est un album photo partagé par {album.created_by_name || 'un utilisateur'}. 
                     Vous bénéficiez d'un accès du {formatDate(album.access_from)} au {formatDate(album.access_until)}.
+                  </p>
+                  <p className="mt-2 flex items-center gap-2 text-amber-600">
+                    <Ban className="h-4 w-4" /> Le téléchargement et le partage sont désactivés pour cet album.
                   </p>
                 </div>
                 <h1 className="text-3xl font-bold mb-4">{album.name}</h1>

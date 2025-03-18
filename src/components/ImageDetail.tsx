@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Download, Heart, Share2, ArrowLeft, X } from 'lucide-react';
+import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
+import { Download, Heart, Share2, ArrowLeft, X, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LazyImage } from '@/components/LazyImage';
 import { ImageGallery } from '@/components/ImageGallery';
@@ -27,10 +26,14 @@ const parseTagsString = (tagsString: string | null): string[] | null => {
 export function ImageDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [liked, setLiked] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { toast } = useToast();
-
+  
+  // Check if we're in a shared album context
+  const isSharedAlbum = location.pathname.includes('/shared/');
+  
   // Fetch image data from Supabase
   const { data: imageDetails, isLoading } = useQuery({
     queryKey: ['image-detail', id],
@@ -63,16 +66,18 @@ export function ImageDetail() {
   });
 
   const handleDownload = () => {
-    if (!imageDetails) return;
+    if (!imageDetails || isSharedAlbum) return;
     window.open(imageDetails.url, '_blank');
   };
 
   const handleLike = () => {
+    if (isSharedAlbum) return;
     setLiked(!liked);
     // Update like count logic would go here
   };
 
   const handleShare = () => {
+    if (isSharedAlbum) return;
     navigator.clipboard.writeText(window.location.href);
     toast({
       title: 'Lien copié',
@@ -174,25 +179,40 @@ export function ImageDetail() {
                   size="sm" 
                   className="flex items-center gap-2"
                   onClick={handleLike}
+                  disabled={isSharedAlbum}
                 >
-                  <Heart className={`h-4 w-4 ${liked ? 'fill-red-500 text-red-500' : ''}`} />
-                  <span>{liked ? '1' : '0'}</span>
+                  {isSharedAlbum ? (
+                    <Ban className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Heart className={`h-4 w-4 ${liked ? 'fill-red-500 text-red-500' : ''}`} />
+                  )}
+                  <span>{liked && !isSharedAlbum ? '1' : '0'}</span>
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   className="flex items-center gap-2"
                   onClick={handleShare}
+                  disabled={isSharedAlbum}
                 >
-                  <Share2 className="h-4 w-4" />
+                  {isSharedAlbum ? (
+                    <Ban className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Share2 className="h-4 w-4" />
+                  )}
                   <span>Partager</span>
                 </Button>
               </div>
               <Button
                 onClick={handleDownload}
                 className="flex items-center gap-2"
+                disabled={isSharedAlbum}
               >
-                <Download className="h-4 w-4" />
+                {isSharedAlbum ? (
+                  <Ban className="h-4 w-4" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
                 <span>Télécharger</span>
               </Button>
             </div>
@@ -201,6 +221,12 @@ export function ImageDetail() {
             <div className="bg-card rounded-xl p-6 shadow-sm">
               <h1 className="text-2xl font-bold mb-2">{imageDetails.title}</h1>
               <p className="text-muted-foreground mb-6">{imageDetails.description || 'Aucune description disponible'}</p>
+              
+              {isSharedAlbum && (
+                <p className="mb-4 flex items-center gap-2 text-amber-600">
+                  <Ban className="h-4 w-4" /> Le téléchargement et le partage sont désactivés pour cette image.
+                </p>
+              )}
               
               {imageDetails.tags && imageDetails.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-6">
@@ -246,7 +272,7 @@ export function ImageDetail() {
                   <p className="text-sm text-muted-foreground">Contributeur</p>
                 </div>
               </div>
-              <Button variant="outline" className="w-full">Voir le profil</Button>
+              <Button variant="outline" className="w-full" disabled={isSharedAlbum}>Voir le profil</Button>
             </div>
 
             {/* Desktop Action Buttons */}
@@ -256,8 +282,13 @@ export function ImageDetail() {
               <Button 
                 onClick={handleDownload}
                 className="w-full flex items-center justify-center gap-2"
+                disabled={isSharedAlbum}
               >
-                <Download className="h-4 w-4" />
+                {isSharedAlbum ? (
+                  <Ban className="h-4 w-4" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
                 <span>Télécharger</span>
               </Button>
               
@@ -266,16 +297,26 @@ export function ImageDetail() {
                   variant="outline" 
                   className="flex-1 flex items-center justify-center gap-2"
                   onClick={handleLike}
+                  disabled={isSharedAlbum}
                 >
-                  <Heart className={`h-4 w-4 ${liked ? 'fill-red-500 text-red-500' : ''}`} />
-                  <span>{liked ? 'Aimé' : 'J\'aime'}</span>
+                  {isSharedAlbum ? (
+                    <Ban className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Heart className={`h-4 w-4 ${liked ? 'fill-red-500 text-red-500' : ''}`} />
+                  )}
+                  <span>{liked && !isSharedAlbum ? 'Aimé' : 'J\'aime'}</span>
                 </Button>
                 <Button 
                   variant="outline" 
                   className="flex-1 flex items-center justify-center gap-2"
                   onClick={handleShare}
+                  disabled={isSharedAlbum}
                 >
-                  <Share2 className="h-4 w-4" />
+                  {isSharedAlbum ? (
+                    <Ban className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Share2 className="h-4 w-4" />
+                  )}
                   <span>Partager</span>
                 </Button>
               </div>
