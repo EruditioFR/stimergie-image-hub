@@ -8,7 +8,6 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Header } from "@/components/ui/layout/Header";
 import { Footer } from "@/components/ui/layout/Footer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Check } from "lucide-react";
@@ -37,6 +36,7 @@ export default function ResetPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Get the access token from URL
@@ -60,7 +60,8 @@ export default function ResetPassword() {
         }
       });
     } else if (!hasValidResetParams) {
-      setError("Lien de réinitialisation invalide ou expiré. Veuillez demander un nouveau lien.");
+      // No token in URL, user likely came here to request a reset
+      console.log("No valid reset parameters found in URL");
     }
   }, [accessToken, refreshToken, hasValidResetParams]);
 
@@ -86,19 +87,31 @@ export default function ResetPassword() {
     try {
       setIsLoading(true);
       setError(null);
+      setDebugInfo(null);
+      
+      // Get the full current URL to use for redirect
+      const currentOrigin = window.location.origin;
+      const redirectUrl = `${currentOrigin}/reset-password`;
+      
+      console.log("Sending reset email to:", data.email);
+      console.log("Redirect URL:", redirectUrl);
       
       const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: window.location.origin + "/reset-password",
+        redirectTo: redirectUrl,
       });
       
       if (error) {
-        setError(error.message);
+        console.error("Error sending reset email:", error);
+        setError(`Erreur lors de l'envoi de l'email: ${error.message}`);
+        setDebugInfo(`Tentative d'envoi à ${data.email} avec redirection vers ${redirectUrl}`);
         return;
       }
       
+      // Success, show a message
+      setSuccess(true);
       toast({
         title: "Email envoyé",
-        description: "Vérifiez votre boîte de réception pour le lien de réinitialisation."
+        description: "Si cette adresse existe dans notre système, vous recevrez un email avec les instructions pour réinitialiser votre mot de passe. Vérifiez aussi vos spams."
       });
       
     } catch (err) {
@@ -152,7 +165,6 @@ export default function ResetPassword() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
       <div className="flex-grow flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
           <div className="text-center">
@@ -171,7 +183,26 @@ export default function ResetPassword() {
             </Alert>
           )}
 
-          {success ? (
+          {debugInfo && (
+            <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+              <AlertDescription className="text-xs">{debugInfo}</AlertDescription>
+            </Alert>
+          )}
+
+          {success && !hasValidResetParams ? (
+            <div className="p-4 bg-green-50 rounded-md">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <Check className="h-5 w-5 text-green-500" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-green-800">
+                    Email envoyé ! Vérifiez votre boîte de réception (et vos spams) pour le lien de réinitialisation.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : success ? (
             <div className="p-4 bg-green-50 rounded-md">
               <div className="flex">
                 <div className="flex-shrink-0">
