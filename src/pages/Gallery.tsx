@@ -96,6 +96,25 @@ const Gallery = () => {
     }
   }, [searchQuery, activeTab, selectedClient, currentPage]);
 
+  // Pre-fetch more images when close to the bottom
+  useEffect(() => {
+    const handleScroll = () => {
+      // Calculate scroll position as percentage
+      const scrollHeight = document.documentElement.scrollHeight;
+      const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+      const clientHeight = document.documentElement.clientHeight;
+      
+      // If we're within 30% of the bottom and not already loading, trigger load more
+      const scrollPercentage = (scrollTop + clientHeight) / scrollHeight;
+      if (scrollPercentage > 0.7 && !isLoading && !isFetching && !isLoadingMore && infiniteImages.length < totalCount) {
+        loadMoreImages();
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isLoading, isFetching, isLoadingMore, loadMoreImages, infiniteImages.length, totalCount]);
+
   useEffect(() => {
     console.log('Component mounted, loading initial data');
     

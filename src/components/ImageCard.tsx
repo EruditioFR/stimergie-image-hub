@@ -16,19 +16,6 @@ interface ImageCardProps {
   onClick?: (e: React.MouseEvent) => void;
 }
 
-// Interface pour définir le type de NetworkInformation
-interface NetworkInformation {
-  effectiveType: string;
-  downlink: number;
-  rtt: number;
-  saveData: boolean;
-}
-
-// Étendre l'interface Navigator pour inclure connection
-interface NavigatorWithConnection extends Navigator {
-  connection?: NetworkInformation;
-}
-
 // Composant mémoïsé pour éviter les rendus inutiles
 export const ImageCard = memo(function ImageCard({ 
   id, src, alt, title, author, className, orientation, onClick 
@@ -38,41 +25,15 @@ export const ImageCard = memo(function ImageCard({
   const mountedRef = useRef(true);
   
   useEffect(() => {
-    // Optimiser l'URL en ajoutant des paramètres de redimensionnement si possible
-    const optimizeImageUrl = (url: string) => {
-      // Ne pas modifier les URLs déjà optimisées
-      if (url.includes('w=') || url.includes('width=')) {
-        return url;
-      }
-      
-      // Adapter la qualité en fonction de la connexion réseau
-      let quality = 75; // Qualité par défaut
-      
-      if (typeof navigator !== 'undefined') {
-        const nav = navigator as NavigatorWithConnection;
-        // Si la connexion est lente, réduire la qualité
-        if (nav.connection && (nav.connection.effectiveType === '2g' || nav.connection.effectiveType === 'slow-2g')) {
-          quality = 50;
-        }
-      }
-      
-      // Déterminer la largeur maximale de l'image (limitée à la taille de l'écran)
-      const maxWidth = Math.min(window.innerWidth, 800);
-      
-      // Ajouter des paramètres à l'URL
-      if (url.includes('?')) {
-        return `${url}&w=${maxWidth}&q=${quality}`;
-      } else {
-        return `${url}?w=${maxWidth}&q=${quality}`;
-      }
+    // Add timestamp to prevent caching
+    const preventCaching = (url: string) => {
+      if (!url) return url;
+      return `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
     };
     
-    // Si nous avons une URL d'image, l'optimiser
+    // Optimize the URL without caching
     if (src) {
-      const optimized = optimizeImageUrl(src);
-      if (mountedRef.current) {
-        setOptimizedSrc(optimized);
-      }
+      setOptimizedSrc(preventCaching(src));
     }
     
     return () => {
@@ -95,8 +56,8 @@ export const ImageCard = memo(function ImageCard({
   };
   
   // Donner la priorité aux images en haut de la page
-  // Les 6 premières images de chaque lot sont prioritaires
-  const isPriority = parseInt(id) % 15 < 6; 
+  // Les 10 premières images sont prioritaires (increased from 6)
+  const isPriority = parseInt(id) % 15 < 10; 
 
   return (
     <div 

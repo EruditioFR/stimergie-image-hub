@@ -103,36 +103,8 @@ export const useGalleryImages = (isAdmin: boolean) => {
     ).join(',');
   }, [baseHandleClientChange, searchQuery, tagFilter, activeTab, queryClient, isAdmin, userRole, userClientId]);
 
-  useEffect(() => {
-    if (page > 0) {
-      const nextPageKey = generateCacheKey(
-        searchQuery, 
-        tagFilter, 
-        activeTab, 
-        selectedClient, 
-        page + 1, 
-        isAdmin, 
-        false,
-        userRole,
-        userClientId
-      );
-      queryClient.prefetchQuery({
-        queryKey: nextPageKey,
-        queryFn: () => fetchGalleryImages(
-          searchQuery, 
-          tagFilter, 
-          activeTab, 
-          selectedClient, 
-          page + 1, 
-          isAdmin, 
-          false,
-          userRole,
-          userClientId
-        ),
-        staleTime: GALLERY_CACHE_TIME,
-      });
-    }
-  }, [queryClient, page, searchQuery, tagFilter, activeTab, selectedClient, isAdmin, userRole, userClientId]);
+  // Disable prefetching to save bandwidth
+  // We only fetch what we need when we need it
 
   useEffect(() => {
     setPage(1);
@@ -228,9 +200,10 @@ export const useGalleryImages = (isAdmin: boolean) => {
       userRole,
       userClientId
     ),
-    staleTime: GALLERY_CACHE_TIME,
-    gcTime: GALLERY_CACHE_TIME * 2,
+    staleTime: 0, // Always refetch - no caching
+    gcTime: 0,    // No garbage collection time - don't keep in cache
     refetchOnWindowFocus: false,
+    refetchOnMount: true,
     enabled: true
   });
 
@@ -264,7 +237,8 @@ export const useGalleryImages = (isAdmin: boolean) => {
   }, []);
 
   const refreshGallery = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['gallery-images'] });
+    // Force clear the cache
+    queryClient.removeQueries({ queryKey: ['gallery-images'] });
     setPage(1);
     setAllImages([]);
     setIsInitialLoad(true);
