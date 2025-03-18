@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { parseTagsString } from "@/utils/imageUtils";
 import { toast } from "sonner";
 
-const IMAGES_PER_PAGE = 15;
+const IMAGES_PER_PAGE = 50; // Changed from 15 to 50
 const ADMIN_INITIAL_IMAGES = 30; // Réduit de 100 à 30 pour limiter les requêtes
 const MIN_PROJECTS = 5; // Réduit de 8 à 5 pour limiter les requêtes
 

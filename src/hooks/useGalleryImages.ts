@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -22,11 +21,9 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   
-  // Get user information for filtering
   const { userRole, user } = useAuth();
   const [userClientId, setUserClientId] = useState<string | null>(null);
   
-  // Fetch the user's client ID if they are an admin_client
   useEffect(() => {
     const fetchUserClientId = async () => {
       if (!user || userRole !== 'admin_client') return;
@@ -51,7 +48,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     fetchUserClientId();
   }, [user, userRole]);
 
-  // Import filter management
   const {
     activeTab,
     selectedClient,
@@ -62,7 +58,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     updateFilterStatus
   } = useGalleryFilters();
 
-  // Create a cache key based on current filters
   const cacheKey = useCallback(() => {
     return generateCacheKey(
       searchQuery, 
@@ -77,31 +72,23 @@ export const useGalleryImages = (isAdmin: boolean) => {
     );
   }, [searchQuery, tagFilter, activeTab, selectedClient, page, isAdmin, isInitialLoad, userRole, userClientId]);
 
-  // Override client change handler to reset pagination and cancel any previous requests
   const handleClientChange = useCallback((clientId: string | null) => {
-    // Admin_client users can't change their client
     if (userRole === 'admin_client' && userClientId) {
       console.log('Admin client users cannot change their client filter');
       return;
     }
     
-    // Cancel previous requests by invalidating the cache
     if (previousRequestRef.current) {
-      // We don't want to refetch, just invalidate
       queryClient.cancelQueries({ queryKey: previousRequestRef.current.split(',') });
     }
     
-    // Update client filter
     baseHandleClientChange(clientId);
     
-    // Reset page to 1 when client changes
     setPage(1);
     setAllImages([]);
     
-    // No longer initial load
     setIsInitialLoad(false);
     
-    // Set new request reference
     previousRequestRef.current = generateCacheKey(
       searchQuery, 
       tagFilter, 
@@ -115,7 +102,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     ).join(',');
   }, [baseHandleClientChange, searchQuery, tagFilter, activeTab, queryClient, isAdmin, userRole, userClientId]);
 
-  // Précharger la page suivante pour une expérience plus fluide
   useEffect(() => {
     if (page > 0) {
       const nextPageKey = generateCacheKey(
@@ -147,24 +133,20 @@ export const useGalleryImages = (isAdmin: boolean) => {
     }
   }, [queryClient, page, searchQuery, tagFilter, activeTab, selectedClient, isAdmin, userRole, userClientId]);
 
-  // Reset page when filters change
   useEffect(() => {
     setPage(1);
     setAllImages([]);
     setIsInitialLoad(false);
     
-    // Update filter status
     updateFilterStatus(searchQuery, tagFilter);
   }, [searchQuery, tagFilter, activeTab, updateFilterStatus]);
 
-  // When selectedClient changes, we reset and start fresh
   useEffect(() => {
     setPage(1);
     setAllImages([]);
     setIsInitialLoad(false);
   }, [selectedClient]);
 
-  // When userClientId changes (after it's fetched), we reset and start fresh
   useEffect(() => {
     if (userClientId) {
       setPage(1);
@@ -173,7 +155,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     }
   }, [userClientId]);
 
-  // For admin_client users, automatically set their client ID
   useEffect(() => {
     if (userRole === 'admin_client' && userClientId && selectedClient !== userClientId) {
       console.log('Setting client filter to admin_client user client ID:', userClientId);
@@ -181,17 +162,13 @@ export const useGalleryImages = (isAdmin: boolean) => {
     }
   }, [userRole, userClientId, baseHandleClientChange, selectedClient]);
 
-  // Récupérer le nombre total d'images pour la pagination
   const fetchTotalCount = useCallback(async () => {
     try {
-      // Construire une requête de base
       let query = supabase
         .from('images')
         .select('id', { count: 'exact', head: true });
       
-      // Appliquer filtre client si fourni
       if (selectedClient) {
-        // Récupérer tous les projets pour ce client d'abord
         const { data: projetData, error: projetError } = await supabase
           .from('projets')
           .select('id')
@@ -206,29 +183,23 @@ export const useGalleryImages = (isAdmin: boolean) => {
           return 0;
         }
         
-        // Extraire IDs de projet
         const projetIds = projetData.map(projet => projet.id);
         
-        // Filtrer images par IDs de projet
         query = query.in('id_projet', projetIds);
       }
       
-      // Appliquer filtre de recherche
       if (searchQuery && searchQuery.trim() !== '') {
         query = query.or(`title.ilike.%${searchQuery}%,tags.ilike.%${searchQuery}%`);
       }
 
-      // Appliquer filtre de tag
       if (tagFilter && tagFilter.toLowerCase() !== 'toutes') {
         query = query.ilike('tags', `%${tagFilter.toLowerCase()}%`);
       }
       
-      // Appliquer filtre d'onglet
       if (activeTab.toLowerCase() !== 'all') {
         query = query.ilike('tags', `%${activeTab.toLowerCase()}%`);
       }
       
-      // Exécuter requête
       const { count, error } = await query;
       
       if (error) {
@@ -243,7 +214,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     }
   }, [searchQuery, tagFilter, activeTab, selectedClient]);
 
-  // Fetch images from Supabase with caching
   const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
     queryKey: cacheKey(),
     queryFn: () => fetchGalleryImages(
@@ -258,12 +228,11 @@ export const useGalleryImages = (isAdmin: boolean) => {
       userClientId
     ),
     staleTime: GALLERY_CACHE_TIME,
-    gcTime: GALLERY_CACHE_TIME * 2, // Keep in cache twice as long
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    enabled: true, // Always enabled, we'll handle manual invalidation
+    gcTime: GALLERY_CACHE_TIME * 2,
+    refetchOnWindowFocus: false,
+    enabled: true
   });
 
-  // Récupérer le nombre total d'images lors du chargement initial ou du changement de filtres
   useEffect(() => {
     const getTotalCount = async () => {
       const count = await fetchTotalCount();
@@ -273,7 +242,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     getTotalCount();
   }, [fetchTotalCount, searchQuery, tagFilter, activeTab, selectedClient]);
 
-  // Add newly loaded images to our collection
   useEffect(() => {
     console.log('New images loaded:', newImages.length);
     if (newImages.length > 0) {
@@ -282,29 +250,24 @@ export const useGalleryImages = (isAdmin: boolean) => {
       setAllImages([]);
     }
     
-    // After first load, set initialLoad to false
     if (isInitialLoad) {
       setIsInitialLoad(false);
     }
   }, [newImages, page, isInitialLoad]);
 
-  // Fonction de changement de page pour la pagination
   const handlePageChange = useCallback((newPage: number) => {
     setPage(newPage);
-    // Mettre à jour l'URL avec le paramètre de page
     const newSearchParams = new URLSearchParams(window.location.search);
     newSearchParams.set('page', newPage.toString());
     window.history.pushState(null, '', `?${newSearchParams.toString()}`);
   }, []);
 
-  // Handle loading more images (pour le scroll infini si besoin)
   const loadMoreImages = useCallback(() => {
-    if (!isLoading && !isFetching && newImages.length === 15) { // 15 is the IMAGES_PER_PAGE constant
+    if (!isLoading && !isFetching && newImages.length === 50) {
       setPage(prev => prev + 1);
     }
   }, [isLoading, isFetching, newImages.length]);
 
-  // Invalidate cache and force refresh
   const refreshGallery = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['gallery-images'] });
     setPage(1);

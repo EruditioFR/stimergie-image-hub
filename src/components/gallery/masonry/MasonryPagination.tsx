@@ -22,7 +22,7 @@ export function MasonryPagination({
 }: MasonryPaginationProps) {
   if (!totalCount || totalCount <= 0 || !onPageChange) return null;
 
-  const imagesPerPage = 15;
+  const imagesPerPage = 50; // Changed from 15 to 50
   const totalPages = totalCount > 0 ? Math.ceil(totalCount / imagesPerPage) : 0;
 
   return (
