@@ -8,7 +8,6 @@ interface Image {
   id: string;
   url: string;
   title: string;
-  thumbnail?: string;
 }
 
 export function ImagePatchwork() {
@@ -22,7 +21,7 @@ export function ImagePatchwork() {
         // Fetch random images from Supabase
         const { data, error } = await supabase
           .from('images')
-          .select('id, url, url_miniature, title')
+          .select('id, url, title')
           .order('created_at', { ascending: false })
           .limit(20);
 
@@ -37,8 +36,7 @@ export function ImagePatchwork() {
           setImages(data.map(img => ({
             id: img.id.toString(),
             url: img.url,
-            title: img.title || 'Image',
-            thumbnail: img.url_miniature || undefined
+            title: img.title || 'Image'
           })));
         } else {
           // Use mock images if no images in database
@@ -91,7 +89,7 @@ export function ImagePatchwork() {
           )}
         >
           <LazyImage 
-            src={image.thumbnail || image.url} 
+            src={image.url} 
             alt={image.title}
             className="h-full w-full object-cover"
             objectFit="object-cover"
