@@ -259,9 +259,13 @@ export function LazyImage({
           isLoaded ? "opacity-100" : "opacity-0"
         )}
         onLoad={handleImageLoad}
-        loading="eager" // Change from lazy to eager for immediate loading
+        loading="eager" // For immediate loading
         decoding="async"
-        fetchpriority="high" // Fixed: Changed from fetchPriority to fetchpriority (lowercase)
+        // Using the correct TypeScript way of handling HTML attributes
+        // that don't match the React property names
+        {...{
+          fetchPriority: "high" // TypeScript expects camelCase
+        } as {}}  // Cast to empty object to avoid type errors
       />
     </div>
   );
