@@ -98,7 +98,7 @@ export function UserMenu() {
           <div className="px-2 py-1.5 text-sm md:hidden">
             <p className="font-medium leading-none">{displayName}</p>
             <p className="text-xs text-muted-foreground pt-0.5">{displayRole}</p>
-            {userProfile?.clientId && userRole !== 'admin' && (
+            {userProfile?.clientId && (
               <p className="text-xs text-muted-foreground pt-0.5 flex items-center gap-1">
                 <Building2 className="h-3 w-3" />
                 Client ID: {userProfile.clientId}
@@ -110,7 +110,7 @@ export function UserMenu() {
             <UserCircle className="h-4 w-4" />
             <span>Mon profil</span>
           </DropdownMenuItem>
-          {userProfile?.clientId && userRole !== 'admin' && (
+          {userProfile?.clientId && (
             <DropdownMenuItem className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               <span>Mon client: {userProfile.clientId}</span>

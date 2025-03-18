@@ -1,24 +1,20 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Share, Ban } from 'lucide-react';
+import { Download, Share } from 'lucide-react';
 
 interface SelectionToolbarProps {
   selectedCount: number;
   onClearSelection: () => void;
   onDownload: () => void;
   onShare: () => void;
-  disableShare?: boolean;
-  disableDownload?: boolean;
 }
 
 export function SelectionToolbar({
   selectedCount,
   onClearSelection,
   onDownload,
-  onShare,
-  disableShare = false,
-  disableDownload = false
+  onShare
 }: SelectionToolbarProps) {
   if (selectedCount === 0) return null;
 
@@ -40,21 +36,17 @@ export function SelectionToolbar({
           variant="outline" 
           size="sm" 
           onClick={onDownload}
-          disabled={disableDownload}
           className="flex items-center gap-2"
         >
-          {disableDownload ? <Ban className="h-4 w-4 text-muted-foreground" /> : <Download className="h-4 w-4" />} 
-          Télécharger ({selectedCount})
+          <Download className="h-4 w-4" /> Télécharger ({selectedCount})
         </Button>
         <Button 
           variant="default" 
           size="sm" 
           onClick={onShare}
-          disabled={disableShare}
           className="flex items-center gap-2"
         >
-          {disableShare ? <Ban className="h-4 w-4" /> : <Share className="h-4 w-4" />} 
-          Partager
+          <Share className="h-4 w-4" /> Partager
         </Button>
       </div>
     </div>

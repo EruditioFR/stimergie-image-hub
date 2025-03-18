@@ -397,28 +397,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      get_user_shared_albums: {
-        Args: {
-          limit_param?: number
-          offset_param?: number
-        }
-        Returns: {
-          id: string
-          name: string
-          description: string
-          access_from: string
-          access_until: string
-          created_at: string
-          created_by: string
-          created_by_name: string
-          share_key: string
-          image_count: number
-        }[]
-      }
-      get_user_shared_albums_count: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
       has_role: {
         Args: {
           required_role: Database["public"]["Enums"]["user_role"]
