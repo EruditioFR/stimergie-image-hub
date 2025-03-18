@@ -7,7 +7,7 @@ import { ImagesTable } from '@/components/images/ImagesTable';
 import { ImagesHeader } from '@/components/images/ImagesHeader';
 import { useAuth } from '@/context/AuthContext';
 import { ViewMode, ViewToggle } from '@/components/ui/ViewToggle';
-import { MasonryGrid } from '@/components/gallery/MasonryGrid';
+import { MasonryGrid } from '@/components/gallery/masonry/MasonryGrid';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';

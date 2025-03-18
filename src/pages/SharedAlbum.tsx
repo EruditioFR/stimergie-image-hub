@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MasonryGrid } from '@/components/gallery/MasonryGrid';
+import { MasonryGrid } from '@/components/gallery/masonry/MasonryGrid';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
