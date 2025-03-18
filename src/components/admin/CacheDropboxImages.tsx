@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Image as ImageIcon, Clock, Check, XCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 export function CacheDropboxImages() {
@@ -16,19 +16,21 @@ export function CacheDropboxImages() {
     succeeded: number;
     failed: number;
     estimatedTimeRemaining: string;
+    averageSpeed: string;
   }>({
     total: 0,
     processed: 0,
     succeeded: 0,
     failed: 0,
-    estimatedTimeRemaining: 'Calculating...'
+    estimatedTimeRemaining: 'Calcul en cours...',
+    averageSpeed: '0 img/min'
   });
   
-  // Check for existing progress on component mount
+  // Vérifier la progression existante au montage du composant
   useEffect(() => {
     checkProgress();
     
-    // Poll for progress updates if operation is in progress
+    // Interroger les mises à jour de progression si l'opération est en cours
     let interval: number | null = null;
     
     if (isInProgress) {
@@ -42,6 +44,7 @@ export function CacheDropboxImages() {
     };
   }, [isInProgress]);
   
+  // Vérifier la progression actuelle
   const checkProgress = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('cache-dropbox-images', {
@@ -58,7 +61,8 @@ export function CacheDropboxImages() {
           processed: data.processed || 0,
           succeeded: data.succeeded || 0,
           failed: data.failed || 0,
-          estimatedTimeRemaining: data.estimatedTimeRemaining || 'Calculating...'
+          estimatedTimeRemaining: data.estimatedTimeRemaining || 'Calcul en cours...',
+          averageSpeed: data.averageSpeed || '0 img/min'
         });
       } else {
         setIsInProgress(false);
@@ -69,6 +73,7 @@ export function CacheDropboxImages() {
     }
   };
   
+  // Lancer le processus de mise en cache
   const handleCacheImages = async () => {
     setIsLoading(true);
     try {
@@ -80,7 +85,7 @@ export function CacheDropboxImages() {
       
       if (data.inProgress) {
         setIsInProgress(true);
-        setDetails({ ...details, total: data.total || 0 });
+        setDetails(prev => ({ ...prev, total: data.total || 0 }));
         toast.success('Mise en cache des images démarrée', {
           description: data.message
         });
@@ -112,22 +117,49 @@ export function CacheDropboxImages() {
         ) : isInProgress ? (
           "Mise en cache en cours..."
         ) : (
-          'Mettre en cache les images Dropbox'
+          <>
+            <ImageIcon className="h-4 w-4 mr-2" />
+            Mettre en cache les images Dropbox
+          </>
         )}
       </Button>
       
       {isInProgress && (
-        <div className="mt-2 space-y-2 p-3 border rounded-md bg-secondary/20">
+        <div className="mt-2 space-y-3 p-4 border rounded-md bg-secondary/20">
           <div className="flex justify-between text-sm">
             <span>Progression:</span>
-            <span>{progress}%</span>
+            <span className="font-medium">{progress}%</span>
           </div>
           <Progress value={progress} className="h-2" />
           
-          <div className="text-xs text-muted-foreground mt-2 space-y-1">
-            <p>Images traitées: {details.processed} / {details.total}</p>
-            <p>Réussies: {details.succeeded} | Échouées: {details.failed}</p>
-            <p>Temps restant estimé: {details.estimatedTimeRemaining}</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mt-3">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4 text-primary" />
+              <span className="text-muted-foreground">Total:</span>
+              <span className="font-medium">{details.total}</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-amber-500" />
+              <span className="text-muted-foreground">Temps restant:</span>
+              <span className="font-medium whitespace-nowrap">{details.estimatedTimeRemaining}</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Check className="h-4 w-4 text-green-500" />
+              <span className="text-muted-foreground">Réussies:</span>
+              <span className="font-medium">{details.succeeded}</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <XCircle className="h-4 w-4 text-red-500" />
+              <span className="text-muted-foreground">Échouées:</span>
+              <span className="font-medium">{details.failed}</span>
+            </div>
+          </div>
+          
+          <div className="text-xs text-center text-muted-foreground pt-1 border-t">
+            <p>Vitesse moyenne: {details.averageSpeed}</p>
           </div>
         </div>
       )}

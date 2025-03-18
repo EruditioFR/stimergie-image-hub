@@ -34,7 +34,7 @@ const getObserver = () => {
       },
       {
         root: null,
-        rootMargin: '300px', // Précharger les images 300px avant qu'elles n'entrent dans le viewport
+        rootMargin: '500px', // Augmenté à 500px pour précharger davantage d'images avant qu'elles n'entrent dans le viewport
         threshold: 0.01
       }
     );
@@ -47,7 +47,7 @@ export function preloadImages(urls: string[]): void {
   if (!urls.length) return;
   
   // Limiter le nombre d'images préchargées simultanément
-  const batchSize = 5;
+  const batchSize = 8; // Augmenté pour précharger plus d'images
   const priorityUrls = urls.slice(0, batchSize);
   
   priorityUrls.forEach(url => {
@@ -61,6 +61,33 @@ export function preloadImages(urls: string[]): void {
       img.src = url;
     }
   });
+}
+
+// Vider le cache des images qui ne sont plus visibles
+// pour libérer de la mémoire lors du défilement
+export function clearOffscreenImagesFromCache(visibleImageUrls: string[]): void {
+  // Transformation du tableau en Set pour des recherches O(1)
+  const visibleUrlsSet = new Set(visibleImageUrls);
+  
+  // Parcourir le cache et supprimer les images qui ne sont plus visibles
+  // tout en gardant un nombre minimum d'images pour le cache
+  const MAX_CACHE_SIZE = 100;
+  
+  if (imageCache.size > MAX_CACHE_SIZE) {
+    const urlsToRemove: string[] = [];
+    imageCache.forEach((value, key) => {
+      if (!visibleUrlsSet.has(key)) {
+        urlsToRemove.push(key);
+      }
+    });
+    
+    // Ne conserver que les entrées nécessaires pour rester sous la limite
+    const removeCount = Math.min(urlsToRemove.length, imageCache.size - MAX_CACHE_SIZE);
+    urlsToRemove.slice(0, removeCount).forEach(url => {
+      imageCache.delete(url);
+      requestedImagesCache.delete(url);
+    });
+  }
 }
 
 export function LazyImage({
@@ -78,10 +105,13 @@ export function LazyImage({
   const imgRef = useRef<HTMLDivElement>(null);
   const imgElRef = useRef<HTMLImageElement>(null);
   const progressIntervalRef = useRef<number | null>(null);
+  const isUnmountedRef = useRef(false); // Pour suivre si le composant est démonté
   
   // Vérifier si l'image est déjà mise en cache au montage
   useEffect(() => {
     if (!src) return;
+    
+    isUnmountedRef.current = false;
     
     // Si l'image est dans notre cache d'application
     if (imageCache.has(src)) {
@@ -89,8 +119,10 @@ export function LazyImage({
       // Simuler un chargement rapide pour les images mises en cache
       setLoadProgress(80);
       setTimeout(() => {
-        setLoadProgress(100);
-        setIsLoaded(true);
+        if (!isUnmountedRef.current) {
+          setLoadProgress(100);
+          setIsLoaded(true);
+        }
       }, 30); // Timeout plus rapide pour les images mises en cache
     }
     
@@ -108,8 +140,10 @@ export function LazyImage({
               imageCache.set(src, objectURL);
               setLoadProgress(90);
               setTimeout(() => {
-                setLoadProgress(100);
-                setIsLoaded(true);
+                if (!isUnmountedRef.current) {
+                  setLoadProgress(100);
+                  setIsLoaded(true);
+                }
               }, 20);
               return true;
             }
@@ -127,12 +161,18 @@ export function LazyImage({
     
     // Nettoyer tout intervalle au démontage
     return () => {
+      isUnmountedRef.current = true;
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current);
         progressIntervalRef.current = null;
       }
+      
+      // Libérer l'objectURL si nous en avons créé un
+      if (cachedSrc && cachedSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(cachedSrc);
+      }
     };
-  }, [src]);
+  }, [src, cachedSrc]);
   
   // Générer URL de placeholder de basse qualité optimisée
   const getLowQualitySrc = (originalSrc: string): string => {
@@ -160,7 +200,7 @@ export function LazyImage({
     const currentRef = imgRef.current;
     
     const callback = (isIntersecting: boolean) => {
-      if (isIntersecting) {
+      if (isIntersecting && !isUnmountedRef.current) {
         setIsInView(true);
         observer.unobserve(currentRef); // Arrêter d'observer une fois dans la vue
         observedElements.delete(currentRef);
@@ -187,12 +227,14 @@ export function LazyImage({
       }
       
       progressIntervalRef.current = window.setInterval(() => {
-        setLoadProgress(prev => {
-          // Ralentir la progression à l'approche de 90%
-          const increment = prev < 30 ? 8 : prev < 60 ? 4 : prev < 80 ? 2 : 1;
-          const newProgress = prev + Math.random() * increment;
-          return newProgress >= 90 ? 90 : newProgress; // Plafonner à 90% jusqu'au chargement réel
-        });
+        if (!isUnmountedRef.current) {
+          setLoadProgress(prev => {
+            // Ralentir la progression à l'approche de 90%
+            const increment = prev < 30 ? 8 : prev < 60 ? 4 : prev < 80 ? 2 : 1;
+            const newProgress = prev + Math.random() * increment;
+            return newProgress >= 90 ? 90 : newProgress; // Plafonner à 90% jusqu'au chargement réel
+          });
+        }
       }, 120);
     }
     
@@ -217,9 +259,13 @@ export function LazyImage({
     }
     
     setLoadProgress(100);
-    setTimeout(() => {
-      setIsLoaded(true);
-    }, 30); // Animation plus rapide pour une expérience plus fluide
+    if (!isUnmountedRef.current) {
+      setTimeout(() => {
+        if (!isUnmountedRef.current) {
+          setIsLoaded(true);
+        }
+      }, 30); // Animation plus rapide pour une expérience plus fluide
+    }
   };
 
   if (!src) return null;

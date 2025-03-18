@@ -1,5 +1,5 @@
 
-import { useState, memo } from 'react';
+import { useState, memo, useRef, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LazyImage } from '@/components/LazyImage';
@@ -16,13 +16,58 @@ interface ImageCardProps {
   onClick?: (e: React.MouseEvent) => void;
 }
 
-// Memoized component to prevent unnecessary re-renders
+// Composant mémoïsé pour éviter les rendus inutiles
 export const ImageCard = memo(function ImageCard({ 
   id, src, alt, title, author, className, orientation, onClick 
 }: ImageCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [optimizedSrc, setOptimizedSrc] = useState(src);
+  const mountedRef = useRef(true);
+  
+  useEffect(() => {
+    // Optimiser l'URL en ajoutant des paramètres de redimensionnement si possible
+    const optimizeImageUrl = (url: string) => {
+      // Ne pas modifier les URLs déjà optimisées
+      if (url.includes('w=') || url.includes('width=')) {
+        return url;
+      }
+      
+      // Adapter la qualité en fonction de la connexion réseau
+      let quality = 75; // Qualité par défaut
+      
+      if (navigator.connection) {
+        const connection = navigator.connection as any;
+        // Si la connexion est lente, réduire la qualité
+        if (connection.effectiveType === '2g' || connection.effectiveType === 'slow-2g') {
+          quality = 50;
+        }
+      }
+      
+      // Déterminer la largeur maximale de l'image (limitée à la taille de l'écran)
+      const maxWidth = Math.min(window.innerWidth, 800);
+      
+      // Ajouter des paramètres à l'URL
+      if (url.includes('?')) {
+        return `${url}&w=${maxWidth}&q=${quality}`;
+      } else {
+        return `${url}?w=${maxWidth}&q=${quality}`;
+      }
+    };
+    
+    // Si nous avons une URL d'image, l'optimiser
+    if (src) {
+      const optimized = optimizeImageUrl(src);
+      if (mountedRef.current) {
+        setOptimizedSrc(optimized);
+      }
+    }
+    
+    return () => {
+      mountedRef.current = false;
+    };
+  }, [src]);
 
-  // Get appropriate aspect ratio based on image orientation
+  // Obtenir le ratio d'aspect approprié en fonction de l'orientation de l'image
   const getAspectRatio = () => {
     switch (orientation?.toLowerCase()) {
       case 'landscape':
@@ -36,8 +81,9 @@ export const ImageCard = memo(function ImageCard({
     }
   };
   
-  // Prioritize images toward the top of the page
-  const isPriority = parseInt(id) % 15 < 6; // First 6 in each batch are priority
+  // Donner la priorité aux images en haut de la page
+  // Les 6 premières images de chaque lot sont prioritaires
+  const isPriority = parseInt(id) % 15 < 6; 
 
   return (
     <div 
@@ -53,14 +99,14 @@ export const ImageCard = memo(function ImageCard({
     >
       <div className="block relative">
         <LazyImage 
-          src={src} 
+          src={optimizedSrc} 
           alt={alt} 
           className={`w-full ${getAspectRatio()}`}
           objectFit="object-cover"
           priority={isPriority}
         />
         
-        {/* Hover overlay */}
+        {/* Superposition au survol */}
         <div className={cn(
           "absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent",
           "opacity-0 group-hover:opacity-100 transition-opacity duration-300",
@@ -71,7 +117,7 @@ export const ImageCard = memo(function ImageCard({
         </div>
       </div>
       
-      {/* Download button */}
+      {/* Bouton de téléchargement */}
       <div className={cn(
         "absolute top-3 right-3 transform",
         "transition-all duration-300 ease-in-out",

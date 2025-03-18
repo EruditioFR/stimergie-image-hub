@@ -6,7 +6,7 @@ export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
     
     // Configure fetch with timeout
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 seconds timeout
+    const timeoutId = setTimeout(() => controller.abort(), 20000) // 20 seconds timeout (increased)
     
     const response = await fetch(url, {
       method: 'GET',
@@ -17,7 +17,8 @@ export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Accept': 'image/*, */*;q=0.8',
-        'Cache-Control': 'max-age=604800' // Cache for a week
+        'Cache-Control': 'max-age=604800', // Cache for a week
+        'Connection': 'keep-alive' // Utiliser des connexions persistantes
       }
     })
     
@@ -69,4 +70,51 @@ function isHtmlContent(blob: Blob): boolean {
   }
   
   return false
+}
+
+/**
+ * Calculate average processing speed and estimated time
+ */
+export function calculateTimeEstimates(
+  processed: number, 
+  total: number, 
+  startTime: number
+): { estimatedTimeRemaining: string, averageSpeed: string } {
+  // Éviter la division par zéro
+  if (processed === 0) {
+    return { 
+      estimatedTimeRemaining: "Calcul en cours...",
+      averageSpeed: "0 img/min"
+    }
+  }
+  
+  const elapsedSeconds = (Date.now() - startTime) / 1000
+  const imagesPerSecond = processed / elapsedSeconds
+  const imagesPerMinute = imagesPerSecond * 60
+  
+  // Calculer le temps restant en secondes
+  const remainingImages = total - processed
+  const remainingSeconds = remainingImages / imagesPerSecond
+  
+  // Formater le temps restant
+  let timeString = "Calcul en cours..."
+  if (remainingSeconds > 0 && isFinite(remainingSeconds)) {
+    if (remainingSeconds < 60) {
+      timeString = `${Math.ceil(remainingSeconds)} secondes`
+    } else if (remainingSeconds < 3600) {
+      timeString = `${Math.ceil(remainingSeconds / 60)} minutes`
+    } else {
+      const hours = Math.floor(remainingSeconds / 3600)
+      const minutes = Math.ceil((remainingSeconds % 3600) / 60)
+      timeString = `${hours}h ${minutes}min`
+    }
+  }
+  
+  // Formater la vitesse
+  const speedString = `${Math.round(imagesPerMinute * 10) / 10} img/min`
+  
+  return {
+    estimatedTimeRemaining: timeString,
+    averageSpeed: speedString
+  }
 }
