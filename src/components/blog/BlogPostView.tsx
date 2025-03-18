@@ -26,7 +26,7 @@ export function BlogPostView() {
       try {
         const { data, error } = await supabase
           .from('blog_posts')
-          .select('*, clients(nom)')
+          .select('*, clients(nom), dropbox_image_url')
           .eq('slug', slug)
           .single();
 
@@ -45,6 +45,7 @@ export function BlogPostView() {
           client_id: data.client_id || null,
           client_name: data.clients?.nom || null,
           featured_image_url: data.featured_image_url || null,
+          dropbox_image_url: data.dropbox_image_url || null,
           content_type: (data.content_type as 'Ressource' | 'Ensemble') || 'Ressource',
           category: data.category as 'Actualités' | 'Projets' | 'Conseils' | null,
           created_at: data.created_at,
