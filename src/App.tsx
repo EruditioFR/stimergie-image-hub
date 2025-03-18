@@ -19,6 +19,7 @@ import Users from "@/pages/Users";
 import Auth from "@/pages/Auth";
 import Images from "@/pages/Images";
 import SharedAlbum from "@/pages/SharedAlbum";
+import SharedAlbums from "@/pages/SharedAlbums";
 import Resources from "@/pages/Resources";
 import Ensemble from "@/pages/Ensemble";
 import BlogEditor from "@/pages/BlogEditor";
@@ -45,6 +46,14 @@ const App = () => {
                   <Route path="/gallery" element={<Gallery />} />
                   <Route path="/image/:id" element={<ImageView />} />
                   <Route path="/shared-album/:shareKey" element={<SharedAlbum />} />
+                  <Route 
+                    path="/albums" 
+                    element={
+                      <ProtectedRoute>
+                        <SharedAlbums />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/resources" element={<Resources />} />
