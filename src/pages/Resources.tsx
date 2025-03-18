@@ -6,14 +6,14 @@ import { CacheDropboxImages } from '@/components/admin/CacheDropboxImages';
 import { useAuth } from '@/context/AuthContext';
 
 export default function Resources() {
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const { user, isAdmin } = useAuth();
+  const hasAdminAccess = isAdmin();
   
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-grow container mx-auto p-6 mt-16">
-        {isAdmin && (
+        {hasAdminAccess && (
           <div className="flex justify-end mb-4">
             <CacheDropboxImages />
           </div>
