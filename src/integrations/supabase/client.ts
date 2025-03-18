@@ -14,15 +14,13 @@ const fetchWithRetries = async (url: Request | string, options?: RequestInit, re
   try {
     const response = await fetch(url, {
       ...options,
-      credentials: 'include',
-      // Set timeout for slow connections
+      // Remove credentials: 'include' as it's causing CORS issues
+      // Let Supabase handle the auth headers
       signal: AbortSignal.timeout(30000), // 30 second timeout
     });
     
-    // If response is ok, return it
     if (response.ok) return response;
     
-    // If we get a 5xx server error and have retries left, retry
     if (response.status >= 500 && response.status < 600 && retries > 0) {
       console.log(`Retrying fetch due to ${response.status} error. Retries left: ${retries}`);
       await new Promise(resolve => setTimeout(resolve, backoff));
@@ -48,13 +46,13 @@ export const supabase = createClient<Database>(
       flowType: 'pkce',
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: true,
+      storageKey: 'supabase-auth',
+      storage: window.localStorage
     },
     global: {
-      // Make fetch requests with retry and timeout functionality
       fetch: fetchWithRetries
     },
-    // Add automatic retries for temporary network issues
     realtime: {
       params: {
         eventsPerSecond: 2
