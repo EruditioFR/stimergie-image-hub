@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -84,6 +83,7 @@ export default function Index() {
                 src="/lovable-uploads/9ce78881-8c65-4716-ab7f-128bb420c8e9.png" 
                 alt="Stimergie Logo" 
                 className="h-40 w-auto mx-auto"
+                style={{ filter: 'brightness(0) invert(1)' }} // Apply filter to make logo white
               />
             </div>
             
