@@ -18,6 +18,15 @@ export const supabase = createClient<Database>(
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true
+    },
+    global: {
+      // Make fetch requests set cookies for anonymous access
+      fetch: (url, options = {}) => {
+        return fetch(url, {
+          ...options,
+          credentials: 'include'
+        });
+      }
     }
   }
 );

@@ -16,6 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { ImagePatchwork } from "@/components/home/ImagePatchwork";
 
 // Login form schema
 const loginSchema = z.object({
@@ -65,72 +66,80 @@ export default function Index() {
     }
   };
 
-  // Déterminer quel tableau de bord afficher
-  const renderDashboard = () => {
-    // Si l'utilisateur n'est pas connecté, afficher la page de connexion
+  // Determine what to display
+  const renderContent = () => {
+    // If the user isn't logged in, show the patchwork with login overlay
     if (!user) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen px-6">
-          <div className="w-full max-w-sm mx-auto mb-8">
-            <img 
-              src="/lovable-uploads/9ce78881-8c65-4716-ab7f-128bb420c8e9.png" 
-              alt="Stimergie Logo" 
-              className="h-40 w-auto mx-auto"
-            />
+        <div className="min-h-screen relative">
+          {/* Background patchwork of images */}
+          <div className="fixed inset-0 z-0">
+            <ImagePatchwork />
           </div>
           
-          <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
-            <h2 className="text-2xl font-bold mb-6 text-center">Connexion</h2>
+          {/* Login overlay */}
+          <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 bg-black/40 backdrop-blur-sm">
+            <div className="w-full max-w-sm mx-auto mb-8">
+              <img 
+                src="/lovable-uploads/9ce78881-8c65-4716-ab7f-128bb420c8e9.png" 
+                alt="Stimergie Logo" 
+                className="h-40 w-auto mx-auto"
+              />
+            </div>
             
-            <Form {...loginForm}>
-              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                {loginError && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{loginError}</AlertDescription>
-                  </Alert>
-                )}
-                <FormField
-                  control={loginForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="exemple@email.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+            <div className="w-full max-w-md bg-white/95 backdrop-blur-sm p-8 rounded-lg shadow-xl">
+              <h2 className="text-2xl font-bold mb-6 text-center">Connexion</h2>
+              
+              <Form {...loginForm}>
+                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                  {loginError && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{loginError}</AlertDescription>
+                    </Alert>
                   )}
-                />
-                <FormField
-                  control={loginForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mot de passe</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex justify-end">
-                  <Button 
-                    type="button" 
-                    variant="link" 
-                    className="px-0 h-auto text-sm text-muted-foreground"
-                    onClick={() => navigate("/reset-password")}
-                  >
-                    Mot de passe oublié ?
+                  <FormField
+                    control={loginForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="exemple@email.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={loginForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mot de passe</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex justify-end">
+                    <Button 
+                      type="button" 
+                      variant="link" 
+                      className="px-0 h-auto text-sm text-muted-foreground"
+                      onClick={() => navigate("/reset-password")}
+                    >
+                      Mot de passe oublié ?
+                    </Button>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Connexion en cours..." : "Se connecter"}
                   </Button>
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Connexion en cours..." : "Se connecter"}
-                </Button>
-              </form>
-            </Form>
+                </form>
+              </Form>
+            </div>
           </div>
         </div>
       );
@@ -145,7 +154,7 @@ export default function Index() {
       );
     }
 
-    // Afficher le tableau de bord approprié selon le rôle
+    // Display the appropriate dashboard based on role
     switch (dashboardType) {
       case "admin":
         return <AdminDashboard />;
@@ -165,19 +174,25 @@ export default function Index() {
     }
   };
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      {user && <Header />}
-      <main className={`flex-grow ${!user ? 'p-0' : 'container mx-auto px-4 py-8'}`}>
-        {authLoading ? (
-          <div className="flex justify-center items-center min-h-[50vh]">
-            <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full"></div>
-          </div>
-        ) : (
-          renderDashboard()
-        )}
-      </main>
-      <Footer />
-    </div>
-  );
+  // For logged in users, wrap content in the regular layout
+  if (user) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow container mx-auto px-4 py-8">
+          {authLoading ? (
+            <div className="flex justify-center items-center min-h-[50vh]">
+              <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full"></div>
+            </div>
+          ) : (
+            renderContent()
+          )}
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // For logged out users, just render the content (which includes the patchwork and login form)
+  return renderContent();
 }
