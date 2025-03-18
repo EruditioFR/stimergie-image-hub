@@ -28,7 +28,6 @@ interface MasonryGridProps {
   totalCount?: number;
   currentPage?: number;
   onPageChange?: (page: number) => void;
-  onLoadMore?: () => void;
 }
 
 export function MasonryGrid({ 
@@ -36,13 +35,11 @@ export function MasonryGrid({
   isLoading = false, 
   totalCount = 0,
   currentPage = 1,
-  onPageChange,
-  onLoadMore 
+  onPageChange
 }: MasonryGridProps) {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [selectedImageDetail, setSelectedImageDetail] = useState<any>(null);
   const [isImageDetailOpen, setIsImageDetailOpen] = useState(false);
-  const [visibleImageRange, setVisibleImageRange] = useState({ start: 0, end: 20 });
   const { user } = useAuth();
   const { selectedImages, toggleImageSelection, isImageSelected, clearSelection } = useImageSelection();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -52,13 +49,6 @@ export function MasonryGrid({
   const isDesktop = useMediaQuery('(min-width: 1024px) and (max-width: 1279px)');
   const isWidescreen = useMediaQuery('(min-width: 1280px) and (max-width: 1535px)');
   const isUltrawide = useMediaQuery('(min-width: 1536px)');
-
-  // On utilise useInfiniteScroll seulement si onLoadMore est fourni
-  if (onLoadMore) {
-    // Importing inside the component to avoid circular dependencies
-    const { useInfiniteScroll } = require('@/hooks/useInfiniteScroll');
-    useInfiniteScroll(onLoadMore, isLoading);
-  }
   
   // Calculate number of columns based on screen size
   const columnCount = useMemo(() => {
@@ -81,68 +71,14 @@ export function MasonryGrid({
     return columns;
   }, [images, columnCount]);
 
-  // Handle scroll events for image loading optimization
-  const handleScroll = useCallback(() => {
-    const windowHeight = window.innerHeight;
-    const documentHeight = document.documentElement.scrollHeight;
-    const scrollTop = window.scrollY;
-    
-    const visibleStart = Math.max(0, Math.floor((scrollTop - 1000) / 300) * columnCount);
-    const visibleEnd = Math.min(
-      images.length, 
-      Math.ceil((scrollTop + windowHeight + 1000) / 300) * columnCount
-    );
-    
-    setVisibleImageRange({ start: visibleStart, end: visibleEnd });
-    
-    if (images.length > visibleEnd) {
-      const nextBatchImages = images.slice(visibleEnd, visibleEnd + columnCount * 5);
-      if (nextBatchImages.length > 0) {
-        preloadImages(nextBatchImages.map(img => img.src));
-      }
-    }
-    
-    if (images.length > 50) {
-      const visibleImages = images.slice(visibleStart, visibleEnd);
-      clearOffscreenImagesFromCache(visibleImages.map(img => img.src));
-    }
-  }, [images, columnCount]);
-  
-  // Setup image preloading and scroll listener
+  // Setup image preloading
   useEffect(() => {
     if (images.length > 0) {
-      const preloadImagesInBatches = () => {
-        const initialBatch = images.slice(0, 12).map(img => img.src);
-        preloadImages(initialBatch);
-        
-        if (images.length > 12) {
-          setTimeout(() => {
-            if (document.visibilityState === 'visible') {
-              const nextBatch = images.slice(12, 24).map(img => img.src);
-              preloadImages(nextBatch);
-            }
-          }, 500);
-          
-          if (images.length > 24) {
-            setTimeout(() => {
-              if (document.visibilityState === 'visible') {
-                const laterBatch = images.slice(24, 36).map(img => img.src);
-                preloadImages(laterBatch);
-              }
-            }, 1500);
-          }
-        }
-      };
-      
-      preloadImagesInBatches();
+      // Load all images at once
+      const allImageUrls = images.map(img => img.src);
+      preloadImages(allImageUrls);
     }
-    
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, [images, handleScroll]);
+  }, [images]);
   
   // Sync URL image ID with detail modal
   useEffect(() => {

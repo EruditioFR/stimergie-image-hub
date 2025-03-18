@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -262,12 +263,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     window.history.pushState(null, '', `?${newSearchParams.toString()}`);
   }, []);
 
-  const loadMoreImages = useCallback(() => {
-    if (!isLoading && !isFetching && newImages.length === 50) {
-      setPage(prev => prev + 1);
-    }
-  }, [isLoading, isFetching, newImages.length]);
-
   const refreshGallery = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['gallery-images'] });
     setPage(1);
@@ -286,7 +281,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     currentPage: page,
     totalCount,
     handlePageChange,
-    loadMoreImages,
     handleTabChange,
     handleClientChange,
     handleResetFilters,
