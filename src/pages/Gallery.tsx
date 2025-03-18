@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
 import { GalleryHeader } from '@/components/gallery/GalleryHeader';
-import { MasonryGrid } from '@/components/gallery/MasonryGrid';
+import { MasonryGrid } from '@/components/gallery/masonry/MasonryGrid';
 import { EmptyResults } from '@/components/gallery/EmptyResults';
 import { useAuth } from '@/context/AuthContext';
 import { useGalleryImages } from '@/hooks/useGalleryImages';

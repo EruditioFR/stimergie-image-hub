@@ -103,5 +103,3 @@ const ImageItem = memo(function ImageItem({
     </div>
   );
 });
-
-export default MasonryColumn;

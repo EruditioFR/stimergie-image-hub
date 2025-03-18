@@ -1,28 +1,16 @@
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
-import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
-import { SelectionToolbar } from '@/components/gallery/SelectionToolbar';
-import { MasonryColumn } from '@/components/gallery/MasonryColumn';
-import { ImageCard } from '@/components/ImageCard';
 import { useImageSelection } from '@/hooks/useImageSelection';
-import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
-import { downloadImages } from '@/utils/image';
-import { ImageDetailModal } from './ImageDetailModal';
-import { useParams, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { preloadImages, clearOffscreenImagesFromCache } from '@/components/LazyImage';
+import { useSearchParams } from 'react-router-dom';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { 
-  Pagination, 
-  PaginationContent, 
-  PaginationItem, 
-  PaginationLink, 
-  PaginationNext, 
-  PaginationPrevious 
-} from '@/components/ui/pagination';
+import { preloadImages, clearOffscreenImagesFromCache } from '@/components/LazyImage';
+import { MasonryColumn } from './MasonryColumn';
+import { MasonryPagination } from './MasonryPagination';
+import { MasonryToolbar } from './MasonryToolbar';
+import { MasonryDetailModal } from './MasonryDetailModal';
+import { MasonryLoading } from './MasonryLoading';
 
 interface Image {
   id: string;
@@ -51,7 +39,7 @@ export function MasonryGrid({
   onPageChange,
   onLoadMore 
 }: MasonryGridProps) {
-  const [isShareDialogOpen, setIsShareDialogOpen] = React.useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [selectedImageDetail, setSelectedImageDetail] = useState<any>(null);
   const [isImageDetailOpen, setIsImageDetailOpen] = useState(false);
   const [visibleImageRange, setVisibleImageRange] = useState({ start: 0, end: 20 });
@@ -67,17 +55,21 @@ export function MasonryGrid({
 
   // On utilise useInfiniteScroll seulement si onLoadMore est fourni
   if (onLoadMore) {
+    // Importing inside the component to avoid circular dependencies
+    const { useInfiniteScroll } = require('@/hooks/useInfiniteScroll');
     useInfiniteScroll(onLoadMore, isLoading);
   }
   
+  // Calculate number of columns based on screen size
   const columnCount = useMemo(() => {
     if (isUltrawide) return 5;
     if (isWidescreen) return 4;
     if (isDesktop) return 3;
     if (isTablet) return 2;
-    return 3; // Sur mobile, on utilise maintenant 3 colonnes
+    return 3; // Sur mobile, on utilise 3 colonnes
   }, [isUltrawide, isWidescreen, isDesktop, isTablet, isMobile]);
   
+  // Distribute images into columns
   const columnImages = useMemo(() => {
     const columns = Array(columnCount).fill(0).map(() => []);
     
@@ -89,9 +81,7 @@ export function MasonryGrid({
     return columns;
   }, [images, columnCount]);
 
-  const imagesPerPage = 15;
-  const totalPages = totalCount > 0 ? Math.ceil(totalCount / imagesPerPage) : 0;
-  
+  // Handle scroll events for image loading optimization
   const handleScroll = useCallback(() => {
     const windowHeight = window.innerHeight;
     const documentHeight = document.documentElement.scrollHeight;
@@ -118,6 +108,7 @@ export function MasonryGrid({
     }
   }, [images, columnCount]);
   
+  // Setup image preloading and scroll listener
   useEffect(() => {
     if (images.length > 0) {
       const preloadImagesInBatches = () => {
@@ -153,11 +144,13 @@ export function MasonryGrid({
     };
   }, [images, handleScroll]);
   
+  // Sync URL image ID with detail modal
   useEffect(() => {
     const imageId = searchParams.get('image');
     if (imageId) {
       const openImageDetail = async () => {
         try {
+          const { supabase } = await import('@/integrations/supabase/client');
           const { data, error } = await supabase
             .from('images')
             .select('*')
@@ -179,6 +172,7 @@ export function MasonryGrid({
     }
   }, [searchParams]);
 
+  // Image click handler
   const handleImageClick = (image: any) => {
     setSelectedImageDetail(image);
     setIsImageDetailOpen(true);
@@ -187,6 +181,7 @@ export function MasonryGrid({
     setSearchParams(searchParams);
   };
   
+  // Close image detail modal
   const handleCloseImageDetail = () => {
     setIsImageDetailOpen(false);
     setSelectedImageDetail(null);
@@ -195,30 +190,7 @@ export function MasonryGrid({
     setSearchParams(searchParams);
   };
 
-  const handleDownload = async () => {
-    if (selectedImages.length === 0) {
-      toast.error("Veuillez sélectionner au moins une image à télécharger");
-      return;
-    }
-    
-    const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
-    await downloadImages(selectedImagesData);
-  };
-
-  const openShareDialog = () => {
-    if (!user) {
-      toast.error("Vous devez être connecté pour partager des images");
-      return;
-    }
-
-    if (selectedImages.length === 0) {
-      toast.error("Veuillez sélectionner au moins une image");
-      return;
-    }
-    
-    setIsShareDialogOpen(true);
-  };
-
+  // Page change handler
   const handlePageClick = (page: number) => {
     if (onPageChange) {
       onPageChange(page);
@@ -229,23 +201,18 @@ export function MasonryGrid({
     }
   };
 
+  // Show loading placeholder when no images
   if (isLoading && images.length === 0) {
-    return (
-      <div className="grid grid-cols-3 xs:grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-0.5 animate-pulse px-0.5">
-        {Array.from({ length: columnCount * 2 }).map((_, index) => (
-          <div key={index} className="h-64 rounded-md bg-muted"></div>
-        ))}
-      </div>
-    );
+    return <MasonryLoading columnCount={columnCount} />;
   }
 
   return (
     <>
-      <SelectionToolbar 
-        selectedCount={selectedImages.length}
-        onClearSelection={clearSelection}
-        onDownload={handleDownload}
-        onShare={openShareDialog}
+      <MasonryToolbar 
+        selectedImages={selectedImages}
+        clearSelection={clearSelection}
+        onShareDialogChange={setIsShareDialogOpen}
+        images={images}
       />
 
       <div className="grid grid-cols-3 xs:grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-0.5 px-0.5">
@@ -266,68 +233,20 @@ export function MasonryGrid({
         </div>
       )}
 
-      {/* Ajout de la pagination */}
-      {totalPages > 0 && onPageChange && (
-        <div className="mt-8 mb-6">
-          <Pagination>
-            <PaginationContent>
-              {currentPage > 1 && (
-                <PaginationItem>
-                  <PaginationPrevious onClick={() => handlePageClick(currentPage - 1)} />
-                </PaginationItem>
-              )}
-              
-              {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                let pageNumber;
-                
-                // Logique pour afficher les bons numéros de page
-                if (totalPages <= 5) {
-                  // Si on a 5 pages ou moins, on les affiche toutes
-                  pageNumber = i + 1;
-                } else if (currentPage <= 3) {
-                  // Si on est au début, on affiche 1, 2, 3, 4, 5
-                  pageNumber = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  // Si on est à la fin, on affiche les 5 dernières pages
-                  pageNumber = totalPages - 4 + i;
-                } else {
-                  // Sinon on affiche 2 pages avant et 2 pages après la page actuelle
-                  pageNumber = currentPage - 2 + i;
-                }
-                
-                return (
-                  <PaginationItem key={pageNumber}>
-                    <PaginationLink
-                      isActive={pageNumber === currentPage}
-                      onClick={() => handlePageClick(pageNumber)}
-                    >
-                      {pageNumber}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-              })}
-              
-              {currentPage < totalPages && (
-                <PaginationItem>
-                  <PaginationNext onClick={() => handlePageClick(currentPage + 1)} />
-                </PaginationItem>
-              )}
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
-
-      <CreateAlbumDialog 
-        isOpen={isShareDialogOpen}
-        onOpenChange={setIsShareDialogOpen}
-        selectedImageIds={selectedImages}
-        selectedImages={images.filter(img => selectedImages.includes(img.id))}
+      <MasonryPagination
+        totalCount={totalCount}
+        currentPage={currentPage}
+        onPageChange={handlePageClick}
       />
       
-      <ImageDetailModal 
+      <MasonryDetailModal 
         image={selectedImageDetail}
         isOpen={isImageDetailOpen}
         onClose={handleCloseImageDetail}
+        isShareDialogOpen={isShareDialogOpen}
+        setIsShareDialogOpen={setIsShareDialogOpen}
+        selectedImages={selectedImages}
+        images={images.filter(img => selectedImages.includes(img.id))}
       />
     </>
   );
