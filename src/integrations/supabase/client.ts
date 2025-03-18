@@ -22,7 +22,8 @@ export const supabase = createClient<Database>(
     global: {
       // Make fetch requests with retry and timeout functionality
       fetch: (...args) => {
-        return fetch(...args, {
+        // Fix: Don't use spread operator in fetch call
+        return fetch(args[0], {
           credentials: 'include',
           // Increase default timeout for slow connections
           signal: AbortSignal.timeout(30000) // 30 second timeout
