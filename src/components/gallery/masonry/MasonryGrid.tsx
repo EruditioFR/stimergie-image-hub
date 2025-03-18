@@ -6,6 +6,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { preloadImages } from '@/components/LazyImage';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { MasonryColumn } from './MasonryColumn';
 import { MasonryPagination } from './MasonryPagination';
 import { MasonryToolbar } from './MasonryToolbar';
@@ -29,6 +30,8 @@ interface MasonryGridProps {
   totalCount?: number;
   currentPage?: number;
   onPageChange?: (page: number) => void;
+  hasMorePages?: boolean;
+  loadMoreImages?: () => void;
 }
 
 export function MasonryGrid({ 
@@ -36,7 +39,9 @@ export function MasonryGrid({
   isLoading = false, 
   totalCount = 0,
   currentPage = 1,
-  onPageChange
+  onPageChange,
+  hasMorePages = false,
+  loadMoreImages
 }: MasonryGridProps) {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [selectedImageDetail, setSelectedImageDetail] = useState<any>(null);
@@ -82,6 +87,9 @@ export function MasonryGrid({
       preloadImages(allImageUrls);
     }
   }, [images]);
+  
+  // Infinite scroll reference
+  const infiniteScrollRef = useInfiniteScroll(loadMoreImages, isLoading);
   
   // Sync URL image ID with detail modal
   useEffect(() => {
@@ -166,17 +174,26 @@ export function MasonryGrid({
         ))}
       </div>
 
+      {/* Loading indicator */}
       {isLoading && (
-        <div className="flex justify-center mt-6 mb-4">
+        <div className="flex justify-center my-6">
           <LoadingSpinner size={32} />
         </div>
       )}
+      
+      {/* Infinite scroll sentinel element */}
+      {hasMorePages && !isLoading && (
+        <div ref={infiniteScrollRef} className="h-1 w-full my-4" />
+      )}
 
-      <MasonryPagination
-        totalCount={totalCount}
-        currentPage={currentPage}
-        onPageChange={handlePageClick}
-      />
+      {/* Show pagination when infinite scroll is not available */}
+      {!loadMoreImages && (
+        <MasonryPagination
+          totalCount={totalCount}
+          currentPage={currentPage}
+          onPageChange={handlePageClick}
+        />
+      )}
       
       <MasonryDetailModal 
         image={selectedImageDetail}
