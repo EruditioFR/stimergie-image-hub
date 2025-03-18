@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,8 +14,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Check } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
-// Password reset form schema
+// Email form schema for requesting password reset
+const requestResetSchema = z.object({
+  email: z.string().email("L'adresse email est invalide"),
+});
+
+// Password reset form schema with new passwords
 const resetPasswordSchema = z.object({
+  email: z.string().email("L'adresse email est invalide"),
   password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
   confirmPassword: z.string().min(6, "Veuillez confirmer votre mot de passe"),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -22,6 +29,7 @@ const resetPasswordSchema = z.object({
   path: ["confirmPassword"],
 });
 
+type RequestResetFormValues = z.infer<typeof requestResetSchema>;
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 export default function ResetPassword() {
@@ -56,16 +64,52 @@ export default function ResetPassword() {
     }
   }, [accessToken, refreshToken, hasValidResetParams]);
 
-  // Password reset form
-  const form = useForm<ResetPasswordFormValues>({
+  // Request reset form (when no token is present)
+  const requestForm = useForm<RequestResetFormValues>({
+    resolver: zodResolver(requestResetSchema),
+    defaultValues: {
+      email: "",
+    },
+  });
+
+  // Password reset form (when token is present)
+  const resetForm = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
+      email: "",
       password: "",
       confirmPassword: "",
     },
   });
 
-  const onSubmit = async (data: ResetPasswordFormValues) => {
+  const onRequestReset = async (data: RequestResetFormValues) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: window.location.origin + "/reset-password",
+      });
+      
+      if (error) {
+        setError(error.message);
+        return;
+      }
+      
+      toast({
+        title: "Email envoyé",
+        description: "Vérifiez votre boîte de réception pour le lien de réinitialisation."
+      });
+      
+    } catch (err) {
+      console.error("Error sending reset email:", err);
+      setError("Une erreur inattendue est survenue. Veuillez réessayer.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onResetPassword = async (data: ResetPasswordFormValues) => {
     if (!hasValidResetParams) {
       setError("Lien de réinitialisation invalide ou expiré. Veuillez demander un nouveau lien.");
       return;
@@ -77,6 +121,7 @@ export default function ResetPassword() {
 
       // Use the updated auth API to change password
       const { error } = await supabase.auth.updateUser({ 
+        email: data.email,
         password: data.password
       });
 
@@ -105,43 +150,6 @@ export default function ResetPassword() {
     }
   };
 
-  const handleForgotPassword = async () => {
-    const email = prompt("Veuillez entrer votre adresse email pour recevoir un nouveau lien de réinitialisation:");
-    
-    if (!email) return;
-    
-    try {
-      setIsLoading(true);
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + "/reset-password",
-      });
-      
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: error.message
-        });
-        return;
-      }
-      
-      toast({
-        title: "Email envoyé",
-        description: "Vérifiez votre boîte de réception pour le lien de réinitialisation."
-      });
-    } catch (err) {
-      console.error("Error sending reset email:", err);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible d'envoyer l'email de réinitialisation."
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -152,7 +160,7 @@ export default function ResetPassword() {
             <p className="mt-2 text-gray-600">
               {hasValidResetParams
                 ? "Créez un nouveau mot de passe pour votre compte"
-                : "Le lien de réinitialisation est invalide ou a expiré"}
+                : "Entrez votre adresse email pour recevoir un lien de réinitialisation"}
             </p>
           </div>
 
@@ -177,10 +185,24 @@ export default function ResetPassword() {
               </div>
             </div>
           ) : hasValidResetParams ? (
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <Form {...resetForm}>
+              <form onSubmit={resetForm.handleSubmit(onResetPassword)} className="space-y-6">
                 <FormField
-                  control={form.control}
+                  control={resetForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Adresse email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="exemple@email.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={resetForm.control}
                   name="password"
                   render={({ field }) => (
                     <FormItem>
@@ -194,7 +216,7 @@ export default function ResetPassword() {
                 />
 
                 <FormField
-                  control={form.control}
+                  control={resetForm.control}
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
@@ -217,17 +239,35 @@ export default function ResetPassword() {
               </form>
             </Form>
           ) : (
-            <div className="flex flex-col items-center space-y-4">
-              <p className="text-center text-gray-600">
-                Besoin d'un nouveau lien de réinitialisation ?
-              </p>
-              <Button onClick={handleForgotPassword} disabled={isLoading}>
-                Demander un nouveau lien
-              </Button>
-              <Button variant="outline" onClick={() => navigate("/auth")} className="mt-4">
-                Retour à la connexion
-              </Button>
-            </div>
+            <Form {...requestForm}>
+              <form onSubmit={requestForm.handleSubmit(onRequestReset)} className="space-y-6">
+                <FormField
+                  control={requestForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Adresse email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="exemple@email.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Envoi en cours..." : "Envoyer le lien de réinitialisation"}
+                </Button>
+                
+                <Button variant="outline" onClick={() => navigate("/auth")} className="w-full mt-4">
+                  Retour à la connexion
+                </Button>
+              </form>
+            </Form>
           )}
         </div>
       </div>
