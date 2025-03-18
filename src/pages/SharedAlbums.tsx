@@ -14,6 +14,8 @@ import { LoadingAlbums } from '@/components/albums/LoadingAlbums';
 import { EmptyAlbums } from '@/components/albums/EmptyAlbums';
 import { toast } from 'sonner';
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Define the Album type based on the database structure
 export interface Album {
@@ -115,19 +117,31 @@ export default function SharedAlbums() {
               <Pagination className="mt-8">
                 <PaginationContent>
                   <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={handlePreviousPage} 
+                    <Button
+                      onClick={handlePreviousPage}
                       disabled={page === 1}
-                    />
+                      variant="ghost"
+                      size="icon"
+                      className="gap-1"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span>Précédent</span>
+                    </Button>
                   </PaginationItem>
-                  <div className="mx-4">
+                  <div className="mx-4 flex items-center">
                     Page {page} sur {totalPages}
                   </div>
                   <PaginationItem>
-                    <PaginationNext 
-                      onClick={handleNextPage} 
+                    <Button
+                      onClick={handleNextPage}
                       disabled={page >= totalPages}
-                    />
+                      variant="ghost"
+                      size="icon"
+                      className="gap-1"
+                    >
+                      <span>Suivant</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
                   </PaginationItem>
                 </PaginationContent>
               </Pagination>
