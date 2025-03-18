@@ -1,3 +1,4 @@
+
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { BlogPostEditor } from '@/components/blog/BlogPostEditor';
@@ -20,7 +21,7 @@ export default function BlogEditor() {
       try {
         const { data, error } = await supabase
           .from('blog_posts')
-          .select('*, clients(nom), dropbox_image_url')
+          .select('*, clients(nom), dropbox_image_url, url_miniature')
           .eq('id', id)
           .single();
 
@@ -36,6 +37,7 @@ export default function BlogEditor() {
           client_name: data.clients?.nom || null,
           featured_image_url: data.featured_image_url || null,
           dropbox_image_url: data.dropbox_image_url || null,
+          url_miniature: data.url_miniature || null,
           content_type: (data.content_type as 'Ressource' | 'Ensemble') || 'Ressource',
           category: data.category as 'Actualités' | 'Projets' | 'Conseils' | null,
           created_at: data.created_at,

@@ -13,6 +13,7 @@ export interface BlogPost {
   client_name?: string | null;
   featured_image_url: string | null;
   dropbox_image_url: string | null;
+  url_miniature: string | null;
   content_type: 'Ressource' | 'Ensemble';
   category: 'Actualités' | 'Projets' | 'Conseils' | null;
   created_at: string;
@@ -28,6 +29,7 @@ export interface BlogPostFormData {
   client_id: string | null;
   featured_image_url: string | null;
   dropbox_image_url: string | null;
+  url_miniature: string | null;
   content_type: 'Ressource' | 'Ensemble';
   category: 'Actualités' | 'Projets' | 'Conseils' | null;
   published: boolean;
@@ -77,6 +79,7 @@ export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
         client_name: post.clients?.nom || null,
         featured_image_url: post.featured_image_url,
         dropbox_image_url: post.dropbox_image_url,
+        url_miniature: post.url_miniature,
         content_type: post.content_type || 'Ressource',
         category: post.category as 'Actualités' | 'Projets' | 'Conseils' | null,
         created_at: post.created_at,

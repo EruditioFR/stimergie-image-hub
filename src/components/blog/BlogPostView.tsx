@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +27,7 @@ export function BlogPostView() {
       try {
         const { data, error } = await supabase
           .from('blog_posts')
-          .select('*, clients(nom), dropbox_image_url')
+          .select('*, clients(nom), dropbox_image_url, url_miniature')
           .eq('slug', slug)
           .single();
 
@@ -46,6 +47,7 @@ export function BlogPostView() {
           client_name: data.clients?.nom || null,
           featured_image_url: data.featured_image_url || null,
           dropbox_image_url: data.dropbox_image_url || null,
+          url_miniature: data.url_miniature || null,
           content_type: (data.content_type as 'Ressource' | 'Ensemble') || 'Ressource',
           category: data.category as 'Actualités' | 'Projets' | 'Conseils' | null,
           created_at: data.created_at,
@@ -111,14 +113,16 @@ export function BlogPostView() {
       </div>
 
       <Card>
-        {(post?.featured_image_url || post?.dropbox_image_url) && (
+        {(post?.featured_image_url || post?.dropbox_image_url || post?.url_miniature) && (
           <div 
             className="w-full h-64 md:h-80 bg-cover bg-center"
             style={{ 
               backgroundImage: `url(${
-                post.dropbox_image_url 
-                  ? getDropboxDownloadUrl(post.dropbox_image_url)
-                  : post.featured_image_url
+                post.url_miniature 
+                  ? getDropboxDownloadUrl(post.url_miniature)
+                  : post.dropbox_image_url 
+                    ? getDropboxDownloadUrl(post.dropbox_image_url)
+                    : post.featured_image_url
               })`
             }}
           />
@@ -166,3 +170,4 @@ export function BlogPostView() {
     </div>
   );
 }
+
