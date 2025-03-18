@@ -5,7 +5,7 @@ import { useImageSelection } from '@/hooks/useImageSelection';
 import { useSearchParams } from 'react-router-dom';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { preloadImages, clearOffscreenImagesFromCache } from '@/components/LazyImage';
+import { preloadImages } from '@/components/LazyImage';
 import { MasonryColumn } from './MasonryColumn';
 import { MasonryPagination } from './MasonryPagination';
 import { MasonryToolbar } from './MasonryToolbar';
@@ -71,11 +71,13 @@ export function MasonryGrid({
     return columns;
   }, [images, columnCount]);
 
-  // Setup image preloading
+  // Setup image preloading - improved to load all at once
   useEffect(() => {
     if (images.length > 0) {
-      // Load all images at once
+      // Extract all image URLs including the current page and preload them
       const allImageUrls = images.map(img => img.src);
+      
+      // Use the optimized batch preloader
       preloadImages(allImageUrls);
     }
   }, [images]);
@@ -126,7 +128,7 @@ export function MasonryGrid({
     setSearchParams(searchParams);
   };
 
-  // Page change handler
+  // Page change handler with smoothing
   const handlePageClick = (page: number) => {
     if (onPageChange) {
       onPageChange(page);

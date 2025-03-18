@@ -9,7 +9,7 @@ const fetchCache = new Map<string, Promise<Blob | null>>();
 const processedUrlCache = new Map<string, string>();
 
 // Taille maximale du cache (nombre d'entrées)
-const MAX_CACHE_SIZE = 100;
+const MAX_CACHE_SIZE = 200; // Increased from 100 to 200
 
 // Pour suivre l'ordre d'utilisation des entrées du cache (LRU - Least Recently Used)
 let cacheUsageOrder: string[] = [];
@@ -173,7 +173,7 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
     
     // Configurer fetch avec timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout plus court: 10 secondes
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // Reduced from 10s to 8s
     
     const response = await fetch(fetchUrl, {
       method: 'GET',

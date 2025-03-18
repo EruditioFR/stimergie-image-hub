@@ -23,7 +23,7 @@ export function preloadImages(urls: string[]): void {
   if (!urls.length) return;
   
   // Process all images at once with some basic throttling
-  const batchSize = 20; // Load more images at once
+  const batchSize = 50; // Increased batch size for faster loading
   let index = 0;
   
   const loadNextBatch = () => {
@@ -44,9 +44,9 @@ export function preloadImages(urls: string[]): void {
     
     index += batchSize;
     
-    // Continue loading after a small delay to prevent browser overload
+    // Continue loading after a smaller delay to load faster
     if (index < urls.length) {
-      setTimeout(loadNextBatch, 100);
+      setTimeout(loadNextBatch, 50);
     }
   };
   
@@ -57,7 +57,7 @@ export function preloadImages(urls: string[]): void {
 export function clearOffscreenImagesFromCache(visibleImageUrls: string[]): void {
   // We no longer clear images from cache since we want to load all at once
   // Just maintain a reasonable cache size
-  const MAX_CACHE_SIZE = 500; // Increased for all-at-once loading
+  const MAX_CACHE_SIZE = 800; // Increased for better performance
   
   if (imageCache.size > MAX_CACHE_SIZE) {
     const keysToDelete = Array.from(imageCache.keys()).slice(0, imageCache.size - MAX_CACHE_SIZE);
@@ -99,40 +99,27 @@ export function LazyImage({
           setLoadProgress(100);
           setIsLoaded(true);
         }
-      }, 30);
+      }, 10); // Reduced timeout for faster display
     }
     
-    // Check browser cache
-    const checkBrowserCache = async () => {
-      try {
-        if ('caches' in window) {
-          const cache = await caches.open('images-cache-v1');
-          const response = await cache.match(src);
-          if (response) {
-            const blob = await response.blob();
-            if (blob.size > 0) {
-              const objectURL = URL.createObjectURL(blob);
-              setCachedSrc(objectURL);
-              imageCache.set(src, objectURL);
-              setLoadProgress(90);
-              setTimeout(() => {
-                if (!isUnmountedRef.current) {
-                  setLoadProgress(100);
-                  setIsLoaded(true);
-                }
-              }, 20);
-              return true;
-            }
-          }
-        }
-      } catch (e) {
-        console.warn("Failed to check browser cache:", e);
+    // Skip browser cache check for faster loading unless we need it
+    if (!imageCache.has(src) && !cachedSrc) {
+      // Start simulated progress immediately
+      setLoadProgress(Math.floor(Math.random() * 30) + 20);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
       }
-      return false;
-    };
-    
-    if (!imageCache.has(src)) {
-      checkBrowserCache();
+      
+      progressIntervalRef.current = window.setInterval(() => {
+        if (!isUnmountedRef.current) {
+          setLoadProgress(prev => {
+            // Accelerated progress simulation for better UX
+            const increment = prev < 30 ? 10 : prev < 60 ? 5 : prev < 80 ? 3 : 1;
+            const newProgress = prev + Math.random() * increment;
+            return newProgress >= 90 ? 90 : newProgress;
+          });
+        }
+      }, 80); // Faster interval for smoother progress
     }
     
     // Clean up any interval on unmount
@@ -161,42 +148,12 @@ export function LazyImage({
     
     // For other sources, add size parameters
     if (originalSrc.includes('?')) {
-      return `${originalSrc}&w=20&q=20`;
+      return `${originalSrc}&w=10&q=10`; // Even smaller for faster loading
     }
-    return `${originalSrc}?w=20&q=20`;
+    return `${originalSrc}?w=10&q=10`;
   };
   
   const [lowQualitySrc] = useState(src ? getLowQualitySrc(src) : '');
-
-  // Simulate loading progress for better UX
-  useEffect(() => {
-    if (!isLoaded && !cachedSrc) {
-      // Initialize progress with a random value
-      setLoadProgress(Math.floor(Math.random() * 30) + 20);
-      
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
-      
-      progressIntervalRef.current = window.setInterval(() => {
-        if (!isUnmountedRef.current) {
-          setLoadProgress(prev => {
-            // Slow down progress as it approaches 90%
-            const increment = prev < 30 ? 8 : prev < 60 ? 4 : prev < 80 ? 2 : 1;
-            const newProgress = prev + Math.random() * increment;
-            return newProgress >= 90 ? 90 : newProgress; // Cap at 90% until actual load
-          });
-        }
-      }, 120);
-    }
-    
-    return () => {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
-      }
-    };
-  }, [isLoaded, cachedSrc]);
 
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     // Add image to global cache
@@ -216,7 +173,7 @@ export function LazyImage({
         if (!isUnmountedRef.current) {
           setIsLoaded(true);
         }
-      }, 30);
+      }, 10); // Faster transition
     }
   };
 
@@ -233,7 +190,7 @@ export function LazyImage({
           src={lowQualitySrc}
           alt={alt}
           className={cn(
-            "lazy-image-placeholder absolute inset-0 w-full h-full blur-md scale-105",
+            "lazy-image-placeholder absolute inset-0 w-full h-full blur-sm scale-105",
             objectFit,
             "opacity-100 transition-opacity duration-200"
           )}
@@ -261,9 +218,6 @@ export function LazyImage({
         onLoad={handleImageLoad}
         loading="eager" // For immediate loading
         decoding="async"
-        // fetchpriority is a standard HTML attribute but React's TypeScript
-        // type definitions don't include it as a lowercase attribute
-        // We need to use setAttribute instead
       />
     </div>
   );
