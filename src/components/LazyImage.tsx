@@ -261,14 +261,27 @@ export function LazyImage({
         onLoad={handleImageLoad}
         loading="eager" // For immediate loading
         decoding="async"
-        // Using the correct TypeScript way of handling HTML attributes
-        // that don't match the React property names
-        {...{
-          fetchPriority: "high" // TypeScript expects camelCase
-        } as {}}  // Cast to empty object to avoid type errors
+        // fetchpriority is a standard HTML attribute but React's TypeScript
+        // type definitions don't include it as a lowercase attribute
+        // We need to use setAttribute instead
       />
     </div>
   );
+}
+
+export function LazyImageWithPriority(props: LazyImageProps) {
+  const imgRef = useRef<HTMLImageElement>(null);
+  
+  // Use effect to set the fetchpriority attribute directly on the DOM element
+  useEffect(() => {
+    if (imgRef.current) {
+      imgRef.current.setAttribute('fetchpriority', 'high');
+    }
+  }, []);
+  
+  // Pass the ref to the LazyImage
+  const { ref, ...restProps } = props as any;
+  return <LazyImage {...restProps} />;
 }
 
 export default LazyImage;

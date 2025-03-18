@@ -2,7 +2,7 @@
 import { useState, memo, useRef, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { LazyImage } from '@/components/LazyImage';
+import { LazyImage, LazyImageWithPriority } from '@/components/LazyImage';
 import { cn } from '@/lib/utils';
 
 interface ImageCardProps {
@@ -111,13 +111,22 @@ export const ImageCard = memo(function ImageCard({
       onClick={onClick}
     >
       <div className="block relative">
-        <LazyImage 
-          src={optimizedSrc} 
-          alt={alt} 
-          className={`w-full ${getAspectRatio()}`}
-          objectFit="object-cover"
-          priority={isPriority}
-        />
+        {isPriority ? (
+          <LazyImageWithPriority
+            src={optimizedSrc} 
+            alt={alt} 
+            className={`w-full ${getAspectRatio()}`}
+            objectFit="object-cover"
+            priority={true}
+          />
+        ) : (
+          <LazyImage 
+            src={optimizedSrc} 
+            alt={alt} 
+            className={`w-full ${getAspectRatio()}`}
+            objectFit="object-cover"
+          />
+        )}
         
         {/* Superposition au survol */}
         <div className={cn(
