@@ -109,52 +109,23 @@ export function BlogPostList({ contentType, title, description }: BlogPostListPr
       </div>
       
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <div className="h-48 bg-gray-200 rounded-t-lg" />
-              <CardHeader>
-                <div className="h-6 bg-gray-200 rounded w-3/4 mb-2" />
-                <div className="h-4 bg-gray-200 rounded w-1/2" />
-              </CardHeader>
-              <CardContent>
-                <div className="h-4 bg-gray-200 rounded w-full mb-2" />
-                <div className="h-4 bg-gray-200 rounded w-5/6" />
-              </CardContent>
-              <CardFooter>
-                <div className="h-9 bg-gray-200 rounded w-full" />
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+        <div></div>
       ) : filteredPosts?.length === 0 ? (
-        <div className="text-center py-10">
-          <p className="text-lg text-muted-foreground">
-            Aucun article {contentType === 'Ressource' ? 'ressource' : 'ensemble'} disponible
-          </p>
-          {canEdit && (
-            <Button 
-              variant="outline" 
-              className="mt-4"
-              onClick={() => navigate('/blog/new')}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Créer un article
-            </Button>
-          )}
-        </div>
+        <div></div>
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredPosts?.map((post) => (
             <Card key={post.id} className="overflow-hidden flex flex-col">
-              {(post.featured_image_url || post.dropbox_image_url) && (
+              {(post.featured_image_url || post.dropbox_image_url || post.url_miniature) && (
                 <div 
                   className="h-48 bg-cover bg-center" 
                   style={{ 
                     backgroundImage: `url(${
-                      post.dropbox_image_url 
-                        ? getDropboxDownloadUrl(post.dropbox_image_url)
-                        : post.featured_image_url
+                      post.url_miniature 
+                        ? getDropboxDownloadUrl(post.url_miniature)
+                        : post.dropbox_image_url 
+                          ? getDropboxDownloadUrl(post.dropbox_image_url)
+                          : post.featured_image_url
                     })` 
                   }}
                 />

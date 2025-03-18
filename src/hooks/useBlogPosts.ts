@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,7 +58,7 @@ export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
     queryFn: async () => {
       let query = supabase
         .from('blog_posts')
-        .select('*, clients(nom)')
+        .select('*, clients(nom), dropbox_image_url, url_miniature')
         .order('created_at', { ascending: false });
 
       if (contentType) {
@@ -79,7 +80,7 @@ export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
         client_name: post.clients?.nom || null,
         featured_image_url: post.featured_image_url,
         dropbox_image_url: post.dropbox_image_url,
-        url_miniature: post.url_miniature,
+        url_miniature: post.url_miniature || null,
         content_type: post.content_type || 'Ressource',
         category: post.category as 'Actualités' | 'Projets' | 'Conseils' | null,
         created_at: post.created_at,
