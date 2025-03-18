@@ -6,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { File, Search, Upload } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { getDropboxDownloadUrl } from '@/utils/image/urlUtils';
 
 interface ImageSelectorProps {
   selectedImage: string | null;
@@ -20,6 +22,8 @@ export function ImageSelector({ selectedImage, onSelectImage }: ImageSelectorPro
   const [searchQuery, setSearchQuery] = useState('');
   const [galleryImages, setGalleryImages] = useState<Array<{ id: number; url: string; title: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const location = useLocation();
+  const isResourcesPage = location.pathname === '/resources';
 
   useEffect(() => {
     // Initialize the image URL if a selected image is provided
@@ -30,16 +34,21 @@ export function ImageSelector({ selectedImage, onSelectImage }: ImageSelectorPro
 
   useEffect(() => {
     fetchImages();
-  }, [searchQuery]);
+  }, [searchQuery, isResourcesPage]);
 
   const fetchImages = async () => {
     setIsLoading(true);
     try {
       let query = supabase
         .from('images')
-        .select('id, url, title')
+        .select('id, url, title, url_miniature')
         .order('created_at', { ascending: false })
         .limit(20);
+
+      if (isResourcesPage) {
+        // On resources page, only fetch images that have url_miniature (Dropbox images)
+        query = query.not('url_miniature', 'is', null);
+      }
 
       if (searchQuery) {
         query = query.ilike('title', `%${searchQuery}%`);
@@ -52,7 +61,16 @@ export function ImageSelector({ selectedImage, onSelectImage }: ImageSelectorPro
         return;
       }
       
-      setGalleryImages(data || []);
+      const processedData = data?.map(img => ({
+        id: img.id,
+        // If on resources page, prioritize url_miniature
+        url: isResourcesPage && img.url_miniature ? 
+          getDropboxDownloadUrl(img.url_miniature) : 
+          img.url,
+        title: img.title
+      })) || [];
+      
+      setGalleryImages(processedData);
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -148,6 +166,11 @@ export function ImageSelector({ selectedImage, onSelectImage }: ImageSelectorPro
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
+                {isResourcesPage && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Affichage des images Dropbox uniquement
+                  </p>
+                )}
               </div>
               
               {isLoading ? (
