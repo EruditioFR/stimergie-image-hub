@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -169,10 +168,10 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
     try {
       console.log("Deleting user with ID:", userToDelete);
       
-      // Use the Supabase admin API to delete the user
-      const { error } = await supabase.auth.admin.deleteUser(
-        userToDelete
-      );
+      // Use the RPC function to delete user with proper permissions
+      const { error } = await supabase.rpc('admin_delete_user', {
+        user_id: userToDelete
+      });
 
       if (error) {
         console.error("Erreur lors de la suppression de l'utilisateur:", error);

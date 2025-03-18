@@ -36,6 +36,20 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
     },
   });
 
+  // Generate a random password for new users that admins can share with them
+  const [generatedPassword, setGeneratedPassword] = useState<string>("");
+  
+  // Function to generate a random password
+  const generateRandomPassword = () => {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setGeneratedPassword(password);
+    form.setValue("password", password);
+  };
+
   // Handle submit with proper handling for edit vs create
   const handleSubmit = (values: FormValues) => {
     if (isEditing && initialData) {
@@ -56,7 +70,7 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
         last_name: "",
         role: "user",
         id_client: null,
-      }, values.password);
+      }, values.password || generatedPassword); // Use generated password if field is empty
     }
   };
 
@@ -69,6 +83,39 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
           <div className="grid grid-cols-1 gap-4">
             <EmailField form={form} isEditing={isEditing} />
             <PasswordField form={form} isEditing={isEditing} />
+            
+            {!isEditing && (
+              <div className="mt-2">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  className="text-sm"
+                  onClick={generateRandomPassword}
+                >
+                  Générer un mot de passe
+                </Button>
+                
+                {generatedPassword && (
+                  <div className="mt-2 p-3 bg-gray-50 border rounded-md">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-sm">Mot de passe généré:</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setGeneratedPassword("")}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="mt-1 font-mono text-sm break-all">{generatedPassword}</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Conservez ce mot de passe en lieu sûr pour le communiquer à l'utilisateur.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <UserFormActions onCancel={onCancel} isEditing={isEditing} />
