@@ -3,8 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { parseTagsString } from "@/utils/imageUtils";
 import { toast } from "sonner";
 
-const IMAGES_PER_PAGE = 100; // Increased from 80 to 100 for faster initial load
-const ADMIN_INITIAL_IMAGES = 80; // Increased from 60 to 80
+const IMAGES_PER_PAGE = 80; // Increased from 50 to 80 for faster loading
+const ADMIN_INITIAL_IMAGES = 60; // Increased from 30 to 60
 const MIN_PROJECTS = 5;
 
 /**
@@ -166,11 +166,9 @@ export async function fetchGalleryImages(
   }));
 }
 
-// Very short cache time of 1 minute to avoid stale data
-export const GALLERY_CACHE_TIME = 60 * 1000; 
+export const GALLERY_CACHE_TIME = 10 * 60 * 1000; // Increased to 10 minutes to reduce refetching
 
 // Générer une clé de cache unique basée sur les filtres
 export function generateCacheKey(search: string, tag: string, tab: string, client: string | null, page: number, isAdmin: boolean = false, isInitialLoad: boolean = false, userRole: string = "", userClientId: string | null = null) {
-  // Add a timestamp to the cache key to effectively bypass caching
-  return ['gallery-images', search, tag, tab, client, page, isAdmin, isInitialLoad, userRole, userClientId, Date.now()];
+  return ['gallery-images', search, tag, tab, client, page, isAdmin, isInitialLoad, userRole, userClientId];
 }

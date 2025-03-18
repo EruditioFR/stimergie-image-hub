@@ -77,13 +77,13 @@ export function MasonryGrid({
     return columns;
   }, [images, columnCount]);
 
-  // Load images immediately without caching
+  // Setup image preloading - improved to load all at once
   useEffect(() => {
     if (images.length > 0) {
-      // Extract all image URLs and preload them without caching
+      // Extract all image URLs including the current page and preload them
       const allImageUrls = images.map(img => img.src);
       
-      // Use the preloader with no caching
+      // Use the optimized batch preloader
       preloadImages(allImageUrls);
     }
   }, [images]);

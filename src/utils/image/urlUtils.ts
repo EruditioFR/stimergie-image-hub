@@ -1,4 +1,3 @@
-
 /**
  * Vérifie si une URL est une URL Dropbox
  */
@@ -34,45 +33,41 @@ export function getDropboxDownloadUrl(url: string): string {
       const urlObj = new URL(url);
       // Replace domain and adapt path
       const newPath = urlObj.pathname.replace('/scl/fi/', '/').split('?')[0];
-      return `https://dl.dropboxusercontent.com${newPath}?t=${Date.now()}`;
+      return `https://dl.dropboxusercontent.com${newPath}`;
     } catch (error) {
       console.error("Error converting Dropbox URL:", error);
     }
   }
   
   // If conversion fails or if it's not a standard URL, use fallback method
-  const timestamp = Date.now();
   return url.includes('dl=0') 
-    ? url.replace('dl=0', `raw=1&t=${timestamp}`) 
+    ? url.replace('dl=0', 'raw=1') 
     : url.includes('dl=1') 
-      ? url.replace('dl=1', `raw=1&t=${timestamp}`)
+      ? url.replace('dl=1', 'raw=1')
       : url.includes('raw=1')
-        ? `${url}&t=${timestamp}`
-        : `${url}${url.includes('?') ? '&' : '?'}raw=1&t=${timestamp}`;
+        ? url
+        : `${url}${url.includes('?') ? '&' : '?'}raw=1`;
 }
 
 /**
  * Solution pour contourner les problèmes CORS avec les sources externes
- * Sans mise en cache
  */
 export function getProxiedUrl(url: string): string {
-  // Add timestamp to prevent caching
-  const timestamp = Date.now();
-  const urlWithTimestamp = url.includes('?') 
-    ? `${url}&t=${timestamp}` 
-    : `${url}?t=${timestamp}`;
-    
   // Utiliser un proxy CORS pour toutes les URL externes
   if (url.startsWith('http') && !url.includes(window.location.hostname)) {
-    // Pour Dropbox, utiliser un proxy direct
+    // Pour Dropbox, utiliser un proxy qui préserve les en-têtes binaires
     if (url.includes('dropboxusercontent.com')) {
-      return urlWithTimestamp;
+      const corsProxyUrl = 'https://images.weserv.nl/?url=' + encodeURIComponent(url);
+      console.log(`URL Dropbox convertie via proxy spécial: ${corsProxyUrl}`);
+      return corsProxyUrl;
     }
     
-    // Pour les autres URLs, utiliser un proxy simple sans cache
-    return urlWithTimestamp;
+    // Pour les autres URLs
+    const corsProxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+    console.log(`URL externe convertie via proxy: ${corsProxyUrl}`);
+    return corsProxyUrl;
   }
   
-  // URLs internes - retourner avec timestamp
-  return urlWithTimestamp;
+  // URLs internes - retourner telles quelles
+  return url;
 }
