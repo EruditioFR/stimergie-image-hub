@@ -7,9 +7,9 @@ export default function Projects() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <div>
+      <main className="flex-1">
         <ProjectsContainer />
-      </div>
+      </main>
       <Footer />
     </div>
   );

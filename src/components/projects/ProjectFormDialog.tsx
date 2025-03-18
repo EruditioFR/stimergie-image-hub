@@ -1,7 +1,12 @@
 
 import { ProjectForm } from "@/components/projects/ProjectForm";
 import { Project } from "@/types/project";
-import { Client } from "@/pages/Clients";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface ProjectFormDialogProps {
   open: boolean;
@@ -20,16 +25,21 @@ export function ProjectFormDialog({
   onSubmit,
   project
 }: ProjectFormDialogProps) {
-  if (!open) return null;
-  
   // Use project prop as initialData if provided (for backward compatibility)
   const projectData = project || initialData;
   
   return (
-    <ProjectForm
-      initialData={projectData}
-      onSubmit={onSubmit}
-      onCancel={() => onOpenChange(false)}
-    />
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>{projectData ? "Modifier le projet" : "Ajouter un nouveau projet"}</DialogTitle>
+        </DialogHeader>
+        <ProjectForm
+          initialData={projectData}
+          onSubmit={onSubmit}
+          onCancel={() => onOpenChange(false)}
+        />
+      </DialogContent>
+    </Dialog>
   );
 }
