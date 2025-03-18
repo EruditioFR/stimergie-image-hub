@@ -16,6 +16,19 @@ interface ImageCardProps {
   onClick?: (e: React.MouseEvent) => void;
 }
 
+// Interface pour définir le type de NetworkInformation
+interface NetworkInformation {
+  effectiveType: string;
+  downlink: number;
+  rtt: number;
+  saveData: boolean;
+}
+
+// Étendre l'interface Navigator pour inclure connection
+interface NavigatorWithConnection extends Navigator {
+  connection?: NetworkInformation;
+}
+
 // Composant mémoïsé pour éviter les rendus inutiles
 export const ImageCard = memo(function ImageCard({ 
   id, src, alt, title, author, className, orientation, onClick 
@@ -35,10 +48,10 @@ export const ImageCard = memo(function ImageCard({
       // Adapter la qualité en fonction de la connexion réseau
       let quality = 75; // Qualité par défaut
       
-      if (navigator.connection) {
-        const connection = navigator.connection as any;
+      if (typeof navigator !== 'undefined') {
+        const nav = navigator as NavigatorWithConnection;
         // Si la connexion est lente, réduire la qualité
-        if (connection.effectiveType === '2g' || connection.effectiveType === 'slow-2g') {
+        if (nav.connection && (nav.connection.effectiveType === '2g' || nav.connection.effectiveType === 'slow-2g')) {
           quality = 50;
         }
       }
