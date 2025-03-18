@@ -70,7 +70,7 @@ export default function Index() {
     // Si l'utilisateur n'est pas connecté, afficher la page de connexion
     if (!user) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-[75vh] px-6">
+        <div className="flex flex-col items-center justify-center min-h-screen px-6">
           <div className="w-full max-w-sm mx-auto mb-8">
             <img 
               src="/lovable-uploads/9ce78881-8c65-4716-ab7f-128bb420c8e9.png" 
@@ -167,8 +167,8 @@ export default function Index() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-grow container mx-auto px-4 py-8">
+      {user && <Header />}
+      <main className={`flex-grow ${!user ? 'p-0' : 'container mx-auto px-4 py-8'}`}>
         {authLoading ? (
           <div className="flex justify-center items-center min-h-[50vh]">
             <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full"></div>
