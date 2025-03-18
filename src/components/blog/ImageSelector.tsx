@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { File, Search, Upload } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { getDropboxDownloadUrl } from '@/utils/image/urlUtils';
+import { parseTagsString } from '@/utils/imageUtils';
 
 interface ImageSelectorProps {
   selectedImage: string | null;
@@ -41,7 +42,7 @@ export function ImageSelector({ selectedImage, onSelectImage }: ImageSelectorPro
     try {
       let query = supabase
         .from('images')
-        .select('id, url, title, url_miniature')
+        .select('id, url, title, url_miniature, tags')
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -51,7 +52,8 @@ export function ImageSelector({ selectedImage, onSelectImage }: ImageSelectorPro
       }
 
       if (searchQuery) {
-        query = query.ilike('title', `%${searchQuery}%`);
+        // Search in both title and tags
+        query = query.or(`title.ilike.%${searchQuery}%, tags.ilike.%${searchQuery}%`);
       }
 
       const { data, error } = await query;
@@ -162,7 +164,7 @@ export function ImageSelector({ selectedImage, onSelectImage }: ImageSelectorPro
               <div className="mb-4">
                 <Input
                   type="text"
-                  placeholder="Rechercher des images..."
+                  placeholder="Rechercher par titre ou tags..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
