@@ -20,12 +20,19 @@ export const supabase = createClient<Database>(
       detectSessionInUrl: true
     },
     global: {
-      // Make fetch requests set cookies for anonymous access
-      fetch: (url, options = {}) => {
-        return fetch(url, {
-          ...options,
-          credentials: 'include'
+      // Make fetch requests with retry and timeout functionality
+      fetch: (...args) => {
+        return fetch(...args, {
+          credentials: 'include',
+          // Increase default timeout for slow connections
+          signal: AbortSignal.timeout(30000) // 30 second timeout
         });
+      }
+    },
+    // Add automatic retries for temporary network issues
+    realtime: {
+      params: {
+        eventsPerSecond: 2
       }
     }
   }

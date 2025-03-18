@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -13,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ImagePatchwork } from "@/components/home/ImagePatchwork";
 
@@ -30,7 +31,22 @@ export default function Index() {
   const { dashboardType, loading: dataLoading } = useDashboardData();
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const navigate = useNavigate();
+  
+  // Check for online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
   
   // Login form
   const loginForm = useForm<LoginFormValues>({
@@ -47,6 +63,10 @@ export default function Index() {
       setLoginError(null);
       console.log("Home page: Attempting login for:", data.email);
       
+      if (isOffline) {
+        throw new Error("Vous êtes hors ligne. Veuillez vérifier votre connexion internet.");
+      }
+      
       await signIn(data.email, data.password);
       
       console.log("Home page: Login successful");
@@ -54,9 +74,13 @@ export default function Index() {
     } catch (error) {
       console.error("Home page: Login error:", error);
       if (error instanceof Error) {
-        setLoginError(error.message.includes("Invalid login credentials") 
-          ? "Email ou mot de passe incorrect" 
-          : error.message);
+        if (error.message.includes("Failed to fetch") || error.message.includes("network")) {
+          setLoginError("Erreur de connexion au serveur. Veuillez vérifier votre connexion internet et réessayer.");
+        } else if (error.message.includes("Invalid login credentials")) {
+          setLoginError("Email ou mot de passe incorrect");
+        } else {
+          setLoginError(error.message);
+        }
       } else {
         setLoginError("Une erreur s'est produite lors de la connexion");
       }
@@ -89,6 +113,15 @@ export default function Index() {
             
             <div className="w-full max-w-md bg-white/95 backdrop-blur-sm p-8 rounded-lg shadow-xl">
               <h2 className="text-2xl font-bold mb-6 text-center">Connexion</h2>
+              
+              {isOffline && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Vous êtes actuellement hors ligne. La connexion ne sera pas possible.
+                  </AlertDescription>
+                </Alert>
+              )}
               
               <Form {...loginForm}>
                 <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
@@ -134,8 +167,15 @@ export default function Index() {
                       Mot de passe oublié ?
                     </Button>
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Connexion en cours..." : "Se connecter"}
+                  <Button type="submit" className="w-full" disabled={isLoading || isOffline}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Connexion en cours...
+                      </>
+                    ) : (
+                      "Se connecter"
+                    )}
                   </Button>
                 </form>
               </Form>
