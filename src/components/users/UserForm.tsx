@@ -29,17 +29,9 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
     resolver: zodResolver(schema),
     defaultValues: initialData ? {
       email: initialData.email,
-      first_name: "",
-      last_name: "",
-      role: "user",
-      id_client: "",
       password: "",
     } : {
       email: "",
-      first_name: "",
-      last_name: "",
-      role: "user" as UserRole,
-      id_client: "",
       password: "",
     },
   });
