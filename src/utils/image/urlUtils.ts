@@ -1,4 +1,3 @@
-
 /**
  * Vérifie si une URL est une URL Dropbox
  */
@@ -23,24 +22,24 @@ export function extractDropboxFilePath(url: string): string | null {
 }
 
 /**
- * Convertit une URL Dropbox en URL d'API Dropbox pour le téléchargement direct
+ * Handle Dropbox URLs by converting them to direct download URLs
  */
 export function getDropboxDownloadUrl(url: string): string {
-  // Transformer l'URL standard en URL de contenu direct
-  // Format: de www.dropbox.com à dl.dropboxusercontent.com
+  // Transform the URL standard in URL of direct content
+  // Format: from www.dropbox.com to dl.dropboxusercontent.com
   if (url.includes('www.dropbox.com')) {
-    // Extraire le chemin de l'URL
+    // Extract path from URL
     try {
       const urlObj = new URL(url);
-      // Remplacer le domaine et adapter le chemin
+      // Replace domain and adapt path
       const newPath = urlObj.pathname.replace('/scl/fi/', '/').split('?')[0];
       return `https://dl.dropboxusercontent.com${newPath}`;
     } catch (error) {
-      console.error("Erreur lors de la conversion de l'URL Dropbox:", error);
+      console.error("Error converting Dropbox URL:", error);
     }
   }
   
-  // Si la conversion échoue ou si ce n'est pas une URL standard, utiliser la méthode de secours
+  // If conversion fails or if it's not a standard URL, use fallback method
   return url.includes('dl=0') 
     ? url.replace('dl=0', 'raw=1') 
     : url.includes('dl=1') 

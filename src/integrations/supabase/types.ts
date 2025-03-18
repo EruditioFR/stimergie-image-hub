@@ -92,6 +92,7 @@ export type Database = {
           content: string
           content_type: string | null
           created_at: string
+          dropbox_image_url: string | null
           featured_image_url: string | null
           id: string
           published: boolean
@@ -106,6 +107,7 @@ export type Database = {
           content: string
           content_type?: string | null
           created_at?: string
+          dropbox_image_url?: string | null
           featured_image_url?: string | null
           id?: string
           published?: boolean
@@ -120,6 +122,7 @@ export type Database = {
           content?: string
           content_type?: string | null
           created_at?: string
+          dropbox_image_url?: string | null
           featured_image_url?: string | null
           id?: string
           published?: boolean

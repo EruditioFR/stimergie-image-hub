@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +12,7 @@ export interface BlogPost {
   client_id: string | null;
   client_name?: string | null;
   featured_image_url: string | null;
+  dropbox_image_url: string | null;
   content_type: 'Ressource' | 'Ensemble';
   category: 'Actualités' | 'Projets' | 'Conseils' | null;
   created_at: string;
@@ -27,14 +27,13 @@ export interface BlogPostFormData {
   content: string;
   client_id: string | null;
   featured_image_url: string | null;
+  dropbox_image_url: string | null;
   content_type: 'Ressource' | 'Ensemble';
   category: 'Actualités' | 'Projets' | 'Conseils' | null;
   published: boolean;
 }
 
-// Fonction pour générer un slug à partir du titre avec un ID unique
 const generateSlug = (title: string): string => {
-  // Convertir le titre en minuscules et remplacer les caractères spéciaux par des tirets
   const baseSlug = title
     .toLowerCase()
     .trim()
@@ -42,7 +41,6 @@ const generateSlug = (title: string): string => {
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
   
-  // Ajouter un ID unique de 8 caractères à la fin du slug
   const uniqueId = nanoid(8);
   return `${baseSlug}-${uniqueId}`;
 };
@@ -71,7 +69,6 @@ export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
         throw new Error(error.message);
       }
 
-      // Transform the data to match the BlogPost interface
       return data.map(post => ({
         id: post.id,
         title: post.title,
@@ -79,7 +76,8 @@ export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
         client_id: post.client_id,
         client_name: post.clients?.nom || null,
         featured_image_url: post.featured_image_url,
-        content_type: post.content_type || 'Ressource', // Default to 'Ressource' if not specified
+        dropbox_image_url: post.dropbox_image_url,
+        content_type: post.content_type || 'Ressource',
         category: post.category as 'Actualités' | 'Projets' | 'Conseils' | null,
         created_at: post.created_at,
         updated_at: post.updated_at,
@@ -96,7 +94,6 @@ export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
         throw new Error("User not authenticated");
       }
 
-      // Générer un slug unique pour le nouvel article
       const slug = generateSlug(postData.title);
 
       const { data, error } = await supabase
@@ -104,7 +101,7 @@ export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
         .insert({
           ...postData,
           author_id: user.id,
-          slug // Utiliser le slug généré
+          slug
         })
         .select();
 
@@ -126,7 +123,6 @@ export function useBlogPosts(contentType?: 'Ressource' | 'Ensemble') {
 
   const updatePostMutation = useMutation({
     mutationFn: async ({ id, postData }: { id: string; postData: Partial<BlogPostFormData> }) => {
-      // Si le titre est modifié, générer un nouveau slug
       let updateData: any = { ...postData };
       
       if (postData.title) {

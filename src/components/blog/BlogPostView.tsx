@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { BlogPost } from '@/hooks/useBlogPosts';
 import { AlertCircle, ArrowLeft, Edit } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { getDropboxDownloadUrl } from '@/utils/image/urlUtils';
 
 export function BlogPostView() {
   const { slug } = useParams<{ slug: string }>();
@@ -38,7 +38,6 @@ export function BlogPostView() {
           throw new Error('Article non trouvé');
         }
 
-        // Transform the data to match the BlogPost interface
         const blogPost: BlogPost = {
           id: data.id,
           title: data.title,
@@ -46,7 +45,7 @@ export function BlogPostView() {
           client_id: data.client_id || null,
           client_name: data.clients?.nom || null,
           featured_image_url: data.featured_image_url || null,
-          content_type: (data.content_type as 'Ressource' | 'Ensemble') || 'Ressource', // Ensure proper type
+          content_type: (data.content_type as 'Ressource' | 'Ensemble') || 'Ressource',
           category: data.category as 'Actualités' | 'Projets' | 'Conseils' | null,
           created_at: data.created_at,
           updated_at: data.updated_at,
@@ -111,10 +110,16 @@ export function BlogPostView() {
       </div>
 
       <Card>
-        {post?.featured_image_url && (
+        {(post?.featured_image_url || post?.dropbox_image_url) && (
           <div 
             className="w-full h-64 md:h-80 bg-cover bg-center"
-            style={{ backgroundImage: `url(${post.featured_image_url})` }}
+            style={{ 
+              backgroundImage: `url(${
+                post.dropbox_image_url 
+                  ? getDropboxDownloadUrl(post.dropbox_image_url)
+                  : post.featured_image_url
+              })`
+            }}
           />
         )}
 
