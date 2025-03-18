@@ -11,6 +11,7 @@ import { MasonryPagination } from './MasonryPagination';
 import { MasonryToolbar } from './MasonryToolbar';
 import { MasonryDetailModal } from './MasonryDetailModal';
 import { MasonryLoading } from './MasonryLoading';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface Image {
   id: string;
@@ -165,9 +166,9 @@ export function MasonryGrid({
         ))}
       </div>
 
-      {isLoading && images.length > 0 && (
-        <div className="flex justify-center mt-6">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      {isLoading && (
+        <div className="flex justify-center mt-6 mb-4">
+          <LoadingSpinner size={32} />
         </div>
       )}
 
