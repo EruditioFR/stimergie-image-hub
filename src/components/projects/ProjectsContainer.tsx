@@ -80,7 +80,6 @@ export function ProjectsContainer() {
       <ProjectFormDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
-        clients={clients}
         onSubmit={addProject}
       />
       
@@ -88,7 +87,6 @@ export function ProjectsContainer() {
       <ProjectFormDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
-        clients={clients}
         onSubmit={updateProject}
         initialData={currentProject || undefined}
       />

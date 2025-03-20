@@ -115,7 +115,7 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
               </SelectTrigger>
               <SelectContent>
                 {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id || "default-client"} className="break-words">
+                  <SelectItem key={client.id} value={client.id || ""} className="break-words">
                     {client.nom}
                   </SelectItem>
                 ))}
@@ -141,7 +141,8 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
             id="nom_dossier"
             name="nom_dossier"
             value={formData.nom_dossier || ""}
-            onChange={handleChange}
+            readOnly
+            className="bg-gray-100 cursor-not-allowed"
             placeholder="Ex: ClientXYZ-2023"
           />
           <p className="text-xs text-muted-foreground">Le nom du dossier dans votre espace de stockage</p>
