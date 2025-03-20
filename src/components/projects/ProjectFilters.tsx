@@ -3,6 +3,8 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface ProjectFiltersProps {
   clients: { id: string; nom: string }[];
@@ -19,8 +21,9 @@ export function ProjectFilters({
   searchQuery,
   onSearchQueryChange
 }: ProjectFiltersProps) {
-  const [projectOptions, setProjectOptions] = useState<string[]>([]);
+  const [projectOptions, setProjectOptions] = useState<{id: string, name: string}[]>([]);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Effet pour réinitialiser les options et la sélection quand le client change
   useEffect(() => {
@@ -29,28 +32,47 @@ export function ProjectFilters({
     onSearchQueryChange("");
   }, [clientFilter, onSearchQueryChange]);
 
-  // Simuler le chargement des options de projet basées sur le client sélectionné
+  // Charger les projets depuis la base de données pour le client sélectionné
   useEffect(() => {
-    if (clientFilter) {
-      // Ici on pourrait charger les options depuis l'API
-      // Pour l'instant, on utilise des options fictives selon le client
-      const selectedClient = clients.find(c => c.id === clientFilter);
-      if (selectedClient) {
-        const options = [
-          `${selectedClient.nom} - Projet 1`,
-          `${selectedClient.nom} - Projet 2`,
-          `${selectedClient.nom} - Projet 3`
-        ];
-        setProjectOptions(options);
+    const fetchProjects = async () => {
+      if (!clientFilter) {
+        setProjectOptions([]);
+        return;
       }
-    } else {
-      // Si aucun client n'est sélectionné, réinitialiser les options
-      setProjectOptions([]);
-    }
-  }, [clientFilter, clients]);
+      
+      try {
+        setLoading(true);
+        
+        const { data, error } = await supabase
+          .from('projets')
+          .select('id, nom_projet')
+          .eq('id_client', clientFilter)
+          .order('nom_projet');
+          
+        if (error) {
+          console.error("Erreur lors de la récupération des projets:", error);
+          throw error;
+        }
+        
+        if (data) {
+          const projects = data.map(project => ({
+            id: project.id,
+            name: project.nom_projet
+          }));
+          setProjectOptions(projects);
+        }
+      } catch (error) {
+        console.error("Erreur:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProjects();
+  }, [clientFilter]);
 
-  // Gestion du changement d'option
-  const handleOptionChange = (value: string) => {
+  // Gestion du changement de projet sélectionné
+  const handleProjectChange = (value: string) => {
     setSelectedOption(value);
     onSearchQueryChange(value);
   };
@@ -79,22 +101,36 @@ export function ProjectFilters({
         
         <div className="w-full md:w-2/3">
           {clientFilter ? (
-            // Si un client est sélectionné, montrer un select avec les options de projet
-            <Select
-              value={selectedOption || ""}
-              onValueChange={handleOptionChange}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Sélectionner un projet..." />
-              </SelectTrigger>
-              <SelectContent>
-                {projectOptions.map((option, index) => (
-                  <SelectItem key={index} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            // Si un client est sélectionné, montrer un select avec les projets de ce client
+            <div>
+              {loading ? (
+                <div className="flex items-center justify-center h-10">
+                  <LoadingSpinner />
+                </div>
+              ) : (
+                <Select
+                  value={selectedOption || ""}
+                  onValueChange={handleProjectChange}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Sélectionner un projet..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projectOptions.length === 0 ? (
+                      <SelectItem value="no-projects" disabled>
+                        Aucun projet pour ce client
+                      </SelectItem>
+                    ) : (
+                      projectOptions.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           ) : (
             // Si aucun client n'est sélectionné, montrer le champ de recherche normal
             <div className="relative">

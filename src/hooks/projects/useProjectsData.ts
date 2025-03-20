@@ -39,12 +39,13 @@ export function useProjectsData() {
       // Apply client filter if selected
       if (clientFilter) {
         query = query.eq('id_client', clientFilter);
-      }
-      
-      // Apply search filter if provided
-      if (searchQuery.trim()) {
-        // If client filter is active, search within the filtered client's projects
-        // Otherwise search across all projects
+        
+        // If search query contains a project ID (from project select), filter by that specific project
+        if (searchQuery && searchQuery.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)) {
+          query = query.eq('id', searchQuery);
+        }
+      } else if (searchQuery.trim()) {
+        // If no client filter is active but we have a search query, search across all projects
         query = query.or(`nom_projet.ilike.%${searchQuery}%,type_projet.ilike.%${searchQuery}%,nom_dossier.ilike.%${searchQuery}%`);
       }
       
