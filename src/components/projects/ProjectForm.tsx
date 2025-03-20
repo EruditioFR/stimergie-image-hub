@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -12,6 +13,7 @@ import { Project } from "@/types/project";
 import { Client } from "@/pages/Clients";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface ProjectFormProps {
   initialData?: Project;
@@ -28,6 +30,7 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
   });
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingClients, setLoadingClients] = useState(true);
 
   useEffect(() => {
     if (initialData) {
@@ -39,10 +42,11 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
 
   const fetchClients = async () => {
     try {
-      setLoading(true);
+      setLoadingClients(true);
       const { data, error } = await supabase
         .from('clients')
-        .select('*');
+        .select('*')
+        .order('nom');
       
       if (error) throw error;
       
@@ -52,7 +56,7 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
     } catch (error) {
       console.error("Erreur lors de la récupération des clients:", error);
     } finally {
-      setLoading(false);
+      setLoadingClients(false);
     }
   };
 
@@ -96,22 +100,28 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
 
         <div className="space-y-2">
           <label htmlFor="id_client" className="text-sm font-medium">Client *</label>
-          <Select 
-            value={formData.id_client}
-            onValueChange={(value) => handleSelectChange("id_client", value)}
-            required
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Sélectionner un client" />
-            </SelectTrigger>
-            <SelectContent>
-              {clients.map((client) => (
-                <SelectItem key={client.id} value={client.id || "default-client"}>
-                  {client.nom}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {loadingClients ? (
+            <div className="flex items-center justify-center py-2">
+              <LoadingSpinner size="sm" />
+            </div>
+          ) : (
+            <Select 
+              value={formData.id_client}
+              onValueChange={(value) => handleSelectChange("id_client", value)}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un client" />
+              </SelectTrigger>
+              <SelectContent>
+                {clients.map((client) => (
+                  <SelectItem key={client.id} value={client.id || "default-client"} className="break-words">
+                    {client.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -141,8 +151,8 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
           <Button type="button" variant="outline" onClick={onCancel}>
             Annuler
           </Button>
-          <Button type="submit" disabled={!formData.nom_projet || !formData.id_client}>
-            {initialData ? "Mettre à jour" : "Enregistrer"}
+          <Button type="submit" disabled={!formData.nom_projet || !formData.id_client || loading}>
+            {loading ? <LoadingSpinner size="sm" /> : (initialData ? "Mettre à jour" : "Enregistrer")}
           </Button>
         </div>
       </form>

@@ -12,7 +12,6 @@ interface ProjectFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialData?: Project;
-  clients: { id: string; nom: string }[];
   onSubmit: (project: Project) => void;
   project?: Project;
 }
@@ -21,7 +20,6 @@ export function ProjectFormDialog({
   open,
   onOpenChange,
   initialData,
-  clients,
   onSubmit,
   project
 }: ProjectFormDialogProps) {
@@ -36,7 +34,10 @@ export function ProjectFormDialog({
         </DialogHeader>
         <ProjectForm
           initialData={projectData}
-          onSubmit={onSubmit}
+          onSubmit={(data) => {
+            onSubmit(data);
+            onOpenChange(false);
+          }}
           onCancel={() => onOpenChange(false)}
         />
       </DialogContent>
