@@ -122,7 +122,7 @@ export function ProjectFilters({
                       </SelectItem>
                     ) : (
                       projectOptions.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
+                        <SelectItem key={project.id} value={project.id} className="break-words">
                           {project.name}
                         </SelectItem>
                       ))

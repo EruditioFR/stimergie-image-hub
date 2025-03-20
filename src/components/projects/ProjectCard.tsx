@@ -34,9 +34,9 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
       <Card className="hover:shadow-md transition-shadow h-full flex flex-col">
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Folder size={18} className="text-primary flex-shrink-0" />
-              <span className="truncate">{project.nom_projet}</span>
+            <CardTitle className="text-lg flex items-start gap-2">
+              <Folder size={18} className="text-primary flex-shrink-0 mt-1" />
+              <span className="break-words">{project.nom_projet}</span>
             </CardTitle>
             <div className="flex gap-2 flex-shrink-0">
               {onEdit && (

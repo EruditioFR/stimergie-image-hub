@@ -38,9 +38,9 @@ export function ProjectsTable({ projects, onEdit, onDelete }: ProjectsTableProps
           {projects.map((project) => (
             <TableRow key={project.id}>
               <TableCell className="font-medium">
-                <div className="flex items-center gap-2">
-                  <Briefcase size={16} className="text-muted-foreground" />
-                  {project.nom_projet || <span className="italic text-muted-foreground">Sans nom</span>}
+                <div className="flex items-start gap-2">
+                  <Briefcase size={16} className="text-muted-foreground mt-1 flex-shrink-0" />
+                  <span className="break-words">{project.nom_projet || <span className="italic text-muted-foreground">Sans nom</span>}</span>
                 </div>
               </TableCell>
               <TableCell>
@@ -50,8 +50,8 @@ export function ProjectsTable({ projects, onEdit, onDelete }: ProjectsTableProps
                   <span className="text-muted-foreground">-</span>
                 )}
               </TableCell>
-              <TableCell>{project.client_name || "Non spécifié"}</TableCell>
-              <TableCell>{project.nom_dossier || "-"}</TableCell>
+              <TableCell className="break-words">{project.client_name || "Non spécifié"}</TableCell>
+              <TableCell className="break-words">{project.nom_dossier || "-"}</TableCell>
               <TableCell>
                 {project.created_at ? (
                   formatDistanceToNow(new Date(project.created_at), {
