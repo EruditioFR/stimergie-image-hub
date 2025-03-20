@@ -16,10 +16,11 @@ import { useForm } from "react-hook-form";
 
 import { createUserSchema, updateUserSchema, FormValues, UserRole } from "./form/UserFormValidation";
 import { UserFormProps } from "./form/UserFormTypes";
-import { EmailField } from "./form/fields/BasicInfoFields";
+import { EmailField, NameFields } from "./form/fields/BasicInfoFields";
 import { PasswordField } from "./form/fields/PasswordField";
 import { UserFormActions } from "./form/UserFormActions";
 import { UserFormHeader } from "./form/UserFormHeader";
+import { RoleField } from "./form/fields/RoleField";
 
 export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing = false, isAdmin = false }: UserFormProps) {
   // Use the appropriate schema based on whether we're editing or creating
@@ -29,9 +30,15 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
     resolver: zodResolver(schema),
     defaultValues: initialData ? {
       email: initialData.email,
+      first_name: initialData.first_name || "",
+      last_name: initialData.last_name || "",
+      role: initialData.role as UserRole,
       password: "",
     } : {
       email: "",
+      first_name: "",
+      last_name: "",
+      role: "user" as UserRole,
       password: "",
     },
   });
@@ -50,6 +57,16 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
     form.setValue("password", password);
   };
 
+  // Available role options
+  const availableRoles = isAdmin ? [
+    { value: "user", label: "Utilisateur" },
+    { value: "admin_client", label: "Admin Client" },
+    { value: "admin", label: "Administrateur" }
+  ] : [
+    { value: "user", label: "Utilisateur" },
+    { value: "admin_client", label: "Admin Client" }
+  ];
+
   // Handle submit with proper handling for edit vs create
   const handleSubmit = (values: FormValues) => {
     if (isEditing && initialData) {
@@ -57,18 +74,18 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
       onSubmit({
         id: initialData.id,
         email: values.email,
-        first_name: "",
-        last_name: "",
-        role: "user",
+        first_name: values.first_name,
+        last_name: values.last_name,
+        role: values.role,
         id_client: null,
       }, values.password); // Pass password even when editing
     } else {
       // For new user, pass without ID and include password
       onSubmit({
         email: values.email,
-        first_name: "",
-        last_name: "",
-        role: "user",
+        first_name: values.first_name,
+        last_name: values.last_name,
+        role: values.role,
         id_client: null,
       }, values.password || generatedPassword); // Use generated password if field is empty
     }
@@ -80,12 +97,14 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <EmailField form={form} isEditing={isEditing} />
+            <RoleField form={form} availableRoles={availableRoles} />
+            <NameFields form={form} />
             <PasswordField form={form} isEditing={isEditing} />
             
             {!isEditing && (
-              <div className="mt-2">
+              <div className="mt-2 md:col-span-2">
                 <Button 
                   type="button" 
                   variant="outline"

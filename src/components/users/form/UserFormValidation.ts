@@ -7,6 +7,11 @@ export type UserRole = "admin" | "admin_client" | "user";
 // Create a base schema without password
 const baseSchema = {
   email: z.string().email("L'adresse email est invalide"),
+  first_name: z.string().min(1, "Le prénom est requis"),
+  last_name: z.string().min(1, "Le nom est requis"),
+  role: z.enum(["admin", "admin_client", "user"] as const, {
+    required_error: "Le rôle est requis",
+  }),
 };
 
 // Schema for creating a new user (password required)
