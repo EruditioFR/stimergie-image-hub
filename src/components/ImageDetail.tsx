@@ -159,9 +159,9 @@ export function ImageDetail() {
               onClick={toggleFullscreen}
             >
               <LazyImage 
-                src={imageDetails.url_miniature || imageDetails.url} 
+                src={imageDetails.url} 
                 alt={imageDetails.title} 
-                className="w-full aspect-auto"
+                className="w-full h-auto" 
                 aspectRatio="aspect-auto"
               />
             </div>

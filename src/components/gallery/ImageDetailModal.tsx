@@ -76,7 +76,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
               {/* Main Image Section - Now showing the image first before any text */}
               <div className="lg:col-span-3 space-y-6">
-                {/* Image displayed first */}
+                {/* Image displayed first with original ratio */}
                 <div 
                   className="rounded-xl overflow-hidden cursor-zoom-in shadow-lg bg-card"
                   onClick={toggleFullscreen}
@@ -84,7 +84,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                   <LazyImage 
                     src={image.url} 
                     alt={image.title} 
-                    className="w-full aspect-auto"
+                    className="w-full h-auto"
                     aspectRatio="aspect-auto"
                   />
                 </div>
@@ -122,17 +122,6 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
 
                 {/* Image Information - Now after the image */}
                 <div className="bg-card rounded-xl p-6 shadow-sm">
-                  {/* Display url_miniature image above the title */}
-                  {image.url_miniature && (
-                    <div className="mb-4 rounded-lg overflow-hidden">
-                      <LazyImage 
-                        src={image.url_miniature} 
-                        alt={`Miniature de ${image.title}`} 
-                        className="w-full h-auto max-h-60 object-contain"
-                      />
-                    </div>
-                  )}
-                  
                   <h1 className="text-2xl font-bold mb-2">{image.title}</h1>
                   <p className="text-muted-foreground mb-6">{image.description || 'Aucune description disponible'}</p>
                   

@@ -106,7 +106,7 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
             </div>
           ) : (
             <Select 
-              value={formData.id_client || ""}
+              value={formData.id_client}
               onValueChange={(value) => handleSelectChange("id_client", value)}
               required
             >
