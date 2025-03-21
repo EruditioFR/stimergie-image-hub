@@ -6,6 +6,7 @@ export function useGalleryFilters() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
 
   const handleTabChange = useCallback((value: string) => {
@@ -16,12 +17,20 @@ export function useGalleryFilters() {
   const handleClientChange = useCallback((clientId: string | null) => {
     console.log('Client changed to:', clientId);
     setSelectedClient(clientId);
+    // Reset project when client changes
+    setSelectedProject(null);
+  }, []);
+  
+  const handleProjectChange = useCallback((projectId: string | null) => {
+    console.log('Project changed to:', projectId);
+    setSelectedProject(projectId);
   }, []);
 
   const handleResetFilters = useCallback(() => {
     console.log('Resetting filters');
     setActiveTab('all');
     setSelectedClient(null);
+    setSelectedProject(null);
     
     // Clear URL search params
     navigate('/gallery', { replace: true });
@@ -35,16 +44,19 @@ export function useGalleryFilters() {
       searchQuery !== '' || 
       tagFilter !== '' || 
       activeTab.toLowerCase() !== 'all' ||
-      selectedClient !== null
+      selectedClient !== null ||
+      selectedProject !== null
     );
-  }, [activeTab, selectedClient]);
+  }, [activeTab, selectedClient, selectedProject]);
 
   return {
     activeTab,
     selectedClient,
+    selectedProject,
     hasActiveFilters,
     handleTabChange,
     handleClientChange,
+    handleProjectChange,
     handleResetFilters,
     updateFilterStatus
   };

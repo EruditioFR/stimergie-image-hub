@@ -32,16 +32,19 @@ const Gallery = () => {
     hasActiveFilters,
     activeTab,
     selectedClient,
+    selectedProject,
     currentPage,
     totalCount,
     handlePageChange,
     handleTabChange,
     handleClientChange,
+    handleProjectChange,
     handleResetFilters,
     refreshGallery,
     formatImagesForGrid,
     userRole: galleryUserRole,
-    userClientId
+    userClientId,
+    shouldFetchRandom
   } = useGalleryImages(isAdmin);
 
   // Initialize infinite images on first load or filter change
@@ -59,14 +62,14 @@ const Gallery = () => {
 
   // Function to load more images
   const loadMoreImages = useCallback(() => {
-    if (isLoading || isFetching || isLoadingMore) return;
+    if (isLoading || isFetching || isLoadingMore || shouldFetchRandom) return;
     
     const nextPage = currentPage + 1;
     if (totalCount > infiniteImages.length) {
       setIsLoadingMore(true);
       handlePageChange(nextPage);
     }
-  }, [currentPage, handlePageChange, infiniteImages.length, isLoading, isFetching, isLoadingMore, totalCount]);
+  }, [currentPage, handlePageChange, infiniteImages.length, isLoading, isFetching, isLoadingMore, totalCount, shouldFetchRandom]);
 
   // Add newly loaded images to our infinite scroll collection
   useEffect(() => {
@@ -94,16 +97,7 @@ const Gallery = () => {
     if (currentPage === 1) {
       setInfiniteImages([]);
     }
-  }, [searchQuery, activeTab, selectedClient, currentPage]);
-
-  useEffect(() => {
-    console.log('Component mounted, loading initial data');
-    
-    // Reset state when unmounting (for when we return to the page)
-    return () => {
-      console.log('Component unmounting, resetting state');
-    };
-  }, []);
+  }, [searchQuery, activeTab, selectedClient, selectedProject, currentPage]);
 
   const displayedImages = infiniteImages.length > 0 ? infiniteImages : allImages;
   const shouldShowEmptyState = !isLoading && displayedImages.length === 0;
@@ -118,11 +112,12 @@ const Gallery = () => {
     currentPage,
     isAdmin,
     userRole,
-    userClientId
+    userClientId,
+    shouldFetchRandom
   });
 
-  // Calculate if there are more pages to load
-  const hasMorePages = infiniteImages.length < totalCount;
+  // Calculate if there are more pages to load (only for non-random queries)
+  const hasMorePages = !shouldFetchRandom && infiniteImages.length < totalCount;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -136,6 +131,8 @@ const Gallery = () => {
           categories={categories}
           selectedClient={selectedClient}
           onClientChange={handleClientChange}
+          selectedProject={selectedProject}
+          onProjectChange={handleProjectChange}
           userName={userProfile?.firstName || ''}
           userLastName={userProfile?.lastName || ''}
           userRole={userRole}
@@ -153,7 +150,7 @@ const Gallery = () => {
               currentPage={currentPage}
               onPageChange={handlePageChange}
               hasMorePages={hasMorePages}
-              loadMoreImages={loadMoreImages}
+              loadMoreImages={hasMorePages ? loadMoreImages : undefined}
             />
           ) : (
             <EmptyResults 

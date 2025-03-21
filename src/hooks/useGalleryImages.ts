@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from "sonner";
 import { fetchGalleryImages, GALLERY_CACHE_TIME, generateCacheKey } from '@/services/galleryService';
 import { formatImagesForGrid } from '@/utils/imageUtils';
 import { useGalleryFilters } from './useGalleryFilters';
@@ -15,11 +14,10 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const tagFilter = searchParams.get('tag') || '';
-  const pageParam = searchParams.get('page');
-  const [page, setPage] = useState(pageParam ? parseInt(pageParam) : 1);
+  const [page, setPage] = useState(1);
   const [allImages, setAllImages] = useState<Image[]>([]);
   const previousRequestRef = useRef<string | null>(null);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [shouldFetchRandom, setShouldFetchRandom] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   
   const { userRole, user } = useAuth();
@@ -52,9 +50,11 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const {
     activeTab,
     selectedClient,
+    selectedProject,
     hasActiveFilters,
     handleTabChange,
     handleClientChange: baseHandleClientChange,
+    handleProjectChange: baseHandleProjectChange,
     handleResetFilters,
     updateFilterStatus
   } = useGalleryFilters();
@@ -64,14 +64,14 @@ export const useGalleryImages = (isAdmin: boolean) => {
       searchQuery, 
       tagFilter, 
       activeTab, 
-      selectedClient, 
+      selectedClient,
+      selectedProject, 
       page, 
-      isAdmin, 
-      isInitialLoad,
+      shouldFetchRandom,
       userRole,
       userClientId
     );
-  }, [searchQuery, tagFilter, activeTab, selectedClient, page, isAdmin, isInitialLoad, userRole, userClientId]);
+  }, [searchQuery, tagFilter, activeTab, selectedClient, selectedProject, page, shouldFetchRandom, userRole, userClientId]);
 
   const handleClientChange = useCallback((clientId: string | null) => {
     if (userRole === 'admin_client' && userClientId) {
@@ -85,74 +85,62 @@ export const useGalleryImages = (isAdmin: boolean) => {
     
     baseHandleClientChange(clientId);
     
+    // When we apply a client filter, we don't want random images
+    setShouldFetchRandom(false);
     setPage(1);
     setAllImages([]);
-    
-    setIsInitialLoad(false);
     
     previousRequestRef.current = generateCacheKey(
       searchQuery, 
       tagFilter, 
       activeTab, 
-      clientId, 
+      clientId,
+      null, 
       1, 
-      isAdmin, 
       false,
       userRole,
       userClientId
     ).join(',');
-  }, [baseHandleClientChange, searchQuery, tagFilter, activeTab, queryClient, isAdmin, userRole, userClientId]);
-
-  useEffect(() => {
-    if (page > 0) {
-      const nextPageKey = generateCacheKey(
-        searchQuery, 
-        tagFilter, 
-        activeTab, 
-        selectedClient, 
-        page + 1, 
-        isAdmin, 
-        false,
-        userRole,
-        userClientId
-      );
-      queryClient.prefetchQuery({
-        queryKey: nextPageKey,
-        queryFn: () => fetchGalleryImages(
-          searchQuery, 
-          tagFilter, 
-          activeTab, 
-          selectedClient, 
-          page + 1, 
-          isAdmin, 
-          false,
-          userRole,
-          userClientId
-        ),
-        staleTime: GALLERY_CACHE_TIME,
-      });
+  }, [baseHandleClientChange, searchQuery, tagFilter, activeTab, queryClient, userRole, userClientId]);
+  
+  const handleProjectChange = useCallback((projectId: string | null) => {
+    if (previousRequestRef.current) {
+      queryClient.cancelQueries({ queryKey: previousRequestRef.current.split(',') });
     }
-  }, [queryClient, page, searchQuery, tagFilter, activeTab, selectedClient, isAdmin, userRole, userClientId]);
+    
+    baseHandleProjectChange(projectId);
+    
+    // When we apply a project filter, we don't want random images
+    setShouldFetchRandom(false);
+    setPage(1);
+    setAllImages([]);
+    
+    previousRequestRef.current = generateCacheKey(
+      searchQuery, 
+      tagFilter, 
+      activeTab, 
+      selectedClient,
+      projectId, 
+      1, 
+      false,
+      userRole,
+      userClientId
+    ).join(',');
+  }, [baseHandleProjectChange, searchQuery, tagFilter, activeTab, selectedClient, queryClient, userRole, userClientId]);
 
   useEffect(() => {
     setPage(1);
     setAllImages([]);
-    setIsInitialLoad(false);
+    setShouldFetchRandom(!searchQuery && !tagFilter && activeTab === 'all' && !selectedClient && !selectedProject);
     
     updateFilterStatus(searchQuery, tagFilter);
-  }, [searchQuery, tagFilter, activeTab, updateFilterStatus]);
-
-  useEffect(() => {
-    setPage(1);
-    setAllImages([]);
-    setIsInitialLoad(false);
-  }, [selectedClient]);
+  }, [searchQuery, tagFilter, activeTab, updateFilterStatus, selectedClient, selectedProject]);
 
   useEffect(() => {
     if (userClientId) {
       setPage(1);
       setAllImages([]);
-      setIsInitialLoad(true);
+      setShouldFetchRandom(false);
     }
   }, [userClientId]);
 
@@ -189,6 +177,10 @@ export const useGalleryImages = (isAdmin: boolean) => {
         query = query.in('id_projet', projetIds);
       }
       
+      if (selectedProject) {
+        query = query.eq('id_projet', selectedProject);
+      }
+      
       if (searchQuery && searchQuery.trim() !== '') {
         query = query.or(`title.ilike.%${searchQuery}%,tags.ilike.%${searchQuery}%`);
       }
@@ -213,7 +205,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
       console.error('Error count:', error);
       return 0;
     }
-  }, [searchQuery, tagFilter, activeTab, selectedClient]);
+  }, [searchQuery, tagFilter, activeTab, selectedClient, selectedProject]);
 
   const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
     queryKey: cacheKey(),
@@ -221,10 +213,10 @@ export const useGalleryImages = (isAdmin: boolean) => {
       searchQuery, 
       tagFilter, 
       activeTab, 
-      selectedClient, 
+      selectedClient,
+      selectedProject, 
       page, 
-      isAdmin, 
-      isInitialLoad,
+      shouldFetchRandom,
       userRole,
       userClientId
     ),
@@ -241,7 +233,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     };
     
     getTotalCount();
-  }, [fetchTotalCount, searchQuery, tagFilter, activeTab, selectedClient]);
+  }, [fetchTotalCount, searchQuery, tagFilter, activeTab, selectedClient, selectedProject]);
 
   useEffect(() => {
     console.log('New images loaded:', newImages.length);
@@ -250,26 +242,19 @@ export const useGalleryImages = (isAdmin: boolean) => {
     } else {
       setAllImages([]);
     }
-    
-    if (isInitialLoad) {
-      setIsInitialLoad(false);
-    }
-  }, [newImages, page, isInitialLoad]);
+  }, [newImages]);
 
   const handlePageChange = useCallback((newPage: number) => {
     setPage(newPage);
-    const newSearchParams = new URLSearchParams(window.location.search);
-    newSearchParams.set('page', newPage.toString());
-    window.history.pushState(null, '', `?${newSearchParams.toString()}`);
   }, []);
 
   const refreshGallery = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['gallery-images'] });
     setPage(1);
     setAllImages([]);
-    setIsInitialLoad(true);
+    setShouldFetchRandom(!searchQuery && !tagFilter && activeTab === 'all' && !selectedClient && !selectedProject);
     refetch();
-  }, [queryClient, refetch]);
+  }, [queryClient, refetch, searchQuery, tagFilter, activeTab, selectedClient, selectedProject]);
 
   return {
     allImages,
@@ -278,15 +263,18 @@ export const useGalleryImages = (isAdmin: boolean) => {
     hasActiveFilters,
     activeTab,
     selectedClient,
+    selectedProject,
     currentPage: page,
     totalCount,
     handlePageChange,
     handleTabChange,
     handleClientChange,
+    handleProjectChange,
     handleResetFilters,
     refreshGallery,
     formatImagesForGrid,
     userRole,
-    userClientId
+    userClientId,
+    shouldFetchRandom
   };
 };

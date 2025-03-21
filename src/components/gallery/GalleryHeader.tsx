@@ -2,6 +2,7 @@
 import { SearchBar } from '@/components/SearchBar';
 import { useAuth } from '@/context/AuthContext';
 import { ClientsFilter } from './ClientsFilter';
+import { ProjectsFilter } from './ProjectsFilter';
 
 interface GalleryHeaderProps {
   title: string;
@@ -10,6 +11,8 @@ interface GalleryHeaderProps {
   categories: string[];
   selectedClient: string | null;
   onClientChange: (clientId: string | null) => void;
+  selectedProject: string | null;
+  onProjectChange: (projectId: string | null) => void;
   userName?: string;
   userLastName?: string;
   userRole?: string;
@@ -23,6 +26,8 @@ export function GalleryHeader({
   categories,
   selectedClient,
   onClientChange,
+  selectedProject,
+  onProjectChange,
   userName = "",
   userLastName = "",
   userRole,
@@ -57,13 +62,22 @@ export function GalleryHeader({
           <SearchBar className="md:max-w-sm" variant="minimal" />
           
           {isAdmin && (
-            <ClientsFilter 
-              selectedClient={selectedClient}
-              onClientChange={onClientChange}
-              className="w-full md:w-auto md:ml-auto"
-              userRole={userRole}
-              userClientId={userClientId}
-            />
+            <div className="flex flex-col sm:flex-row gap-4 w-full md:ml-auto">
+              <ClientsFilter 
+                selectedClient={selectedClient}
+                onClientChange={onClientChange}
+                className="w-full sm:w-auto"
+                userRole={userRole}
+                userClientId={userClientId}
+              />
+              
+              <ProjectsFilter 
+                selectedProject={selectedProject}
+                onProjectChange={onProjectChange}
+                className="w-full sm:w-auto"
+                selectedClient={selectedClient}
+              />
+            </div>
           )}
         </div>
       </div>
