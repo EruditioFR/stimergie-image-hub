@@ -1,162 +1,172 @@
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue 
-} from "@/components/ui/select";
-import { useState, useEffect } from "react";
-import { Project } from "@/types/project";
-import { ClientDB } from "@/types/user";
-import { X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useClientsData } from '@/hooks/projects/useClientsData';
+import { Project } from '@/types/project';
+import { ClientDB } from '@/types/user';
+import { useProjectMutations } from '@/hooks/projects/useProjectMutations';
+import { toast } from 'sonner';
 
 interface ProjectFormProps {
-  initialData?: Project;
-  onSubmit: (project: Project) => void;
-  onCancel: () => void;
+  project?: Project;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
-export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProps) {
-  const [formData, setFormData] = useState<Project>({
-    nom_projet: "",
-    type_projet: "",
-    id_client: "",
-    nom_dossier: ""
+export const ProjectForm = ({ project, onSuccess, onCancel }: ProjectFormProps) => {
+  const isEditMode = !!project;
+  
+  const [formData, setFormData] = useState<Omit<Project, 'id' | 'created_at' | 'updated_at'>>(() => {
+    if (project) return project;
+    return {
+      nom_projet: '',
+      type_projet: '',
+      id_client: '',
+      nom_dossier: '',
+    };
   });
+
   const [clients, setClients] = useState<ClientDB[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingClients, setLoadingClients] = useState(true);
+  const [selectedClient, setSelectedClient] = useState<ClientDB | null>(null);
+  const { clients: fetchedClients, isLoading: isLoadingClients } = useClientsData();
+  const { addProject, updateProject, isLoading } = useProjectMutations();
 
+  // Update clients list when data is fetched
   useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
-    }
-    
-    fetchClients();
-  }, [initialData]);
-
-  const fetchClients = async () => {
-    try {
-      setLoadingClients(true);
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .order('nom');
+    if (fetchedClients && fetchedClients.length > 0) {
+      // We're explicitly typing this as ClientDB[] to match the database structure
+      setClients(fetchedClients as ClientDB[]);
       
-      if (error) throw error;
-      
-      if (data) {
-        setClients(data as ClientDB[]);
+      // If in edit mode, find the current client
+      if (project && project.id_client) {
+        const projectClient = fetchedClients.find(client => client.id === project.id_client);
+        if (projectClient) {
+          setSelectedClient(projectClient as ClientDB);
+        }
       }
-    } catch (error) {
-      console.error("Erreur lors de la récupération des clients:", error);
-    } finally {
-      setLoadingClients(false);
     }
-  };
+  }, [fetchedClients, project]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleClientChange = (clientId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      id_client: clientId
+    }));
+
+    // Update selectedClient for display purposes
+    const client = clients.find(c => c.id === clientId);
+    if (client) setSelectedClient(client);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    try {
+      // Convert string values to numbers if needed
+      const formattedData = {
+        ...formData,
+        // Make sure any number fields are properly converted
+      };
+
+      if (isEditMode && project) {
+        await updateProject({ ...formattedData, id: project.id });
+        toast.success('Projet mis à jour avec succès');
+      } else {
+        await addProject(formattedData);
+        toast.success('Projet créé avec succès');
+      }
+      
+      if (onSuccess) onSuccess();
+    } catch (error) {
+      console.error('Error submitting project:', error);
+      toast.error("Une erreur s'est produite");
+    }
   };
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-6 mb-8">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">
-          {initialData ? "Modifier le projet" : "Créer un nouveau projet"}
-        </h2>
-        <Button variant="ghost" size="icon" onClick={onCancel}>
-          <X className="h-5 w-5" />
-        </Button>
-      </div>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>{isEditMode ? 'Modifier le projet' : 'Créer un nouveau projet'}</CardTitle>
+      </CardHeader>
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="nom_projet">Nom du projet</Label>
+            <Input 
+              id="nom_projet" 
+              name="nom_projet" 
+              value={formData.nom_projet} 
+              onChange={handleChange} 
+              required 
+            />
+          </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <label htmlFor="nom_projet" className="text-sm font-medium">Nom du projet *</label>
-          <Input
-            id="nom_projet"
-            name="nom_projet"
-            value={formData.nom_projet}
-            onChange={handleChange}
-            placeholder="Photoshoot Corporate"
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="id_client" className="text-sm font-medium">Client *</label>
-          {loadingClients ? (
-            <div className="flex items-center justify-center py-2">
-              <LoadingSpinner size="sm" />
-            </div>
-          ) : (
+          <div className="space-y-2">
+            <Label htmlFor="id_client">Client</Label>
             <Select 
-              value={formData.id_client}
-              onValueChange={(value) => handleSelectChange("id_client", value)}
-              required
+              value={formData.id_client} 
+              onValueChange={handleClientChange}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un client" />
+                <SelectValue placeholder="Sélectionner un client">
+                  {selectedClient ? selectedClient.nom : 'Sélectionner un client'}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id} className="break-words">
+                {clients.map(client => (
+                  <SelectItem key={client.id} value={client.id}>
                     {client.nom}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="type_projet">Type de projet</Label>
+            <Input 
+              id="type_projet" 
+              name="type_projet" 
+              value={formData.type_projet} 
+              onChange={handleChange} 
+              required 
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="nom_dossier">Nom du dossier</Label>
+            <Input 
+              id="nom_dossier" 
+              name="nom_dossier" 
+              value={formData.nom_dossier} 
+              onChange={handleChange} 
+              required 
+            />
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          {onCancel && (
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Annuler
+            </Button>
           )}
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="type_projet" className="text-sm font-medium">Type de projet</label>
-          <Input
-            id="type_projet"
-            name="type_projet"
-            value={formData.type_projet || ""}
-            onChange={handleChange}
-            placeholder="Ex: Portrait, Événement, Mariage..."
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="nom_dossier" className="text-sm font-medium">Nom du dossier</label>
-          <Input
-            id="nom_dossier"
-            name="nom_dossier"
-            value={formData.nom_dossier || ""}
-            readOnly
-            className="bg-gray-100 cursor-not-allowed"
-            placeholder="Ex: ClientXYZ-2023"
-          />
-          <p className="text-xs text-muted-foreground">Le nom du dossier dans votre espace de stockage</p>
-        </div>
-
-        <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Annuler
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? 'Chargement...' : isEditMode ? 'Mettre à jour' : 'Créer'}
           </Button>
-          <Button type="submit" disabled={!formData.nom_projet || !formData.id_client || loading}>
-            {loading ? <LoadingSpinner size="sm" /> : (initialData ? "Mettre à jour" : "Enregistrer")}
-          </Button>
-        </div>
+        </CardFooter>
       </form>
-    </div>
+    </Card>
   );
-}
+};
