@@ -40,10 +40,20 @@ export const ProjectForm = ({ project, onSuccess, onCancel, initialData, onSubmi
 
   const [clients, setClients] = useState<ClientDB[]>([]);
   const [selectedClient, setSelectedClient] = useState<ClientDB | null>(null);
-  const { clients: fetchedClients, loading } = useClientsData();
-  const { addProject, updateProject } = useProjectMutations();
+  const { clients: fetchedClients, loading, fetchClients } = useClientsData();
   
-  // Fix: Use loading from useClientsData instead of isLoading
+  // Pass a dummy reload function if it's not needed in this component
+  const reloadProjects = async () => {
+    // In this component, we're not maintaining a projects list
+    // so we just call the success callback if provided
+    if (onSuccess) {
+      onSuccess();
+    }
+  };
+  
+  const { addProject, updateProject } = useProjectMutations(reloadProjects);
+  
+  // Fix: Use loading from useClientsData
   const isLoading = loading;
 
   // Update clients list when data is fetched
