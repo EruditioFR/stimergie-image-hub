@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -85,7 +84,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     
     baseHandleClientChange(clientId);
     
-    // When we apply a client filter, we don't want random images
     setShouldFetchRandom(false);
     setPage(1);
     setAllImages([]);
@@ -110,7 +108,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     
     baseHandleProjectChange(projectId);
     
-    // When we apply a project filter, we don't want random images
     setShouldFetchRandom(false);
     setPage(1);
     setAllImages([]);
@@ -132,7 +129,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     setPage(1);
     setAllImages([]);
     
-    // Only use random fetching if no filters are applied and not restricted by client
     const noFilters = !searchQuery && !tagFilter && activeTab === 'all' && !selectedProject;
     const canUseRandom = noFilters && (userRole === 'admin' || selectedClient !== null);
     
@@ -154,18 +150,31 @@ export const useGalleryImages = (isAdmin: boolean) => {
         .from('images')
         .select('id', { count: 'exact', head: true });
       
-      // For admin_client and user, automatically filter by their client
       if (['admin_client', 'user'].includes(userRole) && userClientId) {
-        client = userClientId;
-      }
-      
-      if (selectedClient || ((['admin_client', 'user'].includes(userRole)) && userClientId)) {
-        const clientIdToUse = selectedClient || userClientId;
+        let clientIdToUse = userClientId;
         
         const { data: projetData, error: projetError } = await supabase
           .from('projets')
           .select('id')
           .eq('id_client', clientIdToUse);
+        
+        if (projetError) {
+          console.error('Error fetching projets for client:', projetError);
+          return 0;
+        }
+        
+        if (!projetData || projetData.length === 0) {
+          return 0;
+        }
+        
+        const projetIds = projetData.map(projet => projet.id);
+        
+        query = query.in('id_projet', projetIds);
+      } else if (selectedClient) {
+        const { data: projetData, error: projetError } = await supabase
+          .from('projets')
+          .select('id')
+          .eq('id_client', selectedClient);
         
         if (projetError) {
           console.error('Error fetching projets for client:', projetError);
@@ -257,7 +266,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     setPage(1);
     setAllImages([]);
     
-    // Only use random fetching if no filters are applied and not restricted by client
     const noFilters = !searchQuery && !tagFilter && activeTab === 'all' && !selectedProject;
     const canUseRandom = noFilters && (userRole === 'admin' || selectedClient !== null);
     

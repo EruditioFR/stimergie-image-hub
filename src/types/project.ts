@@ -1,3 +1,4 @@
+
 export interface Client {
   id: number;
   name: string;
@@ -13,17 +14,21 @@ export interface Client {
 
 export interface Project {
   id: string;
-  title: string;
-  description: string;
-  id_client: string; // Changed from number to string
-  status: string;
+  title?: string;                // English version
+  nom_projet: string;            // French version
+  description?: string;
+  type_projet?: string;
+  id_client: string;
+  status?: string;
   client_name?: string;
-  created_at: string;
-  updated_at: string;
-  created_by: string;
-  updated_by: string;
+  client_logo?: string;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string;
+  updated_by?: string;
   cover_image?: string;
-  is_public: boolean;
+  is_public?: boolean;
+  nom_dossier?: string;
 }
 
 export interface User {

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { Project } from "@/types/project";
-import { Client } from "@/pages/Clients";
+import { Client } from "@/types/project";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -115,7 +115,7 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
               </SelectTrigger>
               <SelectContent>
                 {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id || ""} className="break-words">
+                  <SelectItem key={client.id.toString()} value={client.id.toString()} className="break-words">
                     {client.nom}
                   </SelectItem>
                 ))}
