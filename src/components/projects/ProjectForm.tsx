@@ -42,7 +42,9 @@ export const ProjectForm = ({ project, onSuccess, onCancel, initialData, onSubmi
   const [selectedClient, setSelectedClient] = useState<ClientDB | null>(null);
   const { clients: fetchedClients, loading } = useClientsData();
   const { addProject, updateProject } = useProjectMutations();
-  const isLoading = loading || false;
+  
+  // Fix: Use loading from useClientsData instead of isLoading
+  const isLoading = loading;
 
   // Update clients list when data is fetched
   useEffect(() => {
@@ -108,6 +110,7 @@ export const ProjectForm = ({ project, onSuccess, onCancel, initialData, onSubmi
       };
 
       if (isEditMode && projectData) {
+        // Pass the project ID to updateProject
         await updateProject({ 
           ...formattedData, 
           id: projectData.id 
@@ -115,6 +118,7 @@ export const ProjectForm = ({ project, onSuccess, onCancel, initialData, onSubmi
         
         toast.success('Projet mis à jour avec succès');
       } else {
+        // Fix: Pass formattedData to addProject
         await addProject(formattedData);
         toast.success('Projet créé avec succès');
       }
