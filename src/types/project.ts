@@ -13,7 +13,7 @@ export interface Client {
 }
 
 export interface Project {
-  id: string;
+  id?: string;  // Made optional for new project creation
   title?: string;                // English version
   nom_projet: string;            // French version
   description?: string;

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { Project } from "@/types/project";
-import { Client } from "@/types/project";
+import { ClientDB } from "@/types/user";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -28,7 +28,7 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
     id_client: "",
     nom_dossier: ""
   });
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<ClientDB[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingClients, setLoadingClients] = useState(true);
 
@@ -51,7 +51,7 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
       if (error) throw error;
       
       if (data) {
-        setClients(data);
+        setClients(data as ClientDB[]);
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des clients:", error);
@@ -115,7 +115,7 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
               </SelectTrigger>
               <SelectContent>
                 {clients.map((client) => (
-                  <SelectItem key={client.id.toString()} value={client.id.toString()} className="break-words">
+                  <SelectItem key={client.id} value={client.id} className="break-words">
                     {client.nom}
                   </SelectItem>
                 ))}
