@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { ImageDetailModal } from '@/components/gallery/ImageDetailModal';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 
 interface MasonryDetailModalProps {
@@ -14,28 +13,17 @@ interface MasonryDetailModalProps {
 }
 
 export function MasonryDetailModal({
-  image,
-  isOpen,
-  onClose,
   isShareDialogOpen,
   setIsShareDialogOpen,
   selectedImages,
   images
 }: MasonryDetailModalProps) {
   return (
-    <>
-      <CreateAlbumDialog 
-        isOpen={isShareDialogOpen}
-        onOpenChange={setIsShareDialogOpen}
-        selectedImageIds={selectedImages}
-        selectedImages={images}
-      />
-      
-      <ImageDetailModal 
-        image={image}
-        isOpen={isOpen}
-        onClose={onClose}
-      />
-    </>
+    <CreateAlbumDialog 
+      isOpen={isShareDialogOpen}
+      onOpenChange={setIsShareDialogOpen}
+      selectedImageIds={selectedImages}
+      selectedImages={images}
+    />
   );
 }

@@ -44,8 +44,6 @@ export function MasonryGrid({
   loadMoreImages
 }: MasonryGridProps) {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const [selectedImageDetail, setSelectedImageDetail] = useState<any>(null);
-  const [isImageDetailOpen, setIsImageDetailOpen] = useState(false);
   const { user } = useAuth();
   const { selectedImages, toggleImageSelection, isImageSelected, clearSelection } = useImageSelection();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -91,52 +89,11 @@ export function MasonryGrid({
   // Infinite scroll reference
   const infiniteScrollRef = useInfiniteScroll(loadMoreImages, isLoading);
   
-  // Sync URL image ID with detail modal
-  useEffect(() => {
-    const imageId = searchParams.get('image');
-    if (imageId) {
-      const openImageDetail = async () => {
-        try {
-          const { supabase } = await import('@/integrations/supabase/client');
-          const { data, error } = await supabase
-            .from('images')
-            .select('*')
-            .eq('id', parseInt(imageId))
-            .single();
-            
-          if (error) throw error;
-          
-          if (data) {
-            setSelectedImageDetail(data);
-            setIsImageDetailOpen(true);
-          }
-        } catch (error) {
-          console.error('Error loading image details:', error);
-        }
-      };
-      
-      openImageDetail();
-    }
-  }, [searchParams]);
-
-  // Image click handler
+  // Image click handler - now redirects to image page instead of opening modal
   const handleImageClick = (image: any) => {
-    setSelectedImageDetail(image);
-    setIsImageDetailOpen(true);
-    
-    searchParams.set('image', image.id);
-    setSearchParams(searchParams);
+    window.open(`/images/${image.id}`, '_blank');
   };
   
-  // Close image detail modal
-  const handleCloseImageDetail = () => {
-    setIsImageDetailOpen(false);
-    setSelectedImageDetail(null);
-    
-    searchParams.delete('image');
-    setSearchParams(searchParams);
-  };
-
   // Page change handler with smoothing
   const handlePageClick = (page: number) => {
     if (onPageChange) {
@@ -196,9 +153,9 @@ export function MasonryGrid({
       )}
       
       <MasonryDetailModal 
-        image={selectedImageDetail}
-        isOpen={isImageDetailOpen}
-        onClose={handleCloseImageDetail}
+        image={null}
+        isOpen={false}
+        onClose={() => {}}
         isShareDialogOpen={isShareDialogOpen}
         setIsShareDialogOpen={setIsShareDialogOpen}
         selectedImages={selectedImages}
