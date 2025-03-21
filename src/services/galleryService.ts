@@ -19,11 +19,11 @@ export async function fetchGalleryImages(
   userRole: string = "",
   userClientId: string | null = null
 ): Promise<any[]> {
-  console.log('Fetching images with:', { search, tag, tab, client, project, pageNum, shouldFetchRandom, userRole });
+  console.log('Fetching images with:', { search, tag, tab, client, project, pageNum, shouldFetchRandom, userRole, userClientId });
   
-  // For admin_client users, always filter by their client ID
-  if (userRole === 'admin_client' && userClientId) {
-    console.log('Admin client user detected, forcing client filter:', userClientId);
+  // For admin_client and regular users, always filter by their client ID
+  if (['admin_client', 'user'].includes(userRole) && userClientId) {
+    console.log('Non-admin user detected, forcing client filter:', userClientId);
     client = userClientId;
   }
   
@@ -80,8 +80,8 @@ export async function fetchGalleryImages(
   }
   
   // Apply ordering and pagination
-  if (shouldFetchRandom && !client && !project && !search && tab.toLowerCase() === 'all' && !tag) {
-    // Random ordering when no filters are applied
+  if (shouldFetchRandom && !project && !search && tab.toLowerCase() === 'all' && !tag) {
+    // Random ordering when no filters are applied (except possibly client for admin_client/user)
     query = query.order('id', { ascending: false });
     // Apply a random seed to make result randomized
     const randomOffset = Math.floor(Math.random() * 1000);

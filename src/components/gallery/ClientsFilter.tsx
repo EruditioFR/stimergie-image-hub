@@ -25,7 +25,7 @@ export function ClientsFilter({ selectedClient, onClientChange, className, userR
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
-  const isAdminClient = userRole === 'admin_client';
+  const isNonAdmin = ['admin_client', 'user'].includes(userRole || '');
   
   useEffect(() => {
     const loadClients = async () => {
@@ -35,8 +35,8 @@ export function ClientsFilter({ selectedClient, onClientChange, className, userR
         
         const clientsData = await fetchClients();
         
-        // If admin_client, filter to only show their client
-        if (isAdminClient && userClientId) {
+        // If admin_client or user, filter to only show their client
+        if (isNonAdmin && userClientId) {
           const filteredClients = clientsData.filter(client => client.id === userClientId);
           setClients(filteredClients);
           
@@ -60,12 +60,12 @@ export function ClientsFilter({ selectedClient, onClientChange, className, userR
     };
     
     loadClients();
-  }, [userRole, userClientId, user, onClientChange, isAdminClient, selectedClient]);
+  }, [userRole, userClientId, user, onClientChange, isNonAdmin, selectedClient]);
   
   const handleValueChange = (value: string) => {
-    // Don't allow admin_client users to change their client
-    if (isAdminClient) {
-      console.log("Admin client users cannot change their client");
+    // Don't allow non-admin users to change their client
+    if (isNonAdmin) {
+      console.log("Non-admin users cannot change their client");
       return;
     }
     
@@ -84,14 +84,14 @@ export function ClientsFilter({ selectedClient, onClientChange, className, userR
       <Select 
         value={selectedClient || 'all'} 
         onValueChange={handleValueChange}
-        disabled={isLoading || isAdminClient}
+        disabled={isLoading || isNonAdmin}
       >
         <SelectTrigger className="w-full sm:w-[200px]">
           <SelectValue placeholder="Filtrer par client" />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            {!isAdminClient && <SelectItem value="all">Tous les clients</SelectItem>}
+            {!isNonAdmin && <SelectItem value="all">Tous les clients</SelectItem>}
             {clients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.nom}

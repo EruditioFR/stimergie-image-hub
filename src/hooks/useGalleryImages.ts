@@ -25,7 +25,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
   
   useEffect(() => {
     const fetchUserClientId = async () => {
-      if (!user || userRole !== 'admin_client') return;
+      if (!user) return;
       
       try {
         const { data, error } = await supabase.rpc('get_user_client_id', {
@@ -45,7 +45,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     };
     
     fetchUserClientId();
-  }, [user, userRole]);
+  }, [user]);
 
   const {
     activeTab,
@@ -74,8 +74,8 @@ export const useGalleryImages = (isAdmin: boolean) => {
   }, [searchQuery, tagFilter, activeTab, selectedClient, selectedProject, page, shouldFetchRandom, userRole, userClientId]);
 
   const handleClientChange = useCallback((clientId: string | null) => {
-    if (userRole === 'admin_client' && userClientId) {
-      console.log('Admin client users cannot change their client filter');
+    if (['admin_client', 'user'].includes(userRole) && userClientId) {
+      console.log('Non-admin users cannot change their client filter');
       return;
     }
     
@@ -131,22 +131,19 @@ export const useGalleryImages = (isAdmin: boolean) => {
   useEffect(() => {
     setPage(1);
     setAllImages([]);
-    setShouldFetchRandom(!searchQuery && !tagFilter && activeTab === 'all' && !selectedClient && !selectedProject);
+    
+    // Only use random fetching if no filters are applied and not restricted by client
+    const noFilters = !searchQuery && !tagFilter && activeTab === 'all' && !selectedProject;
+    const canUseRandom = noFilters && (userRole === 'admin' || selectedClient !== null);
+    
+    setShouldFetchRandom(canUseRandom);
     
     updateFilterStatus(searchQuery, tagFilter);
-  }, [searchQuery, tagFilter, activeTab, updateFilterStatus, selectedClient, selectedProject]);
+  }, [searchQuery, tagFilter, activeTab, updateFilterStatus, selectedClient, selectedProject, userRole]);
 
   useEffect(() => {
-    if (userClientId) {
-      setPage(1);
-      setAllImages([]);
-      setShouldFetchRandom(false);
-    }
-  }, [userClientId]);
-
-  useEffect(() => {
-    if (userRole === 'admin_client' && userClientId && selectedClient !== userClientId) {
-      console.log('Setting client filter to admin_client user client ID:', userClientId);
+    if (['admin_client', 'user'].includes(userRole) && userClientId && selectedClient !== userClientId) {
+      console.log('Setting client filter to non-admin user client ID:', userClientId);
       baseHandleClientChange(userClientId);
     }
   }, [userRole, userClientId, baseHandleClientChange, selectedClient]);
@@ -157,11 +154,18 @@ export const useGalleryImages = (isAdmin: boolean) => {
         .from('images')
         .select('id', { count: 'exact', head: true });
       
-      if (selectedClient) {
+      // For admin_client and user, automatically filter by their client
+      if (['admin_client', 'user'].includes(userRole) && userClientId) {
+        client = userClientId;
+      }
+      
+      if (selectedClient || ((['admin_client', 'user'].includes(userRole)) && userClientId)) {
+        const clientIdToUse = selectedClient || userClientId;
+        
         const { data: projetData, error: projetError } = await supabase
           .from('projets')
           .select('id')
-          .eq('id_client', selectedClient);
+          .eq('id_client', clientIdToUse);
         
         if (projetError) {
           console.error('Error fetching projets for client:', projetError);
@@ -205,7 +209,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
       console.error('Error count:', error);
       return 0;
     }
-  }, [searchQuery, tagFilter, activeTab, selectedClient, selectedProject]);
+  }, [searchQuery, tagFilter, activeTab, selectedClient, selectedProject, userRole, userClientId]);
 
   const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
     queryKey: cacheKey(),
@@ -252,9 +256,15 @@ export const useGalleryImages = (isAdmin: boolean) => {
     queryClient.invalidateQueries({ queryKey: ['gallery-images'] });
     setPage(1);
     setAllImages([]);
-    setShouldFetchRandom(!searchQuery && !tagFilter && activeTab === 'all' && !selectedClient && !selectedProject);
+    
+    // Only use random fetching if no filters are applied and not restricted by client
+    const noFilters = !searchQuery && !tagFilter && activeTab === 'all' && !selectedProject;
+    const canUseRandom = noFilters && (userRole === 'admin' || selectedClient !== null);
+    
+    setShouldFetchRandom(canUseRandom);
+    
     refetch();
-  }, [queryClient, refetch, searchQuery, tagFilter, activeTab, selectedClient, selectedProject]);
+  }, [queryClient, refetch, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, userRole]);
 
   return {
     allImages,
