@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   email: string;
@@ -22,3 +23,6 @@ export interface ClientDB {
   created_at: string;
   updated_at: string;
 }
+
+// Type alias for compatibility with existing code
+export type Client = ClientDB;

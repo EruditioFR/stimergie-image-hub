@@ -54,7 +54,9 @@ export function useGalleryFilters() {
     
     console.log('Client changed to:', clientId);
     setSelectedClient(clientId);
-    // Reset project when client changes
+    
+    // Clear project selection when client changes - the project will be auto-selected
+    // in the ProjectsFilter component when the projects are loaded
     setSelectedProject(null);
   }, [userRole]);
   

@@ -7,4 +7,6 @@ export interface Project {
   nom_dossier: string;
   created_at?: string;
   updated_at?: string;
+  client_name?: string;
+  client_logo?: string;
 }

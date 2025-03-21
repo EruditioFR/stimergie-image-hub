@@ -8,8 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface ProjectsFilterProps {
   selectedProject: string | null;
@@ -18,54 +18,78 @@ interface ProjectsFilterProps {
   selectedClient: string | null;
 }
 
-export function ProjectsFilter({ 
-  selectedProject, 
-  onProjectChange, 
-  className, 
-  selectedClient 
-}: ProjectsFilterProps) {
-  const [projects, setProjects] = useState<{ id: string; nom_projet: string }[]>([]);
+export function ProjectsFilter({ selectedProject, onProjectChange, className, selectedClient }: ProjectsFilterProps) {
+  const [projects, setProjects] = useState<Array<{ id: string; nom_projet: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   useEffect(() => {
     const loadProjects = async () => {
-      if (!selectedClient) {
-        setProjects([]);
-        return;
-      }
-      
       setIsLoading(true);
       try {
+        console.log("Loading projects for ProjectsFilter, client:", selectedClient);
+        
+        // Clear project selection when client changes
+        if (selectedProject) {
+          onProjectChange(null);
+        }
+        
+        // If no client is selected, clear projects list
+        if (!selectedClient) {
+          setProjects([]);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Query projects for the selected client
         const { data, error } = await supabase
           .from('projets')
           .select('id, nom_projet')
           .eq('id_client', selectedClient)
           .order('nom_projet');
+        
+        if (error) {
+          console.error('Error loading projects:', error);
+          toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Impossible de charger la liste des projets"
+          });
+          return;
+        }
+        
+        if (data) {
+          console.log(`Retrieved ${data.length} projects for client ${selectedClient}`);
+          setProjects(data);
           
-        if (error) throw error;
-        
-        setProjects(data || []);
-        
-        // Reset project selection if client changed
-        if (selectedProject) {
-          const projectExists = data?.some(p => p.id === selectedProject);
-          if (!projectExists) {
-            onProjectChange(null);
+          // Auto-select first project when client changes and projects are loaded
+          if (data.length > 0 && !selectedProject) {
+            console.log('Auto-selecting first project:', data[0].id);
+            onProjectChange(data[0].id);
           }
         }
       } catch (error) {
-        console.error('Error loading projects:', error);
-        toast.error("Impossible de charger la liste des projets");
+        console.error('Error:', error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de charger la liste des projets"
+        });
       } finally {
         setIsLoading(false);
       }
     };
     
     loadProjects();
-  }, [selectedClient, selectedProject, onProjectChange]);
+  }, [selectedClient, onProjectChange]);
   
-  // If no client is selected or no projects available, don't show the filter
-  if ((!selectedClient || projects.length === 0) && !isLoading) {
+  const handleValueChange = (value: string) => {
+    // Convert 'all' to null for consistency with filter system
+    console.log(`Project filter changed to: ${value}`);
+    onProjectChange(value === 'all' ? null : value);
+  };
+  
+  // If no client is selected or no projects are available, don't show the filter
+  if (!selectedClient || (projects.length === 0 && !isLoading)) {
     return null;
   }
   
@@ -73,7 +97,7 @@ export function ProjectsFilter({
     <div className={className}>
       <Select 
         value={selectedProject || 'all'} 
-        onValueChange={(value) => onProjectChange(value === 'all' ? null : value)}
+        onValueChange={handleValueChange}
         disabled={isLoading}
       >
         <SelectTrigger className="w-full sm:w-[200px]">
