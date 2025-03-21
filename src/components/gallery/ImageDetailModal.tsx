@@ -122,6 +122,17 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
 
                 {/* Image Information - Now after the image */}
                 <div className="bg-card rounded-xl p-6 shadow-sm">
+                  {/* Display url_miniature image above the title */}
+                  {image.url_miniature && (
+                    <div className="mb-4 rounded-lg overflow-hidden">
+                      <LazyImage 
+                        src={image.url_miniature} 
+                        alt={`Miniature de ${image.title}`} 
+                        className="w-full h-auto max-h-60 object-contain"
+                      />
+                    </div>
+                  )}
+                  
                   <h1 className="text-2xl font-bold mb-2">{image.title}</h1>
                   <p className="text-muted-foreground mb-6">{image.description || 'Aucune description disponible'}</p>
                   
