@@ -115,7 +115,7 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
               </SelectTrigger>
               <SelectContent>
                 {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id} className="break-words">
+                  <SelectItem key={client.id} value={client.id || ""} className="break-words">
                     {client.nom}
                   </SelectItem>
                 ))}
