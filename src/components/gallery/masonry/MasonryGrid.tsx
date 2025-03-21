@@ -44,6 +44,8 @@ export function MasonryGrid({
   loadMoreImages
 }: MasonryGridProps) {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [selectedImageDetail, setSelectedImageDetail] = useState<any>(null);
+  const [isImageDetailOpen, setIsImageDetailOpen] = useState(false);
   const { user } = useAuth();
   const { selectedImages, toggleImageSelection, isImageSelected, clearSelection } = useImageSelection();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -89,11 +91,18 @@ export function MasonryGrid({
   // Infinite scroll reference
   const infiniteScrollRef = useInfiniteScroll(loadMoreImages, isLoading);
   
-  // Image click handler - now redirects to image page instead of opening modal
+  // Image click handler
   const handleImageClick = (image: any) => {
-    window.open(`/images/${image.id}`, '_blank');
+    setSelectedImageDetail(image);
+    setIsImageDetailOpen(true);
   };
   
+  // Close image detail modal
+  const handleCloseImageDetail = () => {
+    setIsImageDetailOpen(false);
+    setSelectedImageDetail(null);
+  };
+
   // Page change handler with smoothing
   const handlePageClick = (page: number) => {
     if (onPageChange) {
@@ -153,9 +162,9 @@ export function MasonryGrid({
       )}
       
       <MasonryDetailModal 
-        image={null}
-        isOpen={false}
-        onClose={() => {}}
+        image={selectedImageDetail}
+        isOpen={isImageDetailOpen}
+        onClose={handleCloseImageDetail}
         isShareDialogOpen={isShareDialogOpen}
         setIsShareDialogOpen={setIsShareDialogOpen}
         selectedImages={selectedImages}
