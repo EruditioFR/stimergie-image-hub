@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+import { generateCacheKey } from '@/utils/image/cacheManager';
 
 interface LazyImageProps {
   src: string;
