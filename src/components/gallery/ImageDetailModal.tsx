@@ -68,7 +68,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
       )}
 
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-7xl w-[95vw] h-[90vh] p-0 overflow-auto">
+        <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] p-0 overflow-auto">
           {/* Ajout d'un DialogTitle caché pour l'accessibilité */}
           <DialogTitle className="sr-only">{image.title}</DialogTitle>
 
@@ -78,13 +78,13 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
               <div className="lg:col-span-3 space-y-6">
                 {/* Image displayed first with original ratio */}
                 <div 
-                  className="rounded-xl overflow-hidden cursor-zoom-in shadow-lg bg-card"
+                  className="rounded-xl overflow-hidden cursor-zoom-in shadow-lg bg-card flex justify-center"
                   onClick={toggleFullscreen}
                 >
                   <LazyImage 
                     src={image.url} 
                     alt={image.title} 
-                    className="w-full h-auto"
+                    className="max-w-full max-h-[65vh] object-contain"
                     aspectRatio="aspect-auto"
                   />
                 </div>

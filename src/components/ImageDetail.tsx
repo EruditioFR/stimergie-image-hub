@@ -151,8 +151,20 @@ export function ImageDetail() {
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
-          {/* Main Image Section - Removed as requested */}
+          {/* Main Image Section */}
           <div className="lg:col-span-3 space-y-6">
+            {/* Image container */}
+            <div 
+              className="rounded-xl overflow-hidden cursor-zoom-in shadow-lg bg-card flex justify-center items-center"
+              onClick={toggleFullscreen}
+            >
+              <img 
+                src={imageDetails.url} 
+                alt={imageDetails.title} 
+                className="max-w-full max-h-[65vh] object-contain"
+              />
+            </div>
+
             {/* Mobile Action Buttons */}
             <div className="flex justify-between items-center">
               <div className="flex space-x-2">

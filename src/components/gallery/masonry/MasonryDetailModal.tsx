@@ -35,12 +35,12 @@ export function MasonryDetailModal({
       
       {image && (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogTitle className="sr-only">{image.title}</DialogTitle>
             <Button 
               variant="ghost" 
               size="icon" 
-              className="absolute right-4 top-4" 
+              className="absolute right-4 top-4 z-10" 
               onClick={onClose}
             >
               <X className="h-4 w-4" />
@@ -49,11 +49,11 @@ export function MasonryDetailModal({
             <div className="space-y-4">
               <h2 className="text-xl font-bold">{image.title}</h2>
               
-              <div className="relative rounded-md overflow-hidden">
+              <div className="relative rounded-md overflow-hidden flex justify-center">
                 <img 
                   src={image.url_miniature || image.src || image.url} 
                   alt={image.title} 
-                  className="w-full h-auto object-contain"
+                  className="max-w-full max-h-[70vh] object-contain"
                 />
               </div>
               
