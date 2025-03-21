@@ -1,6 +1,7 @@
 
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { RoleFieldProps } from "../UserFormTypes";
+import { UserRole } from "../UserFormValidation";
 
 export function RoleField({ form, availableRoles }: RoleFieldProps) {
   return (

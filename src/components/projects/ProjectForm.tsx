@@ -106,7 +106,7 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
             </div>
           ) : (
             <Select 
-              value={formData.id_client}
+              value={formData.id_client || ""}
               onValueChange={(value) => handleSelectChange("id_client", value)}
               required
             >
@@ -115,7 +115,7 @@ export function ProjectForm({ initialData, onSubmit, onCancel }: ProjectFormProp
               </SelectTrigger>
               <SelectContent>
                 {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id || ""} className="break-words">
+                  <SelectItem key={client.id} value={client.id} className="break-words">
                     {client.nom}
                   </SelectItem>
                 ))}

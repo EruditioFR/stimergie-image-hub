@@ -58,7 +58,7 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
   };
 
   // Available role options
-  const availableRoles = isAdmin ? [
+  const availableRoles: Array<{value: UserRole, label: string}> = isAdmin ? [
     { value: "user", label: "Utilisateur" },
     { value: "admin_client", label: "Admin Client" },
     { value: "admin", label: "Administrateur" }
