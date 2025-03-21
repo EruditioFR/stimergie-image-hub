@@ -1,29 +1,88 @@
 
 import { isDropboxUrl, getDropboxDownloadUrl, getProxiedUrl } from './urlUtils';
 
-// Cache pour les réponses de téléchargement d'images
-// Utilisation d'une Map pour stocker les promesses de téléchargement
+// Upgraded cache system for image responses
+// Using a Map for storing the promises of image downloads
 const fetchCache = new Map<string, Promise<Blob | null>>();
 
-// Cache secondaire pour les URLs d'images après transformation
+// Secondary cache for processed URLs after transformation
 const processedUrlCache = new Map<string, string>();
 
-// Taille maximale du cache (nombre d'entrées)
-const MAX_CACHE_SIZE = 200; // Increased from 100 to 200
+// Cache for storing actual blob data as base64 strings, persisting across page loads
+const sessionImageCache = (() => {
+  try {
+    // Using a wrapper for sessionStorage to handle exceptions
+    return {
+      getItem: (key: string): string | null => {
+        try {
+          return sessionStorage.getItem(`img_cache_${key}`);
+        } catch (e) {
+          console.warn('Failed to access session storage:', e);
+          return null;
+        }
+      },
+      setItem: (key: string, value: string): void => {
+        try {
+          sessionStorage.setItem(`img_cache_${key}`, value);
+        } catch (e) {
+          console.warn('Failed to write to session storage:', e);
+          // If storage is full, clear old items
+          try {
+            const keysToRemove = [];
+            for (let i = 0; i < sessionStorage.length; i++) {
+              const key = sessionStorage.key(i);
+              if (key && key.startsWith('img_cache_')) {
+                keysToRemove.push(key);
+              }
+            }
+            // Remove oldest 20% of cached images
+            const removeCount = Math.ceil(keysToRemove.length * 0.2);
+            for (let i = 0; i < removeCount; i++) {
+              sessionStorage.removeItem(keysToRemove[i]);
+            }
+            // Try again
+            sessionStorage.setItem(`img_cache_${key}`, value);
+          } catch (clearError) {
+            console.error('Failed to clear cache and retry:', clearError);
+          }
+        }
+      },
+      removeItem: (key: string): void => {
+        try {
+          sessionStorage.removeItem(`img_cache_${key}`);
+        } catch (e) {
+          console.warn('Failed to remove from session storage:', e);
+        }
+      }
+    };
+  } catch (e) {
+    // Provide a fallback if sessionStorage is not available
+    console.warn('Session storage not available, using in-memory cache instead');
+    const memoryCache = new Map<string, string>();
+    return {
+      getItem: (key: string): string | null => memoryCache.get(key) || null,
+      setItem: (key: string, value: string): void => memoryCache.set(key, value),
+      removeItem: (key: string): void => memoryCache.delete(key)
+    };
+  }
+})();
 
-// Pour suivre l'ordre d'utilisation des entrées du cache (LRU - Least Recently Used)
+// Maximum cache size (number of entries)
+const MAX_CACHE_SIZE = 300; // Increased for better performance
+
+// For tracking usage order of cache entries (LRU - Least Recently Used)
 let cacheUsageOrder: string[] = [];
 
 /**
- * Vérifie si un blob est probablement du contenu HTML et non une image
+ * Checks if a blob is likely HTML content and not an image
  */
 export function isHtmlContent(blob: Blob): boolean {
-  // Vérifier le type MIME
+  // Check MIME type
   if (blob.type.includes('text/html') || blob.type.includes('application/xhtml+xml')) {
     return true;
   }
   
-  // Les petits fichiers sont probablement des pages d'erreur
+  // Small files are likely error pages
   if (blob.size < 1000) {
     return true;
   }
@@ -32,31 +91,32 @@ export function isHtmlContent(blob: Blob): boolean {
 }
 
 /**
- * Gère la politique du cache (LRU - Least Recently Used)
- * Supprime les entrées les moins récemment utilisées lorsque le cache atteint sa taille maximale
+ * Manages cache size using LRU (Least Recently Used) policy
+ * Removes least recently used entries when cache exceeds maximum size
  */
 function manageCacheSize(url: string): void {
-  // Mettre à jour l'ordre d'utilisation
-  // Retirer l'URL si elle existe déjà dans l'ordre
+  // Update usage order
+  // Remove URL if it already exists in the order
   cacheUsageOrder = cacheUsageOrder.filter(cachedUrl => cachedUrl !== url);
-  // Ajouter l'URL à la fin (plus récemment utilisée)
+  // Add URL to the end (most recently used)
   cacheUsageOrder.push(url);
   
-  // Si le cache dépasse la taille maximale, supprimer les entrées les moins récemment utilisées
+  // If cache exceeds maximum size, remove least recently used entries
   if (cacheUsageOrder.length > MAX_CACHE_SIZE) {
     const urlsToRemove = cacheUsageOrder.slice(0, cacheUsageOrder.length - MAX_CACHE_SIZE);
     urlsToRemove.forEach(urlToRemove => {
       fetchCache.delete(urlToRemove);
       processedUrlCache.delete(urlToRemove);
+      sessionImageCache.removeItem(generateCacheKey(urlToRemove));
     });
-    // Mettre à jour l'ordre d'utilisation
+    // Update usage order
     cacheUsageOrder = cacheUsageOrder.slice(-(MAX_CACHE_SIZE));
   }
 }
 
 /**
- * Génère une clé de cache qui inclut les paramètres essentiels de l'URL
- * pour éviter les doublons dans le cache
+ * Generates a cache key that includes essential URL parameters
+ * to avoid duplicates in the cache
  */
 function generateCacheKey(url: string): string {
   try {
@@ -64,7 +124,7 @@ function generateCacheKey(url: string): string {
     // Ne garder que le hostname, le pathname et les paramètres essentiels
     const essentialParams = new URLSearchParams();
     
-    // Filtrer seulement les paramètres pertinents pour le cache
+    // Filter only relevant parameters for caching
     const relevantParams = ['w', 'h', 'q', 'width', 'height', 'quality', 'size'];
     for (const param of relevantParams) {
       if (urlObj.searchParams.has(param)) {
@@ -72,49 +132,82 @@ function generateCacheKey(url: string): string {
       }
     }
     
-    // Construire une clé de cache normalisée
+    // Build a normalized cache key
     return `${urlObj.origin}${urlObj.pathname}${essentialParams.toString() ? '?' + essentialParams.toString() : ''}`;
   } catch (e) {
-    // En cas d'erreur, utiliser l'URL complète comme clé
+    // In case of error, use the full URL as key
     return url;
   }
 }
 
 /**
- * Télécharge une image depuis n'importe quelle source avec mise en cache
+ * Converts a Blob to base64 string for storage
+ */
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Converts a base64 string back to a Blob
+ */
+function base64ToBlob(base64: string): Promise<Blob> {
+  return fetch(base64).then(res => res.blob());
+}
+
+/**
+ * Downloads an image from any source with caching
  */
 export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
-  // Générer une clé de cache normalisée
+  // Generate a normalized cache key
   const cacheKey = generateCacheKey(url);
   
-  // Retourner la réponse mise en cache si disponible
+  // Check if image is in session cache first (persists across page loads)
+  const sessionCached = sessionImageCache.getItem(cacheKey);
+  if (sessionCached) {
+    console.log(`Using session cached image: ${url}`);
+    try {
+      const blob = await base64ToBlob(sessionCached);
+      manageCacheSize(cacheKey);
+      return blob;
+    } catch (error) {
+      console.warn('Failed to use session cached image, fetching fresh copy:', error);
+      // Continue to other caching mechanisms if there's an error
+    }
+  }
+  
+  // Return the cached response if available
   if (fetchCache.has(cacheKey)) {
-    // Mettre à jour l'ordre d'utilisation du cache
+    // Update cache usage order
     manageCacheSize(cacheKey);
     return fetchCache.get(cacheKey);
   }
   
-  // Créer une promesse de téléchargement et la stocker dans le cache avant d'attendre le résultat
+  // Create a download promise and store it in the cache before awaiting the result
   const fetchPromise = fetchImageAsBlobInternal(url, cacheKey);
   fetchCache.set(cacheKey, fetchPromise);
   manageCacheSize(cacheKey);
   
-  // Retourner la promesse mise en cache
+  // Return the cached promise
   return fetchPromise;
 }
 
 /**
- * Détermine si une URL d'image est déjà dans le cache du navigateur
+ * Determines if an image URL is already in the browser cache
  */
 function isImageInBrowserCache(url: string): Promise<boolean> {
   return new Promise(resolve => {
-    // Vérifier si l'image est dans le cache du navigateur en utilisant la méthode de performance
+    // Check if the image is in the browser cache using performance method
     const img = new Image();
     let isCached = false;
     
-    // L'image est chargée rapidement si elle est dans le cache
+    // Image loads quickly if it's in cache
     img.onload = () => {
-      // Vérifier le temps de chargement - moins de 20ms suggère un chargement depuis le cache
+      // Check loading time - less than 20ms suggests loading from cache
       resolve(isCached);
     };
     
@@ -122,27 +215,27 @@ function isImageInBrowserCache(url: string): Promise<boolean> {
       resolve(false);
     };
     
-    // Commencer à vérifier le temps après la définition de src
+    // Start checking time after setting src
     img.src = url;
-    // Utiliser le temps actuel pour vérifier la vitesse de chargement
+    // Use current time to check loading speed
     const startTime = performance.now();
     
-    // Après un court laps de temps, vérifier si l'image est complètement chargée
+    // After a short time, check if the image is fully loaded
     setTimeout(() => {
       if (img.complete && img.naturalWidth > 0) {
         const loadTime = performance.now() - startTime;
-        isCached = loadTime < 20; // Considéré comme mis en cache si chargé en moins de 20ms
+        isCached = loadTime < 20; // Considered cached if loaded in less than 20ms
       }
     }, 10);
   });
 }
 
 /**
- * Implémentation interne du téléchargement d'images
+ * Internal implementation of image download
  */
 async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<Blob | null> {
   try {
-    // Vérifier si nous avons déjà une URL transformée pour cette URL
+    // Check if we already have a transformed URL for this URL
     if (processedUrlCache.has(cacheKey)) {
       const processedUrl = processedUrlCache.get(cacheKey)!;
       console.log(`Using processed URL from cache: ${processedUrl}`);
@@ -153,7 +246,7 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
     
     let fetchUrl;
     
-    // Traiter différemment les URLs Dropbox
+    // Process Dropbox URLs differently
     if (isDropboxUrl(url)) {
       const directDownloadUrl = getDropboxDownloadUrl(url);
       console.log(`Dropbox URL converted to direct URL: ${directDownloadUrl}`);
@@ -162,30 +255,30 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
       fetchUrl = getProxiedUrl(url);
     }
     
-    // Stocker l'URL transformée dans le cache
+    // Store the transformed URL in the cache
     processedUrlCache.set(cacheKey, fetchUrl);
     
-    // Vérifier si l'image est dans le cache du navigateur
+    // Check if the image is in the browser cache
     const isInBrowserCache = await isImageInBrowserCache(fetchUrl);
     if (isInBrowserCache) {
       console.log(`Image found in browser cache: ${url}`);
     }
     
-    // Configurer fetch avec timeout
+    // Configure fetch with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // Reduced from 10s to 8s
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seconds timeout
     
     const response = await fetch(fetchUrl, {
       method: 'GET',
       mode: 'cors',
       credentials: 'omit',
-      cache: 'force-cache', // Utiliser le cache HTTP quand possible
+      cache: 'force-cache', // Use HTTP cache when possible
       redirect: 'follow',
       signal: controller.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Accept': 'image/*, */*;q=0.8',
-        'Cache-Control': 'max-age=604800', // Cache d'une semaine
+        'Cache-Control': 'max-age=604800', // Cache for one week
         'Pragma': 'no-cache'
       }
     });
@@ -209,20 +302,30 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
       return null;
     }
     
-    // Vérifier si la réponse est potentiellement HTML (page d'erreur) et non une image
+    // Check if the response is potentially HTML (error page) and not an image
     if (isHtmlContent(blob)) {
       console.error("Response seems to be an HTML page and not an image");
       return null;
     }
     
-    // Stocker le blob dans le cache d'application si disponible
+    // Store the blob in session storage for persistence across page loads
+    try {
+      // Convert blob to base64 and store in session storage
+      const base64Data = await blobToBase64(blob);
+      sessionImageCache.setItem(cacheKey, base64Data);
+      console.log(`Image stored in session cache: ${url}`);
+    } catch (e) {
+      console.warn("Failed to store image in session cache:", e);
+    }
+    
+    // Also try to store in browser's Cache API if available
     try {
       if ('caches' in window) {
         const cache = await caches.open('images-cache-v1');
         const response = new Response(blob.slice(0), {
           headers: {
             'Content-Type': blob.type,
-            'Cache-Control': 'max-age=604800', // Cache d'une semaine
+            'Cache-Control': 'max-age=604800', // Cache for one week
           }
         });
         cache.put(fetchUrl, response);

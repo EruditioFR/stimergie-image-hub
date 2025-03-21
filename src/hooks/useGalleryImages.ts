@@ -8,6 +8,8 @@ import { Image } from '@/pages/Images';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
+const EXTENDED_CACHE_TIME = 30 * 60 * 1000; // 30 minutes
+
 export const useGalleryImages = (isAdmin: boolean) => {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -26,6 +28,13 @@ export const useGalleryImages = (isAdmin: boolean) => {
     const fetchUserClientId = async () => {
       if (!user) return;
       
+      const cachedClientId = sessionStorage.getItem(`userClientId-${user.id}`);
+      if (cachedClientId) {
+        setUserClientId(cachedClientId);
+        console.log('Using cached user client ID:', cachedClientId);
+        return;
+      }
+      
       try {
         const { data, error } = await supabase.rpc('get_user_client_id', {
           user_id: user.id
@@ -36,8 +45,11 @@ export const useGalleryImages = (isAdmin: boolean) => {
           return;
         }
         
-        setUserClientId(data);
-        console.log('User client ID fetched:', data);
+        if (data) {
+          sessionStorage.setItem(`userClientId-${user.id}`, data);
+          setUserClientId(data);
+          console.log('User client ID fetched and cached:', data);
+        }
       } catch (error) {
         console.error('Error fetching user client ID:', error);
       }
@@ -145,6 +157,14 @@ export const useGalleryImages = (isAdmin: boolean) => {
   }, [userRole, userClientId, baseHandleClientChange, selectedClient]);
 
   const fetchTotalCount = useCallback(async () => {
+    const cacheKey = `imageCount-${searchQuery}-${tagFilter}-${activeTab}-${selectedClient}-${selectedProject}-${userRole}-${userClientId}`;
+    const cachedCount = sessionStorage.getItem(cacheKey);
+    
+    if (cachedCount) {
+      console.log('Using cached image count:', cachedCount);
+      return parseInt(cachedCount, 10);
+    }
+    
     try {
       let query = supabase
         .from('images')
@@ -153,41 +173,61 @@ export const useGalleryImages = (isAdmin: boolean) => {
       if (['admin_client', 'user'].includes(userRole) && userClientId) {
         let clientIdToUse = userClientId;
         
-        const { data: projetData, error: projetError } = await supabase
-          .from('projets')
-          .select('id')
-          .eq('id_client', clientIdToUse);
+        const projectCacheKey = `projectIds-${clientIdToUse}`;
+        const cachedProjectIds = sessionStorage.getItem(projectCacheKey);
         
-        if (projetError) {
-          console.error('Error fetching projets for client:', projetError);
-          return 0;
+        if (cachedProjectIds) {
+          const projetIds = JSON.parse(cachedProjectIds);
+          query = query.in('id_projet', projetIds);
+        } else {
+          const { data: projetData, error: projetError } = await supabase
+            .from('projets')
+            .select('id')
+            .eq('id_client', clientIdToUse);
+          
+          if (projetError) {
+            console.error('Error fetching projets for client:', projetError);
+            return 0;
+          }
+          
+          if (!projetData || projetData.length === 0) {
+            return 0;
+          }
+          
+          const projetIds = projetData.map(projet => projet.id);
+          
+          sessionStorage.setItem(projectCacheKey, JSON.stringify(projetIds));
+          
+          query = query.in('id_projet', projetIds);
         }
-        
-        if (!projetData || projetData.length === 0) {
-          return 0;
-        }
-        
-        const projetIds = projetData.map(projet => projet.id);
-        
-        query = query.in('id_projet', projetIds);
       } else if (selectedClient) {
-        const { data: projetData, error: projetError } = await supabase
-          .from('projets')
-          .select('id')
-          .eq('id_client', selectedClient);
+        const projectCacheKey = `projectIds-${selectedClient}`;
+        const cachedProjectIds = sessionStorage.getItem(projectCacheKey);
         
-        if (projetError) {
-          console.error('Error fetching projets for client:', projetError);
-          return 0;
+        if (cachedProjectIds) {
+          const projetIds = JSON.parse(cachedProjectIds);
+          query = query.in('id_projet', projetIds);
+        } else {
+          const { data: projetData, error: projetError } = await supabase
+            .from('projets')
+            .select('id')
+            .eq('id_client', selectedClient);
+          
+          if (projetError) {
+            console.error('Error fetching projets for client:', projetError);
+            return 0;
+          }
+          
+          if (!projetData || projetData.length === 0) {
+            return 0;
+          }
+          
+          const projetIds = projetData.map(projet => projet.id);
+          
+          sessionStorage.setItem(projectCacheKey, JSON.stringify(projetIds));
+          
+          query = query.in('id_projet', projetIds);
         }
-        
-        if (!projetData || projetData.length === 0) {
-          return 0;
-        }
-        
-        const projetIds = projetData.map(projet => projet.id);
-        
-        query = query.in('id_projet', projetIds);
       }
       
       if (selectedProject) {
@@ -213,6 +253,10 @@ export const useGalleryImages = (isAdmin: boolean) => {
         return 0;
       }
       
+      if (count !== null) {
+        sessionStorage.setItem(cacheKey, count.toString());
+      }
+      
       return count || 0;
     } catch (error) {
       console.error('Error count:', error);
@@ -233,8 +277,8 @@ export const useGalleryImages = (isAdmin: boolean) => {
       userRole,
       userClientId
     ),
-    staleTime: GALLERY_CACHE_TIME,
-    gcTime: GALLERY_CACHE_TIME * 2,
+    staleTime: EXTENDED_CACHE_TIME,
+    gcTime: EXTENDED_CACHE_TIME * 2,
     refetchOnWindowFocus: false,
     enabled: true
   });
@@ -252,10 +296,40 @@ export const useGalleryImages = (isAdmin: boolean) => {
     console.log('New images loaded:', newImages.length);
     if (newImages.length > 0) {
       setAllImages(newImages);
+      
+      if (page < Math.ceil(totalCount / 50) && !shouldFetchRandom) {
+        const nextPageKey = generateCacheKey(
+          searchQuery, 
+          tagFilter, 
+          activeTab, 
+          selectedClient,
+          selectedProject, 
+          page + 1, 
+          false,
+          userRole,
+          userClientId
+        );
+        
+        queryClient.prefetchQuery({
+          queryKey: nextPageKey,
+          queryFn: () => fetchGalleryImages(
+            searchQuery, 
+            tagFilter, 
+            activeTab, 
+            selectedClient,
+            selectedProject, 
+            page + 1, 
+            false,
+            userRole,
+            userClientId
+          ),
+          staleTime: EXTENDED_CACHE_TIME
+        });
+      }
     } else {
       setAllImages([]);
     }
-  }, [newImages]);
+  }, [newImages, page, queryClient, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, totalCount, shouldFetchRandom, userRole, userClientId, generateCacheKey]);
 
   const handlePageChange = useCallback((newPage: number) => {
     setPage(newPage);

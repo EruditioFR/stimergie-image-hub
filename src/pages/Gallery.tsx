@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
@@ -20,10 +20,14 @@ const Gallery = () => {
   const { userRole, user } = useAuth();
   const isAdmin = ['admin', 'admin_client'].includes(userRole);
   const { userProfile } = useUserProfile(user, userRole);
+  const pageLoadTimeRef = useRef(Date.now());
 
   // State for infinite scrolling
   const [infiniteImages, setInfiniteImages] = useState<any[]>([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  
+  // State for preloading status
+  const [preloadedPages, setPreloadedPages] = useState<number[]>([]);
 
   const {
     allImages,
@@ -50,6 +54,10 @@ const Gallery = () => {
   // Initialize infinite images on first load or filter change
   useEffect(() => {
     if (allImages.length > 0) {
+      // Performance tracking
+      const loadTime = Date.now() - pageLoadTimeRef.current;
+      console.log(`Images loaded in ${loadTime}ms`);
+      
       setInfiniteImages(prevImages => {
         if (currentPage === 1) {
           return [...allImages];
@@ -57,8 +65,13 @@ const Gallery = () => {
           return prevImages;
         }
       });
+      
+      // If this is the first page, mark it as preloaded
+      if (currentPage === 1 && !preloadedPages.includes(1)) {
+        setPreloadedPages([...preloadedPages, 1]);
+      }
     }
-  }, [allImages, currentPage]);
+  }, [allImages, currentPage, preloadedPages]);
 
   // Function to load more images
   const loadMoreImages = useCallback(() => {
@@ -68,8 +81,13 @@ const Gallery = () => {
     if (totalCount > infiniteImages.length) {
       setIsLoadingMore(true);
       handlePageChange(nextPage);
+      
+      // Mark this page as being loaded
+      if (!preloadedPages.includes(nextPage)) {
+        setPreloadedPages(prev => [...prev, nextPage]);
+      }
     }
-  }, [currentPage, handlePageChange, infiniteImages.length, isLoading, isFetching, isLoadingMore, totalCount, shouldFetchRandom]);
+  }, [currentPage, handlePageChange, infiniteImages.length, isLoading, isFetching, isLoadingMore, totalCount, shouldFetchRandom, preloadedPages]);
 
   // Add newly loaded images to our infinite scroll collection
   useEffect(() => {
@@ -92,12 +110,38 @@ const Gallery = () => {
 
   // Reset infinite images when filters change
   useEffect(() => {
-    // When any filter changes, the currentPage will be set to 1 and
-    // we need to reset our infinite scroll collection
+    // When any filter changes, reset state
     if (currentPage === 1) {
       setInfiniteImages([]);
+      setPreloadedPages([]);
+      pageLoadTimeRef.current = Date.now();
     }
   }, [searchQuery, activeTab, selectedClient, selectedProject, currentPage]);
+
+  // Preload next page for smoother scrolling
+  useEffect(() => {
+    if (shouldFetchRandom || isLoading || isFetching) return;
+    
+    const nextPage = currentPage + 1;
+    const hasMorePages = !shouldFetchRandom && infiniteImages.length < totalCount;
+    
+    // Only preload if we haven't already and there are more pages
+    if (hasMorePages && !preloadedPages.includes(nextPage)) {
+      // Wait a bit to not interfere with current page loading
+      const timer = setTimeout(() => {
+        console.log(`Preloading page ${nextPage}`);
+        // This will trigger the query prefetch in useGalleryImages
+        handlePageChange(nextPage);
+        // Immediately go back to current page to not disrupt the UI
+        setTimeout(() => handlePageChange(currentPage), 100);
+        
+        // Mark as preloaded
+        setPreloadedPages(prev => [...prev, nextPage]);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentPage, totalCount, infiniteImages.length, shouldFetchRandom, isLoading, isFetching, preloadedPages, handlePageChange]);
 
   const displayedImages = infiniteImages.length > 0 ? infiniteImages : allImages;
   const shouldShowEmptyState = !isLoading && displayedImages.length === 0;
@@ -113,7 +157,8 @@ const Gallery = () => {
     isAdmin,
     userRole,
     userClientId,
-    shouldFetchRandom
+    shouldFetchRandom,
+    preloadedPages
   });
 
   // Calculate if there are more pages to load (only for non-random queries)
