@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Download, Heart, Share2, ArrowLeft, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { LazyImage } from '@/components/LazyImage';
 import { ImageGallery } from '@/components/ImageGallery';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -152,22 +151,10 @@ export function ImageDetail() {
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
-          {/* Main Image Section */}
+          {/* Main Image Section - Removed as requested */}
           <div className="lg:col-span-3 space-y-6">
-            <div 
-              className="rounded-xl overflow-hidden cursor-zoom-in shadow-lg bg-card"
-              onClick={toggleFullscreen}
-            >
-              <LazyImage 
-                src={imageDetails.url} 
-                alt={imageDetails.title} 
-                className="w-full h-auto" 
-                aspectRatio="aspect-auto"
-              />
-            </div>
-
             {/* Mobile Action Buttons */}
-            <div className="flex lg:hidden justify-between items-center">
+            <div className="flex justify-between items-center">
               <div className="flex space-x-2">
                 <Button 
                   variant="outline" 
