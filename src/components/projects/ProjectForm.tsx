@@ -15,13 +15,21 @@ interface ProjectFormProps {
   project?: Project;
   onSuccess?: () => void;
   onCancel?: () => void;
+  initialData?: Project;
+  onSubmit?: (project: Project) => void;
 }
 
-export const ProjectForm = ({ project, onSuccess, onCancel }: ProjectFormProps) => {
-  const isEditMode = !!project;
+export const ProjectForm = ({ project, onSuccess, onCancel, initialData, onSubmit }: ProjectFormProps) => {
+  const isEditMode = !!project || !!initialData;
+  const projectData = initialData || project;
   
   const [formData, setFormData] = useState<Omit<Project, 'id' | 'created_at' | 'updated_at'>>(() => {
-    if (project) return project;
+    if (projectData) return {
+      nom_projet: projectData.nom_projet,
+      type_projet: projectData.type_projet || '',
+      id_client: projectData.id_client,
+      nom_dossier: projectData.nom_dossier || '',
+    };
     return {
       nom_projet: '',
       type_projet: '',
@@ -32,24 +40,43 @@ export const ProjectForm = ({ project, onSuccess, onCancel }: ProjectFormProps) 
 
   const [clients, setClients] = useState<ClientDB[]>([]);
   const [selectedClient, setSelectedClient] = useState<ClientDB | null>(null);
-  const { clients: fetchedClients, isLoading: isLoadingClients } = useClientsData();
-  const { addProject, updateProject, isLoading } = useProjectMutations();
+  const { clients: fetchedClients, loading } = useClientsData();
+  const { addProject, updateProject } = useProjectMutations();
+  const isLoading = loading || false;
 
   // Update clients list when data is fetched
   useEffect(() => {
     if (fetchedClients && fetchedClients.length > 0) {
-      // We're explicitly typing this as ClientDB[] to match the database structure
-      setClients(fetchedClients as ClientDB[]);
+      // We need to cast to match the database structure
+      const clientsData = fetchedClients.map(client => ({
+        ...client,
+        email: '',
+        telephone: '',
+        logo: '',
+        contact_principal: '',
+        created_at: '',
+        updated_at: ''
+      } as ClientDB));
+      
+      setClients(clientsData);
       
       // If in edit mode, find the current client
-      if (project && project.id_client) {
-        const projectClient = fetchedClients.find(client => client.id === project.id_client);
+      if (projectData && projectData.id_client) {
+        const projectClient = fetchedClients.find(client => client.id === projectData.id_client);
         if (projectClient) {
-          setSelectedClient(projectClient as ClientDB);
+          setSelectedClient({
+            ...projectClient,
+            email: '',
+            telephone: '',
+            logo: '',
+            contact_principal: '',
+            created_at: '',
+            updated_at: ''
+          } as ClientDB);
         }
       }
     }
-  }, [fetchedClients, project]);
+  }, [fetchedClients, projectData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -80,15 +107,27 @@ export const ProjectForm = ({ project, onSuccess, onCancel }: ProjectFormProps) 
         // Make sure any number fields are properly converted
       };
 
-      if (isEditMode && project) {
-        await updateProject({ ...formattedData, id: project.id });
+      if (isEditMode && projectData) {
+        await updateProject({ 
+          ...formattedData, 
+          id: projectData.id 
+        });
+        
         toast.success('Projet mis à jour avec succès');
       } else {
         await addProject(formattedData);
         toast.success('Projet créé avec succès');
       }
       
-      if (onSuccess) onSuccess();
+      // Call the appropriate callback
+      if (onSubmit && projectData) {
+        onSubmit({ 
+          ...formattedData, 
+          id: projectData.id 
+        });
+      } else if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
       console.error('Error submitting project:', error);
       toast.error("Une erreur s'est produite");

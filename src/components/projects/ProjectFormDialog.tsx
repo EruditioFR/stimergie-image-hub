@@ -1,5 +1,4 @@
 
-import { ProjectForm } from "@/components/projects/ProjectForm";
 import { Project } from "@/types/project";
 import {
   Dialog,
@@ -7,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ProjectForm } from "@/components/projects/ProjectForm";
 
 interface ProjectFormDialogProps {
   open: boolean;

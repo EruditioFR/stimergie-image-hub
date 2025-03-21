@@ -58,9 +58,24 @@ export function useUserData(
         return;
       }
       
-      const formattedUsers = data.map(user => ({
-        ...user,
-        client_name: user.clients ? user.clients.nom : null
+      // Transform database records into User objects
+      const formattedUsers: User[] = data.map(record => ({
+        id: record.id,
+        email: record.email,
+        firstName: record.first_name,
+        lastName: record.last_name,
+        fullName: record.first_name && record.last_name ? 
+          `${record.first_name} ${record.last_name}` : null,
+        avatarUrl: null,
+        role: record.role,
+        clientId: record.id_client,
+        createdAt: "", // These fields are not available in the query
+        updatedAt: "",
+        // For backward compatibility
+        first_name: record.first_name,
+        last_name: record.last_name,
+        id_client: record.id_client,
+        client_name: record.clients ? record.clients.nom : null
       }));
       
       setUsers(formattedUsers);
@@ -76,7 +91,7 @@ export function useUserData(
     try {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, nom")
+        .select("*")
         .order("nom");
       
       if (error) {

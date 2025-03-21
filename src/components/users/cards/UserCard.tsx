@@ -22,8 +22,8 @@ export function UserCard({ user, onEdit, onDelete }: UserCardProps) {
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg flex items-center gap-2">
             <UserRound size={18} className="text-muted-foreground" />
-            {user.first_name || user.last_name ? (
-              `${user.first_name || ''} ${user.last_name || ''}`.trim()
+            {user.firstName || user.lastName || user.first_name || user.last_name ? (
+              `${user.firstName || user.first_name || ''} ${user.lastName || user.last_name || ''}`.trim()
             ) : (
               <span className="italic text-muted-foreground">Nom non défini</span>
             )}
@@ -66,10 +66,10 @@ export function UserCard({ user, onEdit, onDelete }: UserCardProps) {
             {user.role || "utilisateur"}
           </p>
           
-          {user.client_name && (
+          {(user.client_name || user.clientId) && (
             <p className="flex items-center gap-2">
               <Building2 size={16} className="text-muted-foreground" />
-              {user.client_name}
+              {user.client_name || "Client"}
             </p>
           )}
         </div>

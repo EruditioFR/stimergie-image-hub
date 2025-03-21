@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
-import { generateCacheKey } from '@/utils/image/cacheManager';
+import { generateCacheKey as getImageCacheKey } from '@/utils/image/cacheManager';
 
 interface LazyImageProps {
   src: string;
@@ -60,7 +61,7 @@ const sessionImageCache = (() => {
     const memoryFallback = new Map<string, string>();
     return {
       getItem: (key: string): string | null => memoryFallback.get(key) || null,
-      setItem: (key: string, value: string): void => memoryFallback.set(key, value)
+      setItem: (key: string, value: string): void => { memoryFallback.set(key, value); }
     };
   }
 })();
@@ -71,7 +72,7 @@ export function preloadImages(urls: string[]): void {
   
   // Check session cache first for all URLs
   const urlsToLoad = urls.filter(url => {
-    const cacheKey = generateCacheKey(url);
+    const cacheKey = getImageCacheKey(url);
     
     // Check session cache
     const sessionCached = sessionImageCache.getItem(cacheKey);
@@ -104,7 +105,7 @@ export function preloadImages(urls: string[]): void {
           imageCache.set(url, url);
           
           // Save to session cache
-          const cacheKey = generateCacheKey(url);
+          const cacheKey = getImageCacheKey(url);
           sessionImageCache.setItem(cacheKey, url);
         };
         img.onerror = () => {

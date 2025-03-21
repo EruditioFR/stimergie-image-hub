@@ -66,8 +66,8 @@ export const sessionImageCache = (() => {
     const memoryCache = new Map<string, string>();
     return {
       getItem: (key: string): string | null => memoryCache.get(key) || null,
-      setItem: (key: string, value: string): void => memoryCache.set(key, value),
-      removeItem: (key: string): void => memoryCache.delete(key)
+      setItem: (key: string, value: string): void => { memoryCache.set(key, value); },
+      removeItem: (key: string): void => { memoryCache.delete(key); }
     };
   }
 })();

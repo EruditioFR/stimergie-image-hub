@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { User } from "@/types/user";
+import { User, Client } from "@/types/user";
 
-export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]>>, clients: { id: string; nom: string }[]) {
+export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]>>, clients: Client[]) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
@@ -41,10 +42,10 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
       const { data, error } = await supabase.rpc('create_user_with_profile', {
         email: trimmedEmail,
         password: trimmedPassword,
-        first_name: '',
-        last_name: '',
-        role: 'user',
-        company_id: null
+        first_name: userData.firstName || userData.first_name || '',
+        last_name: userData.lastName || userData.last_name || '',
+        role: userData.role || 'user',
+        company_id: userData.clientId || userData.id_client || null
       });
       
       if (error) {
@@ -85,10 +86,27 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
           console.error("Erreur lors de la récupération du nouvel utilisateur:", fetchError);
           toast.warning("Utilisateur créé, mais erreur lors de la récupération des détails");
         } else if (newUser) {
-          setUsers(prev => [...prev, {
-            ...newUser,
+          // Convert DB record to User type
+          const formattedUser: User = {
+            id: newUser.id,
+            email: newUser.email,
+            firstName: newUser.first_name,
+            lastName: newUser.last_name,
+            fullName: newUser.first_name && newUser.last_name ? 
+              `${newUser.first_name} ${newUser.last_name}` : null,
+            avatarUrl: null,
+            role: newUser.role,
+            clientId: newUser.id_client,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            // For backward compatibility
+            first_name: newUser.first_name,
+            last_name: newUser.last_name,
+            id_client: newUser.id_client,
             client_name: newUser.clients ? newUser.clients.nom : null
-          }]);
+          };
+          
+          setUsers(prev => [...prev, formattedUser]);
           
           toast.success("L'utilisateur a été créé avec succès");
           console.log("User added successfully:", newUser);
@@ -108,14 +126,19 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
 
   const handleUpdateUser = async (userData: User, password?: string) => {
     try {
+      // Get first_name, last_name values from either the new or old field names
+      const firstName = userData.firstName || userData.first_name;
+      const lastName = userData.lastName || userData.last_name;
+      const clientId = userData.clientId || userData.id_client;
+      
       // Update profile data first
       const { error } = await supabase
         .from("profiles")
         .update({
-          first_name: userData.first_name,
-          last_name: userData.last_name,
+          first_name: firstName,
+          last_name: lastName,
           role: userData.role,
-          id_client: userData.id_client
+          id_client: clientId
         })
         .eq('id', userData.id);
 
@@ -147,8 +170,18 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
       setUsers(prev => prev.map(user => 
         user.id === userData.id 
           ? {
-              ...userData,
-              client_name: clients.find(c => c.id === userData.id_client)?.nom || null
+              ...user,
+              firstName: firstName,
+              lastName: lastName,
+              fullName: firstName && lastName ? `${firstName} ${lastName}` : null,
+              role: userData.role,
+              clientId: clientId,
+              updatedAt: new Date().toISOString(),
+              // For backward compatibility
+              first_name: firstName,
+              last_name: lastName,
+              id_client: clientId,
+              client_name: clients.find(c => c.id === clientId)?.nom || null
             }
           : user
       ));

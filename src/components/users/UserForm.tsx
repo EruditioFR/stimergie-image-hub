@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { User } from "@/types/user";
@@ -30,8 +29,8 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
     resolver: zodResolver(schema),
     defaultValues: initialData ? {
       email: initialData.email,
-      first_name: initialData.first_name || "",
-      last_name: initialData.last_name || "",
+      first_name: initialData.firstName || initialData.first_name || "",
+      last_name: initialData.lastName || initialData.last_name || "",
       role: initialData.role as UserRole,
       password: "",
     } : {
@@ -74,18 +73,34 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
       onSubmit({
         id: initialData.id,
         email: values.email,
+        firstName: values.first_name,
+        lastName: values.last_name,
+        fullName: `${values.first_name} ${values.last_name}`.trim(),
+        avatarUrl: initialData.avatarUrl,
+        role: values.role,
+        clientId: initialData.clientId || initialData.id_client,
+        createdAt: initialData.createdAt || "",
+        updatedAt: new Date().toISOString(),
+        // For backward compatibility
         first_name: values.first_name,
         last_name: values.last_name,
-        role: values.role,
-        id_client: null,
+        id_client: initialData.clientId || initialData.id_client,
       }, values.password); // Pass password even when editing
     } else {
       // For new user, pass without ID and include password
       onSubmit({
         email: values.email,
+        firstName: values.first_name,
+        lastName: values.last_name,
+        fullName: `${values.first_name} ${values.last_name}`.trim(),
+        avatarUrl: null,
+        role: values.role,
+        clientId: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        // For backward compatibility
         first_name: values.first_name,
         last_name: values.last_name,
-        role: values.role,
         id_client: null,
       }, values.password || generatedPassword); // Use generated password if field is empty
     }

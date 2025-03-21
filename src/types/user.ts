@@ -10,6 +10,12 @@ export interface User {
   clientId: string | null;
   createdAt: string;
   updatedAt: string;
+  
+  // Database field mappings for backward compatibility
+  first_name?: string | null;
+  last_name?: string | null;
+  id_client?: string | null;
+  client_name?: string | null;
 }
 
 // This interface matches the database structure for clients

@@ -36,8 +36,8 @@ export function UsersTable({ users, onEdit, onDelete }: UsersTableProps) {
               <TableCell className="font-medium">
                 <div className="flex items-center gap-2">
                   <UserRound size={16} className="text-muted-foreground" />
-                  {user.first_name || user.last_name ? (
-                    `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                  {user.firstName || user.lastName || user.first_name || user.last_name ? (
+                    `${user.firstName || user.first_name || ''} ${user.lastName || user.last_name || ''}`.trim()
                   ) : (
                     <span className="italic text-muted-foreground">Nom non défini</span>
                   )}

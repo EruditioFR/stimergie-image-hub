@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Client } from "@/types/user";
+import { ClientDB, Client } from "@/types/user";
 import { toast } from "@/hooks/use-toast";
 
 /**
@@ -12,7 +12,7 @@ export async function fetchClients(): Promise<Client[]> {
   try {
     const { data, error } = await supabase
       .from('clients')
-      .select('id, nom')
+      .select('*')
       .order('nom', { ascending: true });
       
     if (error) {
