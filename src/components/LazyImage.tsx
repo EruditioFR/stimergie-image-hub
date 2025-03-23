@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { generateCacheKey as getImageCacheKey } from '@/utils/image/cacheManager';
@@ -11,6 +10,7 @@ interface LazyImageProps {
   aspectRatio?: string;
   objectFit?: string;
   priority?: boolean;
+  style?: CSSProperties;
 }
 
 // Enhanced global cache for faster loading of previously viewed images
@@ -161,7 +161,8 @@ export function LazyImage({
   className,
   aspectRatio,
   objectFit = "object-cover",
-  priority = false
+  priority = false,
+  style
 }: LazyImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
@@ -320,6 +321,7 @@ export function LazyImage({
           objectFit,
           isLoaded ? "opacity-100" : "opacity-0"
         )}
+        style={style}
         onLoad={handleImageLoad}
         loading="eager" // For immediate loading
         decoding="async"

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { X, Download, Heart, Share2, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,14 +18,12 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { toast } = useToast();
   
-  // État pour gérer le zoom
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
 
   if (!image) return null;
 
-  // Parse tags if they're stored as a string
   const tags = typeof image.tags === 'string' ? parseTagsString(image.tags) : image.tags;
 
   const handleDownload = () => {
@@ -47,28 +44,25 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
-    // Réinitialiser le zoom quand on entre/sort du mode plein écran
     setZoomLevel(1);
     setDragPosition({ x: 0, y: 0 });
   };
   
-  // Fonctions pour gérer le zoom
   const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 0.5, 4)); // Limite le zoom à 4x
-    setDragPosition({ x: 0, y: 0 }); // Réinitialise la position
+    setZoomLevel(prev => Math.min(prev + 0.5, 4));
+    setDragPosition({ x: 0, y: 0 });
   };
 
   const handleZoomOut = () => {
     setZoomLevel(prev => {
-      const newZoom = Math.max(prev - 0.5, 1); // Ne descend pas en dessous de 1x
+      const newZoom = Math.max(prev - 0.5, 1);
       if (newZoom === 1) {
-        setDragPosition({ x: 0, y: 0 }); // Réinitialise la position au zoom minimal
+        setDragPosition({ x: 0, y: 0 });
       }
       return newZoom;
     });
   };
   
-  // Gestion du déplacement de l'image zoomée
   const handleMouseDown = (e: React.MouseEvent) => {
     if (zoomLevel > 1) {
       setIsDragging(true);
@@ -88,7 +82,6 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
     setIsDragging(false);
   };
   
-  // Désactive le zoom lors de la fermeture de la modale
   const handleModalClose = () => {
     setZoomLevel(1);
     setDragPosition({ x: 0, y: 0 });
@@ -97,7 +90,6 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
 
   return (
     <>
-      {/* Fullscreen Image View */}
       {isFullscreen && (
         <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in">
           <Button 
@@ -125,7 +117,6 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
               }}
             />
             
-            {/* Contrôles de zoom en plein écran */}
             <div className="absolute bottom-8 right-8 flex gap-2">
               <Button 
                 variant="secondary" 
@@ -152,14 +143,11 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
 
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
         <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] p-0 overflow-auto">
-          {/* Ajout d'un DialogTitle caché pour l'accessibilité */}
           <DialogTitle className="sr-only">{image.title}</DialogTitle>
 
           <div className="p-6 md:p-10">
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
-              {/* Main Image Section - Now showing the image first before any text */}
               <div className="lg:col-span-3 space-y-6">
-                {/* Image displayed first with original ratio */}
                 <div 
                   className="rounded-xl overflow-hidden shadow-lg bg-card flex justify-center relative"
                 >
@@ -188,7 +176,6 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                     />
                   </div>
                   
-                  {/* Contrôles de zoom */}
                   <div className="absolute bottom-3 right-3 flex gap-2">
                     <Button 
                       variant="secondary" 
@@ -211,7 +198,6 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                   </div>
                 </div>
 
-                {/* Mobile Action Buttons */}
                 <div className="flex lg:hidden justify-between items-center">
                   <div className="flex space-x-2">
                     <Button 
@@ -242,7 +228,6 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                   </Button>
                 </div>
 
-                {/* Image Information - Now after the image */}
                 <div className="bg-card rounded-xl p-6 shadow-sm">
                   <h1 className="text-2xl font-bold mb-2">{image.title}</h1>
                   <p className="text-muted-foreground mb-6">{image.description || 'Aucune description disponible'}</p>
@@ -279,9 +264,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                 </div>
               </div>
 
-              {/* Sidebar with Details - removing user section and thumbnail section */}
               <div className="lg:col-span-2 space-y-6">
-                {/* Desktop Action Buttons */}
                 <div className="hidden lg:block bg-card rounded-xl p-6 shadow-sm space-y-4">
                   <h3 className="font-medium mb-4">Actions</h3>
                   
@@ -313,7 +296,6 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                   </div>
                 </div>
 
-                {/* License Information */}
                 <div className="bg-card rounded-xl p-6 shadow-sm">
                   <h3 className="font-medium mb-4">Informations de licence</h3>
                   <p className="text-sm text-muted-foreground mb-4">
