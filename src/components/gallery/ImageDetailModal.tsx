@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { X, Download, Heart, Share2 } from 'lucide-react';
+import { X, Download, Heart, Share2, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { LazyImage } from '@/components/LazyImage';
@@ -18,6 +18,11 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
   const [liked, setLiked] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { toast } = useToast();
+  
+  // État pour gérer le zoom
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
 
   if (!image) return null;
 
@@ -42,6 +47,52 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
+    // Réinitialiser le zoom quand on entre/sort du mode plein écran
+    setZoomLevel(1);
+    setDragPosition({ x: 0, y: 0 });
+  };
+  
+  // Fonctions pour gérer le zoom
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.5, 4)); // Limite le zoom à 4x
+    setDragPosition({ x: 0, y: 0 }); // Réinitialise la position
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => {
+      const newZoom = Math.max(prev - 0.5, 1); // Ne descend pas en dessous de 1x
+      if (newZoom === 1) {
+        setDragPosition({ x: 0, y: 0 }); // Réinitialise la position au zoom minimal
+      }
+      return newZoom;
+    });
+  };
+  
+  // Gestion du déplacement de l'image zoomée
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (zoomLevel > 1) {
+      setIsDragging(true);
+    }
+  };
+  
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging && zoomLevel > 1) {
+      setDragPosition(prev => ({
+        x: prev.x + e.movementX,
+        y: prev.y + e.movementY
+      }));
+    }
+  };
+  
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+  
+  // Désactive le zoom lors de la fermeture de la modale
+  const handleModalClose = () => {
+    setZoomLevel(1);
+    setDragPosition({ x: 0, y: 0 });
+    onClose();
   };
 
   return (
@@ -57,17 +108,49 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
           >
             <X className="h-6 w-6" />
           </Button>
-          <div className="w-full h-full p-4 md:p-8 flex items-center justify-center">
+          <div 
+            className={`w-full h-full p-4 md:p-8 flex items-center justify-center relative ${zoomLevel > 1 ? 'cursor-grab' : ''} ${isDragging ? 'cursor-grabbing' : ''}`}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
             <img 
               src={image.url} 
               alt={image.title} 
-              className="max-w-full max-h-full object-contain animate-fade-in" 
+              className="max-w-full max-h-full object-contain animate-fade-in transition-transform duration-200"
+              style={{ 
+                transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
+                transformOrigin: 'center',
+              }}
             />
+            
+            {/* Contrôles de zoom en plein écran */}
+            <div className="absolute bottom-8 right-8 flex gap-2">
+              <Button 
+                variant="secondary" 
+                size="icon" 
+                onClick={handleZoomOut} 
+                disabled={zoomLevel <= 1}
+                className="bg-background/80 hover:bg-background"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="secondary" 
+                size="icon" 
+                onClick={handleZoomIn} 
+                disabled={zoomLevel >= 4}
+                className="bg-background/80 hover:bg-background"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       )}
 
-      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
         <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] p-0 overflow-auto">
           {/* Ajout d'un DialogTitle caché pour l'accessibilité */}
           <DialogTitle className="sr-only">{image.title}</DialogTitle>
@@ -78,15 +161,54 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
               <div className="lg:col-span-3 space-y-6">
                 {/* Image displayed first with original ratio */}
                 <div 
-                  className="rounded-xl overflow-hidden cursor-zoom-in shadow-lg bg-card flex justify-center"
-                  onClick={toggleFullscreen}
+                  className="rounded-xl overflow-hidden shadow-lg bg-card flex justify-center relative"
                 >
-                  <LazyImage 
-                    src={image.url} 
-                    alt={image.title} 
-                    className="max-w-full max-h-[65vh] object-contain"
-                    aspectRatio="aspect-auto"
-                  />
+                  <div 
+                    className={`relative ${zoomLevel > 1 ? 'cursor-grab' : 'cursor-zoom-in'} ${isDragging ? 'cursor-grabbing' : ''}`}
+                    style={{ 
+                      overflow: 'hidden', 
+                      height: zoomLevel > 1 ? '65vh' : 'auto',
+                      width: '100%'
+                    }}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                    onClick={zoomLevel === 1 ? toggleFullscreen : undefined}
+                  >
+                    <LazyImage 
+                      src={image.url} 
+                      alt={image.title} 
+                      className="max-w-full max-h-[65vh] object-contain transition-transform duration-200"
+                      aspectRatio="aspect-auto"
+                      style={{ 
+                        transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
+                        transformOrigin: 'center',
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Contrôles de zoom */}
+                  <div className="absolute bottom-3 right-3 flex gap-2">
+                    <Button 
+                      variant="secondary" 
+                      size="icon" 
+                      onClick={handleZoomOut} 
+                      disabled={zoomLevel <= 1}
+                      className="bg-background/80 hover:bg-background"
+                    >
+                      <ZoomOut className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      size="icon" 
+                      onClick={handleZoomIn} 
+                      disabled={zoomLevel >= 4}
+                      className="bg-background/80 hover:bg-background"
+                    >
+                      <ZoomIn className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Mobile Action Buttons */}
