@@ -85,7 +85,27 @@ export async function fetchGalleryImages(
     console.log('Applying random ordering to images');
     
     // First get total count to determine random offset
-    const { count } = await query.select('id', { count: 'exact', head: true });
+    const countQuery = supabase.from('images').select('*', { count: 'exact', head: true });
+    
+    // Apply the same filters to the count query
+    if (client) {
+      const { data: projetData } = await supabase
+        .from('projets')
+        .select('id')
+        .eq('id_client', client);
+      
+      if (projetData && projetData.length > 0) {
+        const projetIds = projetData.map(projet => projet.id);
+        countQuery.in('id_projet', projetIds);
+      }
+    }
+    
+    const { count, error: countError } = await countQuery;
+    
+    if (countError) {
+      console.error('Error getting count:', countError);
+    }
+    
     console.log(`Total image count: ${count}`);
     
     // If there are images, select a random subset
