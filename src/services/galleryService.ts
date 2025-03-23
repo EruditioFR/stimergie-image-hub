@@ -80,12 +80,31 @@ export async function fetchGalleryImages(
   }
   
   // Apply ordering and pagination
-  if (shouldFetchRandom && !project && !search && tab.toLowerCase() === 'all' && !tag) {
-    // Random ordering when no filters are applied (except possibly client for admin_client/user)
-    query = query.order('id', { ascending: false });
-    // Apply a random seed to make result randomized
-    const randomOffset = Math.floor(Math.random() * 1000);
-    query = query.limit(IMAGES_PER_PAGE).range(randomOffset, randomOffset + IMAGES_PER_PAGE - 1);
+  if (shouldFetchRandom && !project && !search && (!tag || tag.toLowerCase() === 'toutes') && tab.toLowerCase() === 'all') {
+    // For truly random ordering when no filters are applied (except possibly client for admin_client/user)
+    console.log('Applying random ordering to images');
+    
+    // First get total count to determine random offset
+    const { count } = await query.select('id', { count: 'exact', head: true });
+    console.log(`Total image count: ${count}`);
+    
+    // If there are images, select a random subset
+    if (count && count > 0) {
+      // Calculate maximum possible offset to ensure we get enough images
+      const maxOffset = Math.max(0, count - IMAGES_PER_PAGE);
+      const randomOffset = maxOffset > 0 ? Math.floor(Math.random() * maxOffset) : 0;
+      console.log(`Using random offset: ${randomOffset}`);
+      
+      // Apply the ordering and pagination
+      query = query
+        .order('created_at', { ascending: false })
+        .range(randomOffset, randomOffset + IMAGES_PER_PAGE - 1);
+    } else {
+      // Fallback if count is 0 or null
+      query = query
+        .order('created_at', { ascending: false })
+        .limit(IMAGES_PER_PAGE);
+    }
   } else {
     // Regular sorting with pagination when filters are applied
     query = query

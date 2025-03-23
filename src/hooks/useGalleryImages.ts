@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -141,9 +142,11 @@ export const useGalleryImages = (isAdmin: boolean) => {
     setPage(1);
     setAllImages([]);
     
+    // Modified to ensure random fetching on initial load when no filters are applied
     const noFilters = !searchQuery && !tagFilter && activeTab === 'all' && !selectedProject;
     const canUseRandom = noFilters && (userRole === 'admin' || selectedClient !== null);
     
+    console.log('Setting shouldFetchRandom to:', canUseRandom);
     setShouldFetchRandom(canUseRandom);
     
     updateFilterStatus(searchQuery, tagFilter);
