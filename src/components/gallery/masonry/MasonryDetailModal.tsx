@@ -2,7 +2,7 @@
 import React from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { X } from 'lucide-react';
+import { X, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface MasonryDetailModalProps {
@@ -24,6 +24,13 @@ export function MasonryDetailModal({
   selectedImages,
   images
 }: MasonryDetailModalProps) {
+  // Fonction pour télécharger l'image
+  const handleDownload = () => {
+    if (image && (image.url_miniature || image.src || image.url)) {
+      window.open(image.url_miniature || image.src || image.url, '_blank');
+    }
+  };
+
   return (
     <>
       <CreateAlbumDialog 
@@ -57,21 +64,52 @@ export function MasonryDetailModal({
                 />
               </div>
               
-              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                <div>
-                  <span className="block text-foreground font-medium">Dimensions</span>
-                  <span>{image.width || '–'} × {image.height || '–'}</span>
+              <div className="flex justify-between items-center">
+                <div className="flex flex-wrap gap-2">
+                  {image.tags && image.tags.map((tag: string, index: number) => (
+                    <span 
+                      key={index}
+                      className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
                 </div>
-                {image.orientation && (
+                
+                <Button 
+                  onClick={handleDownload}
+                  className="ml-auto"
+                  variant="default"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Télécharger
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                   <div>
-                    <span className="block text-foreground font-medium">Orientation</span>
-                    <span className="capitalize">{image.orientation}</span>
+                    <span className="block text-foreground font-medium">Dimensions</span>
+                    <span>{image.width || '–'} × {image.height || '–'}</span>
                   </div>
-                )}
-                {image.created_at && (
+                  {image.orientation && (
+                    <div>
+                      <span className="block text-foreground font-medium">Orientation</span>
+                      <span className="capitalize">{image.orientation}</span>
+                    </div>
+                  )}
+                  {image.created_at && (
+                    <div>
+                      <span className="block text-foreground font-medium">Date ajoutée</span>
+                      <span>{new Date(image.created_at).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {image.description && (
                   <div>
-                    <span className="block text-foreground font-medium">Date ajoutée</span>
-                    <span>{new Date(image.created_at).toLocaleDateString('fr-FR')}</span>
+                    <span className="block text-foreground font-medium">Description</span>
+                    <p className="text-muted-foreground">{image.description}</p>
                   </div>
                 )}
               </div>
