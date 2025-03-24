@@ -103,16 +103,19 @@ export function MasonryGrid({
     setSelectedImageDetail(null);
   };
 
-  // Page change handler with smoothing
-  const handlePageClick = (page: number) => {
+  // Page change handler with smoothing - assurons-nous de bien gérer le changement de page
+  const handlePageClick = useCallback((page: number) => {
     if (onPageChange) {
-      onPageChange(page);
-      // Remonter en haut de la page
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      // Effacer la sélection lors du changement de page
+      // Nettoyer la sélection avant de changer de page
       clearSelection();
+      
+      // Notifier le parent du changement de page
+      onPageChange(page);
+      
+      // Remonter en haut de la page avec une animation
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
+  }, [onPageChange, clearSelection]);
 
   // Show loading placeholder when no images
   if (isLoading && images.length === 0) {
@@ -148,11 +151,11 @@ export function MasonryGrid({
       )}
       
       {/* Infinite scroll sentinel element */}
-      {hasMorePages && !isLoading && (
+      {hasMorePages && !isLoading && loadMoreImages && (
         <div ref={infiniteScrollRef} className="h-1 w-full my-4" />
       )}
 
-      {/* Show pagination when infinite scroll is not available */}
+      {/* Show pagination when infinite scroll is not available - utilisez notre gestionnaire personnalisé */}
       {!loadMoreImages && (
         <MasonryPagination
           totalCount={totalCount}

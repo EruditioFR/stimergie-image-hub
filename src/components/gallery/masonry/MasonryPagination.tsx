@@ -6,7 +6,8 @@ import {
   PaginationItem, 
   PaginationLink, 
   PaginationNext, 
-  PaginationPrevious 
+  PaginationPrevious,
+  PaginationEllipsis
 } from '@/components/ui/pagination';
 
 interface MasonryPaginationProps {
@@ -22,8 +23,40 @@ export function MasonryPagination({
 }: MasonryPaginationProps) {
   if (!totalCount || totalCount <= 0 || !onPageChange) return null;
 
-  const imagesPerPage = 50; // Changed from 15 to 50
+  const imagesPerPage = 50;
   const totalPages = totalCount > 0 ? Math.ceil(totalCount / imagesPerPage) : 0;
+
+  // Si une seule page, ne pas afficher la pagination
+  if (totalPages <= 1) return null;
+
+  // Déterminer quelles pages afficher
+  const getVisiblePages = () => {
+    const pages = [];
+    
+    // Maximum 5 pages visibles
+    if (totalPages <= 5) {
+      // Moins de 5 pages, afficher toutes les pages
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Plus de 5 pages, logique avancée
+      if (currentPage <= 3) {
+        // Près du début: 1, 2, 3, 4, ..., totalPages
+        pages.push(1, 2, 3, 4, 'ellipsis', totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        // Près de la fin: 1, ..., totalPages-3, totalPages-2, totalPages-1, totalPages
+        pages.push(1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        // Au milieu: 1, ..., currentPage-1, currentPage, currentPage+1, ..., totalPages
+        pages.push(1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  const visiblePages = getVisiblePages();
 
   return (
     <div className="mt-8 mb-6">
@@ -35,31 +68,22 @@ export function MasonryPagination({
             </PaginationItem>
           )}
           
-          {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-            let pageNumber;
-            
-            // Logique pour afficher les bons numéros de page
-            if (totalPages <= 5) {
-              // Si on a 5 pages ou moins, on les affiche toutes
-              pageNumber = i + 1;
-            } else if (currentPage <= 3) {
-              // Si on est au début, on affiche 1, 2, 3, 4, 5
-              pageNumber = i + 1;
-            } else if (currentPage >= totalPages - 2) {
-              // Si on est à la fin, on affiche les 5 dernières pages
-              pageNumber = totalPages - 4 + i;
-            } else {
-              // Sinon on affiche 2 pages avant et 2 pages après la page actuelle
-              pageNumber = currentPage - 2 + i;
+          {visiblePages.map((page, i) => {
+            if (page === 'ellipsis') {
+              return (
+                <PaginationItem key={`ellipsis-${i}`}>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              );
             }
             
             return (
-              <PaginationItem key={pageNumber}>
+              <PaginationItem key={page}>
                 <PaginationLink
-                  isActive={pageNumber === currentPage}
-                  onClick={() => onPageChange(pageNumber)}
+                  isActive={page === currentPage}
+                  onClick={() => onPageChange(page)}
                 >
-                  {pageNumber}
+                  {page}
                 </PaginationLink>
               </PaginationItem>
             );
