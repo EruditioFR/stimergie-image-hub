@@ -88,11 +88,34 @@ export function MasonryDetailModal({
     setDragPosition({ x: 0, y: 0 });
   };
 
+  // If the modal is open but no image is selected, don't render the content
+  if (!image && isOpen) {
+    return (
+      <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+        <DialogContent>
+          <p>Aucune image sélectionnée</p>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // If the modal is not open, just render the album dialog
+  if (!isOpen) {
+    return (
+      <CreateAlbumDialog 
+        isOpen={isShareDialogOpen}
+        onOpenChange={setIsShareDialogOpen}
+        selectedImageIds={selectedImages}
+        selectedImages={images}
+      />
+    );
+  }
+
   // Rendering component for the image and zoom controls
   const ImageContent = () => (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">{image.title}</h2>
+        <h2 className="text-xl font-bold">{image?.title || 'Sans titre'}</h2>
         {!isFullPage && (
           <Button
             variant="outline"
@@ -118,8 +141,8 @@ export function MasonryDetailModal({
           onMouseLeave={handleMouseUp}
         >
           <img 
-            src={image.url_miniature || image.src || image.url} 
-            alt={image.title} 
+            src={image?.url_miniature || image?.src || image?.url || ''} 
+            alt={image?.title || 'Image'} 
             className={`max-w-full ${isFullPage ? 'max-h-[80vh]' : 'max-h-[70vh]'} object-contain transition-transform duration-200`}
             style={{ 
               transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
@@ -153,7 +176,7 @@ export function MasonryDetailModal({
       
       <div className="flex justify-between items-center">
         <div className="flex flex-wrap gap-2">
-          {image.tags && image.tags.map((tag: string, index: number) => (
+          {image?.tags && image.tags.map((tag: string, index: number) => (
             <span 
               key={index}
               className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs"
@@ -177,15 +200,15 @@ export function MasonryDetailModal({
         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
           <div>
             <span className="block text-foreground font-medium">Dimensions</span>
-            <span>{image.width || '–'} × {image.height || '–'}</span>
+            <span>{image?.width || '–'} × {image?.height || '–'}</span>
           </div>
-          {image.orientation && (
+          {image?.orientation && (
             <div>
               <span className="block text-foreground font-medium">Orientation</span>
               <span className="capitalize">{image.orientation}</span>
             </div>
           )}
-          {image.created_at && (
+          {image?.created_at && (
             <div>
               <span className="block text-foreground font-medium">Date ajoutée</span>
               <span>{new Date(image.created_at).toLocaleDateString('fr-FR')}</span>
@@ -193,7 +216,7 @@ export function MasonryDetailModal({
           )}
         </div>
         
-        {image.description && (
+        {image?.description && (
           <div>
             <span className="block text-foreground font-medium">Description</span>
             <p className="text-muted-foreground">{image.description}</p>
@@ -212,7 +235,7 @@ export function MasonryDetailModal({
         selectedImages={images}
       />
       
-      {image && isFullPage ? (
+      {isFullPage ? (
         <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
           <SheetContent side="bottom" className="h-screen p-0 max-w-none w-full sm:max-w-none">
             <div className="h-full overflow-y-auto p-6 relative">
@@ -234,7 +257,7 @@ export function MasonryDetailModal({
       ) : (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogTitle className="sr-only">{image.title}</DialogTitle>
+            <DialogTitle className="sr-only">{image?.title || 'Détail de l\'image'}</DialogTitle>
             <ImageContent />
           </DialogContent>
         </Dialog>
