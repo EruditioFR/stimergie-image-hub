@@ -110,7 +110,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     
     setShouldFetchRandom(false);
     setPage(1);
-    setAllImages([]);
     
     previousRequestRef.current = generateCacheKey(
       searchQuery, 
@@ -135,7 +134,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     
     setShouldFetchRandom(false);
     setPage(1);
-    setAllImages([]);
     
     previousRequestRef.current = generateCacheKey(
       searchQuery, 
@@ -153,7 +151,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
   // Réinitialisation des filtres et optimisation des requêtes
   useEffect(() => {
     setPage(1);
-    setAllImages([]);
     
     // Modifier pour s'assurer de la récupération aléatoire lors du chargement initial sans filtres
     const noFilters = !searchQuery && !tagFilter && activeTab === 'all' && !selectedProject;
@@ -173,7 +170,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     }
   }, [userRole, userClientId, baseHandleClientChange, selectedClient]);
 
-  // Récupération optimisée du nombre total d'images (évite les appels API inutiles)
+  // Récupération optimisée du nombre total d'images
   const fetchTotalCount = useCallback(async () => {
     if (isCountFetchingRef.current) return totalCount;
     isCountFetchingRef.current = true;
@@ -199,7 +196,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     }
   }, [searchQuery, tagFilter, activeTab, selectedClient, selectedProject, totalCount, userRole, userClientId]);
 
-  // Requête principale optimisée
+  // Requête principale optimisée avec mode pagination
   const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
     queryKey: cacheKey(),
     queryFn: () => fetchGalleryImages(
@@ -225,57 +222,65 @@ export const useGalleryImages = (isAdmin: boolean) => {
     fetchTotalCount();
   }, [fetchTotalCount, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, isFetching, isLoading]);
 
-  // Traitement des nouvelles images et préchargement
+  // Traitement des nouvelles images
   useEffect(() => {
-    console.log('New images loaded:', newImages.length);
+    console.log('New images loaded for page', page, newImages.length);
+    
     if (newImages.length > 0) {
+      // En mode pagination stricte, on remplace complètement les images à chaque changement
       setAllImages(newImages);
-      
-      // Préchargement optimisé de la page suivante (seulement si nécessaire)
-      if (page < Math.ceil(totalCount / 50) && !shouldFetchRandom && !isFetching && !isLoading) {
-        const nextPageKey = generateCacheKey(
-          searchQuery, 
-          tagFilter, 
-          activeTab, 
-          selectedClient,
-          selectedProject, 
-          page + 1, 
-          false,
-          userRole,
-          userClientId
-        );
-        
-        // Vérifier si la prochaine page est déjà en cache avant de la précharger
-        const cachedData = queryClient.getQueryData(nextPageKey);
-        if (!cachedData) {
-          console.log('Prefetching next page data');
-          queryClient.prefetchQuery({
-            queryKey: nextPageKey,
-            queryFn: () => fetchGalleryImages(
-              searchQuery, 
-              tagFilter, 
-              activeTab, 
-              selectedClient,
-              selectedProject, 
-              page + 1, 
-              false,
-              userRole,
-              userClientId
-            ),
-            staleTime: EXTENDED_CACHE_TIME
-          });
-        } else {
-          console.log('Next page data already in cache');
-        }
-      }
     } else {
       setAllImages([]);
     }
-  }, [newImages, page, queryClient, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, totalCount, shouldFetchRandom, userRole, userClientId, generateCacheKey, isFetching, isLoading]);
+  }, [newImages, page]);
 
-  // Gestionnaire de changement de page optimisé
+  // Préchargement de la page suivante si nécessaire
+  useEffect(() => {
+    // Éviter de précharger pendant le chargement ou si c'est aléatoire
+    if (isLoading || isFetching || shouldFetchRandom) return;
+    
+    const maxPage = Math.ceil(totalCount / 50);
+    if (page < maxPage) {
+      // Précharger la page suivante pour une navigation plus fluide
+      const nextPageKey = generateCacheKey(
+        searchQuery, 
+        tagFilter, 
+        activeTab, 
+        selectedClient,
+        selectedProject, 
+        page + 1, 
+        false,
+        userRole,
+        userClientId
+      );
+      
+      // Vérifier si elle est déjà en cache
+      const cachedData = queryClient.getQueryData(nextPageKey);
+      if (!cachedData) {
+        console.log('Prefetching next page data (page', page + 1, ')');
+        queryClient.prefetchQuery({
+          queryKey: nextPageKey,
+          queryFn: () => fetchGalleryImages(
+            searchQuery, 
+            tagFilter, 
+            activeTab, 
+            selectedClient,
+            selectedProject, 
+            page + 1, 
+            false,
+            userRole,
+            userClientId
+          ),
+          staleTime: EXTENDED_CACHE_TIME
+        });
+      }
+    }
+  }, [queryClient, page, totalCount, isLoading, isFetching, shouldFetchRandom, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, userRole, userClientId]);
+
+  // Gestionnaire de changement de page optimisé pour la pagination
   const handlePageChange = useCallback((newPage: number) => {
     if (newPage === page) return; // Éviter les appels inutiles
+    console.log('Page changed from', page, 'to', newPage);
     setPage(newPage);
   }, [page]);
 
@@ -283,7 +288,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const refreshGallery = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['gallery-images'] });
     setPage(1);
-    setAllImages([]);
     
     const noFilters = !searchQuery && !tagFilter && activeTab === 'all' && !selectedProject;
     const canUseRandom = noFilters && (userRole === 'admin' || selectedClient !== null);

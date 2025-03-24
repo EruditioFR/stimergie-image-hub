@@ -77,33 +77,16 @@ export function MasonryGrid({
     return columns;
   }, [images, columnCount]);
 
-  // Optimisation du préchargement d'image - améliorée pour charger toutes les images en une fois
+  // Optimisation du préchargement d'image
   useEffect(() => {
     if (images.length > 0 && !isLoading) {
-      // Extraire toutes les URLs d'images, y compris la page actuelle, et les précharger
-      const allImageUrls = images.map(img => img.src);
-      
-      // Précharger par lots de 10 images pour ne pas surcharger le réseau
-      const batchSize = 10;
-      const preloadBatch = (startIndex: number) => {
-        const batch = allImageUrls.slice(startIndex, startIndex + batchSize);
-        if (batch.length === 0) return;
-        
-        // Utiliser le préchargeur optimisé par lots
-        preloadImages(batch);
-        
-        // Précharger le lot suivant après un court délai
-        if (startIndex + batchSize < allImageUrls.length) {
-          setTimeout(() => preloadBatch(startIndex + batchSize), 500);
-        }
-      };
-      
-      // Lancer le préchargement
-      preloadBatch(0);
+      // Extraire toutes les URLs d'images de la page actuelle et les précharger
+      const imageUrls = images.slice(0, 20).map(img => img.src);
+      preloadImages(imageUrls);
     }
   }, [images, isLoading]);
   
-  // Référence pour le défilement infini
+  // Référence pour le défilement infini (utilisé uniquement en mode infini)
   const infiniteScrollRef = useInfiniteScroll(loadMoreImages, isLoading);
   
   // Gestionnaire de clic d'image
@@ -118,9 +101,9 @@ export function MasonryGrid({
     setSelectedImageDetail(null);
   };
 
-  // Gestionnaire de changement de page avec lissage - assurons-nous de bien gérer le changement de page
+  // Gestionnaire de changement de page
   const handlePageClick = useCallback((page: number) => {
-    if (onPageChange) {
+    if (onPageChange && !isLoading) {
       // Nettoyer la sélection avant de changer de page
       clearSelection();
       
@@ -130,12 +113,15 @@ export function MasonryGrid({
       // Remonter en haut de la page avec une animation
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [onPageChange, clearSelection]);
+  }, [onPageChange, clearSelection, isLoading]);
 
   // Afficher un placeholder de chargement lorsqu'il n'y a pas d'images
   if (isLoading && images.length === 0) {
     return <MasonryLoading columnCount={columnCount} />;
   }
+
+  // Déterminer le mode d'affichage: pagination classique ou infinite scroll
+  const isPaginationMode = !loadMoreImages;
 
   return (
     <>
@@ -165,13 +151,13 @@ export function MasonryGrid({
         </div>
       )}
       
-      {/* Élément sentinelle pour le défilement infini */}
-      {hasMorePages && !isLoading && loadMoreImages && (
+      {/* Élément sentinelle pour le défilement infini (uniquement en mode infini) */}
+      {!isPaginationMode && hasMorePages && !isLoading && loadMoreImages && (
         <div ref={infiniteScrollRef} className="h-1 w-full my-4" />
       )}
 
-      {/* Afficher la pagination lorsque le défilement infini n'est pas disponible */}
-      {!loadMoreImages && (
+      {/* Afficher la pagination classique */}
+      {isPaginationMode && (
         <MasonryPagination
           totalCount={totalCount}
           currentPage={currentPage}
