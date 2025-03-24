@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Download, ZoomIn, ZoomOut } from 'lucide-react';
+import { Download, ZoomIn, ZoomOut, X, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 interface MasonryDetailModalProps {
   image: any;
@@ -28,6 +29,7 @@ export function MasonryDetailModal({
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+  const [isFullPage, setIsFullPage] = useState(false);
   
   // Fonction pour télécharger l'image
   const handleDownload = () => {
@@ -76,8 +78,130 @@ export function MasonryDetailModal({
   const handleClose = () => {
     setZoomLevel(1);
     setDragPosition({ x: 0, y: 0 });
+    setIsFullPage(false);
     onClose();
   };
+
+  const toggleFullPage = () => {
+    setIsFullPage(!isFullPage);
+    setZoomLevel(1);
+    setDragPosition({ x: 0, y: 0 });
+  };
+
+  // Rendering component for the image and zoom controls
+  const ImageContent = () => (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold">{image.title}</h2>
+        {!isFullPage && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={toggleFullPage}
+            className="ml-auto"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+      
+      <div className="relative rounded-md overflow-hidden flex justify-center">
+        <div 
+          className={`relative ${zoomLevel > 1 ? 'cursor-grab' : ''} ${isDragging ? 'cursor-grabbing' : ''}`}
+          style={{ 
+            overflow: 'hidden', 
+            height: zoomLevel > 1 ? (isFullPage ? '75vh' : '65vh') : 'auto'
+          }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          <img 
+            src={image.url_miniature || image.src || image.url} 
+            alt={image.title} 
+            className={`max-w-full ${isFullPage ? 'max-h-[80vh]' : 'max-h-[70vh]'} object-contain transition-transform duration-200`}
+            style={{ 
+              transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
+              transformOrigin: 'center',
+            }}
+          />
+        </div>
+        
+        {/* Contrôles de zoom */}
+        <div className="absolute bottom-3 right-3 flex gap-2">
+          <Button 
+            variant="secondary" 
+            size="icon" 
+            onClick={handleZoomOut} 
+            disabled={zoomLevel <= 1}
+            className="bg-background/80 hover:bg-background"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="secondary" 
+            size="icon" 
+            onClick={handleZoomIn} 
+            disabled={zoomLevel >= 4}
+            className="bg-background/80 hover:bg-background"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      
+      <div className="flex justify-between items-center">
+        <div className="flex flex-wrap gap-2">
+          {image.tags && image.tags.map((tag: string, index: number) => (
+            <span 
+              key={index}
+              className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+        
+        <Button 
+          onClick={handleDownload}
+          className="ml-auto"
+          variant="default"
+        >
+          <Download className="mr-2 h-4 w-4" />
+          Télécharger
+        </Button>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+          <div>
+            <span className="block text-foreground font-medium">Dimensions</span>
+            <span>{image.width || '–'} × {image.height || '–'}</span>
+          </div>
+          {image.orientation && (
+            <div>
+              <span className="block text-foreground font-medium">Orientation</span>
+              <span className="capitalize">{image.orientation}</span>
+            </div>
+          )}
+          {image.created_at && (
+            <div>
+              <span className="block text-foreground font-medium">Date ajoutée</span>
+              <span>{new Date(image.created_at).toLocaleDateString('fr-FR')}</span>
+            </div>
+          )}
+        </div>
+        
+        {image.description && (
+          <div>
+            <span className="block text-foreground font-medium">Description</span>
+            <p className="text-muted-foreground">{image.description}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -88,111 +212,30 @@ export function MasonryDetailModal({
         selectedImages={images}
       />
       
-      {image && (
+      {image && isFullPage ? (
+        <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+          <SheetContent side="bottom" className="h-screen p-0 max-w-none w-full sm:max-w-none">
+            <div className="h-full overflow-y-auto p-6 relative">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute right-4 top-4 z-10" 
+                onClick={handleClose}
+              >
+                <X className="h-6 w-6" />
+              </Button>
+              
+              <div className="max-w-6xl mx-auto pt-8">
+                <ImageContent />
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      ) : (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogTitle className="sr-only">{image.title}</DialogTitle>
-            {/* Removed the custom close button here as DialogContent already includes one */}
-            
-            <div className="space-y-4">
-              <h2 className="text-xl font-bold">{image.title}</h2>
-              
-              <div className="relative rounded-md overflow-hidden flex justify-center">
-                <div 
-                  className={`relative ${zoomLevel > 1 ? 'cursor-grab' : ''} ${isDragging ? 'cursor-grabbing' : ''}`}
-                  style={{ 
-                    overflow: 'hidden', 
-                    height: zoomLevel > 1 ? '65vh' : 'auto'
-                  }}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
-                >
-                  <img 
-                    src={image.url_miniature || image.src || image.url} 
-                    alt={image.title} 
-                    className="max-w-full max-h-[70vh] object-contain transition-transform duration-200"
-                    style={{ 
-                      transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
-                      transformOrigin: 'center',
-                    }}
-                  />
-                </div>
-                
-                {/* Contrôles de zoom */}
-                <div className="absolute bottom-3 right-3 flex gap-2">
-                  <Button 
-                    variant="secondary" 
-                    size="icon" 
-                    onClick={handleZoomOut} 
-                    disabled={zoomLevel <= 1}
-                    className="bg-background/80 hover:bg-background"
-                  >
-                    <ZoomOut className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="secondary" 
-                    size="icon" 
-                    onClick={handleZoomIn} 
-                    disabled={zoomLevel >= 4}
-                    className="bg-background/80 hover:bg-background"
-                  >
-                    <ZoomIn className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <div className="flex flex-wrap gap-2">
-                  {image.tags && image.tags.map((tag: string, index: number) => (
-                    <span 
-                      key={index}
-                      className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-                
-                <Button 
-                  onClick={handleDownload}
-                  className="ml-auto"
-                  variant="default"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Télécharger
-                </Button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                  <div>
-                    <span className="block text-foreground font-medium">Dimensions</span>
-                    <span>{image.width || '–'} × {image.height || '–'}</span>
-                  </div>
-                  {image.orientation && (
-                    <div>
-                      <span className="block text-foreground font-medium">Orientation</span>
-                      <span className="capitalize">{image.orientation}</span>
-                    </div>
-                  )}
-                  {image.created_at && (
-                    <div>
-                      <span className="block text-foreground font-medium">Date ajoutée</span>
-                      <span>{new Date(image.created_at).toLocaleDateString('fr-FR')}</span>
-                    </div>
-                  )}
-                </div>
-                
-                {image.description && (
-                  <div>
-                    <span className="block text-foreground font-medium">Description</span>
-                    <p className="text-muted-foreground">{image.description}</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <ImageContent />
           </DialogContent>
         </Dialog>
       )}
