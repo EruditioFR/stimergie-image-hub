@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Download, ZoomIn, ZoomOut, X, Maximize2 } from 'lucide-react';
+import { Download, ZoomIn, ZoomOut, X, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 
@@ -29,7 +29,7 @@ export function MasonryDetailModal({
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
-  const [isFullPage, setIsFullPage] = useState(false);
+  const [isFullPage, setIsFullPage] = useState(true); // Afficher en mode plein écran par défaut
   
   // Fonction pour télécharger l'image
   const handleDownload = () => {
@@ -78,7 +78,7 @@ export function MasonryDetailModal({
   const handleClose = () => {
     setZoomLevel(1);
     setDragPosition({ x: 0, y: 0 });
-    setIsFullPage(false);
+    setIsFullPage(true); // Réinitialise à plein écran pour la prochaine ouverture
     onClose();
   };
 
@@ -116,14 +116,14 @@ export function MasonryDetailModal({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">{image?.title || 'Sans titre'}</h2>
-        {!isFullPage && (
+        {isFullPage && (
           <Button
             variant="outline"
             size="icon"
             onClick={toggleFullPage}
             className="ml-auto"
           >
-            <Maximize2 className="h-4 w-4" />
+            <Minimize2 className="h-4 w-4" />
           </Button>
         )}
       </div>
