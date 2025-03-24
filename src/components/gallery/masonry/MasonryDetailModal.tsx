@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { X, Download, ZoomIn, ZoomOut } from 'lucide-react';
+import { Download, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface MasonryDetailModalProps {
@@ -92,14 +92,7 @@ export function MasonryDetailModal({
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogTitle className="sr-only">{image.title}</DialogTitle>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute right-4 top-4 z-10" 
-              onClick={handleClose}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            {/* Removed the custom close button here as DialogContent already includes one */}
             
             <div className="space-y-4">
               <h2 className="text-xl font-bold">{image.title}</h2>
