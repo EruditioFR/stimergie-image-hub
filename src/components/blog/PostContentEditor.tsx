@@ -21,7 +21,7 @@ export function PostContentEditor({ form }: PostContentEditorProps) {
           <FormLabel>Contenu</FormLabel>
           <FormControl>
             <Editor
-              apiKey="no-api-key" // Replace with your TinyMCE API key for production
+              apiKey="quu1whftoq5rnpmordgzf3i052ljp6z1quwtsgt7o4f2k80h"
               onInit={(evt, editor) => editorRef.current = editor}
               initialValue={field.value}
               onEditorChange={(content) => {
@@ -33,19 +33,29 @@ export function PostContentEditor({ form }: PostContentEditorProps) {
                 plugins: [
                   'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
                   'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                  'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount', 'emoticons'
+                  'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount', 'emoticons',
+                  'hr', 'nonbreaking', 'pagebreak', 'paste', 'print', 'save', 'directionality',
+                  'template', 'textpattern', 'toc', 'visualchars', 'codesample'
                 ],
-                toolbar: 'undo redo | blocks | ' +
-                  'bold italic forecolor backcolor | alignleft aligncenter ' +
-                  'alignright alignjustify | bullist numlist outdent indent | ' +
-                  'removeformat | link image media table | emoticons charmap | ' +
-                  'fullscreen preview | help',
+                toolbar1: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist | link image',
+                toolbar2: 'forecolor backcolor | formatselect | outdent indent | removeformat | help | fullscreen | preview | print | searchreplace | paste pastetext',
+                toolbar3: 'insertdatetime | hr | table tabledelete tableprops tablerowprops tablecellprops | tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol',
+                toolbar4: 'charmap emoticons codesample | visualblocks visualchars | nonbreaking pagebreak | template | toc | directionality | media',
+                toolbar_mode: 'sliding',
                 content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px }',
                 image_advtab: true,
                 link_context_toolbar: true,
                 convert_urls: false,
                 branding: false,
-                promotion: false
+                promotion: false,
+                setup: function(editor) {
+                  editor.ui.registry.addButton('customInsertButton', {
+                    text: 'Insert Template',
+                    onAction: function() {
+                      editor.insertContent('<h2>New Template</h2><p>Start writing your content here...</p>');
+                    }
+                  });
+                }
               }}
             />
           </FormControl>
