@@ -2,7 +2,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchGalleryImages, GALLERY_CACHE_TIME, generateCacheKey } from '@/services/galleryService';
+import { 
+  fetchGalleryImages, 
+  GALLERY_CACHE_TIME, 
+  generateCacheKey,
+  fetchTotalImageCount
+} from '@/services/galleryService';
 import { formatImagesForGrid } from '@/utils/imageUtils';
 import { useGalleryFilters } from './useGalleryFilters';
 import { Image } from '@/pages/Images';
@@ -21,18 +26,21 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const previousRequestRef = useRef<string | null>(null);
   const [shouldFetchRandom, setShouldFetchRandom] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
-  
+  const isCountFetchingRef = useRef(false);
   const { userRole, user } = useAuth();
   const [userClientId, setUserClientId] = useState<string | null>(null);
+  const userClientFetchedRef = useRef(false);
   
+  // Récupérer le client_id de l'utilisateur une seule fois
   useEffect(() => {
     const fetchUserClientId = async () => {
-      if (!user) return;
+      if (!user || userClientFetchedRef.current) return;
       
       const cachedClientId = sessionStorage.getItem(`userClientId-${user.id}`);
       if (cachedClientId) {
         setUserClientId(cachedClientId);
         console.log('Using cached user client ID:', cachedClientId);
+        userClientFetchedRef.current = true;
         return;
       }
       
@@ -50,6 +58,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
           sessionStorage.setItem(`userClientId-${user.id}`, data);
           setUserClientId(data);
           console.log('User client ID fetched and cached:', data);
+          userClientFetchedRef.current = true;
         }
       } catch (error) {
         console.error('Error fetching user client ID:', error);
@@ -71,6 +80,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     updateFilterStatus
   } = useGalleryFilters();
 
+  // Génération optimisée de la clé de cache
   const cacheKey = useCallback(() => {
     return generateCacheKey(
       searchQuery, 
@@ -85,6 +95,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     );
   }, [searchQuery, tagFilter, activeTab, selectedClient, selectedProject, page, shouldFetchRandom, userRole, userClientId]);
 
+  // Gestionnaire de changement de client optimisé
   const handleClientChange = useCallback((clientId: string | null) => {
     if (['admin_client', 'user'].includes(userRole) && userClientId) {
       console.log('Non-admin users cannot change their client filter');
@@ -114,6 +125,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     ).join(',');
   }, [baseHandleClientChange, searchQuery, tagFilter, activeTab, queryClient, userRole, userClientId]);
   
+  // Gestionnaire de changement de projet optimisé
   const handleProjectChange = useCallback((projectId: string | null) => {
     if (previousRequestRef.current) {
       queryClient.cancelQueries({ queryKey: previousRequestRef.current.split(',') });
@@ -138,11 +150,12 @@ export const useGalleryImages = (isAdmin: boolean) => {
     ).join(',');
   }, [baseHandleProjectChange, searchQuery, tagFilter, activeTab, selectedClient, queryClient, userRole, userClientId]);
 
+  // Réinitialisation des filtres et optimisation des requêtes
   useEffect(() => {
     setPage(1);
     setAllImages([]);
     
-    // Modified to ensure random fetching on initial load when no filters are applied
+    // Modifier pour s'assurer de la récupération aléatoire lors du chargement initial sans filtres
     const noFilters = !searchQuery && !tagFilter && activeTab === 'all' && !selectedProject;
     const canUseRandom = noFilters && (userRole === 'admin' || selectedClient !== null);
     
@@ -152,6 +165,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     updateFilterStatus(searchQuery, tagFilter);
   }, [searchQuery, tagFilter, activeTab, updateFilterStatus, selectedClient, selectedProject, userRole]);
 
+  // Forcer le client_id pour les utilisateurs non-admin
   useEffect(() => {
     if (['admin_client', 'user'].includes(userRole) && userClientId && selectedClient !== userClientId) {
       console.log('Setting client filter to non-admin user client ID:', userClientId);
@@ -159,114 +173,33 @@ export const useGalleryImages = (isAdmin: boolean) => {
     }
   }, [userRole, userClientId, baseHandleClientChange, selectedClient]);
 
+  // Récupération optimisée du nombre total d'images (évite les appels API inutiles)
   const fetchTotalCount = useCallback(async () => {
-    const cacheKey = `imageCount-${searchQuery}-${tagFilter}-${activeTab}-${selectedClient}-${selectedProject}-${userRole}-${userClientId}`;
-    const cachedCount = sessionStorage.getItem(cacheKey);
-    
-    if (cachedCount) {
-      console.log('Using cached image count:', cachedCount);
-      return parseInt(cachedCount, 10);
-    }
+    if (isCountFetchingRef.current) return totalCount;
+    isCountFetchingRef.current = true;
     
     try {
-      let query = supabase
-        .from('images')
-        .select('id', { count: 'exact', head: true });
+      const count = await fetchTotalImageCount(
+        searchQuery,
+        tagFilter,
+        activeTab,
+        selectedClient,
+        selectedProject,
+        userRole,
+        userClientId
+      );
       
-      if (['admin_client', 'user'].includes(userRole) && userClientId) {
-        let clientIdToUse = userClientId;
-        
-        const projectCacheKey = `projectIds-${clientIdToUse}`;
-        const cachedProjectIds = sessionStorage.getItem(projectCacheKey);
-        
-        if (cachedProjectIds) {
-          const projetIds = JSON.parse(cachedProjectIds);
-          query = query.in('id_projet', projetIds);
-        } else {
-          const { data: projetData, error: projetError } = await supabase
-            .from('projets')
-            .select('id')
-            .eq('id_client', clientIdToUse);
-          
-          if (projetError) {
-            console.error('Error fetching projets for client:', projetError);
-            return 0;
-          }
-          
-          if (!projetData || projetData.length === 0) {
-            return 0;
-          }
-          
-          const projetIds = projetData.map(projet => projet.id);
-          
-          sessionStorage.setItem(projectCacheKey, JSON.stringify(projetIds));
-          
-          query = query.in('id_projet', projetIds);
-        }
-      } else if (selectedClient) {
-        const projectCacheKey = `projectIds-${selectedClient}`;
-        const cachedProjectIds = sessionStorage.getItem(projectCacheKey);
-        
-        if (cachedProjectIds) {
-          const projetIds = JSON.parse(cachedProjectIds);
-          query = query.in('id_projet', projetIds);
-        } else {
-          const { data: projetData, error: projetError } = await supabase
-            .from('projets')
-            .select('id')
-            .eq('id_client', selectedClient);
-          
-          if (projetError) {
-            console.error('Error fetching projets for client:', projetError);
-            return 0;
-          }
-          
-          if (!projetData || projetData.length === 0) {
-            return 0;
-          }
-          
-          const projetIds = projetData.map(projet => projet.id);
-          
-          sessionStorage.setItem(projectCacheKey, JSON.stringify(projetIds));
-          
-          query = query.in('id_projet', projetIds);
-        }
-      }
-      
-      if (selectedProject) {
-        query = query.eq('id_projet', selectedProject);
-      }
-      
-      if (searchQuery && searchQuery.trim() !== '') {
-        query = query.or(`title.ilike.%${searchQuery}%,tags.ilike.%${searchQuery}%`);
-      }
-
-      if (tagFilter && tagFilter.toLowerCase() !== 'toutes') {
-        query = query.ilike('tags', `%${tagFilter.toLowerCase()}%`);
-      }
-      
-      if (activeTab.toLowerCase() !== 'all') {
-        query = query.ilike('tags', `%${activeTab.toLowerCase()}%`);
-      }
-      
-      const { count, error } = await query;
-      
-      if (error) {
-        console.error('Error fetching image count:', error);
-        return 0;
-      }
-      
-      if (count !== null) {
-        sessionStorage.setItem(cacheKey, count.toString());
-      }
-      
-      return count || 0;
+      setTotalCount(count);
+      isCountFetchingRef.current = false;
+      return count;
     } catch (error) {
-      console.error('Error count:', error);
-      return 0;
+      console.error('Error fetching count:', error);
+      isCountFetchingRef.current = false;
+      return totalCount;
     }
-  }, [searchQuery, tagFilter, activeTab, selectedClient, selectedProject, userRole, userClientId]);
+  }, [searchQuery, tagFilter, activeTab, selectedClient, selectedProject, totalCount, userRole, userClientId]);
 
+  // Requête principale optimisée
   const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
     queryKey: cacheKey(),
     queryFn: () => fetchGalleryImages(
@@ -286,21 +219,20 @@ export const useGalleryImages = (isAdmin: boolean) => {
     enabled: true
   });
 
+  // Récupération du nombre total optimisée
   useEffect(() => {
-    const getTotalCount = async () => {
-      const count = await fetchTotalCount();
-      setTotalCount(count);
-    };
-    
-    getTotalCount();
-  }, [fetchTotalCount, searchQuery, tagFilter, activeTab, selectedClient, selectedProject]);
+    if (isFetching || isLoading) return;
+    fetchTotalCount();
+  }, [fetchTotalCount, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, isFetching, isLoading]);
 
+  // Traitement des nouvelles images et préchargement
   useEffect(() => {
     console.log('New images loaded:', newImages.length);
     if (newImages.length > 0) {
       setAllImages(newImages);
       
-      if (page < Math.ceil(totalCount / 50) && !shouldFetchRandom) {
+      // Préchargement optimisé de la page suivante (seulement si nécessaire)
+      if (page < Math.ceil(totalCount / 50) && !shouldFetchRandom && !isFetching && !isLoading) {
         const nextPageKey = generateCacheKey(
           searchQuery, 
           tagFilter, 
@@ -313,31 +245,41 @@ export const useGalleryImages = (isAdmin: boolean) => {
           userClientId
         );
         
-        queryClient.prefetchQuery({
-          queryKey: nextPageKey,
-          queryFn: () => fetchGalleryImages(
-            searchQuery, 
-            tagFilter, 
-            activeTab, 
-            selectedClient,
-            selectedProject, 
-            page + 1, 
-            false,
-            userRole,
-            userClientId
-          ),
-          staleTime: EXTENDED_CACHE_TIME
-        });
+        // Vérifier si la prochaine page est déjà en cache avant de la précharger
+        const cachedData = queryClient.getQueryData(nextPageKey);
+        if (!cachedData) {
+          console.log('Prefetching next page data');
+          queryClient.prefetchQuery({
+            queryKey: nextPageKey,
+            queryFn: () => fetchGalleryImages(
+              searchQuery, 
+              tagFilter, 
+              activeTab, 
+              selectedClient,
+              selectedProject, 
+              page + 1, 
+              false,
+              userRole,
+              userClientId
+            ),
+            staleTime: EXTENDED_CACHE_TIME
+          });
+        } else {
+          console.log('Next page data already in cache');
+        }
       }
     } else {
       setAllImages([]);
     }
-  }, [newImages, page, queryClient, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, totalCount, shouldFetchRandom, userRole, userClientId, generateCacheKey]);
+  }, [newImages, page, queryClient, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, totalCount, shouldFetchRandom, userRole, userClientId, generateCacheKey, isFetching, isLoading]);
 
+  // Gestionnaire de changement de page optimisé
   const handlePageChange = useCallback((newPage: number) => {
+    if (newPage === page) return; // Éviter les appels inutiles
     setPage(newPage);
-  }, []);
+  }, [page]);
 
+  // Rafraîchissement optimisé de la galerie
   const refreshGallery = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['gallery-images'] });
     setPage(1);

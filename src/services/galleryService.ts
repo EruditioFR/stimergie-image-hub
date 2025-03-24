@@ -6,7 +6,7 @@ import { toast } from "sonner";
 const IMAGES_PER_PAGE = 50; // Fixed at 50 as requested
 
 /**
- * Fetches gallery images with filtering options
+ * Fetches gallery images with filtering options - optimisé pour réduire les appels API
  */
 export async function fetchGalleryImages(
   search: string, 
@@ -21,118 +21,143 @@ export async function fetchGalleryImages(
 ): Promise<any[]> {
   console.log('Fetching images with:', { search, tag, tab, client, project, pageNum, shouldFetchRandom, userRole, userClientId });
   
-  // For admin_client and regular users, always filter by their client ID
+  // Pour admin_client et utilisateurs normaux, toujours filtrer par leur client ID
   if (['admin_client', 'user'].includes(userRole) && userClientId) {
     console.log('Non-admin user detected, forcing client filter:', userClientId);
     client = userClientId;
   }
   
-  // Build base query for regular filtering
+  // Construction de la requête de base
   let query = supabase
     .from('images')
     .select('*');
   
-  // Apply client filter if provided
+  // Optimisation: Récupération des projets en une seule requête ou utilisation du cache
+  let projetIds: string[] | null = null;
   if (client) {
-    // Get all projects for this client first
-    const { data: projetData, error: projetError } = await supabase
-      .from('projets')
-      .select('id')
-      .eq('id_client', client);
+    const cacheKey = `projectIds-${client}`;
+    const cachedProjetIds = sessionStorage.getItem(cacheKey);
     
-    if (projetError) {
-      console.error('Error fetching projets for client:', projetError);
-      toast.error("Erreur lors du chargement des projets");
-      return [];
-    }
-    
-    if (!projetData || projetData.length === 0) {
-      console.log('No projects found for this client');
-      return [];
-    }
-    
-    // Extract project IDs
-    const projetIds = projetData.map(projet => projet.id);
-    console.log('Project IDs for client:', projetIds);
-    
-    // Filter images by project IDs
-    query = query.in('id_projet', projetIds);
-  }
-  
-  // Apply project filter if provided
-  if (project) {
-    query = query.eq('id_projet', project);
-  }
-  
-  // Apply search filter
-  if (search && search.trim() !== '') {
-    query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%`);
-  }
-
-  // Apply tag filter
-  if (tag && tag.toLowerCase() !== 'toutes') {
-    query = query.ilike('tags', `%${tag.toLowerCase()}%`);
-  }
-  
-  // Apply tab filter
-  if (tab.toLowerCase() !== 'all') {
-    query = query.ilike('tags', `%${tab.toLowerCase()}%`);
-  }
-  
-  // Apply ordering and pagination
-  if (shouldFetchRandom && !project && !search && (!tag || tag.toLowerCase() === 'toutes') && tab.toLowerCase() === 'all') {
-    // For truly random ordering when no filters are applied (except possibly client for admin_client/user)
-    console.log('Applying random ordering to images');
-    
-    // First get total count to determine random offset
-    const countQuery = supabase.from('images').select('*', { count: 'exact', head: true });
-    
-    // Apply the same filters to the count query
-    if (client) {
-      const { data: projetData } = await supabase
+    if (cachedProjetIds) {
+      // Utiliser les IDs de projets mis en cache
+      projetIds = JSON.parse(cachedProjetIds);
+      console.log('Using cached project IDs:', projetIds.length);
+    } else {
+      // Récupérer les IDs de projets et les mettre en cache
+      const { data: projetData, error: projetError } = await supabase
         .from('projets')
         .select('id')
         .eq('id_client', client);
       
-      if (projetData && projetData.length > 0) {
-        const projetIds = projetData.map(projet => projet.id);
+      if (projetError) {
+        console.error('Error fetching projets for client:', projetError);
+        toast.error("Erreur lors du chargement des projets");
+        return [];
+      }
+      
+      if (!projetData || projetData.length === 0) {
+        console.log('No projects found for this client');
+        // Mettre en cache un tableau vide pour éviter des requêtes répétées
+        sessionStorage.setItem(cacheKey, JSON.stringify([]));
+        return [];
+      }
+      
+      projetIds = projetData.map(projet => projet.id);
+      console.log('Project IDs for client:', projetIds.length);
+      
+      // Mettre en cache les IDs de projets
+      sessionStorage.setItem(cacheKey, JSON.stringify(projetIds));
+    }
+    
+    // Appliquer le filtre de projets
+    if (projetIds.length > 0) {
+      query = query.in('id_projet', projetIds);
+    } else {
+      // Aucun projet trouvé, retourner un tableau vide
+      return [];
+    }
+  }
+  
+  // Appliquer le filtre de projet si fourni
+  if (project) {
+    query = query.eq('id_projet', project);
+  }
+  
+  // Appliquer le filtre de recherche
+  if (search && search.trim() !== '') {
+    query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%`);
+  }
+
+  // Appliquer le filtre de tag
+  if (tag && tag.toLowerCase() !== 'toutes') {
+    query = query.ilike('tags', `%${tag.toLowerCase()}%`);
+  }
+  
+  // Appliquer le filtre d'onglet
+  if (tab.toLowerCase() !== 'all') {
+    query = query.ilike('tags', `%${tab.toLowerCase()}%`);
+  }
+  
+  // Appliquer le tri et la pagination
+  if (shouldFetchRandom && !project && !search && (!tag || tag.toLowerCase() === 'toutes') && tab.toLowerCase() === 'all') {
+    // Pour un tri aléatoire lorsqu'aucun filtre n'est appliqué (sauf éventuellement client pour admin_client/user)
+    console.log('Applying random ordering to images');
+    
+    // Optimisation: Utiliser le cache pour le comptage total
+    const countCacheKey = `imageCount-${client || 'all'}`;
+    let count: number | null = null;
+    const cachedCount = sessionStorage.getItem(countCacheKey);
+    
+    if (cachedCount) {
+      count = parseInt(cachedCount, 10);
+      console.log(`Using cached image count: ${count}`);
+    } else {
+      // Obtenir le nombre total pour déterminer le décalage aléatoire
+      const countQuery = supabase.from('images').select('*', { count: 'exact', head: true });
+      
+      // Appliquer les mêmes filtres à la requête de comptage
+      if (projetIds && projetIds.length > 0) {
         countQuery.in('id_projet', projetIds);
       }
+      
+      const { count: fetchedCount, error: countError } = await countQuery;
+      
+      if (countError) {
+        console.error('Error getting count:', countError);
+      } else if (fetchedCount !== null) {
+        count = fetchedCount;
+        // Mettre en cache pour de futures requêtes
+        sessionStorage.setItem(countCacheKey, count.toString());
+      }
+      
+      console.log(`Total image count: ${count}`);
     }
     
-    const { count, error: countError } = await countQuery;
-    
-    if (countError) {
-      console.error('Error getting count:', countError);
-    }
-    
-    console.log(`Total image count: ${count}`);
-    
-    // If there are images, select a random subset
+    // S'il y a des images, sélectionner un sous-ensemble aléatoire
     if (count && count > 0) {
-      // Calculate maximum possible offset to ensure we get enough images
+      // Calculer le décalage maximal possible pour garantir que nous obtenons suffisamment d'images
       const maxOffset = Math.max(0, count - IMAGES_PER_PAGE);
       const randomOffset = maxOffset > 0 ? Math.floor(Math.random() * maxOffset) : 0;
       console.log(`Using random offset: ${randomOffset}`);
       
-      // Apply the ordering and pagination
+      // Appliquer le tri et la pagination
       query = query
         .order('created_at', { ascending: false })
         .range(randomOffset, randomOffset + IMAGES_PER_PAGE - 1);
     } else {
-      // Fallback if count is 0 or null
+      // Fallback si le comptage est 0 ou null
       query = query
         .order('created_at', { ascending: false })
         .limit(IMAGES_PER_PAGE);
     }
   } else {
-    // Regular sorting with pagination when filters are applied
+    // Tri normal avec pagination lorsque des filtres sont appliqués
     query = query
       .order('created_at', { ascending: false })
       .range((pageNum - 1) * IMAGES_PER_PAGE, pageNum * IMAGES_PER_PAGE - 1);
   }
   
-  // Execute query
+  // Exécuter la requête
   const { data, error } = await query;
   
   if (error) {
@@ -143,16 +168,116 @@ export async function fetchGalleryImages(
   
   console.log(`Fetched ${data?.length || 0} images`);
   
-  // Parse tags from string to array format
+  // Parser les tags du format string au format tableau
   return (data || []).map(img => ({
     ...img,
     tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
   }));
 }
 
-export const GALLERY_CACHE_TIME = 5 * 60 * 1000; // 5 minutes
+export const GALLERY_CACHE_TIME = 15 * 60 * 1000; // 15 minutes pour réduire les appels API
 
 // Générer une clé de cache unique basée sur les filtres
 export function generateCacheKey(search: string, tag: string, tab: string, client: string | null, project: string | null, page: number, shouldFetchRandom: boolean = true, userRole: string = "", userClientId: string | null = null) {
   return ['gallery-images', search, tag, tab, client, project, page, shouldFetchRandom, userRole, userClientId];
+}
+
+/**
+ * Calcule le nombre total d'images sans faire d'appel API si possible
+ */
+export async function fetchTotalImageCount(
+  search: string, 
+  tag: string, 
+  tab: string, 
+  client: string | null,
+  project: string | null,
+  userRole: string = "",
+  userClientId: string | null = null
+): Promise<number> {
+  const cacheKey = `imageCount-${search}-${tag}-${tab}-${client}-${project}-${userRole}-${userClientId}`;
+  const cachedCount = sessionStorage.getItem(cacheKey);
+  
+  if (cachedCount) {
+    console.log('Using cached image count:', cachedCount);
+    return parseInt(cachedCount, 10);
+  }
+  
+  try {
+    let query = supabase
+      .from('images')
+      .select('id', { count: 'exact', head: true });
+    
+    // Pour admin_client et utilisateurs normaux, toujours filtrer par leur client ID
+    if (['admin_client', 'user'].includes(userRole) && userClientId) {
+      client = userClientId;
+    }
+    
+    if (client) {
+      const projectCacheKey = `projectIds-${client}`;
+      const cachedProjectIds = sessionStorage.getItem(projectCacheKey);
+      
+      if (cachedProjectIds) {
+        const projetIds = JSON.parse(cachedProjectIds);
+        if (projetIds.length > 0) {
+          query = query.in('id_projet', projetIds);
+        } else {
+          return 0;
+        }
+      } else {
+        const { data: projetData, error: projetError } = await supabase
+          .from('projets')
+          .select('id')
+          .eq('id_client', client);
+        
+        if (projetError) {
+          console.error('Error fetching projets for client:', projetError);
+          return 0;
+        }
+        
+        if (!projetData || projetData.length === 0) {
+          sessionStorage.setItem(projectCacheKey, JSON.stringify([]));
+          return 0;
+        }
+        
+        const projetIds = projetData.map(projet => projet.id);
+        sessionStorage.setItem(projectCacheKey, JSON.stringify(projetIds));
+        
+        query = query.in('id_projet', projetIds);
+      }
+    }
+    
+    if (project) {
+      query = query.eq('id_projet', project);
+    }
+    
+    if (search && search.trim() !== '') {
+      query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%`);
+    }
+
+    if (tag && tag.toLowerCase() !== 'toutes') {
+      query = query.ilike('tags', `%${tag.toLowerCase()}%`);
+    }
+    
+    if (tab.toLowerCase() !== 'all') {
+      query = query.ilike('tags', `%${tab.toLowerCase()}%`);
+    }
+    
+    const { count, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching image count:', error);
+      return 0;
+    }
+    
+    if (count !== null) {
+      sessionStorage.setItem(cacheKey, count.toString());
+      console.log(`Cached image count: ${count}`);
+      return count;
+    }
+    
+    return 0;
+  } catch (error) {
+    console.error('Error counting images:', error);
+    return 0;
+  }
 }

@@ -11,7 +11,7 @@ import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { toast } from 'sonner';
 
-// Mock categories for filters
+// Catégories pour les filtres
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
 
 const Gallery = () => {
@@ -22,12 +22,13 @@ const Gallery = () => {
   const { userProfile } = useUserProfile(user, userRole);
   const pageLoadTimeRef = useRef(Date.now());
 
-  // State for infinite scrolling
+  // État pour le défilement infini
   const [infiniteImages, setInfiniteImages] = useState<any[]>([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   
-  // State for preloading status
+  // État pour le statut de préchargement
   const [preloadedPages, setPreloadedPages] = useState<number[]>([]);
+  const preloadingRef = useRef(false);
 
   const {
     allImages,
@@ -51,29 +52,26 @@ const Gallery = () => {
     shouldFetchRandom
   } = useGalleryImages(isAdmin);
 
-  // Initialize infinite images on first load or filter change
+  // Initialiser les images infinies lors du premier chargement ou du changement de filtre
   useEffect(() => {
     if (allImages.length > 0) {
-      // Performance tracking
+      // Suivi des performances
       const loadTime = Date.now() - pageLoadTimeRef.current;
       console.log(`Images loaded in ${loadTime}ms`);
       
-      setInfiniteImages(prevImages => {
-        if (currentPage === 1) {
-          return [...allImages];
-        } else {
-          return prevImages;
+      // Remplacer les images s'il s'agit de la première page, sinon conserver l'état précédent
+      if (currentPage === 1) {
+        setInfiniteImages(allImages);
+        
+        // Marquer comme préchargé si c'est la première page
+        if (!preloadedPages.includes(1)) {
+          setPreloadedPages([1]);
         }
-      });
-      
-      // If this is the first page, mark it as preloaded
-      if (currentPage === 1 && !preloadedPages.includes(1)) {
-        setPreloadedPages([...preloadedPages, 1]);
       }
     }
   }, [allImages, currentPage, preloadedPages]);
 
-  // Function to load more images
+  // Fonction pour charger plus d'images
   const loadMoreImages = useCallback(() => {
     if (isLoading || isFetching || isLoadingMore || shouldFetchRandom) return;
     
@@ -82,19 +80,19 @@ const Gallery = () => {
       setIsLoadingMore(true);
       handlePageChange(nextPage);
       
-      // Mark this page as being loaded
+      // Marquer cette page comme étant chargée
       if (!preloadedPages.includes(nextPage)) {
         setPreloadedPages(prev => [...prev, nextPage]);
       }
     }
   }, [currentPage, handlePageChange, infiniteImages.length, isLoading, isFetching, isLoadingMore, totalCount, shouldFetchRandom, preloadedPages]);
 
-  // Add newly loaded images to our infinite scroll collection
+  // Ajouter les images nouvellement chargées à notre collection de défilement infini
   useEffect(() => {
     if (currentPage > 1 && allImages.length > 0 && !isLoading) {
-      // Append new images to existing images
+      // Ajouter de nouvelles images aux images existantes
       setInfiniteImages(prevImages => {
-        // Check for duplicates by creating a Set of IDs
+        // Vérifier les doublons en créant un ensemble d'IDs
         const existingIds = new Set(prevImages.map(img => img.id));
         const newImages = allImages.filter(img => !existingIds.has(img.id));
         
@@ -108,9 +106,9 @@ const Gallery = () => {
     }
   }, [allImages, currentPage, isLoading]);
 
-  // Reset infinite images when filters change
+  // Réinitialiser les images infinies lorsque les filtres changent
   useEffect(() => {
-    // When any filter changes, reset state
+    // Lorsque n'importe quel filtre change, réinitialiser l'état
     if (currentPage === 1) {
       setInfiniteImages([]);
       setPreloadedPages([]);
@@ -118,50 +116,45 @@ const Gallery = () => {
     }
   }, [searchQuery, activeTab, selectedClient, selectedProject, currentPage]);
 
-  // Preload next page for smoother scrolling
+  // Précharger la page suivante pour un défilement plus fluide (optimisé)
   useEffect(() => {
-    if (shouldFetchRandom || isLoading || isFetching) return;
+    // Éviter de précharger dans des conditions non nécessaires
+    if (shouldFetchRandom || isLoading || isFetching || preloadingRef.current) return;
     
     const nextPage = currentPage + 1;
     const hasMorePages = !shouldFetchRandom && infiniteImages.length < totalCount;
     
-    // Only preload if we haven't already and there are more pages
+    // Précharger uniquement si nous ne l'avons pas déjà fait et s'il y a plus de pages
     if (hasMorePages && !preloadedPages.includes(nextPage)) {
-      // Wait a bit to not interfere with current page loading
+      // Éviter les préchargements simultanés
+      preloadingRef.current = true;
+      
+      // Attendre un peu pour ne pas interférer avec le chargement de la page actuelle
       const timer = setTimeout(() => {
         console.log(`Preloading page ${nextPage}`);
-        // This will trigger the query prefetch in useGalleryImages
+        // Cela déclenchera le préchargement de la requête dans useGalleryImages
         handlePageChange(nextPage);
-        // Immediately go back to current page to not disrupt the UI
-        setTimeout(() => handlePageChange(currentPage), 100);
+        // Revenir immédiatement à la page actuelle pour ne pas perturber l'interface utilisateur
+        setTimeout(() => {
+          handlePageChange(currentPage);
+          preloadingRef.current = false;
+        }, 100);
         
-        // Mark as preloaded
+        // Marquer comme préchargé
         setPreloadedPages(prev => [...prev, nextPage]);
-      }, 2000);
+      }, 3000); // Attendre plus longtemps pour réduire la charge réseau
       
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        preloadingRef.current = false;
+      };
     }
   }, [currentPage, totalCount, infiniteImages.length, shouldFetchRandom, isLoading, isFetching, preloadedPages, handlePageChange]);
 
   const displayedImages = infiniteImages.length > 0 ? infiniteImages : allImages;
   const shouldShowEmptyState = !isLoading && displayedImages.length === 0;
 
-  console.log('Render state:', { 
-    hasImages: displayedImages.length > 0, 
-    isLoading, 
-    hasActiveFilters,
-    imagesCount: allImages.length,
-    infiniteImagesCount: infiniteImages.length,
-    totalCount,
-    currentPage,
-    isAdmin,
-    userRole,
-    userClientId,
-    shouldFetchRandom,
-    preloadedPages
-  });
-
-  // Calculate if there are more pages to load (only for non-random queries)
+  // Calculer s'il y a plus de pages à charger (uniquement pour les requêtes non aléatoires)
   const hasMorePages = !shouldFetchRandom && infiniteImages.length < totalCount;
 
   return (

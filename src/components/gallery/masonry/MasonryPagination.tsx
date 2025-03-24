@@ -14,12 +14,14 @@ interface MasonryPaginationProps {
   totalCount?: number;
   currentPage?: number;
   onPageChange?: (page: number) => void;
+  isLoading?: boolean; // Ajout d'un indicateur de chargement
 }
 
 export function MasonryPagination({
   totalCount = 0,
   currentPage = 1,
-  onPageChange
+  onPageChange,
+  isLoading = false
 }: MasonryPaginationProps) {
   if (!totalCount || totalCount <= 0 || !onPageChange) return null;
 
@@ -58,13 +60,21 @@ export function MasonryPagination({
 
   const visiblePages = getVisiblePages();
 
+  const handlePageClick = (page: number) => {
+    if (isLoading || page === currentPage) return; // Éviter les clics multiples pendant le chargement
+    onPageChange(page);
+  };
+
   return (
     <div className="mt-8 mb-6">
       <Pagination>
         <PaginationContent>
           {currentPage > 1 && (
             <PaginationItem>
-              <PaginationPrevious onClick={() => onPageChange(currentPage - 1)} />
+              <PaginationPrevious 
+                onClick={() => handlePageClick(currentPage - 1)} 
+                className={isLoading ? "pointer-events-none opacity-50" : ""}
+              />
             </PaginationItem>
           )}
           
@@ -81,7 +91,8 @@ export function MasonryPagination({
               <PaginationItem key={page}>
                 <PaginationLink
                   isActive={page === currentPage}
-                  onClick={() => onPageChange(page)}
+                  onClick={() => handlePageClick(page)}
+                  className={isLoading ? "pointer-events-none" : ""}
                 >
                   {page}
                 </PaginationLink>
@@ -91,7 +102,10 @@ export function MasonryPagination({
           
           {currentPage < totalPages && (
             <PaginationItem>
-              <PaginationNext onClick={() => onPageChange(currentPage + 1)} />
+              <PaginationNext 
+                onClick={() => handlePageClick(currentPage + 1)} 
+                className={isLoading ? "pointer-events-none opacity-50" : ""}
+              />
             </PaginationItem>
           )}
         </PaginationContent>

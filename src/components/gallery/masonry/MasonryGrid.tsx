@@ -56,7 +56,7 @@ export function MasonryGrid({
   const isWidescreen = useMediaQuery('(min-width: 1280px) and (max-width: 1535px)');
   const isUltrawide = useMediaQuery('(min-width: 1536px)');
   
-  // Calculate number of columns based on screen size
+  // Calculer le nombre de colonnes en fonction de la taille de l'écran
   const columnCount = useMemo(() => {
     if (isUltrawide) return 5;
     if (isWidescreen) return 4;
@@ -65,7 +65,7 @@ export function MasonryGrid({
     return 3; // Sur mobile, on utilise 3 colonnes
   }, [isUltrawide, isWidescreen, isDesktop, isTablet, isMobile]);
   
-  // Distribute images into columns
+  // Distribuer les images dans les colonnes
   const columnImages = useMemo(() => {
     const columns = Array(columnCount).fill(0).map(() => []);
     
@@ -77,33 +77,48 @@ export function MasonryGrid({
     return columns;
   }, [images, columnCount]);
 
-  // Setup image preloading - improved to load all at once
+  // Optimisation du préchargement d'image - améliorée pour charger toutes les images en une fois
   useEffect(() => {
-    if (images.length > 0) {
-      // Extract all image URLs including the current page and preload them
+    if (images.length > 0 && !isLoading) {
+      // Extraire toutes les URLs d'images, y compris la page actuelle, et les précharger
       const allImageUrls = images.map(img => img.src);
       
-      // Use the optimized batch preloader
-      preloadImages(allImageUrls);
+      // Précharger par lots de 10 images pour ne pas surcharger le réseau
+      const batchSize = 10;
+      const preloadBatch = (startIndex: number) => {
+        const batch = allImageUrls.slice(startIndex, startIndex + batchSize);
+        if (batch.length === 0) return;
+        
+        // Utiliser le préchargeur optimisé par lots
+        preloadImages(batch);
+        
+        // Précharger le lot suivant après un court délai
+        if (startIndex + batchSize < allImageUrls.length) {
+          setTimeout(() => preloadBatch(startIndex + batchSize), 500);
+        }
+      };
+      
+      // Lancer le préchargement
+      preloadBatch(0);
     }
-  }, [images]);
+  }, [images, isLoading]);
   
-  // Infinite scroll reference
+  // Référence pour le défilement infini
   const infiniteScrollRef = useInfiniteScroll(loadMoreImages, isLoading);
   
-  // Image click handler
+  // Gestionnaire de clic d'image
   const handleImageClick = (image: any) => {
     setSelectedImageDetail(image);
     setIsImageDetailOpen(true);
   };
   
-  // Close image detail modal
+  // Fermer la modale de détail d'image
   const handleCloseImageDetail = () => {
     setIsImageDetailOpen(false);
     setSelectedImageDetail(null);
   };
 
-  // Page change handler with smoothing - assurons-nous de bien gérer le changement de page
+  // Gestionnaire de changement de page avec lissage - assurons-nous de bien gérer le changement de page
   const handlePageClick = useCallback((page: number) => {
     if (onPageChange) {
       // Nettoyer la sélection avant de changer de page
@@ -117,7 +132,7 @@ export function MasonryGrid({
     }
   }, [onPageChange, clearSelection]);
 
-  // Show loading placeholder when no images
+  // Afficher un placeholder de chargement lorsqu'il n'y a pas d'images
   if (isLoading && images.length === 0) {
     return <MasonryLoading columnCount={columnCount} />;
   }
@@ -143,24 +158,25 @@ export function MasonryGrid({
         ))}
       </div>
 
-      {/* Loading indicator */}
+      {/* Indicateur de chargement */}
       {isLoading && (
         <div className="flex justify-center my-6">
           <LoadingSpinner size={32} />
         </div>
       )}
       
-      {/* Infinite scroll sentinel element */}
+      {/* Élément sentinelle pour le défilement infini */}
       {hasMorePages && !isLoading && loadMoreImages && (
         <div ref={infiniteScrollRef} className="h-1 w-full my-4" />
       )}
 
-      {/* Show pagination when infinite scroll is not available - utilisez notre gestionnaire personnalisé */}
+      {/* Afficher la pagination lorsque le défilement infini n'est pas disponible */}
       {!loadMoreImages && (
         <MasonryPagination
           totalCount={totalCount}
           currentPage={currentPage}
           onPageChange={handlePageClick}
+          isLoading={isLoading}
         />
       )}
       
