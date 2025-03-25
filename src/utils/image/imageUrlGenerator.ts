@@ -13,10 +13,10 @@ export function generateDisplayImageUrl(folderName: string, imageTitle: string):
     return '';
   }
   
-  // Normaliser uniquement le nom du dossier, pas le titre de l'image
-  const normalizedFolder = normalizeForUrl(folderName);
+  // Ne pas normaliser le nom du dossier, conserver le format original
+  const encodedFolder = encodeURIComponent(folderName);
   
-  return `https://stimergie.fr/photos/${normalizedFolder}/PNG/${imageTitle}.png`;
+  return `https://stimergie.fr/photos/${encodedFolder}/PNG/${imageTitle}.png`;
 }
 
 /**
@@ -29,10 +29,10 @@ export function generateDownloadImageUrl(folderName: string, imageTitle: string)
     return '';
   }
   
-  // Normaliser uniquement le nom du dossier, pas le titre de l'image
-  const normalizedFolder = normalizeForUrl(folderName);
+  // Ne pas normaliser le nom du dossier, conserver le format original
+  const encodedFolder = encodeURIComponent(folderName);
   
-  return `https://stimergie.fr/photos/${normalizedFolder}/${imageTitle}.png`;
+  return `https://stimergie.fr/photos/${encodedFolder}/${imageTitle}.png`;
 }
 
 /**
@@ -40,6 +40,9 @@ export function generateDownloadImageUrl(folderName: string, imageTitle: string)
  * - Remplace les espaces par des tirets
  * - Supprime les caractères spéciaux
  * - Convertit en minuscules
+ * 
+ * Note: Cette fonction est conservée pour la rétrocompatibilité mais n'est plus utilisée
+ * dans la génération des URLs d'images.
  */
 function normalizeForUrl(text: string): string {
   if (!text) return '';
