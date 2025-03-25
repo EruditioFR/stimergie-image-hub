@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { parseTagsString } from "@/utils/imageUtils";
 import { toast } from "sonner";
@@ -31,11 +30,10 @@ export async function fetchGalleryImages(
     return [];
   }
   
-  // Joindre la table des projets pour obtenir le nom du projet
-  // Correction de la syntaxe pour la sélection avec jointure
+  // Joindre la table des projets pour obtenir le nom du dossier
   let joinedQuery = query.select(`
     id, width, height, created_at, id_projet, title, description, url, orientation, tags, url_miniature, created_by, updated_at,
-    projets!id_projet (nom_projet)
+    projets!id_projet (nom_projet, nom_dossier)
   `);
   
   // Appliquer la pagination ou le tri aléatoire
@@ -56,14 +54,14 @@ export async function fetchGalleryImages(
   
   // Transformer les données pour utiliser le nouveau format d'URL
   const transformedData = (data || []).map(img => {
-    const projectName = img.projets?.nom_projet || "default";
+    const folderName = img.projets?.nom_dossier || "default";
     const imageTitle = img.title || `image-${img.id}`;
     
     return {
       ...img,
       // Générer les nouvelles URLs
-      display_url: generateDisplayImageUrl(projectName, imageTitle),
-      download_url: generateDownloadImageUrl(projectName, imageTitle),
+      display_url: generateDisplayImageUrl(folderName, imageTitle),
+      download_url: generateDownloadImageUrl(folderName, imageTitle),
       // Conserver les anciens champs pour rétrocompatibilité
       url: img.url,
       url_miniature: img.url_miniature,
