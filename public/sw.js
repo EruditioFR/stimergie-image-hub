@@ -2,7 +2,7 @@
 // Service Worker pour le cache des images
 const CACHE_NAME = 'stimergie-images-cache-v1';
 const IMAGE_HOSTS = ['stimergie.fr'];
-const MAX_CACHE_SIZE = 300; // Nombre maximum d'entrées dans le cache
+const MAX_CACHE_SIZE = 300;
 
 // Installation du Service Worker
 self.addEventListener('install', (event) => {
@@ -43,13 +43,19 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
+// Fonction utilitaire pour contourner CORS
+function getProxiedUrl(url) {
+  // Utiliser le proxy images.weserv.nl qui préserve les en-têtes binaires
+  return `https://images.weserv.nl/?url=${encodeURIComponent(url)}`;
+}
+
 // Stratégie Cache-First avec mise à jour en arrière-plan
 async function cacheFirst(request) {
   try {
     const cachedResponse = await caches.match(request);
     
     if (cachedResponse) {
-      // Si en cache, mettre à jour le cache en arrière-plan (stale-while-revalidate)
+      // Si en cache, mettre à jour le cache en arrière-plan
       updateCache(request).catch(console.error);
       return cachedResponse;
     }
@@ -63,8 +69,28 @@ async function cacheFirst(request) {
     const cachedResponse = await caches.match(request);
     if (cachedResponse) return cachedResponse;
     
-    // En dernier recours, retourner une erreur
-    return new Response('Network error', { status: 503, statusText: 'Service Unavailable' });
+    // En dernier recours, essayer via le proxy
+    try {
+      const proxyUrl = getProxiedUrl(request.url);
+      const proxyResponse = await fetch(proxyUrl, {
+        mode: 'cors',
+        credentials: 'omit'
+      });
+      
+      if (proxyResponse.ok) {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(request, proxyResponse.clone());
+        return proxyResponse;
+      }
+    } catch (proxyError) {
+      console.error('Service Worker: Erreur avec le proxy', proxyError);
+    }
+    
+    // Si tout échoue, retourner une erreur
+    return new Response('Network error', { 
+      status: 503, 
+      statusText: 'Service Unavailable'
+    });
   }
 }
 
@@ -81,19 +107,29 @@ async function updateCache(request) {
   }
   
   try {
-    const response = await fetch(request.clone(), {
+    // Essayer d'abord avec la requête originale
+    let response = await fetch(request.clone(), {
       cache: 'no-cache',
       mode: 'cors',
       credentials: 'omit'
     });
     
-    if (response.ok && (response.status === 200 || response.status === 304)) {
-      // Stocker une copie de la réponse dans le cache
+    // Si échec, essayer avec le proxy
+    if (!response.ok) {
+      const proxyUrl = getProxiedUrl(request.url);
+      response = await fetch(proxyUrl, {
+        cache: 'no-cache',
+        mode: 'cors',
+        credentials: 'omit'
+      });
+    }
+    
+    if (response.ok) {
       const responseCopy = response.clone();
       
-      // Ajouter des en-têtes de cache pour une durée prolongée
+      // Ajouter des en-têtes de cache
       const headers = new Headers(responseCopy.headers);
-      headers.set('Cache-Control', 'public, max-age=31536000, immutable'); // 1 an
+      headers.set('Cache-Control', 'public, max-age=31536000, immutable');
       
       const cachedResponse = new Response(
         await responseCopy.blob(),
@@ -105,9 +141,10 @@ async function updateCache(request) {
       );
       
       await cache.put(request, cachedResponse);
+      return response;
     }
     
-    return response;
+    throw new Error(`HTTP error! status: ${response.status}`);
   } catch (error) {
     console.error('Service Worker: Erreur réseau', error);
     throw error;
