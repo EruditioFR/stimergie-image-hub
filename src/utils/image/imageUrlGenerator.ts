@@ -15,7 +15,7 @@ export function generateDisplayImageUrl(projectName: string, imageTitle: string)
   
   // Normaliser le nom du projet et le titre de l'image pour l'URL
   const normalizedProject = normalizeForUrl(projectName);
-  const normalizedTitle = normalizeForUrl(imageTitle);
+  const normalizedTitle = normalizeForUrl(imageTitle, false); // Préserver la casse
   
   return `https://stimergie.fr/photos/${normalizedProject}/PNG/${normalizedTitle}.png`;
 }
@@ -32,7 +32,7 @@ export function generateDownloadImageUrl(projectName: string, imageTitle: string
   
   // Normaliser le nom du projet et le titre de l'image pour l'URL
   const normalizedProject = normalizeForUrl(projectName);
-  const normalizedTitle = normalizeForUrl(imageTitle);
+  const normalizedTitle = normalizeForUrl(imageTitle, false); // Préserver la casse
   
   return `https://stimergie.fr/photos/${normalizedProject}/${normalizedTitle}.png`;
 }
@@ -41,14 +41,21 @@ export function generateDownloadImageUrl(projectName: string, imageTitle: string
  * Normalise une chaîne pour être utilisée dans une URL
  * - Remplace les espaces par des tirets
  * - Supprime les caractères spéciaux
- * - Convertit en minuscules
+ * - Convertit en minuscules (si transformToLowerCase est true)
  */
-function normalizeForUrl(text: string): string {
+function normalizeForUrl(text: string, transformToLowerCase: boolean = true): string {
   if (!text) return '';
   
-  return text
-    .toLowerCase()
+  // Normalisation de base sans la conversion en minuscules
+  let normalized = text
     .replace(/[^\w\s-]/g, '') // Supprime les caractères spéciaux
     .replace(/\s+/g, '-')     // Remplace les espaces par des tirets
     .replace(/-+/g, '-');     // Évite les tirets multiples
+  
+  // Conversion en minuscules uniquement si demandé
+  if (transformToLowerCase) {
+    normalized = normalized.toLowerCase();
+  }
+  
+  return normalized;
 }
