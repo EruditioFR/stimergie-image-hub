@@ -1,4 +1,3 @@
-
 import React, { memo } from 'react';
 import { ImageCard } from '@/components/ImageCard';
 
@@ -10,6 +9,8 @@ interface Image {
   author: string;
   tags?: string[];
   orientation?: string;
+  display_url?: string;
+  download_url?: string;
 }
 
 interface MasonryColumnProps {
@@ -98,6 +99,9 @@ const ImageItem = memo(function ImageItem({
           className={`w-full transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
           orientation={image.orientation}
           onClick={handleClick}
+          // Utiliser la nouvelle URL de téléchargement
+          src={image.display_url || image.src}
+          downloadUrl={image.download_url}
         />
       </div>
     </div>

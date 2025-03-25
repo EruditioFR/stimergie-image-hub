@@ -1,4 +1,3 @@
-
 import { useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { formatImagesForGrid } from '@/utils/imageUtils';
@@ -144,6 +143,19 @@ export const useGalleryImages = (isAdmin: boolean) => {
       userClientId
     );
   }, [prefetchNextPage, isLoading, isFetching, shouldFetchRandom, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, currentPage, totalCount, userRole, userClientId]);
+
+  const formatImagesForGrid = useCallback((images: any[] = []) => {
+    return images.map(image => ({
+      id: image.id.toString(),
+      src: image.display_url || image.url_miniature || image.url,
+      download_url: image.download_url,
+      alt: image.title,
+      title: image.title,
+      author: 'User',
+      tags: image.tags,
+      orientation: image.orientation
+    }));
+  }, []);
 
   return {
     allImages,

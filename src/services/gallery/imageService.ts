@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { parseTagsString } from "@/utils/imageUtils";
 import { toast } from "sonner";
 import { buildGalleryQuery, applyPaginationToQuery } from "./queryBuilder";
+import { generateDisplayImageUrl, generateDownloadImageUrl } from "@/utils/image/imageUrlGenerator";
 
 /**
  * Fetches gallery images with filtering options - optimisé pour réduire les appels API
@@ -30,9 +31,15 @@ export async function fetchGalleryImages(
     return [];
   }
   
+  // Joindre la table des projets pour obtenir le nom du projet
+  let joinedQuery = query.select(`
+    images.*,
+    projets:id_projet (nom_projet)
+  `);
+  
   // Appliquer la pagination ou le tri aléatoire
   const paginatedQuery = await applyPaginationToQuery(
-    query, pageNum, shouldFetchRandom, client, project, search, tag, tab
+    joinedQuery, pageNum, shouldFetchRandom, client, project, search, tag, tab
   );
   
   // Exécuter la requête
@@ -46,9 +53,23 @@ export async function fetchGalleryImages(
   
   console.log(`Fetched ${data?.length || 0} images`);
   
-  // Parser les tags du format string au format tableau
-  return (data || []).map(img => ({
-    ...img,
-    tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
-  }));
+  // Transformer les données pour utiliser le nouveau format d'URL
+  const transformedData = (data || []).map(img => {
+    const projectName = img.projets?.nom_projet || "default";
+    const imageTitle = img.title || `image-${img.id}`;
+    
+    return {
+      ...img,
+      // Générer les nouvelles URLs
+      display_url: generateDisplayImageUrl(projectName, imageTitle),
+      download_url: generateDownloadImageUrl(projectName, imageTitle),
+      // Conserver les anciens champs pour rétrocompatibilité
+      url: img.url,
+      url_miniature: img.url_miniature,
+      // Parser les tags
+      tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
+    };
+  });
+  
+  return transformedData;
 }

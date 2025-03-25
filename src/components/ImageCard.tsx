@@ -1,4 +1,3 @@
-
 import { useState, memo, useRef, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,11 +13,11 @@ interface ImageCardProps {
   className?: string;
   orientation?: string;
   onClick?: (e: React.MouseEvent) => void;
+  downloadUrl?: string;
 }
 
-// Composant mémoïsé pour éviter les rendus inutiles
 export const ImageCard = memo(function ImageCard({ 
-  id, src, alt, title, author, className, orientation, onClick 
+  id, src, alt, title, author, className, orientation, onClick, downloadUrl 
 }: ImageCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const mountedRef = useRef(true);
@@ -29,7 +28,6 @@ export const ImageCard = memo(function ImageCard({
     };
   }, []);
 
-  // Obtenir le ratio d'aspect approprié en fonction de l'orientation de l'image
   const getAspectRatio = () => {
     switch (orientation?.toLowerCase()) {
       case 'landscape':
@@ -43,8 +41,6 @@ export const ImageCard = memo(function ImageCard({
     }
   };
   
-  // Donner la priorité aux images en haut de la page
-  // Les 6 premières images de chaque lot sont prioritaires
   const isPriority = parseInt(id) % 15 < 6; 
 
   return (
@@ -77,7 +73,6 @@ export const ImageCard = memo(function ImageCard({
           />
         )}
         
-        {/* Superposition au survol */}
         <div className={cn(
           "absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent",
           "opacity-0 group-hover:opacity-100 transition-opacity duration-300",
@@ -88,7 +83,6 @@ export const ImageCard = memo(function ImageCard({
         </div>
       </div>
       
-      {/* Bouton de téléchargement */}
       <div className={cn(
         "absolute top-3 right-3 transform",
         "transition-all duration-300 ease-in-out",
@@ -101,7 +95,7 @@ export const ImageCard = memo(function ImageCard({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            window.open(src, '_blank');
+            window.open(downloadUrl || src, '_blank');
           }}
         >
           <Download className="h-4 w-4 text-foreground" />

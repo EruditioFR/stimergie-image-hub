@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -25,42 +24,39 @@ export function MasonryDetailModal({
   selectedImages,
   images
 }: MasonryDetailModalProps) {
-  // État pour gérer le niveau de zoom
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
-  const [isFullPage, setIsFullPage] = useState(true); // Afficher en mode plein écran par défaut
-  
-  // Fonction pour télécharger l'image
+  const [isFullPage, setIsFullPage] = useState(true);
+
   const handleDownload = () => {
-    if (image && (image.url_miniature || image.src || image.url)) {
-      window.open(image.url_miniature || image.src || image.url, '_blank');
+    if (image) {
+      const downloadUrl = image.download_url || image.url_miniature || image.src || image.url;
+      window.open(downloadUrl, '_blank');
     }
   };
 
-  // Fonctions pour gérer le zoom
   const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 0.5, 4)); // Limite le zoom à 4x
-    setDragPosition({ x: 0, y: 0 }); // Réinitialise la position
+    setZoomLevel(prev => Math.min(prev + 0.5, 4));
+    setDragPosition({ x: 0, y: 0 });
   };
 
   const handleZoomOut = () => {
     setZoomLevel(prev => {
-      const newZoom = Math.max(prev - 0.5, 1); // Ne descend pas en dessous de 1x
+      const newZoom = Math.max(prev - 0.5, 1);
       if (newZoom === 1) {
-        setDragPosition({ x: 0, y: 0 }); // Réinitialise la position au zoom minimal
+        setDragPosition({ x: 0, y: 0 });
       }
       return newZoom;
     });
   };
-  
-  // Gestion du déplacement de l'image zoomée
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (zoomLevel > 1) {
       setIsDragging(true);
     }
   };
-  
+
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging && zoomLevel > 1) {
       setDragPosition(prev => ({
@@ -69,16 +65,15 @@ export function MasonryDetailModal({
       }));
     }
   };
-  
+
   const handleMouseUp = () => {
     setIsDragging(false);
   };
-  
-  // Désactive le zoom lors de la fermeture de la modale
+
   const handleClose = () => {
     setZoomLevel(1);
     setDragPosition({ x: 0, y: 0 });
-    setIsFullPage(true); // Réinitialise à plein écran pour la prochaine ouverture
+    setIsFullPage(true);
     onClose();
   };
 
@@ -88,7 +83,6 @@ export function MasonryDetailModal({
     setDragPosition({ x: 0, y: 0 });
   };
 
-  // If the modal is open but no image is selected, don't render the content
   if (!image && isOpen) {
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -99,7 +93,6 @@ export function MasonryDetailModal({
     );
   }
 
-  // If the modal is not open, just render the album dialog
   if (!isOpen) {
     return (
       <CreateAlbumDialog 
@@ -111,7 +104,6 @@ export function MasonryDetailModal({
     );
   }
 
-  // Rendering component for the image and zoom controls
   const ImageContent = () => (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -141,7 +133,7 @@ export function MasonryDetailModal({
           onMouseLeave={handleMouseUp}
         >
           <img 
-            src={image?.url_miniature || image?.src || image?.url || ''} 
+            src={image?.display_url || image?.url_miniature || image?.src || image?.url || ''} 
             alt={image?.title || 'Image'} 
             className={`max-w-full ${isFullPage ? 'max-h-[80vh]' : 'max-h-[70vh]'} object-contain transition-transform duration-200`}
             style={{ 
@@ -151,7 +143,6 @@ export function MasonryDetailModal({
           />
         </div>
         
-        {/* Contrôles de zoom */}
         <div className="absolute bottom-3 right-3 flex gap-2">
           <Button 
             variant="secondary" 

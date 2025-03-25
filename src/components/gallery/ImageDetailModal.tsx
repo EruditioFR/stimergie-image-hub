@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { X, Download, Heart, Share2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,7 +29,8 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
   const tags = typeof image.tags === 'string' ? parseTagsString(image.tags) : image.tags;
 
   const handleDownload = () => {
-    window.open(image.url, '_blank');
+    const downloadUrl = image.download_url || image.url;
+    window.open(downloadUrl, '_blank');
   };
 
   const handleLike = () => {
@@ -132,7 +132,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
               onClick={zoomLevel === 1 ? toggleFullscreen : undefined}
             >
               <LazyImage 
-                src={image.url} 
+                src={image.display_url || image.url} 
                 alt={image.title} 
                 className="max-w-full max-h-[65vh] object-contain transition-transform duration-200"
                 aspectRatio="aspect-auto"
