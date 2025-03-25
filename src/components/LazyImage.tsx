@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
@@ -13,11 +14,42 @@ interface LazyImageProps {
   style?: CSSProperties;
 }
 
+// Cache global persistant entre les sessions
+const PERSISTENT_CACHE_PREFIX = 'persistent_img_';
+
 // Enhanced global cache for faster loading of previously viewed images
 const imageCache = new Map<string, string>();
 
 // Cache to track requested images to avoid duplicates
 const requestedImagesCache = new Set<string>();
+
+// Vérifie si le navigateur prend en charge le stockage persistant
+const isPersistentStorageAvailable = async (): Promise<boolean> => {
+  try {
+    if (!navigator.storage || !navigator.storage.persist) return false;
+    
+    let isPersisted = await navigator.storage.persisted();
+    if (!isPersisted) {
+      // Demander la permission de stockage persistant
+      isPersisted = await navigator.storage.persist();
+    }
+    
+    return isPersisted;
+  } catch (e) {
+    console.warn('Erreur lors de la vérification du stockage persistant:', e);
+    return false;
+  }
+};
+
+// Essayer d'activer le stockage persistant au chargement
+(async () => {
+  try {
+    const isPersistent = await isPersistentStorageAvailable();
+    console.log(`Stockage persistant ${isPersistent ? 'activé' : 'non disponible'}`);
+  } catch (e) {
+    console.warn('Erreur lors de l\'activation du stockage persistant:', e);
+  }
+})();
 
 // Enhanced session-persistent cache to retain images across page navigations
 const sessionImageCache = (() => {
@@ -25,6 +57,11 @@ const sessionImageCache = (() => {
     return {
       getItem: (key: string): string | null => {
         try {
+          // Vérifier d'abord dans le localStorage (persistant)
+          const persisted = localStorage.getItem(`${PERSISTENT_CACHE_PREFIX}${key}`);
+          if (persisted) return persisted;
+          
+          // Sinon vérifier dans le sessionStorage
           return sessionStorage.getItem(`lazy_img_${key}`);
         } catch (e) {
           return null;
@@ -32,7 +69,32 @@ const sessionImageCache = (() => {
       },
       setItem: (key: string, value: string): void => {
         try {
+          // Stocker dans le sessionStorage
           sessionStorage.setItem(`lazy_img_${key}`, value);
+          
+          // Tenter de stocker dans le localStorage pour persistance
+          try {
+            localStorage.setItem(`${PERSISTENT_CACHE_PREFIX}${key}`, value);
+          } catch (persistError) {
+            // Si le localStorage est plein, nettoyer pour libérer de l'espace
+            try {
+              const keysToRemove = [];
+              for (let i = 0; i < localStorage.length; i++) {
+                const storageKey = localStorage.key(i);
+                if (storageKey && storageKey.startsWith(PERSISTENT_CACHE_PREFIX)) {
+                  keysToRemove.push(storageKey);
+                }
+              }
+              
+              const removeCount = Math.ceil(keysToRemove.length * 0.2);
+              keysToRemove.slice(0, removeCount).forEach(k => localStorage.removeItem(k));
+              
+              // Réessayer
+              localStorage.setItem(`${PERSISTENT_CACHE_PREFIX}${key}`, value);
+            } catch (clearError) {
+              console.warn('Impossible de libérer le stockage persistant:', clearError);
+            }
+          }
         } catch (e) {
           // Storage full - clear some older entries
           try {
@@ -66,64 +128,99 @@ const sessionImageCache = (() => {
   }
 })();
 
+// Fonction auxiliaire pour vérifier si une image est déjà en cache dans le navigateur
+const isImageCached = async (src: string): Promise<boolean> => {
+  // Vérifier d'abord dans le cache d'application
+  if ('caches' in window) {
+    try {
+      const cache = await caches.open('images-cache-v1');
+      const match = await cache.match(src);
+      if (match) return true;
+    } catch (e) {
+      console.warn('Erreur lors de la vérification du cache d\'application:', e);
+    }
+  }
+  
+  // Vérifier dans les caches de session et persistant
+  const cacheKey = getImageCacheKey(src);
+  if (sessionImageCache.getItem(cacheKey)) return true;
+  
+  // Vérifier dans les caches mémoire
+  if (imageCache.has(src)) return true;
+  
+  // Vérifier dans le cache HTTP du navigateur avec une requête HEAD
+  try {
+    const response = await fetch(src, {
+      method: 'HEAD',
+      cache: 'only-if-cached',
+      mode: 'no-cors'
+    });
+    return response.status === 200;
+  } catch (e) {
+    // Une erreur signifie généralement que l'image n'est pas en cache
+    return false;
+  }
+};
+
 // Preload a batch of images for smoother experience
 export function preloadImages(urls: string[]): void {
   if (!urls.length) return;
   
-  // Check session cache first for all URLs
-  const urlsToLoad = urls.filter(url => {
-    const cacheKey = getImageCacheKey(url);
+  // Vérifier rapidement quelles images sont déjà en cache
+  const checkCachedStatus = async () => {
+    const checks = await Promise.all(
+      urls.map(async url => {
+        const isCached = await isImageCached(url);
+        return { url, isCached };
+      })
+    );
     
-    // Check session cache
-    const sessionCached = sessionImageCache.getItem(cacheKey);
-    if (sessionCached) {
-      // If already in session cache, add to memory cache
-      imageCache.set(url, url);
-      return false;
-    }
+    const urlsToLoad = checks
+      .filter(({ url, isCached }) => !isCached && !requestedImagesCache.has(url))
+      .map(({ url }) => url);
     
-    return !requestedImagesCache.has(url);
-  });
-  
-  if (urlsToLoad.length === 0) return;
-  console.log(`Preloading ${urlsToLoad.length} new images`);
-  
-  // Process all remaining images with improved throttling
-  const batchSize = 8; // Smaller batch size for more parallel loading
-  let index = 0;
-  
-  const loadNextBatch = () => {
-    const batch = urlsToLoad.slice(index, index + batchSize);
-    if (batch.length === 0) return;
+    if (urlsToLoad.length === 0) return;
+    console.log(`Preloading ${urlsToLoad.length} new images`);
     
-    batch.forEach(url => {
-      if (!requestedImagesCache.has(url)) {
-        requestedImagesCache.add(url);
-        
-        const img = new Image();
-        img.onload = () => {
-          imageCache.set(url, url);
+    // Process all remaining images with improved throttling
+    const batchSize = 8; // Smaller batch size for more parallel loading
+    let index = 0;
+    
+    const loadNextBatch = () => {
+      const batch = urlsToLoad.slice(index, index + batchSize);
+      if (batch.length === 0) return;
+      
+      batch.forEach(url => {
+        if (!requestedImagesCache.has(url)) {
+          requestedImagesCache.add(url);
           
-          // Save to session cache
-          const cacheKey = getImageCacheKey(url);
-          sessionImageCache.setItem(cacheKey, url);
-        };
-        img.onerror = () => {
-          console.warn(`Failed to preload: ${url}`);
-        };
-        img.src = url;
+          const img = new Image();
+          img.onload = () => {
+            imageCache.set(url, url);
+            
+            // Save to session cache
+            const cacheKey = getImageCacheKey(url);
+            sessionImageCache.setItem(cacheKey, url);
+          };
+          img.onerror = () => {
+            console.warn(`Failed to preload: ${url}`);
+          };
+          img.src = url;
+        }
+      });
+      
+      index += batchSize;
+      
+      // Continue loading after a small delay
+      if (index < urlsToLoad.length) {
+        setTimeout(loadNextBatch, 100);
       }
-    });
+    };
     
-    index += batchSize;
-    
-    // Continue loading after a small delay
-    if (index < urlsToLoad.length) {
-      setTimeout(loadNextBatch, 100);
-    }
+    loadNextBatch();
   };
   
-  loadNextBatch();
+  checkCachedStatus();
 }
 
 /**
@@ -208,22 +305,40 @@ export function LazyImage({
       return;
     }
     
-    // Start simulated progress immediately
-    setLoadProgress(Math.floor(Math.random() * 30) + 20);
-    if (progressIntervalRef.current) {
-      clearInterval(progressIntervalRef.current);
-    }
-    
-    progressIntervalRef.current = window.setInterval(() => {
-      if (!isUnmountedRef.current) {
-        setLoadProgress(prev => {
-          // Accelerated progress simulation for better UX
-          const increment = prev < 30 ? 10 : prev < 60 ? 5 : prev < 80 ? 3 : 1;
-          const newProgress = prev + Math.random() * increment;
-          return newProgress >= 90 ? 90 : newProgress;
-        });
+    // Vérifier le cache du navigateur
+    isImageCached(src).then(isCached => {
+      if (isCached && !isUnmountedRef.current) {
+        setCachedSrc(src);
+        setLoadProgress(90);
+        setTimeout(() => {
+          if (!isUnmountedRef.current) {
+            setLoadProgress(100);
+            setIsLoaded(true);
+          }
+        }, 10);
+        return;
       }
-    }, 80);
+      
+      // Sinon commencer le chargement normal
+      if (!isUnmountedRef.current) {
+        // Start simulated progress immediately
+        setLoadProgress(Math.floor(Math.random() * 30) + 20);
+        if (progressIntervalRef.current) {
+          clearInterval(progressIntervalRef.current);
+        }
+        
+        progressIntervalRef.current = window.setInterval(() => {
+          if (!isUnmountedRef.current) {
+            setLoadProgress(prev => {
+              // Accelerated progress simulation for better UX
+              const increment = prev < 30 ? 10 : prev < 60 ? 5 : prev < 80 ? 3 : 1;
+              const newProgress = prev + Math.random() * increment;
+              return newProgress >= 90 ? 90 : newProgress;
+            });
+          }
+        }, 80);
+      }
+    });
     
     // Clean up any interval on unmount
     return () => {

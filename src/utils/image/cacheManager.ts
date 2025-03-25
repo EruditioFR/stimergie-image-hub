@@ -11,7 +11,75 @@ export const processedUrlCache = new Map<string, string>();
 let cacheUsageOrder: string[] = [];
 
 // Maximum cache size (number of entries)
-const MAX_CACHE_SIZE = 300;
+const MAX_CACHE_SIZE = 500; // Augmenté pour un cache plus persistant
+
+// Shared application-wide cache - persiste entre les sessions utilisateurs
+// S'active lorsque le site est ouvert dans plusieurs onglets ou que plusieurs utilisateurs partagent un ordinateur
+let appWideCache: Record<string, string> = {};
+
+// Tentative d'utilisation de SharedWorker pour le partage entre utilisateurs si disponible
+try {
+  if (typeof SharedWorker !== 'undefined') {
+    // Tentative d'activation du cache partagé entre utilisateurs
+    const initSharedCache = () => {
+      const blob = new Blob([`
+        let sharedCache = {};
+        
+        onconnect = function(e) {
+          const port = e.ports[0];
+          
+          port.onmessage = function(e) {
+            const { action, key, value } = e.data;
+            
+            if (action === 'set') {
+              sharedCache[key] = value;
+              port.postMessage({ result: 'set', key });
+            }
+            else if (action === 'get') {
+              port.postMessage({ result: 'get', key, value: sharedCache[key] });
+            }
+            else if (action === 'getAll') {
+              port.postMessage({ result: 'getAll', cache: sharedCache });
+            }
+          };
+          
+          // Synchroniser le cache existant lors de la connexion
+          port.postMessage({ result: 'getAll', cache: sharedCache });
+        };
+      `], { type: 'application/javascript' });
+      
+      const worker = new SharedWorker(URL.createObjectURL(blob));
+      
+      worker.port.onmessage = (e) => {
+        if (e.data.result === 'getAll') {
+          appWideCache = e.data.cache || {};
+        }
+      };
+      
+      worker.port.start();
+      
+      // Obtenir le cache initial
+      worker.port.postMessage({ action: 'getAll' });
+      
+      return worker;
+    };
+    
+    // Initialiser et stocker le worker
+    try {
+      const worker = initSharedCache();
+      console.log("Cache partagé entre utilisateurs activé");
+      
+      // Ajouter une méthode pour partager des entrées de cache
+      (window as any).__shareImageCache = (key: string, value: string) => {
+        worker.port.postMessage({ action: 'set', key, value });
+      };
+    } catch (e) {
+      console.warn("Impossible d'initialiser le cache partagé", e);
+    }
+  }
+} catch (e) {
+  console.warn("SharedWorker non disponible pour le partage de cache", e);
+}
 
 // Cache for storing actual blob data as base64 strings, persisting across page loads
 export const sessionImageCache = (() => {
@@ -29,6 +97,15 @@ export const sessionImageCache = (() => {
       setItem: (key: string, value: string): void => {
         try {
           sessionStorage.setItem(`img_cache_${key}`, value);
+          
+          // Partager avec le cache entre utilisateurs si disponible
+          if ((window as any).__shareImageCache) {
+            try {
+              (window as any).__shareImageCache(`img_cache_${key}`, value);
+            } catch (e) {
+              console.warn("Erreur lors du partage du cache", e);
+            }
+          }
         } catch (e) {
           console.warn('Failed to write to session storage:', e);
           // If storage is full, clear old items
@@ -120,4 +197,25 @@ export function manageCacheSize(url: string): void {
     // Update usage order
     cacheUsageOrder = cacheUsageOrder.slice(-(MAX_CACHE_SIZE));
   }
+}
+
+// Vérifier si le Service Worker API est disponible
+export const initServiceWorkerCache = () => {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        console.log('ServiceWorker enregistré avec succès:', registration.scope);
+      } catch (e) {
+        console.warn('Échec de l\'enregistrement du ServiceWorker:', e);
+      }
+    });
+  }
+};
+
+// Tenter d'activer le ServiceWorker pour le cache persistant
+try {
+  initServiceWorkerCache();
+} catch (e) {
+  console.warn("ServiceWorker non pris en charge:", e);
 }

@@ -9,14 +9,91 @@ import {
   manageCacheSize 
 } from './cacheManager';
 
+// Cache partagé entre tous les utilisateurs (localStorage)
+const GLOBAL_CACHE_PREFIX = 'global_img_cache_';
+const GLOBAL_CACHE_MAX_SIZE = 1024 * 1024 * 5; // 5MB max per image for global cache
+
 /**
- * Downloads an image from any source with caching
+ * Tente de récupérer une image depuis le cache global (localStorage)
+ * Ce cache est partagé entre tous les utilisateurs du même navigateur
+ */
+function getFromGlobalCache(cacheKey: string): string | null {
+  try {
+    return localStorage.getItem(`${GLOBAL_CACHE_PREFIX}${cacheKey}`);
+  } catch (e) {
+    console.warn('Erreur lors de l\'accès au cache global:', e);
+    return null;
+  }
+}
+
+/**
+ * Tente de sauvegarder une image dans le cache global (localStorage)
+ * avec vérification de la taille et nettoyage du cache si nécessaire
+ */
+function saveToGlobalCache(cacheKey: string, base64Data: string): void {
+  try {
+    // Vérifier la taille de l'image
+    if (base64Data.length > GLOBAL_CACHE_MAX_SIZE) {
+      console.log('Image trop grande pour le cache global');
+      return;
+    }
+    
+    // Tenter de sauvegarder
+    try {
+      localStorage.setItem(`${GLOBAL_CACHE_PREFIX}${cacheKey}`, base64Data);
+    } catch (e) {
+      // En cas d'erreur (cache plein), nettoyer le cache
+      const keysToRemove = [];
+      
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(GLOBAL_CACHE_PREFIX)) {
+          keysToRemove.push(key);
+        }
+      }
+      
+      // Trier par ordre alphabétique (approximation simple pour LRU)
+      keysToRemove.sort();
+      
+      // Supprimer les 20% les plus anciens
+      const removeCount = Math.ceil(keysToRemove.length * 0.2);
+      for (let i = 0; i < removeCount; i++) {
+        localStorage.removeItem(keysToRemove[i]);
+      }
+      
+      // Réessayer après le nettoyage
+      try {
+        localStorage.setItem(`${GLOBAL_CACHE_PREFIX}${cacheKey}`, base64Data);
+      } catch (retryError) {
+        console.warn('Impossible de stocker dans le cache global même après nettoyage:', retryError);
+      }
+    }
+  } catch (e) {
+    console.warn('Erreur lors de l\'enregistrement dans le cache global:', e);
+  }
+}
+
+/**
+ * Downloads an image from any source with improved caching strategy
  */
 export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
   // Generate a normalized cache key
   const cacheKey = generateCacheKey(url);
   
-  // Check if image is in session cache first (persists across page loads)
+  // 1. Check if image is in global cache first (shared between all users)
+  const globalCached = getFromGlobalCache(cacheKey);
+  if (globalCached) {
+    console.log(`Using globally cached image: ${url} (shared between users)`);
+    try {
+      const blob = await base64ToBlob(globalCached);
+      manageCacheSize(cacheKey);
+      return blob;
+    } catch (error) {
+      console.warn('Failed to use globally cached image, fetching fresh copy:', error);
+    }
+  }
+  
+  // 2. Check if image is in session cache (persists across page loads)
   const sessionCached = sessionImageCache.getItem(cacheKey);
   if (sessionCached) {
     console.log(`Using session cached image: ${url}`);
@@ -26,18 +103,17 @@ export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
       return blob;
     } catch (error) {
       console.warn('Failed to use session cached image, fetching fresh copy:', error);
-      // Continue to other caching mechanisms if there's an error
     }
   }
   
-  // Return the cached response if available
+  // 3. Return the cached fetch promise if available
   if (fetchCache.has(cacheKey)) {
     // Update cache usage order
     manageCacheSize(cacheKey);
     return fetchCache.get(cacheKey);
   }
   
-  // Create a download promise and store it in the cache before awaiting the result
+  // 4. Create a download promise and store it in the cache before awaiting the result
   const fetchPromise = fetchImageAsBlobInternal(url, cacheKey);
   fetchCache.set(cacheKey, fetchPromise);
   manageCacheSize(cacheKey);
@@ -47,7 +123,7 @@ export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
 }
 
 /**
- * Internal implementation of image download
+ * Internal implementation of image download with improved caching
  */
 async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<Blob | null> {
   try {
@@ -80,21 +156,48 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
       console.log(`Image found in browser cache: ${url}`);
     }
     
-    // Configure fetch with timeout
+    // Configure fetch with improved options
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 seconds timeout
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+    
+    // Use improved cache strategy with Cache API if available
+    if ('caches' in window) {
+      try {
+        const cache = await caches.open('images-cache-v1');
+        const cachedResponse = await cache.match(fetchUrl);
+        
+        if (cachedResponse && cachedResponse.ok) {
+          console.log(`Using cached response from Cache API: ${url}`);
+          clearTimeout(timeoutId);
+          
+          const blob = await cachedResponse.blob();
+          if (blob.size > 0 && !isHtmlContent(blob)) {
+            // Store in session cache for faster future access
+            const base64Data = await blobToBase64(blob);
+            sessionImageCache.setItem(cacheKey, base64Data);
+            
+            // Also store in global cache for sharing between users
+            saveToGlobalCache(cacheKey, base64Data);
+            
+            return blob;
+          }
+        }
+      } catch (e) {
+        console.warn('Error using Cache API:', e);
+      }
+    }
     
     const response = await fetch(fetchUrl, {
       method: 'GET',
       mode: 'cors',
       credentials: 'omit',
-      cache: 'force-cache', // Use HTTP cache when possible
+      cache: 'force-cache', // Force using HTTP cache when possible
       redirect: 'follow',
       signal: controller.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Accept': 'image/*, */*;q=0.8',
-        'Cache-Control': 'max-age=604800', // Cache for one week
+        'Cache-Control': 'max-age=31536000', // Cache for one year
         'Pragma': 'no-cache'
       }
     });
@@ -129,22 +232,31 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
       // Convert blob to base64 and store in session storage
       const base64Data = await blobToBase64(blob);
       sessionImageCache.setItem(cacheKey, base64Data);
-      console.log(`Image stored in session cache: ${url}`);
+      
+      // Also store in global cache for sharing between users
+      saveToGlobalCache(cacheKey, base64Data);
+      
+      console.log(`Image stored in cache: ${url}`);
     } catch (e) {
       console.warn("Failed to store image in session cache:", e);
     }
     
-    // Also try to store in browser's Cache API if available
+    // Store in browser's Cache API if available
     try {
       if ('caches' in window) {
         const cache = await caches.open('images-cache-v1');
-        const response = new Response(blob.slice(0), {
-          headers: {
-            'Content-Type': blob.type,
-            'Cache-Control': 'max-age=604800', // Cache for one week
-          }
+        
+        // Create a response with proper cache headers
+        const headers = new Headers({
+          'Content-Type': blob.type,
+          'Cache-Control': 'max-age=31536000, immutable', // Cache for one year
         });
-        cache.put(fetchUrl, response);
+        
+        const cachedResponse = new Response(blob.slice(0), {
+          headers: headers
+        });
+        
+        await cache.put(fetchUrl, cachedResponse);
         console.log(`Image stored in application cache: ${url}`);
       }
     } catch (e) {
