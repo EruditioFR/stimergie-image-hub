@@ -32,9 +32,10 @@ export async function fetchGalleryImages(
   }
   
   // Joindre la table des projets pour obtenir le nom du projet
+  // Correction de la syntaxe pour la sélection avec jointure
   let joinedQuery = query.select(`
-    images.*,
-    projets:id_projet (nom_projet)
+    id, width, height, created_at, id_projet, title, description, url, orientation, tags, url_miniature, created_by, updated_at,
+    projets!id_projet (nom_projet)
   `);
   
   // Appliquer la pagination ou le tri aléatoire
