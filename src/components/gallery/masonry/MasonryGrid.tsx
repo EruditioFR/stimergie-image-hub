@@ -48,7 +48,7 @@ export function MasonryGrid({
   const [isImageDetailOpen, setIsImageDetailOpen] = useState(false);
   const { user } = useAuth();
   const { selectedImages, toggleImageSelection, isImageSelected, clearSelection } = useImageSelection();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   
   const isMobile = useIsMobile();
   const isTablet = useMediaQuery('(min-width: 641px) and (max-width: 1023px)');
@@ -56,71 +56,88 @@ export function MasonryGrid({
   const isWidescreen = useMediaQuery('(min-width: 1280px) and (max-width: 1535px)');
   const isUltrawide = useMediaQuery('(min-width: 1536px)');
   
-  // Calculer le nombre de colonnes en fonction de la taille de l'écran
+  // Calculate column count based on screen size
   const columnCount = useMemo(() => {
-    if (isUltrawide) return 5;
-    if (isWidescreen) return 4;
-    if (isDesktop) return 3;
+    if (isMobile) return 2; // Reduce columns on mobile for faster rendering
     if (isTablet) return 2;
-    return 3; // Sur mobile, on utilise 3 colonnes
+    if (isDesktop) return 3;
+    if (isWidescreen) return 4;
+    if (isUltrawide) return 5;
+    return 3;
   }, [isUltrawide, isWidescreen, isDesktop, isTablet, isMobile]);
   
-  // Distribuer les images dans les colonnes
+  // Distribute images efficiently across columns
   const columnImages = useMemo(() => {
     const columns = Array(columnCount).fill(0).map(() => []);
     
-    images.forEach((image, index) => {
-      const columnIndex = index % columnCount;
-      columns[columnIndex].push(image);
+    // Use a height-balanced approach for better visual layout
+    const columnHeights = Array(columnCount).fill(0);
+    
+    images.forEach((image) => {
+      // Find the shortest column
+      const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
+      
+      // Add image to shortest column
+      columns[shortestColumnIndex].push(image);
+      
+      // Update column height estimation
+      const heightFactor = image.orientation === 'portrait' ? 1.33 : 
+                          image.orientation === 'landscape' ? 0.75 : 1;
+      columnHeights[shortestColumnIndex] += heightFactor;
     });
     
     return columns;
   }, [images, columnCount]);
 
-  // Optimisation du préchargement d'image
+  // Enhanced image preloading
   useEffect(() => {
     if (images.length > 0 && !isLoading) {
-      // Extraire toutes les URLs d'images de la page actuelle et les précharger
-      const imageUrls = images.slice(0, 20).map(img => img.src);
-      preloadImages(imageUrls);
+      // First preload visible images (first 12 images)
+      const visibleImageUrls = images.slice(0, 12).map(img => img.src);
+      
+      // Immediately preload visible images
+      preloadImages(visibleImageUrls);
+      
+      // Then preload the rest with a slight delay
+      if (images.length > 12) {
+        const remainingUrls = images.slice(12).map(img => img.src);
+        setTimeout(() => preloadImages(remainingUrls), 1000);
+      }
     }
   }, [images, isLoading]);
   
-  // Référence pour le défilement infini (utilisé uniquement en mode infini)
+  // Infinite scroll reference
   const infiniteScrollRef = useInfiniteScroll(loadMoreImages, isLoading);
   
-  // Gestionnaire de clic d'image
-  const handleImageClick = (image: any) => {
+  // Image click handler
+  const handleImageClick = useCallback((image: any) => {
     setSelectedImageDetail(image);
     setIsImageDetailOpen(true);
-  };
+  }, []);
   
-  // Fermer la modale de détail d'image
-  const handleCloseImageDetail = () => {
+  // Modal close handler
+  const handleCloseImageDetail = useCallback(() => {
     setIsImageDetailOpen(false);
     setSelectedImageDetail(null);
-  };
+  }, []);
 
-  // Gestionnaire de changement de page
+  // Page change handler with smooth scroll
   const handlePageClick = useCallback((page: number) => {
     if (onPageChange && !isLoading) {
-      // Nettoyer la sélection avant de changer de page
       clearSelection();
-      
-      // Notifier le parent du changement de page
       onPageChange(page);
       
-      // Remonter en haut de la page avec une animation
+      // Scroll to top smoothly
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [onPageChange, clearSelection, isLoading]);
 
-  // Afficher un placeholder de chargement lorsqu'il n'y a pas d'images
+  // Loading placeholder
   if (isLoading && images.length === 0) {
     return <MasonryLoading columnCount={columnCount} />;
   }
 
-  // Déterminer le mode d'affichage: pagination classique ou infinite scroll
+  // Pagination mode detection
   const isPaginationMode = !loadMoreImages;
 
   return (
@@ -132,11 +149,11 @@ export function MasonryGrid({
         images={images}
       />
 
-      <div className="grid grid-cols-3 xs:grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-0.5 px-0.5">
-        {columnImages.map((images, columnIndex) => (
+      <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-0.5 px-0.5">
+        {columnImages.map((columnImages, columnIndex) => (
           <MasonryColumn 
             key={columnIndex}
-            images={images} 
+            images={columnImages} 
             isImageSelected={isImageSelected}
             toggleImageSelection={toggleImageSelection}
             onImageClick={handleImageClick}
@@ -144,19 +161,19 @@ export function MasonryGrid({
         ))}
       </div>
 
-      {/* Indicateur de chargement */}
+      {/* Loading indicator */}
       {isLoading && (
         <div className="flex justify-center my-6">
           <LoadingSpinner size={32} />
         </div>
       )}
       
-      {/* Élément sentinelle pour le défilement infini (uniquement en mode infini) */}
+      {/* Infinite scroll sentinel */}
       {!isPaginationMode && hasMorePages && !isLoading && loadMoreImages && (
         <div ref={infiniteScrollRef} className="h-1 w-full my-4" />
       )}
 
-      {/* Afficher la pagination classique */}
+      {/* Pagination controls */}
       {isPaginationMode && (
         <MasonryPagination
           totalCount={totalCount}
