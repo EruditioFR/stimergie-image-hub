@@ -23,13 +23,15 @@ export async function downloadImages(images: Image[]) {
     // Afficher une notification de progression
     const progressToastId = toast.loading(`Téléchargement des images en cours (0/${images.length})...`);
     
-    // Tableau pour stocker les promesses de téléchargement
+    // Tableau pour stocker les promesses de téléchargement - Téléchargement parallèle sans délai
     const downloadPromises = images.map(async (img, index) => {
       try {
-        // Mise à jour de la toast de progression
-        toast.loading(`Téléchargement des images en cours (${index}/${images.length})...`, {
-          id: progressToastId
-        });
+        // Mise à jour de la toast de progression tous les 5 téléchargements pour réduire les mises à jour UI
+        if (index % 5 === 0 || index === images.length - 1) {
+          toast.loading(`Téléchargement des images en cours (${index}/${images.length})...`, {
+            id: progressToastId
+          });
+        }
         
         // Télécharger l'image comme blob
         const blob = await fetchImageAsBlob(img.src);
@@ -61,7 +63,7 @@ export async function downloadImages(images: Image[]) {
       }
     });
     
-    // Attendre que tous les téléchargements soient terminés
+    // Attendre que tous les téléchargements soient terminés - sans délai
     await Promise.all(downloadPromises);
     
     // Fermer la toast de progression

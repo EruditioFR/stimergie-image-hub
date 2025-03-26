@@ -16,7 +16,7 @@ const GLOBAL_CACHE_MAX_SIZE = 1024 * 1024 * 5; // 5MB max per image for global c
 
 // Valeurs de timeout optimisées
 const FETCH_TIMEOUT = 8000; // 8 secondes
-const RETRY_DELAY = 300; // 300ms entre les tentatives
+// Le RETRY_DELAY a été supprimé pour éviter les délais
 
 // S'assurer que le Service Worker est enregistré
 initServiceWorkerCache();
@@ -166,7 +166,7 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
     const controller = new AbortController();
     timeoutId = window.setTimeout(() => controller.abort(), FETCH_TIMEOUT);
     
-    // Try fetch with smart retries
+    // Try fetch with smart retries - sans délai
     let fetchAttempts = 0;
     const maxAttempts = 3;
     let lastError;
@@ -268,10 +268,7 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
         lastError = error;
         console.warn(`Attempt ${fetchAttempts} failed:`, error);
         
-        // Add delay between retries
-        if (fetchAttempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-        }
+        // Pas de délai entre les tentatives pour accélérer le processus
       }
     }
     

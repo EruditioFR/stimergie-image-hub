@@ -144,8 +144,8 @@ Deno.serve(async (req) => {
         try {
           console.log("Starting background caching process...")
           
-          // Process images in batches of 5 to avoid overloading
-          const batchSize = 5
+          // Process images in batches of 10 pour maximiser le parallélisme (était 5)
+          const batchSize = 10
           for (let i = 0; i < totalImages; i += batchSize) {
             const batch = images?.slice(i, i + batchSize) || []
             
@@ -164,10 +164,7 @@ Deno.serve(async (req) => {
             
             console.log(`Progress: ${processedImages}/${totalImages} (${Math.round((processedImages/totalImages)*100)}%)`)
             
-            // Small delay between batches
-            if (i + batchSize < totalImages) {
-              await new Promise(resolve => setTimeout(resolve, 1000))
-            }
+            // No delay between batches - supprimé pour accélérer le processus
           }
           
           console.log(`Caching complete: ${successfulImages} successful, ${failedImages} failed`)
