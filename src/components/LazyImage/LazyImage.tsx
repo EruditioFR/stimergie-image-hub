@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getPlaceholderUrl, isVectorImage } from '@/utils/image/urlUtils';
-import { getImageCacheKey } from './cacheUtils';
+import { getImageCacheKey } from '@/utils/image/cacheManager';
 
 import { LazyImageProps } from './types';
 import { PLACEHOLDER_WIDTH, shouldUseEagerLoading } from './utils';
@@ -11,10 +12,9 @@ import {
   sessionImageCache, 
   imageCache, 
   imageErrorCache, 
-  isImageLoaded,
-  PRELOAD_PRIORITY_HIGH
+  isImageLoaded
 } from './cacheManager';
-import { queueImageForPreload } from './preloadManager';
+import { queueImageForPreload, PRELOAD_PRIORITY_HIGH } from './preloadManager';
 
 export const LazyImage: React.FC<LazyImageProps> = ({
   src,

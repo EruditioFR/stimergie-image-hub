@@ -2,7 +2,7 @@
 /**
  * Cache management utilities for the LazyImage component
  */
-import { getImageCacheKey } from './cacheUtils';
+import { getImageCacheKey } from '@/utils/image/cacheManager';
 
 // Configurable options
 export const PRELOAD_PRIORITY_HIGH = 1;
