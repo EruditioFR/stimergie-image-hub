@@ -3,6 +3,7 @@
 export * from './types';
 export * from './urlUtils';
 export * from './fileUtils';
-export * from './blobUtils';
+// Export blobUtils but exclude isHtmlContent which is already in fetchUtils
+export { blobToBase64, base64ToBlob, isImageInBrowserCache } from './blobUtils';
 export * from './imageDownloader';
 export * from './fetchUtils';

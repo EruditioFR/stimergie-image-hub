@@ -5,6 +5,19 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { isVectorImage } from '@/utils/image/urlUtils';
 
+// Simple preloading function to replace the removed cache system
+export function preloadImages(urls: string[], priority: number = 1): void {
+  if (!urls || urls.length === 0) return;
+  
+  console.log(`Preloading ${urls.length} images with priority ${priority}`);
+  
+  // For each URL, create an image element to trigger browser preloading
+  urls.forEach(url => {
+    const img = new Image();
+    img.src = url;
+  });
+}
+
 interface LazyImageProps {
   src: string;
   alt: string;

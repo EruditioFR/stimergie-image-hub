@@ -79,6 +79,7 @@ export const useGalleryCache = () => {
   // Version simplifiée sans préchargement
   const prefetchNextPage = useCallback(() => {
     // Fonction simplifiée qui ne fait rien maintenant que le cache est supprimé
+    console.log("Prefetch disabled: caching system removed");
     return;
   }, []);
 

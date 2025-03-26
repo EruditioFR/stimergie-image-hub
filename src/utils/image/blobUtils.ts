@@ -19,23 +19,6 @@ export function base64ToBlob(base64: string): Promise<Blob> {
 }
 
 /**
- * Checks if a blob is likely HTML content and not an image
- */
-export function isHtmlContent(blob: Blob): boolean {
-  // Check MIME type
-  if (blob.type.includes('text/html') || blob.type.includes('application/xhtml+xml')) {
-    return true;
-  }
-  
-  // Small files are likely error pages
-  if (blob.size < 1000) {
-    return true;
-  }
-  
-  return false;
-}
-
-/**
  * Determines if an image URL is already in the browser cache
  */
 export function isImageInBrowserCache(url: string): Promise<boolean> {
