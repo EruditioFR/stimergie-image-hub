@@ -9,6 +9,7 @@ import { useGalleryPagination } from './gallery/useGalleryPagination';
 import { useGalleryFiltersHandlers } from './gallery/useGalleryFiltersHandlers';
 import { useGalleryQueryState } from './gallery/useGalleryQueryState';
 import { validateImageUrl } from '@/utils/image/urlUtils';
+import { Image } from '@/utils/image/types';
 
 export const useGalleryImages = (isAdmin: boolean) => {
   const [searchParams] = useSearchParams();
@@ -149,8 +150,10 @@ export const useGalleryImages = (isAdmin: boolean) => {
         title: image.title || "Sans titre",
         author: image.created_by || 'Utilisateur',
         tags: image.tags || [],
-        orientation: image.orientation || 'landscape'
-      };
+        orientation: image.orientation || 'landscape',
+        url_miniature: image.url_miniature || null,
+        url: image.url || null
+      } as Image;
     });
   }, []);
 

@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Download, Share } from 'lucide-react';
 import { toast } from 'sonner';
 import { downloadImages } from '@/utils/image';
+import { Image } from '@/utils/image/types';
 
 interface MasonryToolbarProps {
   selectedImages: string[];
   clearSelection: () => void;
   onShareDialogChange: (isOpen: boolean) => void;
-  images: any[];
+  images: Image[];
 }
 
 export function MasonryToolbar({

@@ -34,7 +34,7 @@ export async function downloadImages(images: Image[]) {
         }
         
         // Sélectionner la meilleure URL pour le téléchargement
-        let imageUrl = img.download_url || img.src || img.url_miniature || img.url;
+        let imageUrl = img.download_url || img.src || img.url_miniature || img.url || '';
         
         // S'assurer que l'URL utilise www.stimergie.fr
         imageUrl = validateImageUrl(imageUrl);
