@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, CSSProperties, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
@@ -235,7 +236,7 @@ export function clearOffscreenImagesFromCache(): void {
   // This is now handled automatically
 }
 
-export function LazyImage({
+export const LazyImage: React.FC<LazyImageProps> = ({
   src,
   alt,
   className,
@@ -251,7 +252,7 @@ export function LazyImage({
   loadingStrategy = 'auto',
   showProgress = true,
   fallbackSrc
-}: LazyImageProps) {
+}) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
@@ -501,7 +502,7 @@ export function LazyImage({
   );
 }
 
-export function LazyImageWithPriority(props: LazyImageProps) {
+export const LazyImageWithPriority: React.FC<LazyImageProps> = (props) => {
   return (
     <LazyImage 
       {...props} 
