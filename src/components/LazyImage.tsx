@@ -1,22 +1,241 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, CSSProperties, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { generateCacheKey as getImageCacheKey } from '@/utils/image/cacheManager';
 import { getPlaceholderUrl, isVectorImage } from '@/utils/image/urlUtils';
-import { getImageCacheKey } from '@/utils/image/cacheManager';
 
-import { LazyImageProps } from './types';
-import { PLACEHOLDER_WIDTH, shouldUseEagerLoading } from './utils';
-import { 
-  sessionImageCache, 
-  imageCache, 
-  imageErrorCache, 
-  isImageLoaded
-} from './cacheManager';
-import { queueImageForPreload, PRELOAD_PRIORITY_HIGH } from './preloadManager';
+// Configurable options
+const PRELOAD_PRIORITY_HIGH = 1;
+const PRELOAD_PRIORITY_MEDIUM = 2;
+const PRELOAD_PRIORITY_LOW = 3;
+const PRELOAD_BATCH_SIZE = 6;
+const PLACEHOLDER_WIDTH = 20;
 
-export const LazyImage: React.FC<LazyImageProps> = ({
+interface LazyImageProps {
+  src: string;
+  alt: string;
+  className?: string;
+  aspectRatio?: string;
+  objectFit?: string;
+  priority?: boolean;
+  style?: CSSProperties;
+  placeholder?: string | ReactNode;
+  onLoad?: () => void;
+  onError?: () => void;
+  width?: number;
+  height?: number;
+  loadingStrategy?: 'eager' | 'lazy' | 'auto';
+  showProgress?: boolean;
+  fallbackSrc?: string;
+}
+
+// Enhanced session-persistent cache
+const sessionImageCache = (() => {
+  try {
+    return {
+      getItem: (key: string): string | null => {
+        try {
+          // Check localStorage first (persistent)
+          const persisted = localStorage.getItem(`persistent_img_${key}`);
+          if (persisted) return persisted;
+          
+          // Then check sessionStorage
+          return sessionStorage.getItem(`lazy_img_${key}`);
+        } catch (e) {
+          return null;
+        }
+      },
+      setItem: (key: string, value: string): void => {
+        try {
+          // Store in sessionStorage
+          sessionStorage.setItem(`lazy_img_${key}`, value);
+          
+          // Try to store in localStorage for persistence
+          try {
+            localStorage.setItem(`persistent_img_${key}`, value);
+          } catch (persistError) {
+            // Clear space if localStorage is full
+            try {
+              const keysToRemove = [];
+              for (let i = 0; i < localStorage.length; i++) {
+                const storageKey = localStorage.key(i);
+                if (storageKey && storageKey.startsWith('persistent_img_')) {
+                  keysToRemove.push(storageKey);
+                }
+              }
+              
+              const removeCount = Math.ceil(keysToRemove.length * 0.2);
+              keysToRemove.slice(0, removeCount).forEach(k => localStorage.removeItem(k));
+              
+              localStorage.setItem(`persistent_img_${key}`, value);
+            } catch (e) {
+              console.warn('Failed to clear persistent storage:', e);
+            }
+          }
+        } catch (e) {
+          // Storage full - clear older entries
+          try {
+            const keysToRemove = [];
+            for (let i = 0; i < sessionStorage.length; i++) {
+              const storageKey = sessionStorage.key(i);
+              if (storageKey && storageKey.startsWith('lazy_img_')) {
+                keysToRemove.push(storageKey);
+              }
+            }
+            
+            const removeCount = Math.ceil(keysToRemove.length * 0.2);
+            keysToRemove.slice(0, removeCount).forEach(k => sessionStorage.removeItem(k));
+            
+            sessionStorage.setItem(`lazy_img_${key}`, value);
+          } catch (e) {
+            console.warn('Could not clear session storage:', e);
+          }
+        }
+      }
+    };
+  } catch (e) {
+    // Fallback to memory cache
+    const memoryFallback = new Map<string, string>();
+    return {
+      getItem: (key: string): string | null => memoryFallback.get(key) || null,
+      setItem: (key: string, value: string): void => { memoryFallback.set(key, value); }
+    };
+  }
+})();
+
+// Performance optimized global memory cache
+const imageCache = new Map<string, string>();
+const requestedImagesCache = new Set<string>();
+const imageErrorCache = new Set<string>();
+
+// Prioritized preloading queue
+interface PreloadItem {
+  url: string;
+  priority: number;
+  timestamp: number;
+}
+const preloadQueue: PreloadItem[] = [];
+let isPreloading = false;
+
+/**
+ * Process the preload queue, loading images in order of priority
+ */
+function processPreloadQueue() {
+  if (isPreloading || preloadQueue.length === 0) return;
+  
+  isPreloading = true;
+  
+  // Sort by priority first, then by timestamp (FIFO for same priority)
+  preloadQueue.sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    return a.timestamp - b.timestamp;
+  });
+  
+  // Take a batch of images to preload
+  const batch = preloadQueue.splice(0, PRELOAD_BATCH_SIZE);
+  
+  // Start preloading the batch
+  Promise.all(
+    batch.map(item => {
+      if (requestedImagesCache.has(item.url) || imageErrorCache.has(item.url)) {
+        return Promise.resolve();
+      }
+      
+      requestedImagesCache.add(item.url);
+      
+      return new Promise<void>((resolve) => {
+        const img = new Image();
+        
+        img.onload = () => {
+          imageCache.set(item.url, item.url);
+          const cacheKey = getImageCacheKey(item.url);
+          sessionImageCache.setItem(cacheKey, item.url);
+          resolve();
+        };
+        
+        img.onerror = () => {
+          imageErrorCache.add(item.url);
+          resolve();
+        };
+        
+        img.src = item.url;
+      });
+    })
+  ).finally(() => {
+    isPreloading = false;
+    // Continue with next batch if available
+    if (preloadQueue.length > 0) {
+      setTimeout(processPreloadQueue, 100);
+    }
+  });
+}
+
+/**
+ * Add an image to the preload queue with a specified priority
+ */
+function queueImageForPreload(url: string, priority: number) {
+  if (!url || requestedImagesCache.has(url) || imageErrorCache.has(url)) {
+    return;
+  }
+  
+  preloadQueue.push({
+    url,
+    priority,
+    timestamp: Date.now()
+  });
+  
+  // Start processing the queue if not already processing
+  if (!isPreloading) {
+    processPreloadQueue();
+  }
+}
+
+/**
+ * Preload multiple images with the same priority
+ */
+export function preloadImages(urls: string[], priority = PRELOAD_PRIORITY_MEDIUM): void {
+  if (!urls || urls.length === 0) return;
+  
+  urls.forEach(url => {
+    queueImageForPreload(url, priority);
+  });
+}
+
+/**
+ * Check if an image is already loaded in any cache
+ */
+export async function isImageLoaded(src: string): Promise<boolean> {
+  if (!src) return false;
+  
+  // Check memory cache first (fastest)
+  if (imageCache.has(src)) return true;
+  
+  // Check session cache next
+  const cacheKey = getImageCacheKey(src);
+  if (sessionImageCache.getItem(cacheKey)) return true;
+  
+  // Check if the image is in the browser's HTTP cache
+  try {
+    const response = await fetch(src, {
+      method: 'HEAD',
+      cache: 'only-if-cached',
+      mode: 'no-cors'
+    });
+    return response.status === 200;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Legacy function for backward compatibility
+ */
+export function clearOffscreenImagesFromCache(): void {
+  // This is now handled automatically
+}
+
+export function LazyImage({
   src,
   alt,
   className,
@@ -32,7 +251,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   loadingStrategy = 'auto',
   showProgress = true,
   fallbackSrc
-}) => {
+}: LazyImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
@@ -42,7 +261,9 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   const isUnmountedRef = useRef(false);
   
   // Determine if we're using eager loading (priority or auto for vector images)
-  const isEagerLoading = shouldUseEagerLoading(priority, loadingStrategy, src);
+  const isEagerLoading = priority || 
+                         loadingStrategy === 'eager' || 
+                         (loadingStrategy === 'auto' && isVectorImage(src));
   
   // Generate a placeholder URL based on the source
   const [placeholderSrc] = useState(() => {
@@ -278,4 +499,16 @@ export const LazyImage: React.FC<LazyImageProps> = ({
       )}
     </div>
   );
-};
+}
+
+export function LazyImageWithPriority(props: LazyImageProps) {
+  return (
+    <LazyImage 
+      {...props} 
+      priority={true} 
+      loadingStrategy="eager"
+    />
+  );
+}
+
+export default LazyImage;
