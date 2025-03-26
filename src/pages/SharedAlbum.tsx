@@ -31,7 +31,7 @@ const SharedAlbum = () => {
       throw error;
     }
     
-    if (!data || data.length === 0) {
+    if (!data || !Array.isArray(data) || data.length === 0) {
       throw new Error('Album not found or expired');
     }
     
@@ -44,7 +44,7 @@ const SharedAlbum = () => {
   });
   
   const downloadAllImages = async () => {
-    if (!album || !album.images || album.images.length === 0) return;
+    if (!album || !album.images || !Array.isArray(album.images) || album.images.length === 0) return;
     
     setIsDownloading(true);
     toast({
@@ -124,7 +124,7 @@ const SharedAlbum = () => {
   
   // Format the images for the MasonryGrid component
   const formatImagesForGrid = (): Image[] => {
-    if (!album || !album.images) return [];
+    if (!album || !album.images || !Array.isArray(album.images)) return [];
     
     return album.images.map((image: any) => {
       // Generate proper URLs for the image
@@ -192,8 +192,8 @@ const SharedAlbum = () => {
   }
   
   // Format dates for display
-  const accessFromFormatted = accessFrom.toLocaleDateString('fr-FR');
-  const accessUntilFormatted = accessUntil.toLocaleDateString('fr-FR');
+  const accessFromFormatted = album?.access_from ? new Date(album.access_from).toLocaleDateString('fr-FR') : '';
+  const accessUntilFormatted = album?.access_until ? new Date(album.access_until).toLocaleDateString('fr-FR') : '';
   
   return (
     <div className="min-h-screen bg-background flex flex-col">

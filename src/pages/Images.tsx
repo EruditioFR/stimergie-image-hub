@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
@@ -28,6 +27,8 @@ export interface Image {
   updated_at: string;
   id_projet: string;
   url_miniature?: string | null;
+  display_url?: string;
+  download_url?: string;
 }
 
 const Images = () => {
@@ -36,7 +37,6 @@ const Images = () => {
   const { userRole } = useAuth();
   const { toast } = useToast();
   
-  // Simplified query with no RLS restrictions
   const fetchImages = async () => {
     console.log("Fetching all images");
     const { data, error } = await supabase
@@ -56,12 +56,10 @@ const Images = () => {
     
     console.log(`Fetched ${data.length} images`);
     
-    // Transform data to include display and download URLs
     return data.map(img => {
       const folderName = img.projets?.nom_dossier || "";
       const imageTitle = img.title || `image-${img.id}`;
       
-      // Generate URLs using our utility functions
       const display_url = generateDisplayImageUrl(folderName, imageTitle);
       const download_url = generateDownloadImageUrl(folderName, imageTitle);
       
@@ -109,8 +107,8 @@ const Images = () => {
     return images.map(image => ({
       id: image.id.toString(),
       src: image.url_miniature || image.url,
-      display_url: image.display_url,
-      download_url: image.download_url,
+      display_url: image.display_url || '',
+      download_url: image.download_url || '',
       alt: image.title,
       title: image.title,
       author: 'User',
