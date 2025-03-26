@@ -1,5 +1,5 @@
 
-// This function will be called daily to cache Dropbox images
+// This function will be called daily to cache images from the server
 
 // First, we import the necessary modules
 const FUNCTION_ENDPOINT = Deno.env.get('PUBLIC_URL') || 'https://mjhbugzaqmtfnbxaqpss.supabase.co'
@@ -10,8 +10,8 @@ Deno.serve(async (_req) => {
   try {
     console.log('Starting daily image cache refresh job')
     
-    // Call the cache-dropbox-images function
-    const response = await fetch(`${FUNCTION_ENDPOINT}/functions/v1/cache-dropbox-images`, {
+    // Call the cache images function
+    const response = await fetch(`${FUNCTION_ENDPOINT}/functions/v1/cache-images`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

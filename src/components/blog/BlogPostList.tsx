@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { getDropboxDownloadUrl } from '@/utils/image/urlUtils';
+import { generateDisplayImageUrl } from '@/utils/image/imageUrlGenerator';
 
 interface BlogPostListProps {
   contentType?: 'Ressource' | 'Ensemble';
@@ -65,6 +65,14 @@ export function BlogPostList({ contentType, title, description }: BlogPostListPr
     }
   };
 
+  const getImageUrl = (post: BlogPost) => {
+    if (post.client_name && post.title) {
+      return generateDisplayImageUrl(post.client_name, post.title);
+    }
+    
+    return post.featured_image_url || post.url_miniature || '';
+  };
+
   const canEdit = user && ['admin', 'admin_client'].includes(userRole);
   
   const canChangeClientFilter = userRole !== 'admin_client';
@@ -116,17 +124,11 @@ export function BlogPostList({ contentType, title, description }: BlogPostListPr
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredPosts?.map((post) => (
             <Card key={post.id} className="overflow-hidden flex flex-col">
-              {(post.featured_image_url || post.dropbox_image_url || post.url_miniature) && (
+              {getImageUrl(post) && (
                 <div 
                   className="h-48 bg-cover bg-center" 
                   style={{ 
-                    backgroundImage: `url(${
-                      post.url_miniature 
-                        ? getDropboxDownloadUrl(post.url_miniature)
-                        : post.dropbox_image_url 
-                          ? getDropboxDownloadUrl(post.dropbox_image_url)
-                          : post.featured_image_url
-                    })` 
+                    backgroundImage: `url(${getImageUrl(post)})` 
                   }}
                 />
               )}

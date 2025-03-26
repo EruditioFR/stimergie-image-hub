@@ -93,36 +93,46 @@ Deno.serve(async (req) => {
       )
     }
     
-    // Get all images with url_miniature (Dropbox images)
+    // Get all images from the database
     const { data: images, error } = await supabase
       .from('images')
-      .select('id, url_miniature, title')
-      .not('url_miniature', 'is', null)
+      .select('id, title, id_projet, projets!id_projet (nom_dossier)')
+      .not('title', 'is', null)
     
     if (error) {
       throw error
     }
 
     totalImages = images?.length || 0
-    console.log(`Found ${totalImages} Dropbox images to cache`)
+    console.log(`Found ${totalImages} images to cache`)
 
-    // Function to cache a single image
+    // Function to cache a single image from Stimergie server
     async function cacheImage(imageData: any) {
       try {
-        if (!imageData.url_miniature) return false
+        const folderName = imageData.projets?.nom_dossier || '';
+        const imageTitle = imageData.title || `image-${imageData.id}`;
         
-        // Convert Dropbox URL to direct download URL
-        const downloadUrl = getDropboxDownloadUrl(imageData.url_miniature)
+        if (!folderName || !imageTitle) {
+          console.warn(`Missing folder or title for image ${imageData.id}`);
+          return false;
+        }
+        
+        // Encode URL components to handle special characters
+        const encodedFolder = encodeURIComponent(folderName);
+        const encodedTitle = encodeURIComponent(imageTitle);
+        
+        // Generate the display URL (PNG format)
+        const displayUrl = `https://www.stimergie.fr/photos/${encodedFolder}/PNG/${encodedTitle}.png`;
         
         // Fetch the image and get the blob
-        const imageBlob = await fetchImageAsBlob(downloadUrl)
+        const imageBlob = await fetchImageAsBlob(displayUrl)
         
         if (!imageBlob) {
-          console.error(`Failed to download image: ${imageData.title || 'Untitled'}`)
+          console.error(`Failed to download image: ${imageTitle}`)
           return false
         }
         
-        console.log(`Successfully cached image: ${imageData.title || 'Untitled'}`)
+        console.log(`Successfully cached image: ${imageTitle}`)
         return true
       } catch (e) {
         console.error(`Error caching image ${imageData.id}:`, e)
@@ -144,7 +154,7 @@ Deno.serve(async (req) => {
         try {
           console.log("Starting background caching process...")
           
-          // Process images in batches of 10 pour maximiser le parallélisme (était 5)
+          // Process images in batches of 10 pour maximiser le parallélisme
           const batchSize = 10
           for (let i = 0; i < totalImages; i += batchSize) {
             const batch = images?.slice(i, i + batchSize) || []
@@ -163,8 +173,6 @@ Deno.serve(async (req) => {
             processedImages += batch.length
             
             console.log(`Progress: ${processedImages}/${totalImages} (${Math.round((processedImages/totalImages)*100)}%)`)
-            
-            // No delay between batches - supprimé pour accélérer le processus
           }
           
           console.log(`Caching complete: ${successfulImages} successful, ${failedImages} failed`)
@@ -202,31 +210,10 @@ Deno.serve(async (req) => {
       )
     }
   } catch (error) {
-    console.error("Error in cache-dropbox-images function:", error)
+    console.error("Error in cache-images function:", error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     )
   }
 })
-
-// Helper function for Dropbox URL conversion
-function getDropboxDownloadUrl(url: string): string {
-  if (url.includes('www.dropbox.com')) {
-    try {
-      const urlObj = new URL(url)
-      const newPath = urlObj.pathname.replace('/scl/fi/', '/').split('?')[0]
-      return `https://dl.dropboxusercontent.com${newPath}`
-    } catch (error) {
-      console.error("Error converting Dropbox URL:", error)
-    }
-  }
-  
-  return url.includes('dl=0') 
-    ? url.replace('dl=0', 'raw=1') 
-    : url.includes('dl=1') 
-      ? url.replace('dl=1', 'raw=1')
-      : url.includes('raw=1')
-        ? url
-        : `${url}${url.includes('?') ? '&' : '?'}raw=1`
-}

@@ -1,6 +1,6 @@
 
 /**
- * Génère les URLs pour les images selon le nouveau format avec gestion des erreurs CORS
+ * Génère les URLs pour les images sur le serveur Stimergie
  */
 
 /**
@@ -11,11 +11,6 @@ export function generateDisplayImageUrl(folderName: string, imageTitle: string):
   if (!folderName || !imageTitle) {
     console.warn('Nom de dossier ou titre d\'image manquant pour générer l\'URL');
     return '';
-  }
-  
-  // Si l'URL existe déjà sous format Dropbox, l'utiliser directement
-  if (imageTitle.includes('dropbox.com') || folderName.includes('dropbox.com')) {
-    return imageTitle || folderName;
   }
   
   // Encoder correctement les composants de l'URL pour éviter les problèmes avec les caractères spéciaux
@@ -35,18 +30,6 @@ export function generateDownloadImageUrl(folderName: string, imageTitle: string)
     return '';
   }
   
-  // Si l'URL existe déjà sous format Dropbox, l'utiliser directement
-  if (imageTitle.includes('dropbox.com') || folderName.includes('dropbox.com')) {
-    // S'assurer que c'est bien un lien de téléchargement direct
-    const dropboxUrl = imageTitle || folderName;
-    if (dropboxUrl.includes('dl=0')) {
-      return dropboxUrl.replace('dl=0', 'dl=1');
-    } else if (!dropboxUrl.includes('dl=1')) {
-      return dropboxUrl + (dropboxUrl.includes('?') ? '&dl=1' : '?dl=1');
-    }
-    return dropboxUrl;
-  }
-  
   // Encoder correctement les composants de l'URL pour éviter les problèmes avec les caractères spéciaux
   const encodedFolder = encodeURIComponent(folderName);
   const encodedTitle = encodeURIComponent(imageTitle);
@@ -59,11 +42,6 @@ export function generateDownloadImageUrl(folderName: string, imageTitle: string)
  */
 export async function validateAndFixImageUrl(url: string): Promise<string> {
   if (!url) return '';
-  
-  // Si c'est déjà une URL Dropbox, la retourner directement
-  if (url.includes('dropbox.com')) {
-    return url;
-  }
   
   try {
     // Essayer de vérifier si l'URL est accessible

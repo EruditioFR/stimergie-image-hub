@@ -14,33 +14,6 @@ const PROXIES = [
 const bestProxyCache = new Map<string, string>();
 
 /**
- * Checks if a URL is from Dropbox
- */
-export function isDropboxUrl(url: string): boolean {
-  return url.includes('dropbox.com') || url.includes('dl.dropboxusercontent.com');
-}
-
-/**
- * Extracts direct download link from a Dropbox URL
- */
-export function getDropboxDownloadUrl(url: string): string {
-  // Si l'URL est vide, retourner une chaîne vide
-  if (!url) return '';
-
-  // If already a direct link, return as is
-  if (url.includes('dl.dropboxusercontent.com') || url.includes('dl=1')) {
-    return url;
-  }
-  
-  // Convert to direct download link
-  if (url.includes('?')) {
-    return `${url}&dl=1`;
-  } else {
-    return `${url}?dl=1`;
-  }
-}
-
-/**
  * Gets a proxied URL to bypass CORS issues with improved proxy selection
  */
 export function getProxiedUrl(url: string, forceProxy: boolean = false): string {

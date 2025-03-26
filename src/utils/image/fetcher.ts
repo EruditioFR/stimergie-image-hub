@@ -1,4 +1,5 @@
-import { isDropboxUrl, getDropboxDownloadUrl, getProxiedUrl } from './urlUtils';
+
+import { getProxiedUrl } from './urlUtils';
 import { blobToBase64, base64ToBlob, isHtmlContent, isImageInBrowserCache } from './blobUtils';
 import { 
   fetchCache, 
@@ -15,7 +16,6 @@ const GLOBAL_CACHE_MAX_SIZE = 1024 * 1024 * 5; // 5MB max per image for global c
 
 // Valeurs de timeout optimisées
 const FETCH_TIMEOUT = 8000; // 8 secondes
-// Le RETRY_DELAY a été supprimé pour éviter les délais
 
 // S'assurer que le Service Worker est enregistré
 initServiceWorkerCache();
@@ -76,7 +76,7 @@ function saveToGlobalCache(cacheKey: string, base64Data: string): void {
   }
 }
 
-// Available CORS proxies for rotation - ordre modifié pour éviter les problèmes avec corsproxy.io
+// Available CORS proxies for rotation
 const PROXIES = [
   'https://images.weserv.nl/?url=',
   'https://api.allorigins.win/raw?url=',
@@ -87,28 +87,6 @@ const PROXIES = [
  * Downloads an image from any source with improved caching strategy
  */
 export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
-  // Si l'URL est déjà au format Dropbox, utiliser directement
-  if (url.includes('dropbox.com')) {
-    const directUrl = url.includes('dl=1') ? url : 
-                      url.includes('dl=0') ? url.replace('dl=0', 'dl=1') : 
-                      url + (url.includes('?') ? '&dl=1' : '?dl=1');
-    
-    // Essayer de récupérer directement sans proxy
-    try {
-      const response = await fetch(directUrl, {
-        method: 'GET',
-        mode: 'cors',
-        cache: 'force-cache'
-      });
-      
-      if (response.ok) {
-        return response.blob();
-      }
-    } catch (error) {
-      console.warn('Failed to fetch Dropbox URL directly:', error);
-    }
-  }
-
   // Generate a normalized cache key
   const cacheKey = generateCacheKey(url);
   
@@ -171,14 +149,8 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
     // Process URL for different sources
     let fetchUrl;
     
-    // Process Dropbox URLs
-    if (isDropboxUrl(url)) {
-      const directDownloadUrl = getDropboxDownloadUrl(url);
-      // Essayer d'abord sans proxy pour Dropbox
-      fetchUrl = directDownloadUrl;
-    } 
     // Pour les URLs Stimergie, éviter le proxy autant que possible
-    else if (url.includes('stimergie.fr')) {
+    if (url.includes('stimergie.fr')) {
       fetchUrl = url; // Essayer d'abord sans proxy
     } 
     // For other URLs
@@ -212,10 +184,8 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
           // Première tentative : URL directe sans proxy
           attemptUrl = url.includes('stimergie.fr') ? url : fetchUrl;
         } else if (fetchAttempts === 2) {
-          // Deuxième tentative: essai avec Dropbox si disponible, sinon premier proxy
-          attemptUrl = url.includes('dropbox.com') 
-            ? getDropboxDownloadUrl(url)
-            : `${PROXIES[0]}${encodeURIComponent(url)}`;
+          // Deuxième tentative: premier proxy
+          attemptUrl = `${PROXIES[0]}${encodeURIComponent(url)}`;
         } else {
           // Troisième tentative: autre proxy
           attemptUrl = `${PROXIES[1]}${encodeURIComponent(url)}`;

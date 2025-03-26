@@ -7,8 +7,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { File, Search, Upload } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
-import { getDropboxDownloadUrl } from '@/utils/image/urlUtils';
 import { parseTagsString } from '@/utils/imageUtils';
+import { generateDisplayImageUrl } from '@/utils/image/imageUrlGenerator';
 
 interface ImageSelectorProps {
   selectedImage: string | null;
@@ -21,7 +21,7 @@ export function ImageSelector({ selectedImage, onSelectImage }: ImageSelectorPro
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [galleryImages, setGalleryImages] = useState<Array<{ id: number; url: string; title: string }>>([]);
+  const [galleryImages, setGalleryImages] = useState<Array<{ id: number; url: string; title: string; folder?: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
   const isResourcesPage = location.pathname === '/resources';
@@ -42,14 +42,9 @@ export function ImageSelector({ selectedImage, onSelectImage }: ImageSelectorPro
     try {
       let query = supabase
         .from('images')
-        .select('id, url, title, url_miniature, tags')
+        .select('id, url, title, url_miniature, tags, id_projet, projets!id_projet (nom_dossier)')
         .order('created_at', { ascending: false })
         .limit(20);
-
-      if (isResourcesPage) {
-        // On resources page, only fetch images that have url_miniature (Dropbox images)
-        query = query.not('url_miniature', 'is', null);
-      }
 
       if (searchQuery) {
         // Search in both title and tags
@@ -63,14 +58,20 @@ export function ImageSelector({ selectedImage, onSelectImage }: ImageSelectorPro
         return;
       }
       
-      const processedData = data?.map(img => ({
-        id: img.id,
-        // If on resources page, prioritize url_miniature
-        url: isResourcesPage && img.url_miniature ? 
-          getDropboxDownloadUrl(img.url_miniature) : 
-          img.url,
-        title: img.title
-      })) || [];
+      const processedData = data?.map(img => {
+        const folderName = img.projets?.nom_dossier || "";
+        const imageTitle = img.title || `image-${img.id}`;
+        
+        // Generate display URL using stimergie.fr
+        const displayUrl = generateDisplayImageUrl(folderName, imageTitle);
+        
+        return {
+          id: img.id,
+          url: displayUrl,
+          title: img.title,
+          folder: folderName
+        };
+      }) || [];
       
       setGalleryImages(processedData);
     } catch (error) {
@@ -168,11 +169,6 @@ export function ImageSelector({ selectedImage, onSelectImage }: ImageSelectorPro
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                {isResourcesPage && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Affichage des images Dropbox uniquement
-                  </p>
-                )}
               </div>
               
               {isLoading ? (
@@ -195,6 +191,11 @@ export function ImageSelector({ selectedImage, onSelectImage }: ImageSelectorPro
                         src={image.url} 
                         alt={image.title} 
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error('Image load error:', e);
+                          const imgElement = e.target as HTMLImageElement;
+                          imgElement.src = '/placeholder.png';
+                        }}
                       />
                     </div>
                   ))}

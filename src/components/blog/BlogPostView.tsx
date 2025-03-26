@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { BlogPost } from '@/hooks/useBlogPosts';
 import { AlertCircle, ArrowLeft, Edit } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { getDropboxDownloadUrl } from '@/utils/image/urlUtils';
+import { generateDisplayImageUrl } from '@/utils/image/imageUrlGenerator';
 
 export function BlogPostView() {
   const { slug } = useParams<{ slug: string }>();
@@ -70,6 +70,19 @@ export function BlogPostView() {
 
   const canEdit = user && ['admin', 'admin_client'].includes(userRole);
 
+  // Get the display image URL, prioritizing from different sources
+  const getImageUrl = (post: BlogPost | null) => {
+    if (!post) return null;
+    
+    // If we have project and image info, generate a proper URL
+    if (post.client_name && post.title) {
+      return generateDisplayImageUrl(post.client_name, post.title);
+    }
+    
+    // Otherwise fallback to existing URLs
+    return post.featured_image_url || post.url_miniature || null;
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto p-6 animate-pulse">
@@ -112,17 +125,11 @@ export function BlogPostView() {
       </div>
 
       <Card>
-        {(post?.featured_image_url || post?.dropbox_image_url || post?.url_miniature) && (
+        {getImageUrl(post) && (
           <div 
             className="w-full h-64 md:h-80 bg-cover bg-center"
             style={{ 
-              backgroundImage: `url(${
-                post.url_miniature 
-                  ? getDropboxDownloadUrl(post.url_miniature)
-                  : post.dropbox_image_url 
-                    ? getDropboxDownloadUrl(post.dropbox_image_url)
-                    : post.featured_image_url
-              })`
+              backgroundImage: `url(${getImageUrl(post)})`
             }}
           />
         )}
