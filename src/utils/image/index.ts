@@ -21,4 +21,3 @@ export function debugImageUrl(url: string): void {
     containsSpecialChars: /[^a-zA-Z0-9\-_\.\/:]/.test(url)
   });
 }
-

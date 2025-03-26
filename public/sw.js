@@ -135,7 +135,8 @@ async function fetchWithRetry(request, cache) {
       if (response.type === 'opaque') {
         // On ne peut pas vérifier le statut, alors on assume que c'est bon
         console.log('Service Worker: Réponse opaque acceptée pour', originalUrl);
-        await cache.put(request, response.clone());
+        
+        // Ne pas tenter de mettre en cache les réponses opaques car cela échoue souvent
         return response;
       }
       
@@ -149,25 +150,38 @@ async function fetchWithRetry(request, cache) {
         throw new Error(`La réponse contient du HTML et non une image: ${contentType}`);
       }
       
-      console.log('Service Worker: Mise en cache réussie pour', originalUrl);
+      console.log('Service Worker: Récupération réussie pour', originalUrl);
       
-      // Créer une réponse avec des en-têtes de cache optimisés
-      const enhancedResponse = new Response(
-        await response.blob(),
-        {
-          status: response.status,
-          statusText: response.statusText,
-          headers: new Headers({
-            'Content-Type': response.headers.get('Content-Type') || 'image/jpeg',
-            'Cache-Control': 'public, max-age=31536000, immutable',
-            'Access-Control-Allow-Origin': '*'
-          })
-        }
-      );
+      // Tenter de mettre en cache, mais ne pas échouer si la mise en cache échoue
+      try {
+        // Créer une réponse avec des en-têtes de cache optimisés
+        const responseToCache = new Response(
+          await response.clone().blob(),
+          {
+            status: response.status,
+            statusText: response.statusText,
+            headers: new Headers({
+              'Content-Type': response.headers.get('Content-Type') || 'image/jpeg',
+              'Cache-Control': 'public, max-age=31536000, immutable',
+              'Access-Control-Allow-Origin': '*'
+            })
+          }
+        );
+        
+        // Mettre en cache mais attraper les erreurs
+        await cache.put(request, responseToCache).catch(err => {
+          console.warn('Service Worker: Échec de mise en cache:', err);
+          // Continuer l'exécution même si la mise en cache échoue
+        });
+        
+        console.log('Service Worker: Mise en cache réussie ou ignorée pour', originalUrl);
+      } catch (cacheError) {
+        // Si la mise en cache échoue, on ignore simplement et on continue
+        console.warn('Service Worker: Impossible de mettre en cache:', cacheError);
+      }
       
-      // Mettre en cache et retourner
-      await cache.put(request, enhancedResponse.clone());
-      return enhancedResponse;
+      // Retourner la réponse originale même si la mise en cache a échoué
+      return response;
     } catch (error) {
       console.warn(`Service Worker: Erreur tentative ${attempt+1}`, error);
       
