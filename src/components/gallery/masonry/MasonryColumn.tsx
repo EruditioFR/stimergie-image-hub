@@ -95,8 +95,10 @@ const ImageItem = memo(function ImageItem({
           // Use best available image URL
           src={imageSrc}
           downloadUrl={image.download_url}
-          // Provide a fallback for alt
+          // Provide fallbacks for required props
           alt={image.alt || image.title || ""}
+          title={image.title || ""} // Add fallback for title prop
+          author={image.author || "Unknown"} // Add fallback for author prop
         />
       </div>
     </div>
