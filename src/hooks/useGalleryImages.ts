@@ -1,3 +1,4 @@
+
 import { useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGalleryFilters } from './useGalleryFilters';
@@ -136,9 +137,9 @@ export const useGalleryImages = (isAdmin: boolean) => {
 
   const formatImagesForGrid = useCallback((images: any[] = []) => {
     return images.map(image => {
-      // Utiliser directement les URLs générées par le service
-      const srcUrl = image.display_url || '';
-      const downloadUrl = image.download_url || '';
+      // Privilégier les URLs directs si disponibles
+      const srcUrl = image.display_url || image.url_miniature || image.url || '';
+      const downloadUrl = image.download_url || image.url || '';
 
       return {
         id: image.id.toString(),
