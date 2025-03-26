@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
 import { Image } from './types';
-import { isDropboxUrl, getDropboxDownloadUrl, getProxiedUrl, debugImageUrl, validateImageUrl } from './urlUtils';
+import { getProxiedUrl, debugImageUrl, validateImageUrl } from './urlUtils';
 import { determineFileExtension, generateNormalizedFilename } from './fileUtils';
 import { fetchImageAsBlob } from './fetchUtils';
 
