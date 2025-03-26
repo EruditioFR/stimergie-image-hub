@@ -53,11 +53,11 @@ const ImageItem = memo(function ImageItem({
     }
   };
   
-  // Prioritize the best available image URL - use properties that exist in the Image type
+  // Prioritizer using src property which is now properly set in formatImagesForGrid
   const imageSrc = image.src;
   const downloadUrl = image.download_url || image.src;
   
-  // Debug URL si elle semble problématique
+  // Debug URL if it seems problematic
   if (!imageSrc || imageSrc.length < 10) {
     debugImageUrl(imageSrc);
     console.log('Image data:', image);

@@ -8,6 +8,7 @@ export interface Image {
   tags?: string[];
   orientation?: string;
   // Additional properties for URL handling
+  display_url?: string;
   download_url?: string;
   url_miniature?: string;
   url?: string;

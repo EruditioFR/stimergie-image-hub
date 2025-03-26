@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { parseTagsString } from "@/utils/imageUtils";
 import { toast } from "sonner";
@@ -65,6 +66,15 @@ export async function fetchGalleryImages(
     // Valider et corriger les URLs si nécessaire
     const validated_display_url = validateImageUrl(display_url) || img.url_miniature || img.url;
     const validated_download_url = validateImageUrl(download_url) || img.url;
+    
+    console.log('Generated URLs:', {
+      folder: folderName,
+      title: imageTitle,
+      display: display_url,
+      download: download_url,
+      final_display: validated_display_url,
+      final_download: validated_download_url
+    });
     
     return {
       ...img,
