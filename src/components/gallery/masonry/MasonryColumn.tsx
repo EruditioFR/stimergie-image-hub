@@ -1,19 +1,7 @@
-
 import React, { memo } from 'react';
 import { ImageCard } from '@/components/ImageCard';
 import { debugImageUrl } from '@/utils/image';
-
-interface Image {
-  id: string;
-  src: string;
-  alt: string;
-  title: string;
-  author: string;
-  tags?: string[];
-  orientation?: string;
-  display_url?: string;
-  download_url?: string;
-}
+import { Image } from '@/utils/image/types';
 
 interface MasonryColumnProps {
   images: Image[];

@@ -9,6 +9,7 @@ import { EmptyResults } from '@/components/gallery/EmptyResults';
 import { useAuth } from '@/context/AuthContext';
 import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { Image } from '@/utils/image/types'; // Update to use the correct Image type
 import { toast } from 'sonner';
 
 // Catégories pour les filtres

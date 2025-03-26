@@ -1,4 +1,3 @@
-
 import { useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGalleryFilters } from './useGalleryFilters';
@@ -138,7 +137,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
 
   const formatImagesForGrid = useCallback((images: any[] = []) => {
     return images.map(image => {
-      // S'assurer que les URLs sont au format correct avec www
       const srcUrl = validateImageUrl(image.display_url) || validateImageUrl(image.url_miniature) || validateImageUrl(image.url) || '';
       const downloadUrl = validateImageUrl(image.download_url) || validateImageUrl(image.url) || '';
 

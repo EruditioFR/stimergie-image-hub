@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useImageSelection } from '@/hooks/useImageSelection';
@@ -13,16 +12,7 @@ import { MasonryToolbar } from './MasonryToolbar';
 import { MasonryDetailModal } from './MasonryDetailModal';
 import { MasonryLoading } from './MasonryLoading';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-
-interface Image {
-  id: string;
-  src: string;
-  alt: string;
-  title: string;
-  author: string;
-  tags?: string[];
-  orientation?: string;
-}
+import { Image } from '@/utils/image/types';
 
 interface MasonryGridProps {
   images: Image[];
@@ -58,9 +48,7 @@ export function MasonryGrid({
   const isWidescreen = useMediaQuery('(min-width: 1280px) and (max-width: 1535px)');
   const isUltrawide = useMediaQuery('(min-width: 1536px)');
   
-  // Calculate column count based on screen size and connection speed
   const columnCount = useMemo(() => {
-    // Use connection information to further optimize columns if available
     const connection = (navigator as any).connection;
     const isSlowConnection = connection && 
       (connection.effectiveType === '2g' || connection.effectiveType === 'slow-2g');
@@ -74,21 +62,16 @@ export function MasonryGrid({
     return 3;
   }, [isUltrawide, isWidescreen, isDesktop, isTablet, isMobile]);
   
-  // Distribute images efficiently across columns
   const columnImages = useMemo(() => {
     const columns = Array(columnCount).fill(0).map(() => []);
     
-    // Use a height-balanced approach for better visual layout
     const columnHeights = Array(columnCount).fill(0);
     
     images.forEach((image) => {
-      // Find the shortest column
       const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
       
-      // Add image to shortest column
       columns[shortestColumnIndex].push(image);
       
-      // Update column height estimation
       const heightFactor = image.orientation === 'portrait' ? 1.33 : 
                           image.orientation === 'landscape' ? 0.75 : 1;
       columnHeights[shortestColumnIndex] += heightFactor;
@@ -97,29 +80,23 @@ export function MasonryGrid({
     return columns;
   }, [images, columnCount]);
 
-  // Enhanced image preloading with 3-tier priority system
   useEffect(() => {
     if (images.length > 0 && !isLoading) {
-      // Set a flag to avoid re-triggering this effect when it's already running
       if (progressiveLoadRef.current) return;
       progressiveLoadRef.current = true;
       
-      // First tier: Visible images (high priority)
       const firstTierCount = Math.min(6, images.length);
       const firstTier = images.slice(0, firstTierCount).map(img => img.src);
       
-      // Second tier: Images likely to become visible soon (medium priority)
       const secondTierCount = Math.min(16, images.length) - firstTierCount;
       const secondTier = secondTierCount > 0 
         ? images.slice(firstTierCount, firstTierCount + secondTierCount).map(img => img.src)
         : [];
         
-      // Third tier: Remaining images (low priority)
       const thirdTier = images.length > (firstTierCount + secondTierCount)
         ? images.slice(firstTierCount + secondTierCount).map(img => img.src)
         : [];
       
-      // Preload with priority levels (1 = highest, 3 = lowest)
       preloadImages(firstTier, 1);
       
       if (secondTier.length > 0) {
@@ -130,57 +107,47 @@ export function MasonryGrid({
       
       if (thirdTier.length > 0) {
         setTimeout(() => {
-          // Load in smaller chunks to avoid overwhelming the browser
           const chunkSize = 10;
           for (let i = 0; i < thirdTier.length; i += chunkSize) {
             const chunk = thirdTier.slice(i, i + chunkSize);
             setTimeout(() => {
               preloadImages(chunk, 3);
-            }, i * 100); // Stagger the loading of each chunk
+            }, i * 100);
           }
           
-          // Reset the flag after all images are processed
           progressiveLoadRef.current = false;
         }, 800);
       } else {
-        // Reset the flag if there's no third tier
         progressiveLoadRef.current = false;
       }
     }
   }, [images, isLoading]);
   
-  // Infinite scroll reference
   const infiniteScrollRef = useInfiniteScroll(loadMoreImages, isLoading);
   
-  // Image click handler
   const handleImageClick = useCallback((image: any) => {
     setSelectedImageDetail(image);
     setIsImageDetailOpen(true);
   }, []);
   
-  // Modal close handler
   const handleCloseImageDetail = useCallback(() => {
     setIsImageDetailOpen(false);
     setSelectedImageDetail(null);
   }, []);
 
-  // Page change handler with smooth scroll
   const handlePageClick = useCallback((page: number) => {
     if (onPageChange && !isLoading) {
       clearSelection();
       onPageChange(page);
       
-      // Scroll to top smoothly
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [onPageChange, clearSelection, isLoading]);
 
-  // Loading placeholder
   if (isLoading && images.length === 0) {
     return <MasonryLoading columnCount={columnCount} />;
   }
 
-  // Pagination mode detection
   const isPaginationMode = !loadMoreImages;
 
   return (
@@ -204,19 +171,16 @@ export function MasonryGrid({
         ))}
       </div>
 
-      {/* Loading indicator */}
       {isLoading && (
         <div className="flex justify-center my-6">
           <LoadingSpinner size={32} />
         </div>
       )}
       
-      {/* Infinite scroll sentinel */}
       {!isPaginationMode && hasMorePages && !isLoading && loadMoreImages && (
         <div ref={infiniteScrollRef} className="h-1 w-full my-4" />
       )}
 
-      {/* Pagination controls */}
       {isPaginationMode && (
         <MasonryPagination
           totalCount={totalCount}
