@@ -41,6 +41,10 @@ try {
             else if (action === 'getAll') {
               port.postMessage({ result: 'getAll', cache: sharedCache });
             }
+            else if (action === 'clear') {
+              sharedCache = {};
+              port.postMessage({ result: 'clear', success: true });
+            }
           };
           
           // Synchroniser le cache existant lors de la connexion
@@ -72,6 +76,11 @@ try {
       // Ajouter une méthode pour partager des entrées de cache
       (window as any).__shareImageCache = (key: string, value: string) => {
         worker.port.postMessage({ action: 'set', key, value });
+      };
+      
+      // Ajouter une méthode pour vider le cache partagé
+      (window as any).__clearSharedImageCache = () => {
+        worker.port.postMessage({ action: 'clear' });
       };
     } catch (e) {
       console.warn("Impossible d'initialiser le cache partagé", e);
@@ -135,6 +144,26 @@ export const sessionImageCache = (() => {
         } catch (e) {
           console.warn('Failed to remove from session storage:', e);
         }
+      },
+      clear: (): void => {
+        try {
+          // Clear only image cache items
+          const keysToRemove = [];
+          for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            if (key && key.startsWith('img_cache_')) {
+              keysToRemove.push(key);
+            }
+          }
+          
+          for (const key of keysToRemove) {
+            sessionStorage.removeItem(key);
+          }
+          
+          console.log(`Cleared ${keysToRemove.length} items from session storage`);
+        } catch (e) {
+          console.warn('Failed to clear session storage:', e);
+        }
       }
     };
   } catch (e) {
@@ -144,7 +173,8 @@ export const sessionImageCache = (() => {
     return {
       getItem: (key: string): string | null => memoryCache.get(key) || null,
       setItem: (key: string, value: string): void => { memoryCache.set(key, value); },
-      removeItem: (key: string): void => { memoryCache.delete(key); }
+      removeItem: (key: string): void => { memoryCache.delete(key); },
+      clear: (): void => { memoryCache.clear(); }
     };
   }
 })();
@@ -196,6 +226,61 @@ export function manageCacheSize(url: string): void {
     });
     // Update usage order
     cacheUsageOrder = cacheUsageOrder.slice(-(MAX_CACHE_SIZE));
+  }
+}
+
+/**
+ * Clears all cache stores (memory, session, browser cache)
+ */
+export function clearAllCaches(): void {
+  console.log('Clearing all image caches...');
+  
+  // Clear in-memory caches
+  fetchCache.clear();
+  processedUrlCache.clear();
+  cacheUsageOrder = [];
+  
+  // Clear session storage cache
+  sessionImageCache.clear();
+  
+  // Clear shared cache if available
+  if ((window as any).__clearSharedImageCache) {
+    try {
+      (window as any).__clearSharedImageCache();
+      console.log('Shared cache cleared');
+    } catch (e) {
+      console.warn('Failed to clear shared cache:', e);
+    }
+  }
+  
+  // Try to clear Cache API cache
+  if ('caches' in window) {
+    try {
+      caches.delete('images-cache-v1').then(success => {
+        console.log('Browser Cache API cache cleared:', success);
+      });
+    } catch (e) {
+      console.warn('Failed to clear Cache API cache:', e);
+    }
+  }
+  
+  // Clear localStorage image cache
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('global_img_cache_')) {
+        keysToRemove.push(key);
+      }
+    }
+    
+    for (const key of keysToRemove) {
+      localStorage.removeItem(key);
+    }
+    
+    console.log(`Cleared ${keysToRemove.length} items from localStorage`);
+  } catch (e) {
+    console.warn('Failed to clear localStorage:', e);
   }
 }
 

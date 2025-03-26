@@ -3,12 +3,14 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Image as ImageIcon, Clock, Check, XCircle } from 'lucide-react';
+import { Loader2, Image as ImageIcon, Clock, Check, XCircle, Trash2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { clearAllCaches } from '@/utils/image/cacheManager';
 
 export function CacheDropboxImages() {
   const [isLoading, setIsLoading] = useState(false);
   const [isInProgress, setIsInProgress] = useState(false);
+  const [isFlushing, setIsFlushing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [details, setDetails] = useState<{
     total: number;
@@ -100,29 +102,64 @@ export function CacheDropboxImages() {
     }
   };
   
+  // Vider tous les caches d'images
+  const handleFlushCache = () => {
+    setIsFlushing(true);
+    try {
+      clearAllCaches();
+      toast.success('Tous les caches d\'images ont été vidés');
+    } catch (error) {
+      console.error('Error flushing image caches:', error);
+      toast.error('Erreur lors du vidage des caches d\'images');
+    } finally {
+      setIsFlushing(false);
+    }
+  };
+  
   return (
     <div className="flex flex-col gap-2 w-full max-w-md">
-      <Button 
-        onClick={handleCacheImages} 
-        disabled={isLoading || isInProgress}
-        variant="secondary"
-        size="sm"
-        className="self-end"
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Initialisation...
-          </>
-        ) : isInProgress ? (
-          "Mise en cache en cours..."
-        ) : (
-          <>
-            <ImageIcon className="h-4 w-4 mr-2" />
-            Mettre en cache les images Dropbox
-          </>
-        )}
-      </Button>
+      <div className="flex gap-2 self-end">
+        <Button 
+          onClick={handleFlushCache}
+          disabled={isFlushing}
+          variant="outline"
+          size="sm"
+          className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+        >
+          {isFlushing ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Vidage...
+            </>
+          ) : (
+            <>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Vider le cache
+            </>
+          )}
+        </Button>
+        
+        <Button 
+          onClick={handleCacheImages} 
+          disabled={isLoading || isInProgress}
+          variant="secondary"
+          size="sm"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Initialisation...
+            </>
+          ) : isInProgress ? (
+            "Mise en cache en cours..."
+          ) : (
+            <>
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Mettre en cache les images
+            </>
+          )}
+        </Button>
+      </div>
       
       {isInProgress && (
         <div className="mt-2 space-y-3 p-4 border rounded-md bg-secondary/20">

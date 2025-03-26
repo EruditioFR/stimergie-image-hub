@@ -11,6 +11,9 @@ import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { Image } from '@/utils/image/types'; // Update to use the correct Image type
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
+import { clearAllCaches } from '@/utils/image/cacheManager';
 
 // Catégories pour les filtres
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
@@ -25,6 +28,7 @@ const Gallery = () => {
   
   // Mode de pagination actuel (true = pagination traditionnelle, false = défilement infini)
   const [usePaginationMode, setUsePaginationMode] = useState(true);
+  const [isFlushing, setIsFlushing] = useState(false);
 
   const {
     allImages,
@@ -65,6 +69,27 @@ const Gallery = () => {
     // Appeler le gestionnaire de page du hook
     handlePageChange(newPage);
   }, [handlePageChange]);
+  
+  // Fonction pour vider le cache d'images
+  const handleFlushCache = useCallback(() => {
+    setIsFlushing(true);
+    try {
+      clearAllCaches();
+      toast.success('Cache d\'images vidé', {
+        description: 'Toutes les images seront rechargées depuis le serveur.'
+      });
+      
+      // Rafraîchir la galerie après avoir vidé le cache
+      setTimeout(() => {
+        refreshGallery();
+      }, 500);
+    } catch (error) {
+      console.error('Error flushing cache:', error);
+      toast.error('Erreur lors du vidage du cache');
+    } finally {
+      setIsFlushing(false);
+    }
+  }, [refreshGallery]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -85,6 +110,25 @@ const Gallery = () => {
           userRole={userRole}
           userClientId={userClientId}
         />
+        
+        {isAdmin && (
+          <div className="flex justify-end px-4 -mt-2 mb-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleFlushCache}
+              disabled={isFlushing}
+              className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+            >
+              {isFlushing ? 'Vidage en cours...' : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Vider le cache d'images
+                </>
+              )}
+            </Button>
+          </div>
+        )}
         
         <div className="w-full px-1 py-6">
           {isLoading && allImages.length === 0 ? (
