@@ -1,8 +1,17 @@
 
-import { useState, useEffect, useRef, CSSProperties } from 'react';
+import { useState, useEffect, useRef, CSSProperties, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { generateCacheKey as getImageCacheKey } from '@/utils/image/cacheManager';
+import { getPlaceholderUrl, isVectorImage } from '@/utils/image/urlUtils';
+
+// Configurable options
+const PRELOAD_PRIORITY_HIGH = 1;
+const PRELOAD_PRIORITY_MEDIUM = 2;
+const PRELOAD_PRIORITY_LOW = 3;
+const PRELOAD_BATCH_SIZE = 6;
+const PLACEHOLDER_WIDTH = 20;
 
 interface LazyImageProps {
   src: string;
@@ -12,38 +21,15 @@ interface LazyImageProps {
   objectFit?: string;
   priority?: boolean;
   style?: CSSProperties;
+  placeholder?: string | ReactNode;
+  onLoad?: () => void;
+  onError?: () => void;
+  width?: number;
+  height?: number;
+  loadingStrategy?: 'eager' | 'lazy' | 'auto';
+  showProgress?: boolean;
+  fallbackSrc?: string;
 }
-
-// Cache global persistant entre les sessions
-const PERSISTENT_CACHE_PREFIX = 'persistent_img_';
-const PRELOAD_BATCH_SIZE = 6; // Reduced batch size for faster loading
-
-// Performance optimized global memory cache
-const imageCache = new Map<string, string>();
-const requestedImagesCache = new Set<string>();
-
-// Verify persistent storage availability
-const isPersistentStorageAvailable = async (): Promise<boolean> => {
-  try {
-    if (!navigator.storage || !navigator.storage.persist) return false;
-    let isPersisted = await navigator.storage.persisted();
-    if (!isPersisted) {
-      isPersisted = await navigator.storage.persist();
-    }
-    return isPersisted;
-  } catch (e) {
-    return false;
-  }
-};
-
-// Try to enable persistent storage
-(async () => {
-  try {
-    await isPersistentStorageAvailable();
-  } catch (e) {
-    console.warn('Storage persistence activation failed:', e);
-  }
-})();
 
 // Enhanced session-persistent cache
 const sessionImageCache = (() => {
@@ -52,7 +38,7 @@ const sessionImageCache = (() => {
       getItem: (key: string): string | null => {
         try {
           // Check localStorage first (persistent)
-          const persisted = localStorage.getItem(`${PERSISTENT_CACHE_PREFIX}${key}`);
+          const persisted = localStorage.getItem(`persistent_img_${key}`);
           if (persisted) return persisted;
           
           // Then check sessionStorage
@@ -68,14 +54,14 @@ const sessionImageCache = (() => {
           
           // Try to store in localStorage for persistence
           try {
-            localStorage.setItem(`${PERSISTENT_CACHE_PREFIX}${key}`, value);
+            localStorage.setItem(`persistent_img_${key}`, value);
           } catch (persistError) {
             // Clear space if localStorage is full
             try {
               const keysToRemove = [];
               for (let i = 0; i < localStorage.length; i++) {
                 const storageKey = localStorage.key(i);
-                if (storageKey && storageKey.startsWith(PERSISTENT_CACHE_PREFIX)) {
+                if (storageKey && storageKey.startsWith('persistent_img_')) {
                   keysToRemove.push(storageKey);
                 }
               }
@@ -83,7 +69,7 @@ const sessionImageCache = (() => {
               const removeCount = Math.ceil(keysToRemove.length * 0.2);
               keysToRemove.slice(0, removeCount).forEach(k => localStorage.removeItem(k));
               
-              localStorage.setItem(`${PERSISTENT_CACHE_PREFIX}${key}`, value);
+              localStorage.setItem(`persistent_img_${key}`, value);
             } catch (e) {
               console.warn('Failed to clear persistent storage:', e);
             }
@@ -119,27 +105,118 @@ const sessionImageCache = (() => {
   }
 })();
 
-// Check if image is in any cache
-const isImageCached = async (src: string): Promise<boolean> => {
-  // Check application cache
-  if ('caches' in window) {
-    try {
-      const cache = await caches.open('images-cache-v1');
-      const match = await cache.match(src);
-      if (match) return true;
-    } catch (e) {
-      console.warn('Application cache check failed:', e);
+// Performance optimized global memory cache
+const imageCache = new Map<string, string>();
+const requestedImagesCache = new Set<string>();
+const imageErrorCache = new Set<string>();
+
+// Prioritized preloading queue
+interface PreloadItem {
+  url: string;
+  priority: number;
+  timestamp: number;
+}
+const preloadQueue: PreloadItem[] = [];
+let isPreloading = false;
+
+/**
+ * Process the preload queue, loading images in order of priority
+ */
+function processPreloadQueue() {
+  if (isPreloading || preloadQueue.length === 0) return;
+  
+  isPreloading = true;
+  
+  // Sort by priority first, then by timestamp (FIFO for same priority)
+  preloadQueue.sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    return a.timestamp - b.timestamp;
+  });
+  
+  // Take a batch of images to preload
+  const batch = preloadQueue.splice(0, PRELOAD_BATCH_SIZE);
+  
+  // Start preloading the batch
+  Promise.all(
+    batch.map(item => {
+      if (requestedImagesCache.has(item.url) || imageErrorCache.has(item.url)) {
+        return Promise.resolve();
+      }
+      
+      requestedImagesCache.add(item.url);
+      
+      return new Promise<void>((resolve) => {
+        const img = new Image();
+        
+        img.onload = () => {
+          imageCache.set(item.url, item.url);
+          const cacheKey = getImageCacheKey(item.url);
+          sessionImageCache.setItem(cacheKey, item.url);
+          resolve();
+        };
+        
+        img.onerror = () => {
+          imageErrorCache.add(item.url);
+          resolve();
+        };
+        
+        img.src = item.url;
+      });
+    })
+  ).finally(() => {
+    isPreloading = false;
+    // Continue with next batch if available
+    if (preloadQueue.length > 0) {
+      setTimeout(processPreloadQueue, 100);
     }
+  });
+}
+
+/**
+ * Add an image to the preload queue with a specified priority
+ */
+function queueImageForPreload(url: string, priority: number) {
+  if (!url || requestedImagesCache.has(url) || imageErrorCache.has(url)) {
+    return;
   }
   
-  // Check session/persistent cache
+  preloadQueue.push({
+    url,
+    priority,
+    timestamp: Date.now()
+  });
+  
+  // Start processing the queue if not already processing
+  if (!isPreloading) {
+    processPreloadQueue();
+  }
+}
+
+/**
+ * Preload multiple images with the same priority
+ */
+export function preloadImages(urls: string[], priority = PRELOAD_PRIORITY_MEDIUM): void {
+  if (!urls || urls.length === 0) return;
+  
+  urls.forEach(url => {
+    queueImageForPreload(url, priority);
+  });
+}
+
+/**
+ * Check if an image is already loaded in any cache
+ */
+export async function isImageLoaded(src: string): Promise<boolean> {
+  if (!src) return false;
+  
+  // Check memory cache first (fastest)
+  if (imageCache.has(src)) return true;
+  
+  // Check session cache next
   const cacheKey = getImageCacheKey(src);
   if (sessionImageCache.getItem(cacheKey)) return true;
   
-  // Check memory cache
-  if (imageCache.has(src)) return true;
-  
-  // Check browser HTTP cache
+  // Check if the image is in the browser's HTTP cache
   try {
     const response = await fetch(src, {
       method: 'HEAD',
@@ -150,95 +227,14 @@ const isImageCached = async (src: string): Promise<boolean> => {
   } catch (e) {
     return false;
   }
-};
-
-// Optimized image preloading function
-export function preloadImages(urls: string[]): void {
-  if (!urls.length) return;
-  
-  const preloadBatch = async () => {
-    // Check which images need preloading
-    const checks = await Promise.all(
-      urls.map(async url => ({
-        url,
-        isCached: await isImageCached(url)
-      }))
-    );
-    
-    const urlsToLoad = checks
-      .filter(({ url, isCached }) => !isCached && !requestedImagesCache.has(url))
-      .map(({ url }) => url);
-    
-    if (urlsToLoad.length === 0) return;
-    
-    // Use smaller batches for better parallelization
-    const loadNextBatch = (startIndex: number) => {
-      const batch = urlsToLoad.slice(startIndex, startIndex + PRELOAD_BATCH_SIZE);
-      if (batch.length === 0) return;
-      
-      batch.forEach(url => {
-        if (!requestedImagesCache.has(url)) {
-          requestedImagesCache.add(url);
-          
-          const img = new Image();
-          img.onload = () => {
-            imageCache.set(url, url);
-            const cacheKey = getImageCacheKey(url);
-            sessionImageCache.setItem(cacheKey, url);
-          };
-          img.src = url;
-        }
-      });
-      
-      // Continue with next batch after delay
-      if (startIndex + PRELOAD_BATCH_SIZE < urlsToLoad.length) {
-        setTimeout(() => loadNextBatch(startIndex + PRELOAD_BATCH_SIZE), 100);
-      }
-    };
-    
-    loadNextBatch(0);
-  };
-  
-  preloadBatch();
 }
 
-// Generate cache key
-function generateCacheKey(url: string): string {
-  try {
-    const urlObj = new URL(url);
-    return `${urlObj.origin}${urlObj.pathname}`;
-  } catch (e) {
-    return url;
-  }
-}
-
-// Maintained for API compatibility
+/**
+ * Legacy function for backward compatibility
+ */
 export function clearOffscreenImagesFromCache(): void {
-  // We no longer clear images actively
-  const MAX_CACHE_SIZE = 1000;
-  
-  if (imageCache.size > MAX_CACHE_SIZE) {
-    const keysToDelete = Array.from(imageCache.keys()).slice(0, imageCache.size - MAX_CACHE_SIZE);
-    keysToDelete.forEach(key => {
-      imageCache.delete(key);
-      requestedImagesCache.delete(key);
-    });
-  }
+  // This is now handled automatically
 }
-
-// Generate low quality placeholder URL
-const getLowQualitySrc = (originalSrc: string): string => {
-  if (!originalSrc) return '';
-  
-  if (originalSrc.includes('unsplash.com')) {
-    return originalSrc.replace(/&w=\d+/, '&w=20').replace(/&q=\d+/, '&q=20');
-  }
-  
-  if (originalSrc.includes('?')) {
-    return `${originalSrc}&w=10&q=10`;
-  }
-  return `${originalSrc}?w=10&q=10`;
-};
 
 export function LazyImage({
   src,
@@ -247,19 +243,42 @@ export function LazyImage({
   aspectRatio,
   objectFit = "object-cover",
   priority = false,
-  style
+  style,
+  placeholder,
+  onLoad,
+  onError,
+  width,
+  height,
+  loadingStrategy = 'auto',
+  showProgress = true,
+  fallbackSrc
 }: LazyImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
   const [cachedSrc, setCachedSrc] = useState<string | null>(null);
   const imgRef = useRef<HTMLDivElement>(null);
   const progressIntervalRef = useRef<number | null>(null);
   const isUnmountedRef = useRef(false);
   
-  // Generate cache key
-  const cacheKey = src ? generateCacheKey(src) : '';
+  // Determine if we're using eager loading (priority or auto for vector images)
+  const isEagerLoading = priority || 
+                         loadingStrategy === 'eager' || 
+                         (loadingStrategy === 'auto' && isVectorImage(src));
   
-  // Check cache on mount
+  // Generate a placeholder URL based on the source
+  const [placeholderSrc] = useState(() => {
+    if (typeof placeholder === 'string') return placeholder;
+    return src ? getPlaceholderUrl(src, PLACEHOLDER_WIDTH) : '';
+  });
+  
+  // Decide which loading attribute to use
+  const loadingAttribute = isEagerLoading ? 'eager' : 'lazy';
+  
+  // Generate cache key
+  const cacheKey = src ? getImageCacheKey(src) : '';
+  
+  // Check cache and start loading image on mount
   useEffect(() => {
     if (!src) return;
     
@@ -267,12 +286,25 @@ export function LazyImage({
     
     // Check all cache levels
     const checkCaches = async () => {
+      // Check if image is in error cache
+      if (imageErrorCache.has(src)) {
+        if (fallbackSrc) {
+          setCachedSrc(fallbackSrc);
+          setLoadProgress(100);
+          setIsLoaded(true);
+        } else {
+          setHasError(true);
+        }
+        return;
+      }
+      
       // Check session cache first (fastest)
       const sessionCached = sessionImageCache.getItem(cacheKey);
       if (sessionCached) {
         setCachedSrc(src);
         setLoadProgress(100);
         setIsLoaded(true);
+        onLoad?.();
         return;
       }
       
@@ -281,29 +313,38 @@ export function LazyImage({
         setCachedSrc(src);
         setLoadProgress(100);
         setIsLoaded(true);
+        onLoad?.();
         return;
       }
       
       // Then check browser cache
-      const isCached = await isImageCached(src);
+      const isCached = await isImageLoaded(src);
       if (isCached) {
         setCachedSrc(src);
         setLoadProgress(100);
         setIsLoaded(true);
+        onLoad?.();
         return;
       }
       
-      // Start loading with progress simulation
-      setLoadProgress(30);
-      progressIntervalRef.current = window.setInterval(() => {
-        if (!isUnmountedRef.current) {
-          setLoadProgress(prev => {
-            const increment = prev < 30 ? 10 : prev < 60 ? 5 : prev < 80 ? 3 : 1;
-            const newProgress = prev + Math.random() * increment;
-            return newProgress >= 90 ? 90 : newProgress;
-          });
-        }
-      }, 80);
+      // Start loading with progress simulation for non-vectors
+      if (!isVectorImage(src)) {
+        setLoadProgress(30);
+        progressIntervalRef.current = window.setInterval(() => {
+          if (!isUnmountedRef.current) {
+            setLoadProgress(prev => {
+              const increment = prev < 30 ? 10 : prev < 60 ? 5 : prev < 80 ? 3 : 1;
+              const newProgress = prev + Math.random() * increment;
+              return newProgress >= 90 ? 90 : newProgress;
+            });
+          }
+        }, 80);
+      }
+      
+      // Add to preload queue with appropriate priority
+      if (priority) {
+        queueImageForPreload(src, PRELOAD_PRIORITY_HIGH);
+      }
     };
     
     checkCaches();
@@ -319,10 +360,7 @@ export function LazyImage({
         URL.revokeObjectURL(cachedSrc);
       }
     };
-  }, [src, cachedSrc, cacheKey]);
-  
-  // Generate low quality placeholder
-  const [lowQualitySrc] = useState(src ? getLowQualitySrc(src) : '');
+  }, [src, cachedSrc, cacheKey, priority, onLoad, fallbackSrc]);
 
   // Handle image load completion
   const handleImageLoad = () => {
@@ -343,66 +381,135 @@ export function LazyImage({
     setLoadProgress(100);
     if (!isUnmountedRef.current) {
       setIsLoaded(true);
+      setHasError(false);
+      onLoad?.();
+    }
+  };
+  
+  // Handle image load error
+  const handleImageError = () => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    
+    imageErrorCache.add(src);
+    
+    if (!isUnmountedRef.current) {
+      setHasError(true);
+      onError?.();
+      
+      // Try fallback if available
+      if (fallbackSrc && fallbackSrc !== src) {
+        setCachedSrc(fallbackSrc);
+      }
     }
   };
 
-  if (!src) return null;
+  if (!src && !fallbackSrc) return null;
 
   return (
     <div 
       ref={imgRef}
-      className={cn("lazy-image overflow-hidden relative", aspectRatio, className)}
+      className={cn(
+        "lazy-image overflow-hidden relative", 
+        aspectRatio,
+        className
+      )}
+      style={{
+        width: width ? `${width}px` : undefined,
+        height: height ? `${height}px` : undefined,
+        ...style
+      }}
     >
-      {/* Low-resolution placeholder */}
-      {!isLoaded && (
-        <img
-          src={lowQualitySrc}
-          alt={alt}
-          className={cn(
-            "lazy-image-placeholder absolute inset-0 w-full h-full blur-sm scale-105",
-            objectFit,
-            "opacity-100 transition-opacity duration-200"
+      {/* Placeholder */}
+      {!isLoaded && !hasError && (
+        <>
+          {typeof placeholder === 'string' || React.isValidElement(placeholder) ? (
+            // Custom placeholder
+            <div className="absolute inset-0 w-full h-full">
+              {typeof placeholder === 'string' ? (
+                <img
+                  src={placeholder as string}
+                  alt={alt}
+                  className={cn(
+                    "absolute inset-0 w-full h-full blur-sm scale-105",
+                    objectFit,
+                    "opacity-100 transition-opacity duration-200"
+                  )}
+                  loading="eager"
+                />
+              ) : (
+                placeholder
+              )}
+            </div>
+          ) : placeholderSrc ? (
+            // Auto-generated low-quality placeholder
+            <img
+              src={placeholderSrc}
+              alt={alt}
+              className={cn(
+                "lazy-image-placeholder absolute inset-0 w-full h-full blur-sm scale-105",
+                objectFit,
+                "opacity-100 transition-opacity duration-200"
+              )}
+              loading="eager"
+            />
+          ) : (
+            // Skeleton placeholder
+            <Skeleton className="absolute inset-0 w-full h-full" />
           )}
-          loading="eager"
-        />
+        </>
       )}
       
       {/* Loading indicator */}
-      {!isLoaded && (
+      {!isLoaded && !hasError && showProgress && (
         <div className="absolute inset-x-0 bottom-0 px-3 py-1 bg-background/50 backdrop-blur-sm">
           <Progress value={loadProgress} className="h-1" />
         </div>
       )}
       
+      {/* Error state */}
+      {hasError && !fallbackSrc && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted">
+          <div className="text-center p-4">
+            <div className="text-destructive mb-2">⚠️</div>
+            <div className="text-sm text-muted-foreground">Image unavailable</div>
+          </div>
+        </div>
+      )}
+      
       {/* Main image */}
-      <img
-        src={cachedSrc || src}
-        alt={alt}
-        className={cn(
-          "lazy-image-actual w-full h-full transition-opacity duration-200",
-          objectFit,
-          isLoaded ? "opacity-100" : "opacity-0"
-        )}
-        style={style}
-        onLoad={handleImageLoad}
-        loading="eager"
-        decoding="async"
-      />
+      {(!hasError || fallbackSrc) && (
+        <img
+          src={cachedSrc || fallbackSrc || src}
+          alt={alt}
+          className={cn(
+            "lazy-image-actual w-full h-full transition-opacity duration-200",
+            objectFit,
+            isLoaded ? "opacity-100" : "opacity-0"
+          )}
+          style={style}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+          loading={loadingAttribute}
+          decoding="async"
+          width={width}
+          height={height}
+        />
+      )}
     </div>
   );
 }
 
 export function LazyImageWithPriority(props: LazyImageProps) {
-  const imgRef = useRef<HTMLImageElement>(null);
-  
-  // Set fetchpriority attribute directly
-  useEffect(() => {
-    if (imgRef.current) {
-      imgRef.current.setAttribute('fetchpriority', 'high');
-    }
-  }, []);
-  
-  return <LazyImage {...props} />;
+  return (
+    <LazyImage 
+      {...props} 
+      priority={true} 
+      loadingStrategy="eager"
+    />
+  );
 }
 
 export default LazyImage;

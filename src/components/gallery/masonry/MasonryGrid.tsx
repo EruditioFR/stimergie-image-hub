@@ -50,6 +50,7 @@ export function MasonryGrid({
   const { selectedImages, toggleImageSelection, isImageSelected, clearSelection } = useImageSelection();
   const [searchParams] = useSearchParams();
   const progressiveLoadRef = useRef<boolean>(false);
+  const viewportRef = useRef<HTMLDivElement>(null);
   
   const isMobile = useIsMobile();
   const isTablet = useMediaQuery('(min-width: 641px) and (max-width: 1023px)');
@@ -57,9 +58,15 @@ export function MasonryGrid({
   const isWidescreen = useMediaQuery('(min-width: 1280px) and (max-width: 1535px)');
   const isUltrawide = useMediaQuery('(min-width: 1536px)');
   
-  // Calculate column count based on screen size
+  // Calculate column count based on screen size and connection speed
   const columnCount = useMemo(() => {
-    if (isMobile) return 2; // Reduce columns on mobile for faster rendering
+    // Use connection information to further optimize columns if available
+    const connection = (navigator as any).connection;
+    const isSlowConnection = connection && 
+      (connection.effectiveType === '2g' || connection.effectiveType === 'slow-2g');
+    
+    if (isSlowConnection && isMobile) return 1; // Extra reduction for slow connections
+    if (isMobile) return 2;
     if (isTablet) return 2;
     if (isDesktop) return 3;
     if (isWidescreen) return 4;
@@ -90,47 +97,45 @@ export function MasonryGrid({
     return columns;
   }, [images, columnCount]);
 
-  // Enhanced image preloading with progressive loading
+  // Enhanced image preloading with 3-tier priority system
   useEffect(() => {
     if (images.length > 0 && !isLoading) {
       // Set a flag to avoid re-triggering this effect when it's already running
       if (progressiveLoadRef.current) return;
       progressiveLoadRef.current = true;
       
-      // First batch: Only preload the first few visible images immediately (high priority)
-      const firstBatchCount = Math.min(8, images.length);
-      const firstBatch = images.slice(0, firstBatchCount).map(img => img.src);
+      // First tier: Visible images (high priority)
+      const firstTierCount = Math.min(6, images.length);
+      const firstTier = images.slice(0, firstTierCount).map(img => img.src);
       
-      // Second batch: Next set of images with slight delay (medium priority)
-      const secondBatchCount = Math.min(16, images.length) - firstBatchCount;
-      const secondBatch = secondBatchCount > 0 
-        ? images.slice(firstBatchCount, firstBatchCount + secondBatchCount).map(img => img.src)
+      // Second tier: Images likely to become visible soon (medium priority)
+      const secondTierCount = Math.min(16, images.length) - firstTierCount;
+      const secondTier = secondTierCount > 0 
+        ? images.slice(firstTierCount, firstTierCount + secondTierCount).map(img => img.src)
         : [];
         
-      // Third batch: Remaining images with longer delay (low priority)
-      const thirdBatch = images.length > (firstBatchCount + secondBatchCount)
-        ? images.slice(firstBatchCount + secondBatchCount).map(img => img.src)
+      // Third tier: Remaining images (low priority)
+      const thirdTier = images.length > (firstTierCount + secondTierCount)
+        ? images.slice(firstTierCount + secondTierCount).map(img => img.src)
         : [];
       
-      // Immediately start loading first batch
-      preloadImages(firstBatch);
+      // Preload with priority levels (1 = highest, 3 = lowest)
+      preloadImages(firstTier, 1);
       
-      // Load second batch after a short delay
-      if (secondBatch.length > 0) {
+      if (secondTier.length > 0) {
         setTimeout(() => {
-          preloadImages(secondBatch);
+          preloadImages(secondTier, 2);
         }, 300);
       }
       
-      // Load remaining images after user has had time to see the first ones
-      if (thirdBatch.length > 0) {
+      if (thirdTier.length > 0) {
         setTimeout(() => {
           // Load in smaller chunks to avoid overwhelming the browser
           const chunkSize = 10;
-          for (let i = 0; i < thirdBatch.length; i += chunkSize) {
-            const chunk = thirdBatch.slice(i, i + chunkSize);
+          for (let i = 0; i < thirdTier.length; i += chunkSize) {
+            const chunk = thirdTier.slice(i, i + chunkSize);
             setTimeout(() => {
-              preloadImages(chunk);
+              preloadImages(chunk, 3);
             }, i * 100); // Stagger the loading of each chunk
           }
           
@@ -138,7 +143,7 @@ export function MasonryGrid({
           progressiveLoadRef.current = false;
         }, 800);
       } else {
-        // Reset the flag if there's no third batch
+        // Reset the flag if there's no third tier
         progressiveLoadRef.current = false;
       }
     }
@@ -179,7 +184,7 @@ export function MasonryGrid({
   const isPaginationMode = !loadMoreImages;
 
   return (
-    <>
+    <div ref={viewportRef}>
       <MasonryToolbar 
         selectedImages={selectedImages}
         clearSelection={clearSelection}
@@ -230,6 +235,6 @@ export function MasonryGrid({
         selectedImages={selectedImages}
         images={images.filter(img => selectedImages.includes(img.id))}
       />
-    </>
+    </div>
   );
 }

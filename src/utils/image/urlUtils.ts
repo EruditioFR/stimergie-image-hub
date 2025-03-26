@@ -89,3 +89,38 @@ function extractDomain(url: string): string {
     return url;
   }
 }
+
+/**
+ * Generate a placeholder URL for an image
+ * @param url Original image URL
+ * @param width Width of the placeholder
+ * @returns A URL for a small placeholder version of the image
+ */
+export function getPlaceholderUrl(url: string, width = 10): string {
+  if (!url) return '';
+  
+  // For Unsplash images, use their native low-quality parameter
+  if (url.includes('unsplash.com')) {
+    return url.replace(/&w=\d+/, `&w=${width}`).replace(/&q=\d+/, '&q=10');
+  }
+  
+  // For Weserv proxy, use their resizing parameters
+  if (url.includes('images.weserv.nl')) {
+    return url.replace(/&w=\d+/, `&w=${width}`).replace(/&q=\d+/, '&q=10');
+  }
+  
+  // For other URLs, try to append resizing parameters
+  if (url.includes('?')) {
+    return `${url}&w=${width}&q=10`;
+  }
+  
+  return `${url}?w=${width}&q=10`;
+}
+
+/**
+ * Check if the image is likely to be a vector format (SVG)
+ */
+export function isVectorImage(url: string): boolean {
+  return url.toLowerCase().endsWith('.svg');
+}
+

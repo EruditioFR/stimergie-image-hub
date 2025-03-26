@@ -1,3 +1,4 @@
+
 import React, { memo } from 'react';
 import { ImageCard } from '@/components/ImageCard';
 
@@ -62,6 +63,9 @@ const ImageItem = memo(function ImageItem({
     }
   };
   
+  // Prioritize the best available image URL
+  const imageSrc = image.display_url || image.src;
+  
   return (
     <div className="opacity-100 relative group">
       {/* Selection indicator - now larger and more visible */}
@@ -99,8 +103,8 @@ const ImageItem = memo(function ImageItem({
           className={`w-full transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
           orientation={image.orientation}
           onClick={handleClick}
-          // Utiliser la nouvelle URL de téléchargement
-          src={image.display_url || image.src}
+          // Use best available image URL
+          src={imageSrc}
           downloadUrl={image.download_url}
         />
       </div>
