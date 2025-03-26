@@ -1,88 +1,91 @@
 
 /**
- * Vérifie si une URL est une URL Dropbox
+ * URL related utility functions
+ */
+
+// Available CORS proxies for rotation
+const PROXIES = [
+  'https://images.weserv.nl/?url=',
+  'https://corsproxy.io/?',
+  'https://api.allorigins.win/raw?url='
+];
+
+// Cache for best proxies
+const bestProxyCache = new Map<string, string>();
+
+/**
+ * Checks if a URL is from Dropbox
  */
 export function isDropboxUrl(url: string): boolean {
-  return url.includes('dropbox.com');
+  return url.includes('dropbox.com') || url.includes('dl.dropboxusercontent.com');
 }
 
 /**
- * Extrait le chemin du fichier à partir d'une URL Dropbox
- */
-export function extractDropboxFilePath(url: string): string | null {
-  try {
-    // Format typique: https://www.dropbox.com/scl/fi/[id]/[filename]?[params]
-    const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split('/');
-    // Le nom de fichier est généralement le dernier élément du chemin
-    return pathParts[pathParts.length - 1];
-  } catch (error) {
-    console.error("Erreur lors de l'extraction du chemin Dropbox:", error);
-    return null;
-  }
-}
-
-/**
- * Handle Dropbox URLs by converting them to direct download URLs
+ * Extracts direct download link from a Dropbox URL
  */
 export function getDropboxDownloadUrl(url: string): string {
-  // Transform the URL standard in URL of direct content
-  // Format: from www.dropbox.com to dl.dropboxusercontent.com
-  if (url.includes('www.dropbox.com')) {
-    // Extract path from URL
-    try {
-      const urlObj = new URL(url);
-      // Replace domain and adapt path
-      const newPath = urlObj.pathname.replace('/scl/fi/', '/').split('?')[0];
-      return `https://dl.dropboxusercontent.com${newPath}`;
-    } catch (error) {
-      console.error("Error converting Dropbox URL:", error);
-    }
+  // If already a direct link, return as is
+  if (url.includes('dl.dropboxusercontent.com') || url.includes('dl=1')) {
+    return url;
   }
   
-  // If conversion fails or if it's not a standard URL, use fallback method
-  return url.includes('dl=0') 
-    ? url.replace('dl=0', 'raw=1') 
-    : url.includes('dl=1') 
-      ? url.replace('dl=1', 'raw=1')
-      : url.includes('raw=1')
-        ? url
-        : `${url}${url.includes('?') ? '&' : '?'}raw=1`;
+  // Convert to direct download link
+  if (url.includes('?')) {
+    return `${url}&dl=1`;
+  } else {
+    return `${url}?dl=1`;
+  }
 }
 
 /**
- * Solution pour contourner les problèmes CORS avec les sources externes
+ * Gets a proxied URL to bypass CORS issues with improved proxy selection
  */
-export function getProxiedUrl(url: string): string {
-  // Utiliser un proxy CORS pour les sites problématiques connus (comme stimergie.fr)
-  if (url.includes('stimergie.fr')) {
-    const corsProxyUrl = 'https://images.weserv.nl/?url=' + encodeURIComponent(url);
-    console.log(`URL Stimergie convertie via proxy: ${corsProxyUrl}`);
-    return corsProxyUrl;
+export function getProxiedUrl(url: string, forceProxy = false): string {
+  // Don't proxy if not needed
+  if (!forceProxy && (url.includes(window.location.hostname) || url.startsWith('blob:') || url.startsWith('data:'))) {
+    return url;
   }
   
-  // Pour Dropbox, utiliser un proxy qui préserve les en-têtes binaires
-  if (url.includes('dropboxusercontent.com')) {
-    const corsProxyUrl = 'https://images.weserv.nl/?url=' + encodeURIComponent(url);
-    console.log(`URL Dropbox convertie via proxy: ${corsProxyUrl}`);
-    return corsProxyUrl;
+  // For problematic domains or when proxy is forced, always use proxy
+  const domain = extractDomain(url);
+  
+  // Select the best proxy for this domain (cached or default)
+  let proxyIndex = 0;
+  if (bestProxyCache.has(domain)) {
+    const bestProxy = bestProxyCache.get(domain)!;
+    proxyIndex = PROXIES.indexOf(bestProxy);
+    if (proxyIndex === -1) proxyIndex = 0;
   }
   
-  // Pour les autres URLs externes
-  if (url.startsWith('http') && !url.includes(window.location.hostname)) {
-    if (url.match(/\.(jpe?g|png|gif|webp|svg)$/i)) {
-      // Pour les images, utiliser un proxy spécialisé
-      const corsProxyUrl = 'https://images.weserv.nl/?url=' + encodeURIComponent(url);
-      console.log(`URL image externe convertie via proxy: ${corsProxyUrl}`);
-      return corsProxyUrl;
-    } else {
-      // Pour les autres ressources
-      const corsProxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
-      console.log(`URL externe convertie via proxy: ${corsProxyUrl}`);
-      return corsProxyUrl;
+  const selectedProxy = PROXIES[proxyIndex];
+  return `${selectedProxy}${encodeURIComponent(url)}`;
+}
+
+/**
+ * Updates the best proxy for a domain based on successful fetches
+ */
+export function updateBestProxy(domain: string, proxyUrl: string): void {
+  // Extract which proxy was used
+  for (let i = 0; i < PROXIES.length; i++) {
+    if (proxyUrl.startsWith(PROXIES[i])) {
+      bestProxyCache.set(domain, PROXIES[i]);
+      break;
     }
   }
-  
-  // URLs internes - retourner telles quelles
-  return url;
+}
+
+/**
+ * Extract domain from URL
+ */
+function extractDomain(url: string): string {
+  try {
+    const hostname = new URL(url).hostname;
+    const parts = hostname.split('.');
+    if (parts.length > 2) {
+      return parts.slice(-2).join('.');
+    }
+    return hostname;
+  } catch (e) {
+    return url;
+  }
 }

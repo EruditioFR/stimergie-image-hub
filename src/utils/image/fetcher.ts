@@ -6,7 +6,8 @@ import {
   processedUrlCache, 
   sessionImageCache, 
   generateCacheKey, 
-  manageCacheSize 
+  manageCacheSize,
+  initServiceWorkerCache
 } from './cacheManager';
 
 // Cache partagé entre tous les utilisateurs (localStorage)
@@ -14,8 +15,11 @@ const GLOBAL_CACHE_PREFIX = 'global_img_cache_';
 const GLOBAL_CACHE_MAX_SIZE = 1024 * 1024 * 5; // 5MB max per image for global cache
 
 // Valeurs de timeout optimisées
-const FETCH_TIMEOUT = 10000; // 10 secondes
-const RETRY_DELAY = 500; // 500ms entre les tentatives
+const FETCH_TIMEOUT = 8000; // 8 secondes
+const RETRY_DELAY = 300; // 300ms entre les tentatives
+
+// S'assurer que le Service Worker est enregistré
+initServiceWorkerCache();
 
 /**
  * Tente de récupérer une image depuis le cache global (localStorage)
@@ -86,6 +90,18 @@ export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
     return fetch(url).then(r => r.blob()).catch(() => null);
   }
   
+  // Then check session cache (second fastest)
+  const sessionCached = sessionImageCache.getItem(cacheKey);
+  if (sessionCached) {
+    try {
+      const blob = await base64ToBlob(sessionCached);
+      manageCacheSize(cacheKey);
+      return blob;
+    } catch (error) {
+      console.warn('Failed to use session cached image:', error);
+    }
+  }
+  
   // Then check global cache (localStorage)
   const globalCached = getFromGlobalCache(cacheKey);
   if (globalCached) {
@@ -95,18 +111,6 @@ export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
       return blob;
     } catch (error) {
       console.warn('Failed to use globally cached image:', error);
-    }
-  }
-  
-  // Then check session cache
-  const sessionCached = sessionImageCache.getItem(cacheKey);
-  if (sessionCached) {
-    try {
-      const blob = await base64ToBlob(sessionCached);
-      manageCacheSize(cacheKey);
-      return blob;
-    } catch (error) {
-      console.warn('Failed to use session cached image:', error);
     }
   }
   
@@ -146,7 +150,7 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
     } 
     // Force proxy for problematic domains
     else if (url.includes('stimergie.fr')) {
-      fetchUrl = getProxiedUrl(url);
+      fetchUrl = getProxiedUrl(url, true); // forcer l'utilisation du proxy
     } 
     // For other URLs
     else {
@@ -176,6 +180,9 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
         if (fetchAttempts === 2) {
           // On second attempt, try alternative proxy
           attemptUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+        } else if (fetchAttempts === 3) {
+          // On third attempt, try another alternative
+          attemptUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
         }
         
         const fetchOptions: RequestInit = {

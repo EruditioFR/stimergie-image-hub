@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useImageSelection } from '@/hooks/useImageSelection';
 import { useSearchParams } from 'react-router-dom';
@@ -49,6 +49,7 @@ export function MasonryGrid({
   const { user } = useAuth();
   const { selectedImages, toggleImageSelection, isImageSelected, clearSelection } = useImageSelection();
   const [searchParams] = useSearchParams();
+  const progressiveLoadRef = useRef<boolean>(false);
   
   const isMobile = useIsMobile();
   const isTablet = useMediaQuery('(min-width: 641px) and (max-width: 1023px)');
@@ -89,19 +90,56 @@ export function MasonryGrid({
     return columns;
   }, [images, columnCount]);
 
-  // Enhanced image preloading
+  // Enhanced image preloading with progressive loading
   useEffect(() => {
     if (images.length > 0 && !isLoading) {
-      // First preload visible images (first 12 images)
-      const visibleImageUrls = images.slice(0, 12).map(img => img.src);
+      // Set a flag to avoid re-triggering this effect when it's already running
+      if (progressiveLoadRef.current) return;
+      progressiveLoadRef.current = true;
       
-      // Immediately preload visible images
-      preloadImages(visibleImageUrls);
+      // First batch: Only preload the first few visible images immediately (high priority)
+      const firstBatchCount = Math.min(8, images.length);
+      const firstBatch = images.slice(0, firstBatchCount).map(img => img.src);
       
-      // Then preload the rest with a slight delay
-      if (images.length > 12) {
-        const remainingUrls = images.slice(12).map(img => img.src);
-        setTimeout(() => preloadImages(remainingUrls), 1000);
+      // Second batch: Next set of images with slight delay (medium priority)
+      const secondBatchCount = Math.min(16, images.length) - firstBatchCount;
+      const secondBatch = secondBatchCount > 0 
+        ? images.slice(firstBatchCount, firstBatchCount + secondBatchCount).map(img => img.src)
+        : [];
+        
+      // Third batch: Remaining images with longer delay (low priority)
+      const thirdBatch = images.length > (firstBatchCount + secondBatchCount)
+        ? images.slice(firstBatchCount + secondBatchCount).map(img => img.src)
+        : [];
+      
+      // Immediately start loading first batch
+      preloadImages(firstBatch);
+      
+      // Load second batch after a short delay
+      if (secondBatch.length > 0) {
+        setTimeout(() => {
+          preloadImages(secondBatch);
+        }, 300);
+      }
+      
+      // Load remaining images after user has had time to see the first ones
+      if (thirdBatch.length > 0) {
+        setTimeout(() => {
+          // Load in smaller chunks to avoid overwhelming the browser
+          const chunkSize = 10;
+          for (let i = 0; i < thirdBatch.length; i += chunkSize) {
+            const chunk = thirdBatch.slice(i, i + chunkSize);
+            setTimeout(() => {
+              preloadImages(chunk);
+            }, i * 100); // Stagger the loading of each chunk
+          }
+          
+          // Reset the flag after all images are processed
+          progressiveLoadRef.current = false;
+        }, 800);
+      } else {
+        // Reset the flag if there's no third batch
+        progressiveLoadRef.current = false;
       }
     }
   }, [images, isLoading]);
