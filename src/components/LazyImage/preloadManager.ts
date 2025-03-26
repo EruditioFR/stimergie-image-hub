@@ -2,25 +2,28 @@
 /**
  * Preload utilities for the LazyImage component
  */
-import { getImageCacheKey } from '@/utils/image/cacheManager';
+import { getImageCacheKey } from './cacheUtils';
 import { 
   preloadQueue, 
   imageCache, 
   sessionImageCache, 
-  isPreloading, 
+  isPreloading as _isPreloading, 
   requestedImagesCache, 
   imageErrorCache,
   PRELOAD_BATCH_SIZE,
   PRELOAD_PRIORITY_MEDIUM
 } from './cacheManager';
 
+// Use a local variable for tracking preloading state to avoid modifying the import
+let _currentlyPreloading = _isPreloading;
+
 /**
  * Process the preload queue, loading images in order of priority
  */
 export function processPreloadQueue() {
-  if (isPreloading || preloadQueue.length === 0) return;
+  if (_currentlyPreloading || preloadQueue.length === 0) return;
   
-  isPreloading = true;
+  _currentlyPreloading = true;
   
   // Sort by priority first, then by timestamp (FIFO for same priority)
   preloadQueue.sort((a, b) => {
@@ -59,7 +62,7 @@ export function processPreloadQueue() {
       });
     })
   ).finally(() => {
-    isPreloading = false;
+    _currentlyPreloading = false;
     // Continue with next batch if available
     if (preloadQueue.length > 0) {
       setTimeout(processPreloadQueue, 100);
@@ -82,7 +85,7 @@ export function queueImageForPreload(url: string, priority: number) {
   });
   
   // Start processing the queue if not already processing
-  if (!isPreloading) {
+  if (!_currentlyPreloading) {
     processPreloadQueue();
   }
 }
