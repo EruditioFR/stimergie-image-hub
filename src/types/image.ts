@@ -1,4 +1,11 @@
 
+export interface Image {
+  id: string;
+  src: string;
+  alt: string;
+  title?: string;
+}
+
 export interface ImageForGrid {
   id: string;
   src: string;
