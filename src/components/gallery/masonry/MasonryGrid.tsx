@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -33,7 +34,8 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
   const [selectedImage, setSelectedImage] = useState<ImageForGrid | null>(null);
   const [isToolbarVisible, setIsToolbarVisible] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [selectedImageIds, toggleImageSelection, clearSelection] = useImageSelection();
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const { selectedImages, toggleImageSelection, isImageSelected, clearSelection } = useImageSelection();
   
   // Calculate images per column
   const imagesPerColumn = useMemo(() => {
@@ -82,35 +84,39 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
   const handleImageSelection = (imageId: string) => {
     toggleImageSelection(imageId);
   };
+
+  // Handle share dialog
+  const handleShareDialogChange = (isOpen: boolean) => {
+    setIsShareDialogOpen(isOpen);
+  };
   
   // Handle toolbar visibility
   useEffect(() => {
-    if (selectedImageIds.length > 0) {
+    if (selectedImages.length > 0) {
       setIsToolbarVisible(true);
     } else {
       setIsToolbarVisible(false);
     }
-  }, [selectedImageIds]);
+  }, [selectedImages]);
   
   return (
     <div className="relative">
       {/* Toolbar */}
       {isSelectionMode && (
         <SelectionToolbar
-          selectedCount={selectedImageIds.length}
-          onClose={() => {
-            setIsSelectionMode(false);
-            clearSelection();
-          }}
+          selectedCount={selectedImages.length}
+          onClearSelection={() => clearSelection()}
+          onDownload={() => {}}
+          onShare={() => setIsShareDialogOpen(true)}
         />
       )}
       
       {/* Masonry Header */}
       <MasonryToolbar
-        columns={columns}
-        onColumnChange={handleColumnChange}
-        onSelectionMode={handleSelectionMode}
-        isSelectionMode={isSelectionMode}
+        selectedImages={selectedImages}
+        clearSelection={clearSelection}
+        onShareDialogChange={handleShareDialogChange}
+        images={images}
       />
       
       {/* Grid */}
@@ -119,16 +125,15 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
           <MasonryColumn
             key={index}
             images={columnImages}
+            isImageSelected={isImageSelected}
+            toggleImageSelection={toggleImageSelection}
             onImageClick={handleImageClick}
-            isSelectionMode={isSelectionMode}
-            selectedImageIds={selectedImageIds}
-            onImageSelection={handleImageSelection}
           />
         ))}
       </div>
       
       {/* Loading */}
-      {isLoading && <MasonryLoading />}
+      {isLoading && <MasonryLoading columnCount={columns} />}
       
       {/* Pagination */}
       {onPageChange && currentPage && totalCount && (
@@ -149,11 +154,15 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
       )}
       
       {/* Detail Modal */}
-      <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh]">
-          <MasonryDetailModal image={selectedImage} onClose={handleCloseDetail} />
-        </DialogContent>
-      </Dialog>
+      <MasonryDetailModal
+        image={selectedImage}
+        isOpen={isDetailOpen}
+        onClose={handleCloseDetail}
+        isShareDialogOpen={isShareDialogOpen}
+        setIsShareDialogOpen={setIsShareDialogOpen}
+        selectedImages={selectedImages}
+        images={images}
+      />
     </div>
   );
 };
