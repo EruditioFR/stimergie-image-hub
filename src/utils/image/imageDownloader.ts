@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
 import { Image } from './types';
-import { isDropboxUrl, getDropboxDownloadUrl, getProxiedUrl, debugImageUrl } from './urlUtils';
+import { isDropboxUrl, getDropboxDownloadUrl, getProxiedUrl, debugImageUrl, validateImageUrl } from './urlUtils';
 import { determineFileExtension, generateNormalizedFilename } from './fileUtils';
 import { fetchImageAsBlob } from './fetchUtils';
 
@@ -34,7 +34,10 @@ export async function downloadImages(images: Image[]) {
         }
         
         // Sélectionner la meilleure URL pour le téléchargement
-        const imageUrl = img.download_url || img.src || img.url_miniature || img.url;
+        let imageUrl = img.download_url || img.src || img.url_miniature || img.url;
+        
+        // S'assurer que l'URL utilise www.stimergie.fr
+        imageUrl = validateImageUrl(imageUrl);
         
         if (!imageUrl) {
           console.error(`Aucune URL disponible pour l'image: ${img.title || 'Sans titre'}`);

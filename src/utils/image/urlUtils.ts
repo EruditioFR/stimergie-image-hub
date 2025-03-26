@@ -141,6 +141,12 @@ export function validateImageUrl(url: string): string {
   try {
     // Vérifier si l'URL est bien formée
     new URL(url);
+    
+    // Vérifier si c'est une URL Stimergie et ajouter www si nécessaire
+    if (url.includes('stimergie.fr') && !url.includes('www.stimergie.fr')) {
+      return url.replace('https://stimergie.fr', 'https://www.stimergie.fr');
+    }
+    
     return url;
   } catch (e) {
     console.warn('URL invalide:', url);
@@ -156,6 +162,7 @@ export function debugImageUrl(url: string): void {
     url,
     isValid: Boolean(url) && url.startsWith('http'),
     length: url?.length || 0,
-    containsSpecialChars: /[^a-zA-Z0-9\-_\.\/:]/.test(url)
+    containsSpecialChars: /[^a-zA-Z0-9\-_\.\/:]/.test(url),
+    domain: url ? extractDomain(url) : 'none'
   });
 }

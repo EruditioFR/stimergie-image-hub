@@ -1,6 +1,6 @@
+
 import { useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { formatImagesForGrid } from '@/utils/imageUtils';
 import { useGalleryFilters } from './useGalleryFilters';
 import { useAuth } from '@/context/AuthContext';
 import { useGalleryClient } from './gallery/useGalleryClient';
@@ -8,6 +8,7 @@ import { useGalleryCache } from './gallery/useGalleryCache';
 import { useGalleryPagination } from './gallery/useGalleryPagination';
 import { useGalleryFiltersHandlers } from './gallery/useGalleryFiltersHandlers';
 import { useGalleryQueryState } from './gallery/useGalleryQueryState';
+import { validateImageUrl } from '@/utils/image/urlUtils';
 
 export const useGalleryImages = (isAdmin: boolean) => {
   const [searchParams] = useSearchParams();
@@ -135,16 +136,22 @@ export const useGalleryImages = (isAdmin: boolean) => {
   }, [prefetchNextPage, isLoading, isFetching, shouldFetchRandom, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, currentPage, totalCount, userRole, userClientId]);
 
   const formatImagesForGrid = useCallback((images: any[] = []) => {
-    return images.map(image => ({
-      id: image.id.toString(),
-      src: image.display_url || image.url_miniature || image.url || '',
-      download_url: image.download_url || image.url || '',
-      alt: image.title || "Image sans titre",
-      title: image.title || "Sans titre",
-      author: image.created_by || 'Utilisateur',
-      tags: image.tags || [],
-      orientation: image.orientation || 'landscape'
-    }));
+    return images.map(image => {
+      // S'assurer que les URLs sont au format correct avec www
+      const srcUrl = validateImageUrl(image.display_url) || validateImageUrl(image.url_miniature) || validateImageUrl(image.url) || '';
+      const downloadUrl = validateImageUrl(image.download_url) || validateImageUrl(image.url) || '';
+
+      return {
+        id: image.id.toString(),
+        src: srcUrl,
+        download_url: downloadUrl,
+        alt: image.title || "Image sans titre",
+        title: image.title || "Sans titre",
+        author: image.created_by || 'Utilisateur',
+        tags: image.tags || [],
+        orientation: image.orientation || 'landscape'
+      };
+    });
   }, []);
 
   return {

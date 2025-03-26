@@ -5,7 +5,7 @@
 
 /**
  * Génère l'URL d'affichage pour une image (format PNG pour affichage)
- * Format: https://stimergie.fr/photos/[nom du dossier]/PNG/[titre].png
+ * Format: https://www.stimergie.fr/photos/[nom du dossier]/PNG/[titre].png
  */
 export function generateDisplayImageUrl(folderName: string, imageTitle: string): string {
   if (!folderName || !imageTitle) {
@@ -18,13 +18,13 @@ export function generateDisplayImageUrl(folderName: string, imageTitle: string):
   const cleanFolder = folderName.trim();
   const cleanTitle = imageTitle.trim();
   
-  // Construire l'URL sans encodage pour plus de lisibilité
-  return `https://stimergie.fr/photos/${cleanFolder}/PNG/${cleanTitle}.png`;
+  // Construire l'URL avec www.stimergie.fr au lieu de stimergie.fr
+  return `https://www.stimergie.fr/photos/${cleanFolder}/PNG/${cleanTitle}.png`;
 }
 
 /**
  * Génère l'URL de téléchargement pour une image (format original)
- * Format: https://stimergie.fr/photos/[nom du dossier]/[titre].png
+ * Format: https://www.stimergie.fr/photos/[nom du dossier]/[titre].png
  */
 export function generateDownloadImageUrl(folderName: string, imageTitle: string): string {
   if (!folderName || !imageTitle) {
@@ -37,8 +37,8 @@ export function generateDownloadImageUrl(folderName: string, imageTitle: string)
   const cleanFolder = folderName.trim();
   const cleanTitle = imageTitle.trim();
   
-  // Construire l'URL sans encodage pour plus de lisibilité
-  return `https://stimergie.fr/photos/${cleanFolder}/${cleanTitle}.png`;
+  // Construire l'URL avec www.stimergie.fr au lieu de stimergie.fr
+  return `https://www.stimergie.fr/photos/${cleanFolder}/${cleanTitle}.png`;
 }
 
 /**

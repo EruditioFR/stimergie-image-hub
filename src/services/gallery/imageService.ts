@@ -4,6 +4,7 @@ import { parseTagsString } from "@/utils/imageUtils";
 import { toast } from "sonner";
 import { buildGalleryQuery, applyPaginationToQuery } from "./queryBuilder";
 import { generateDisplayImageUrl, generateDownloadImageUrl } from "@/utils/image/imageUrlGenerator";
+import { validateImageUrl } from "@/utils/image/urlUtils";
 
 /**
  * Fetches gallery images with filtering options - optimisé pour réduire les appels API
@@ -58,18 +59,22 @@ export async function fetchGalleryImages(
     const folderName = img.projets?.nom_dossier || "default";
     const imageTitle = img.title || `image-${img.id}`;
     
-    // Garder les URLs originales comme fallback
-    const display_url = generateDisplayImageUrl(folderName, imageTitle) || img.url_miniature || img.url;
-    const download_url = generateDownloadImageUrl(folderName, imageTitle) || img.url;
+    // Générer les nouvelles URLs avec le préfixe www
+    const display_url = generateDisplayImageUrl(folderName, imageTitle);
+    const download_url = generateDownloadImageUrl(folderName, imageTitle);
+    
+    // Valider et corriger les URLs si nécessaire
+    const validated_display_url = validateImageUrl(display_url) || img.url_miniature || img.url;
+    const validated_download_url = validateImageUrl(download_url) || img.url;
     
     return {
       ...img,
       // Générer les nouvelles URLs
-      display_url: display_url,
-      download_url: download_url,
+      display_url: validated_display_url,
+      download_url: validated_download_url,
       // Conserver les anciens champs pour rétrocompatibilité
-      url: img.url || display_url,
-      url_miniature: img.url_miniature || display_url,
+      url: img.url || validated_display_url,
+      url_miniature: img.url_miniature || validated_display_url,
       // Parser les tags
       tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
     };
