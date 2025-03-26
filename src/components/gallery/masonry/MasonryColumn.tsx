@@ -1,13 +1,24 @@
 
 import React, { memo } from 'react';
 import { ImageCard } from '@/components/ImageCard';
-import { type ImageForGrid } from '@/types/image';
+
+interface Image {
+  id: string;
+  src: string;
+  alt: string;
+  title: string;
+  author: string;
+  tags?: string[];
+  orientation?: string;
+  display_url?: string;
+  download_url?: string;
+}
 
 interface MasonryColumnProps {
-  images: ImageForGrid[];
+  images: Image[];
   isImageSelected: (id: string) => boolean;
   toggleImageSelection: (id: string) => void;
-  onImageClick?: (image: ImageForGrid) => void;
+  onImageClick?: (image: Image) => void;
 }
 
 // Composant optimisé avec memo pour éviter les re-renders inutiles
@@ -39,10 +50,10 @@ const ImageItem = memo(function ImageItem({
   onToggleSelection,
   onImageClick
 }: {
-  image: ImageForGrid;
+  image: Image;
   isSelected: boolean;
   onToggleSelection: () => void;
-  onImageClick?: (image: ImageForGrid) => void;
+  onImageClick?: (image: Image) => void;
 }) {
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -95,10 +106,6 @@ const ImageItem = memo(function ImageItem({
           // Use best available image URL
           src={imageSrc}
           downloadUrl={image.download_url}
-          // Provide fallbacks for required props
-          alt={image.alt || image.title || ""}
-          title={image.title || ""} // Add fallback for title prop
-          author={image.author || "Unknown"} // Add fallback for author prop
         />
       </div>
     </div>

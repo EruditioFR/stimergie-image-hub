@@ -1,10 +1,12 @@
 
-// Exporter les fonctionnalités de base sans cache
+// Exporter toutes les fonctionnalités pour faciliter l'importation
 export * from './types';
 export * from './urlUtils';
 export * from './fileUtils';
-// Export blobUtils but explicitly export what we need
-export { blobToBase64, base64ToBlob, isImageInBrowserCache } from './blobUtils';
+export * from './fetcher';
+export * from './blobUtils';
+export * from './cacheManager';
 export * from './imageDownloader';
-// Export fetchUtils but avoid re-exporting isHtmlContent
+
+// For backward compatibility
 export * from './fetchUtils';

@@ -1,4 +1,3 @@
-
 import { useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { formatImagesForGrid } from '@/utils/imageUtils';
@@ -129,9 +128,21 @@ export const useGalleryImages = (isAdmin: boolean) => {
 
   // Préchargement de la page suivante
   useEffect(() => {
-    // Call prefetchNextPage without arguments
-    prefetchNextPage();
-  }, [prefetchNextPage]);
+    prefetchNextPage(
+      isLoading,
+      isFetching,
+      shouldFetchRandom,
+      searchQuery,
+      tagFilter,
+      activeTab,
+      selectedClient,
+      selectedProject,
+      currentPage,
+      totalCount,
+      userRole,
+      userClientId
+    );
+  }, [prefetchNextPage, isLoading, isFetching, shouldFetchRandom, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, currentPage, totalCount, userRole, userClientId]);
 
   const formatImagesForGrid = useCallback((images: any[] = []) => {
     return images.map(image => ({
