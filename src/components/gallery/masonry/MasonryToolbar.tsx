@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Share } from 'lucide-react';
 import { toast } from 'sonner';
-import { downloadImages } from '@/utils/image';
+import { downloadImagesAsZip } from '@/utils/image';
 import { Image } from '@/utils/image/types';
 
 interface MasonryToolbarProps {
@@ -28,7 +28,15 @@ export function MasonryToolbar({
     }
     
     const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
-    await downloadImages(selectedImagesData);
+    
+    // Create array with the format expected by downloadImagesAsZip
+    const imagesForDownload = selectedImagesData.map(img => ({
+      url: img.download_url || img.src,
+      title: img.title,
+      id: img.id
+    }));
+    
+    await downloadImagesAsZip(imagesForDownload);
   };
 
   const openShareDialog = () => {

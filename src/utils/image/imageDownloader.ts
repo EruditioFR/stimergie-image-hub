@@ -47,9 +47,9 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
     }
     
     // Create a download link and trigger it
-    const url = URL.createObjectURL(blob);
+    const downloadUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
+    a.href = downloadUrl;
     a.download = downloadFilename;
     document.body.appendChild(a);
     a.click();
@@ -57,7 +57,7 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
     // Clean up
     setTimeout(() => {
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(downloadUrl);
     }, 100);
     
   } catch (error) {
