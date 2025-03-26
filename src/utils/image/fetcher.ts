@@ -338,6 +338,8 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
     console.error("Error during download:", error);
     return null;
   } finally {
-    clearTimeout(timeoutId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   }
 }
