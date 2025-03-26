@@ -32,7 +32,11 @@ export function MasonryDetailModal({
   const handleDownload = () => {
     if (image) {
       const downloadUrl = image.download_url || image.url_miniature || image.src || image.url;
-      window.open(downloadUrl, '_blank');
+      if (downloadUrl) {
+        window.open(downloadUrl, '_blank');
+      } else {
+        console.error('Aucune URL de téléchargement disponible pour cette image');
+      }
     }
   };
 
@@ -139,6 +143,16 @@ export function MasonryDetailModal({
             style={{ 
               transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
               transformOrigin: 'center',
+            }}
+            onError={(e) => {
+              console.error('Erreur de chargement d\'image:', e, image);
+              const imgElement = e.target as HTMLImageElement;
+              const currentSrc = imgElement.src;
+              if (currentSrc === image?.display_url && image?.url_miniature) {
+                imgElement.src = image.url_miniature;
+              } else if (currentSrc === image?.url_miniature && image?.url) {
+                imgElement.src = image.url;
+              }
             }}
           />
         </div>

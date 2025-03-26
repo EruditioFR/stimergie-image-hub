@@ -53,19 +53,23 @@ export async function fetchGalleryImages(
   
   console.log(`Fetched ${data?.length || 0} images`);
   
-  // Transformer les données pour utiliser le nouveau format d'URL
+  // Transformer les données pour utiliser le nouveau format d'URL sans encodage
   const transformedData = (data || []).map(img => {
     const folderName = img.projets?.nom_dossier || "default";
     const imageTitle = img.title || `image-${img.id}`;
     
+    // Garder les URLs originales comme fallback
+    const display_url = generateDisplayImageUrl(folderName, imageTitle) || img.url_miniature || img.url;
+    const download_url = generateDownloadImageUrl(folderName, imageTitle) || img.url;
+    
     return {
       ...img,
       // Générer les nouvelles URLs
-      display_url: generateDisplayImageUrl(folderName, imageTitle),
-      download_url: generateDownloadImageUrl(folderName, imageTitle),
+      display_url: display_url,
+      download_url: download_url,
       // Conserver les anciens champs pour rétrocompatibilité
-      url: img.url,
-      url_miniature: img.url_miniature,
+      url: img.url || display_url,
+      url_miniature: img.url_miniature || display_url,
       // Parser les tags
       tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
     };

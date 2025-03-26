@@ -24,6 +24,9 @@ export function isDropboxUrl(url: string): boolean {
  * Extracts direct download link from a Dropbox URL
  */
 export function getDropboxDownloadUrl(url: string): string {
+  // Si l'URL est vide, retourner une chaîne vide
+  if (!url) return '';
+
   // If already a direct link, return as is
   if (url.includes('dl.dropboxusercontent.com') || url.includes('dl=1')) {
     return url;
@@ -41,6 +44,9 @@ export function getDropboxDownloadUrl(url: string): string {
  * Gets a proxied URL to bypass CORS issues with improved proxy selection
  */
 export function getProxiedUrl(url: string, forceProxy = false): string {
+  // Si l'URL est vide, retourner une chaîne vide
+  if (!url) return '';
+
   // Don't proxy if not needed
   if (!forceProxy && (url.includes(window.location.hostname) || url.startsWith('blob:') || url.startsWith('data:'))) {
     return url;
@@ -124,3 +130,32 @@ export function isVectorImage(url: string): boolean {
   return url.toLowerCase().endsWith('.svg');
 }
 
+/**
+ * Vérifie et valide une URL d'image
+ * @param url URL à vérifier
+ * @returns URL originale ou URL corrigée
+ */
+export function validateImageUrl(url: string): string {
+  if (!url) return '';
+  
+  try {
+    // Vérifier si l'URL est bien formée
+    new URL(url);
+    return url;
+  } catch (e) {
+    console.warn('URL invalide:', url);
+    return '';
+  }
+}
+
+/**
+ * Affiche des informations de débogage sur une URL d'image
+ */
+export function debugImageUrl(url: string): void {
+  console.log('Image URL Debug:', {
+    url,
+    isValid: Boolean(url) && url.startsWith('http'),
+    length: url?.length || 0,
+    containsSpecialChars: /[^a-zA-Z0-9\-_\.\/:]/.test(url)
+  });
+}

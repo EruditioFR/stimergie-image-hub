@@ -13,11 +13,13 @@ export function generateDisplayImageUrl(folderName: string, imageTitle: string):
     return '';
   }
   
-  // Échapper correctement les caractères spéciaux dans l'URL
-  const encodedFolder = encodeURIComponent(folderName);
-  const encodedTitle = encodeURIComponent(imageTitle);
+  // Nettoyer les caractères spéciaux du titre et du dossier pour l'URL 
+  // Mais sans les encoder completement pour garder la lisibilité
+  const cleanFolder = folderName.trim();
+  const cleanTitle = imageTitle.trim();
   
-  return `https://stimergie.fr/photos/${encodedFolder}/PNG/${encodedTitle}.png`;
+  // Construire l'URL sans encodage pour plus de lisibilité
+  return `https://stimergie.fr/photos/${cleanFolder}/PNG/${cleanTitle}.png`;
 }
 
 /**
@@ -30,11 +32,13 @@ export function generateDownloadImageUrl(folderName: string, imageTitle: string)
     return '';
   }
   
-  // Échapper correctement les caractères spéciaux dans l'URL
-  const encodedFolder = encodeURIComponent(folderName);
-  const encodedTitle = encodeURIComponent(imageTitle);
+  // Nettoyer les caractères spéciaux du titre et du dossier pour l'URL
+  // Mais sans les encoder completement pour garder la lisibilité
+  const cleanFolder = folderName.trim();
+  const cleanTitle = imageTitle.trim();
   
-  return `https://stimergie.fr/photos/${encodedFolder}/${encodedTitle}.png`;
+  // Construire l'URL sans encodage pour plus de lisibilité
+  return `https://stimergie.fr/photos/${cleanFolder}/${cleanTitle}.png`;
 }
 
 /**

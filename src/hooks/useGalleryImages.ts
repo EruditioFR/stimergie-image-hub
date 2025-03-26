@@ -15,7 +15,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const tagFilter = searchParams.get('tag') || '';
   const { userRole, user } = useAuth();
 
-  // Extraction des fonctionnalités dans des hooks spécialisés
   const { userClientId, enforceClientForNonAdmin, canChangeClient } = useGalleryClient(user, userRole);
   
   const {
@@ -30,7 +29,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     updateFilterStatus
   } = useGalleryFilters();
 
-  // Hook pour la pagination
   const {
     currentPage,
     totalCount,
@@ -49,7 +47,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     userClientId
   });
 
-  // Hook pour la gestion du cache
   const {
     cancelPreviousRequest,
     setPreviousRequest,
@@ -57,7 +54,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     prefetchNextPage
   } = useGalleryCache();
 
-  // Gestionnaires de filtres
   const {
     handleClientChange,
     handleProjectChange
@@ -77,7 +73,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     userClientId
   });
 
-  // État de la requête d'images
   const {
     allImages,
     isLoading,
@@ -95,22 +90,18 @@ export const useGalleryImages = (isAdmin: boolean) => {
     userClientId
   });
 
-  // Réinitialisation des filtres et optimisation des requêtes
   useEffect(() => {
     resetPagination();
     
-    // Modifier pour s'assurer de la récupération aléatoire lors du chargement initial sans filtres
     updateRandomFetchMode(searchQuery, tagFilter, activeTab, selectedProject, userRole, selectedClient);
     
     updateFilterStatus(searchQuery, tagFilter);
   }, [searchQuery, tagFilter, activeTab, updateFilterStatus, selectedClient, selectedProject, userRole, updateRandomFetchMode, resetPagination]);
 
-  // Forcer le client_id pour les utilisateurs non-admin
   useEffect(() => {
     enforceClientForNonAdmin(selectedClient, baseHandleClientChange);
   }, [userRole, userClientId, baseHandleClientChange, selectedClient, enforceClientForNonAdmin]);
 
-  // Récupération du nombre total optimisée
   useEffect(() => {
     if (isFetching || isLoading) return;
     fetchTotalCount(
@@ -126,7 +117,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     );
   }, [fetchTotalCount, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, isFetching, isLoading, totalCount, userRole, userClientId, setTotalCount]);
 
-  // Préchargement de la page suivante
   useEffect(() => {
     prefetchNextPage(
       isLoading,
@@ -147,13 +137,13 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const formatImagesForGrid = useCallback((images: any[] = []) => {
     return images.map(image => ({
       id: image.id.toString(),
-      src: image.display_url || image.url_miniature || image.url,
-      download_url: image.download_url,
-      alt: image.title || "Image",
+      src: image.display_url || image.url_miniature || image.url || '',
+      download_url: image.download_url || image.url || '',
+      alt: image.title || "Image sans titre",
       title: image.title || "Sans titre",
       author: image.created_by || 'Utilisateur',
-      tags: image.tags,
-      orientation: image.orientation
+      tags: image.tags || [],
+      orientation: image.orientation || 'landscape'
     }));
   }, []);
 

@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
 import { Image } from './types';
-import { isDropboxUrl, getDropboxDownloadUrl, getProxiedUrl } from './urlUtils';
+import { isDropboxUrl, getDropboxDownloadUrl, getProxiedUrl, debugImageUrl } from './urlUtils';
 import { determineFileExtension, generateNormalizedFilename } from './fileUtils';
 import { fetchImageAsBlob } from './fetchUtils';
 
@@ -33,19 +33,31 @@ export async function downloadImages(images: Image[]) {
           });
         }
         
+        // Sélectionner la meilleure URL pour le téléchargement
+        const imageUrl = img.download_url || img.src || img.url_miniature || img.url;
+        
+        if (!imageUrl) {
+          console.error(`Aucune URL disponible pour l'image: ${img.title || 'Sans titre'}`);
+          errorCount++;
+          return false;
+        }
+        
+        // Afficher des informations de débogage sur l'URL
+        debugImageUrl(imageUrl);
+        
         // Télécharger l'image comme blob
-        const blob = await fetchImageAsBlob(img.src);
+        const blob = await fetchImageAsBlob(imageUrl);
         
         // Si le téléchargement a échoué, passer à l'image suivante
         if (!blob) {
-          console.error(`Impossible de télécharger l'image: ${img.src}`);
+          console.error(`Impossible de télécharger l'image: ${imageUrl}`);
           toast.error(`Échec de téléchargement: ${img.title || 'Image ' + (index + 1)}`);
           errorCount++;
           return false;
         }
         
         // Déterminer l'extension du fichier
-        const extension = determineFileExtension(blob, img.src);
+        const extension = determineFileExtension(blob, imageUrl);
         
         // Générer un nom de fichier normalisé
         const filename = generateNormalizedFilename(img.title, index, extension);
