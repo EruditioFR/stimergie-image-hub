@@ -7,10 +7,14 @@ export interface Image {
   author?: string;
   tags?: string[];
   orientation?: string;
-  // Ces URLs sont utilisées pour l'affichage et le téléchargement
-  display_url?: string;
-  download_url?: string;
-  // Pour rétrocompatibilité
+  width?: number;
+  height?: number;
+  created_at?: string;
+  description?: string;
+  // These URLs are used for display and download
+  display_url: string;  // Now required
+  download_url: string; // Now required
+  // For backwards compatibility
   url_miniature?: string;
   url?: string;
 }

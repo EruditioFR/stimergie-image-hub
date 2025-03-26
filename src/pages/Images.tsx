@@ -11,6 +11,8 @@ import { MasonryGrid } from '@/components/gallery/masonry/MasonryGrid';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { Image as ImageType } from '@/utils/image/types';
+import { generateDisplayImageUrl, generateDownloadImageUrl } from '@/utils/image/imageUrlGenerator';
 
 export interface Image {
   id: number;
@@ -39,7 +41,7 @@ const Images = () => {
     console.log("Fetching all images");
     const { data, error } = await supabase
       .from('images')
-      .select('*')
+      .select('*, projets!id_projet (nom_dossier)')
       .order('created_at', { ascending: false });
       
     if (error) {
@@ -53,10 +55,23 @@ const Images = () => {
     }
     
     console.log(`Fetched ${data.length} images`);
-    return data.map(img => ({
-      ...img,
-      tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
-    })) as Image[];
+    
+    // Transform data to include display and download URLs
+    return data.map(img => {
+      const folderName = img.projets?.nom_dossier || "";
+      const imageTitle = img.title || `image-${img.id}`;
+      
+      // Generate URLs using our utility functions
+      const display_url = generateDisplayImageUrl(folderName, imageTitle);
+      const download_url = generateDownloadImageUrl(folderName, imageTitle);
+      
+      return {
+        ...img,
+        display_url,
+        download_url,
+        tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
+      };
+    }) as Image[];
   };
   
   const parseTagsString = (tagsString: string | null): string[] | null => {
@@ -94,11 +109,17 @@ const Images = () => {
     return images.map(image => ({
       id: image.id.toString(),
       src: image.url_miniature || image.url,
+      display_url: image.display_url,
+      download_url: image.download_url,
       alt: image.title,
       title: image.title,
       author: 'User',
-      tags: image.tags
-    }));
+      tags: image.tags,
+      width: image.width,
+      height: image.height,
+      orientation: image.orientation,
+      created_at: image.created_at
+    } as ImageType));
   };
   
   return (
@@ -121,7 +142,7 @@ const Images = () => {
                   isLoading={isLoading} 
                 />
               ) : (
-                <ImagesTable images={images || []} />
+                <ImagesTable images={formatImagesForGrid(images) || []} />
               )}
             </>
           )}

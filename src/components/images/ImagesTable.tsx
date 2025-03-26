@@ -1,5 +1,5 @@
 
-import { Image } from '@/pages/Images';
+import { Image } from '@/utils/image/types';
 import {
   Table,
   TableBody,
@@ -43,7 +43,7 @@ export function ImagesTable({ images }: ImagesTableProps) {
                 <TableCell>
                   <div className="h-16 w-16 relative overflow-hidden rounded">
                     <img 
-                      src={image.display_url || image.url_miniature || image.url} 
+                      src={image.display_url || image.src} 
                       alt={image.title} 
                       className="object-cover h-full w-full" 
                       loading="lazy"
@@ -72,7 +72,7 @@ export function ImagesTable({ images }: ImagesTableProps) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  {formatDistanceToNow(new Date(image.created_at), { 
+                  {formatDistanceToNow(new Date(image.created_at || ''), { 
                     addSuffix: true,
                     locale: fr 
                   })}
