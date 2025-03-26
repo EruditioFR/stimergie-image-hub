@@ -149,9 +149,9 @@ export const useGalleryImages = (isAdmin: boolean) => {
       id: image.id.toString(),
       src: image.display_url || image.url_miniature || image.url,
       download_url: image.download_url,
-      alt: image.title,
-      title: image.title,
-      author: 'User',
+      alt: image.title || "Image",
+      title: image.title || "Sans titre",
+      author: image.created_by || 'Utilisateur',
       tags: image.tags,
       orientation: image.orientation
     }));

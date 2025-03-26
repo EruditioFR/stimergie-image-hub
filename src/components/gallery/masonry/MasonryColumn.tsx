@@ -1,6 +1,7 @@
 
 import React, { memo } from 'react';
 import { ImageCard } from '@/components/ImageCard';
+import { debugImageUrl } from '@/utils/image';
 
 interface Image {
   id: string;
@@ -65,6 +66,13 @@ const ImageItem = memo(function ImageItem({
   
   // Prioritize the best available image URL
   const imageSrc = image.display_url || image.src;
+  const downloadUrl = image.download_url || image.display_url || image.src;
+  
+  // Debug URL si elle semble problématique
+  if (!imageSrc || imageSrc.length < 10) {
+    debugImageUrl(imageSrc);
+    console.log('Image data:', image);
+  }
   
   return (
     <div className="opacity-100 relative group">
@@ -105,7 +113,11 @@ const ImageItem = memo(function ImageItem({
           onClick={handleClick}
           // Use best available image URL
           src={imageSrc}
-          downloadUrl={image.download_url}
+          downloadUrl={downloadUrl}
+          // S'assurer que les propriétés requises ont toujours des valeurs
+          title={image.title || "Sans titre"}
+          author={image.author || "Inconnu"}
+          alt={image.alt || image.title || "Image"}
         />
       </div>
     </div>

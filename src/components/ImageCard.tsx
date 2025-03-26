@@ -49,6 +49,14 @@ export const ImageCard = memo(function ImageCard({
   // For fallback in case of errors
   const fallbackSrc = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22800%22%20height%3D%22600%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20800%20600%22%20preserveAspectRatio%3D%22none%22%3E%3Cdefs%3E%3Cstyle%20type%3D%22text%2Fcss%22%3E%23holder_15e8b29e358%20text%20%7B%20fill%3A%23AAA%3Bfont-weight%3Anormal%3Bfont-family%3AHelvetica%2C%20monospace%3Bfont-size%3A40pt%20%7D%20%3C%2Fstyle%3E%3C%2Fdefs%3E%3Cg%20id%3D%22holder_15e8b29e358%22%3E%3Crect%20width%3D%22800%22%20height%3D%22600%22%20fill%3D%22%23F5F5F5%22%3E%3C%2Frect%3E%3Cg%3E%3Ctext%20x%3D%22285%22%20y%3D%22320%22%3E%3C%2Ftext%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E';
 
+  // S'assurer que l'URL de téléchargement est définie correctement
+  const handleDownload = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = downloadUrl || src;
+    window.open(url, '_blank');
+  };
+
   return (
     <div 
       className={cn(
@@ -101,11 +109,7 @@ export const ImageCard = memo(function ImageCard({
           size="icon" 
           variant="secondary" 
           className="bg-white/90 hover:bg-white w-8 h-8 rounded-full shadow-md"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            window.open(downloadUrl || src, '_blank');
-          }}
+          onClick={handleDownload}
         >
           <Download className="h-4 w-4 text-foreground" />
           <span className="sr-only">Télécharger</span>
