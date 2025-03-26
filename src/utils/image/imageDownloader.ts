@@ -1,124 +1,153 @@
 
+/**
+ * Utility functions for image downloading
+ */
+
+import { toast } from 'sonner';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import { toast } from 'sonner';
-import { Image } from './types';
-import { getProxiedUrl, debugImageUrl, validateImageUrl } from './urlUtils';
-import { determineFileExtension, generateNormalizedFilename } from './fileUtils';
-import { fetchImageAsBlob } from './fetchUtils';
 
-export async function downloadImages(images: Image[]) {
-  if (images.length === 0) {
-    toast.error("Veuillez sélectionner au moins une image");
-    return;
-  }
-
+/**
+ * Download a single image
+ */
+export async function downloadImage(url: string, filename?: string): Promise<void> {
   try {
-    toast.info(`Préparation du téléchargement de ${images.length} images...`);
+    // Clean URL by removing query parameters
+    const cleanUrl = url.split('?')[0];
+    
+    // Try to download the image directly
+    // Use fetch with credentials: 'omit' to avoid CORS issues
+    const response = await fetch(cleanUrl, {
+      method: 'GET',
+      credentials: 'omit',
+      cache: 'no-store',
+      redirect: 'follow',
+      headers: {
+        'Cache-Control': 'no-cache',
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to download image: ${response.status} ${response.statusText}`);
+    }
+    
+    const blob = await response.blob();
+    
+    // Generate a default filename if not provided
+    let downloadFilename = filename;
+    if (!downloadFilename) {
+      // Extract filename from URL or use default
+      const urlParts = cleanUrl.split('/');
+      downloadFilename = urlParts[urlParts.length - 1] || 'image.jpg';
+      
+      // Make sure it has an extension
+      if (!downloadFilename.includes('.')) {
+        downloadFilename += '.jpg';
+      }
+    }
+    
+    // Create a download link and trigger it
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = downloadFilename;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+    
+  } catch (error) {
+    console.error('Error downloading image:', error);
+    toast.error('Erreur lors du téléchargement', {
+      description: 'Impossible de télécharger cette image.'
+    });
+  }
+}
+
+/**
+ * Download multiple images as a ZIP file
+ */
+export async function downloadImagesAsZip(images: Array<{
+  url: string;
+  title?: string;
+  id?: string | number;
+}>, zipFilename: string = 'images.zip'): Promise<void> {
+  try {
+    toast.info('Création du fichier ZIP en cours...');
     
     const zip = new JSZip();
-    let successCount = 0;
-    let errorCount = 0;
+    const folder = zip.folder('images');
     
-    // Afficher une notification de progression
-    const progressToastId = toast.loading(`Téléchargement des images en cours (0/${images.length})...`);
+    // If folder is null, throw an error
+    if (!folder) {
+      throw new Error('Failed to create folder in ZIP file');
+    }
     
-    // Tableau pour stocker les promesses de téléchargement - Téléchargement parallèle sans délai
-    const downloadPromises = images.map(async (img, index) => {
+    // Download each image and add to ZIP
+    const downloadPromises = images.map(async (image, index) => {
       try {
-        // Mise à jour de la toast de progression tous les 5 téléchargements pour réduire les mises à jour UI
-        if (index % 5 === 0 || index === images.length - 1) {
-          toast.loading(`Téléchargement des images en cours (${index}/${images.length})...`, {
-            id: progressToastId
-          });
+        // Clean URL by removing query parameters
+        const cleanUrl = image.url.split('?')[0];
+        
+        // Generate a unique filename
+        let filename = `image_${index + 1}.jpg`;
+        
+        // Use provided title or ID for filename if available
+        if (image.title) {
+          // Clean the title for use as a filename
+          filename = image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.jpg';
+        } else if (image.id) {
+          filename = `image_${image.id}.jpg`;
         }
         
-        // Sélectionner la meilleure URL pour le téléchargement
-        let imageUrl = img.download_url || img.src || img.url_miniature || img.url || '';
+        // Fetch the image
+        const response = await fetch(cleanUrl, {
+          method: 'GET',
+          credentials: 'omit',
+          cache: 'no-store',
+          redirect: 'follow',
+          headers: {
+            'Cache-Control': 'no-cache',
+          }
+        });
         
-        // S'assurer que l'URL utilise www.stimergie.fr
-        imageUrl = validateImageUrl(imageUrl);
-        
-        if (!imageUrl) {
-          console.error(`Aucune URL disponible pour l'image: ${img.title || 'Sans titre'}`);
-          errorCount++;
-          return false;
+        if (!response.ok) {
+          throw new Error(`Failed to download image: ${response.status} ${response.statusText}`);
         }
         
-        // Afficher des informations de débogage sur l'URL
-        debugImageUrl(imageUrl);
+        const blob = await response.blob();
         
-        // Télécharger l'image comme blob
-        const blob = await fetchImageAsBlob(imageUrl);
+        // Add the image to the ZIP file
+        folder.file(filename, blob);
         
-        // Si le téléchargement a échoué, passer à l'image suivante
-        if (!blob) {
-          console.error(`Impossible de télécharger l'image: ${imageUrl}`);
-          toast.error(`Échec de téléchargement: ${img.title || 'Image ' + (index + 1)}`);
-          errorCount++;
-          return false;
-        }
-        
-        // Déterminer l'extension du fichier
-        const extension = determineFileExtension(blob, imageUrl);
-        
-        // Générer un nom de fichier normalisé
-        const filename = generateNormalizedFilename(img.title, index, extension);
-        
-        console.log(`Ajout au zip: ${filename} (${blob.size} octets)`);
-        
-        // Ajouter le blob au zip avec le nom de fichier approprié
-        zip.file(filename, blob);
-        successCount++;
         return true;
       } catch (error) {
-        console.error(`Erreur lors du traitement de l'image ${img.src}:`, error);
-        errorCount++;
+        console.error(`Error downloading image ${image.url}:`, error);
         return false;
       }
     });
     
-    // Attendre que tous les téléchargements soient terminés - sans délai
-    await Promise.all(downloadPromises);
+    // Wait for all downloads to complete
+    const results = await Promise.all(downloadPromises);
+    const successCount = results.filter(success => success).length;
     
-    // Fermer la toast de progression
-    toast.dismiss(progressToastId);
+    // Generate the ZIP file
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
     
-    // Vérifier si nous avons réussi à télécharger au moins une image
-    if (successCount === 0) {
-      toast.error("Aucune image n'a pu être téléchargée. Vérifiez votre connexion internet.");
-      return false;
-    }
+    // Download the ZIP file
+    saveAs(zipBlob, zipFilename);
     
-    // Générer le ZIP
-    toast.info("Génération du fichier ZIP...");
-    const zipBlob = await zip.generateAsync({ 
-      type: 'blob',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 6 }
+    toast.success(`ZIP créé avec succès`, {
+      description: `${successCount} image(s) sur ${images.length} téléchargée(s).`
     });
-    
-    console.log(`ZIP généré, taille: ${zipBlob.size} octets`);
-    
-    if (zipBlob.size < 100) { // Un ZIP vide ou presque vide aurait une taille très petite
-      toast.error("Le fichier ZIP généré est vide. Aucune image n'a pu être traitée correctement.");
-      return false;
-    }
-    
-    // Télécharger le ZIP
-    saveAs(zipBlob, `selection_images_${new Date().toISOString().slice(0, 10)}.zip`);
-    
-    // Afficher un message de succès
-    if (errorCount > 0) {
-      toast.success(`Téléchargement prêt (${successCount} images, ${errorCount} échecs)`);
-    } else {
-      toast.success(`Téléchargement prêt (${successCount} images)`);
-    }
-    
-    return true;
   } catch (error) {
-    console.error("Erreur lors de la création du zip:", error);
-    toast.error("Une erreur est survenue lors du téléchargement");
-    return false;
+    console.error('Error creating ZIP file:', error);
+    toast.error('Erreur lors de la création du ZIP', {
+      description: 'Impossible de créer l\'archive ZIP.'
+    });
   }
 }

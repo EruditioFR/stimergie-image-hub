@@ -5,16 +5,15 @@
 
 // Available CORS proxies for rotation
 const PROXIES = [
-  'https://images.weserv.nl/?url=',
-  'https://corsproxy.io/?',
-  'https://api.allorigins.win/raw?url='
+  // Remove all proxies - direct access to stimergie.fr
+  ''  // Empty string means "no proxy" - direct access
 ];
 
 // Cache for best proxies
 const bestProxyCache = new Map<string, string>();
 
 /**
- * Gets a proxied URL to bypass CORS issues with improved proxy selection
+ * Gets a URL without proxies to access stimergie.fr directly
  */
 export function getProxiedUrl(url: string, forceProxy: boolean = false): string {
   // Si l'URL est vide, retourner une chaîne vide
@@ -25,32 +24,16 @@ export function getProxiedUrl(url: string, forceProxy: boolean = false): string 
     return url;
   }
   
-  // For problematic domains or when proxy is forced, always use proxy
-  const domain = extractDomain(url);
-  
-  // Select the best proxy for this domain (cached or default)
-  let proxyIndex = 0;
-  if (bestProxyCache.has(domain)) {
-    const bestProxy = bestProxyCache.get(domain)!;
-    proxyIndex = PROXIES.indexOf(bestProxy);
-    if (proxyIndex === -1) proxyIndex = 0;
-  }
-  
-  const selectedProxy = PROXIES[proxyIndex];
-  return `${selectedProxy}${encodeURIComponent(url)}`;
+  // Return the direct URL without any proxy since stimergie.fr should have proper CORS headers
+  return url;
 }
 
 /**
  * Updates the best proxy for a domain based on successful fetches
+ * No longer needed but kept for compatibility
  */
 export function updateBestProxy(domain: string, proxyUrl: string): void {
-  // Extract which proxy was used
-  for (let i = 0; i < PROXIES.length; i++) {
-    if (proxyUrl.startsWith(PROXIES[i])) {
-      bestProxyCache.set(domain, PROXIES[i]);
-      break;
-    }
-  }
+  // No proxy selection needed anymore
 }
 
 /**

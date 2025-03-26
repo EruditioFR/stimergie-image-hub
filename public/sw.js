@@ -1,13 +1,8 @@
 
 // Service Worker pour le cache des images
-const CACHE_NAME = 'stimergie-images-cache-v1';
+const CACHE_NAME = 'stimergie-images-cache-v2';
 const IMAGE_HOSTS = ['stimergie.fr'];
 const MAX_CACHE_SIZE = 300;
-const BACKUP_PROXIES = [
-  'https://images.weserv.nl/?url=',
-  'https://corsproxy.io/?',
-  'https://api.allorigins.win/raw?url='
-];
 
 // Installation du Service Worker
 self.addEventListener('install', (event) => {
@@ -51,13 +46,13 @@ self.addEventListener('fetch', (event) => {
   const isAllowedHost = IMAGE_HOSTS.some(host => url.hostname.includes(host));
   
   if (isImageRequest && isAllowedHost) {
-    // Toujours utiliser le proxy pour stimergie.fr
-    event.respondWith(smartCacheStrategy(event.request));
+    // Toujours utiliser le cache pour stimergie.fr
+    event.respondWith(cacheFirstStrategy(event.request));
   }
 });
 
-// Stratégie de cache intelligente avec plusieurs niveaux de fallback
-async function smartCacheStrategy(request) {
+// Stratégie cache-first pour les images
+async function cacheFirstStrategy(request) {
   const originalUrl = request.url;
   console.log('Service Worker: Traitement de', originalUrl);
   
@@ -74,8 +69,8 @@ async function smartCacheStrategy(request) {
     }
     
     console.log('Service Worker: Cache miss pour', originalUrl);
-    // 2. Si pas en cache, récupérer depuis le réseau avec notre stratégie robuste
-    return await fetchWithFallbacks(request, cache);
+    // 2. Si pas en cache, récupérer depuis le réseau
+    return await fetchWithRetry(request, cache);
   } catch (error) {
     console.error('Service Worker: Erreur générale', error);
     
@@ -105,24 +100,22 @@ async function smartCacheStrategy(request) {
 
 // Mise à jour du cache en arrière-plan
 function updateCacheInBackground(request, cache) {
-  fetchWithFallbacks(request, cache)
+  fetchWithRetry(request, cache)
     .catch(error => console.warn('Service Worker: Mise à jour en arrière-plan échouée:', error));
 }
 
-// Fonction avec stratégie de retry et fallbacks
-async function fetchWithFallbacks(request, cache) {
+// Fonction avec stratégie de retry
+async function fetchWithRetry(request, cache) {
   const originalUrl = request.url;
   const maxRetries = 3;
   
-  // Essayer d'abord avec un proxy principal
-  let proxyUrl = getProxiedUrl(originalUrl, 0);
-  
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      console.log(`Service Worker: Tentative ${attempt+1}/${maxRetries} via ${proxyUrl}`);
+      console.log(`Service Worker: Tentative ${attempt+1}/${maxRetries} pour ${originalUrl}`);
       
       const fetchOptions = {
-        mode: attempt === maxRetries - 1 ? 'no-cors' : 'cors',
+        method: 'GET',
+        mode: 'cors',
         credentials: 'omit',
         redirect: 'follow',
         headers: new Headers({
@@ -131,12 +124,12 @@ async function fetchWithFallbacks(request, cache) {
         })
       };
       
-      // Utiliser un proxy différent à chaque tentative
-      if (attempt > 0) {
-        proxyUrl = getProxiedUrl(originalUrl, attempt);
+      // Pour la dernière tentative, essayer avec no-cors
+      if (attempt === maxRetries - 1) {
+        fetchOptions.mode = 'no-cors';
       }
       
-      const response = await fetch(new Request(proxyUrl, fetchOptions));
+      const response = await fetch(new Request(originalUrl, fetchOptions));
       
       // Cas spécial pour no-cors
       if (response.type === 'opaque') {
@@ -147,7 +140,7 @@ async function fetchWithFallbacks(request, cache) {
       }
       
       if (!response.ok) {
-        throw new Error(`Réponse HTTP ${response.status} pour ${proxyUrl}`);
+        throw new Error(`Réponse HTTP ${response.status} pour ${originalUrl}`);
       }
       
       // Vérifier le type de contenu
@@ -178,19 +171,15 @@ async function fetchWithFallbacks(request, cache) {
     } catch (error) {
       console.warn(`Service Worker: Erreur tentative ${attempt+1}`, error);
       
-      // Dernier essai, réessayer avec un autre proxy
+      // Dernier essai échoué, lancer l'erreur
       if (attempt === maxRetries - 1) {
         throw error;
       }
+      
+      // Attendre un peu avant de réessayer
+      await new Promise(resolve => setTimeout(resolve, attempt * 500));
     }
   }
   
   throw new Error(`Toutes les tentatives ont échoué pour ${originalUrl}`);
-}
-
-// Fonction utilitaire pour contourner CORS avec différents proxys
-function getProxiedUrl(url, proxyIndex = 0) {
-  // Rotation entre différents proxys selon l'index
-  const proxyUrl = BACKUP_PROXIES[proxyIndex % BACKUP_PROXIES.length];
-  return `${proxyUrl}${encodeURIComponent(url)}`;
 }
