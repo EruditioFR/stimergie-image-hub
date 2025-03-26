@@ -24,7 +24,7 @@ export function generateDisplayImageUrl(folderName: string, imageTitle: string):
 
 /**
  * Génère l'URL de téléchargement pour une image (format original)
- * Format: https://www.stimergie.fr/photos/[nom du dossier]/[titre].png
+ * Format: https://www.stimergie.fr/photos/[nom du dossier]/[titre].jpg
  */
 export function generateDownloadImageUrl(folderName: string, imageTitle: string): string {
   if (!folderName || !imageTitle) {
@@ -38,7 +38,7 @@ export function generateDownloadImageUrl(folderName: string, imageTitle: string)
   const cleanTitle = imageTitle.trim();
   
   // Construire l'URL avec www.stimergie.fr au lieu de stimergie.fr
-  return `https://www.stimergie.fr/photos/${cleanFolder}/${cleanTitle}.png`;
+  return `https://www.stimergie.fr/photos/${cleanFolder}/${cleanTitle}.jpg`;
 }
 
 /**
@@ -59,3 +59,4 @@ function normalizeForUrl(text: string): string {
     .replace(/\s+/g, '-')     // Remplace les espaces par des tirets
     .replace(/-+/g, '-');     // Évite les tirets multiples
 }
+
