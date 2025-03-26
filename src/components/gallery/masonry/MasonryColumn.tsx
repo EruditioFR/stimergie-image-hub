@@ -53,11 +53,11 @@ const ImageItem = memo(function ImageItem({
     }
   };
   
-  // Prioritizer using src property which is now properly set in formatImagesForGrid
+  // Utiliser directement les URLs spécifiques sans fallback
   const imageSrc = image.src;
   const downloadUrl = image.download_url || image.src;
   
-  // Debug URL if it seems problematic
+  // Pour débogage en développement
   if (!imageSrc || imageSrc.length < 10) {
     debugImageUrl(imageSrc);
     console.log('Image data:', image);
@@ -100,7 +100,7 @@ const ImageItem = memo(function ImageItem({
           className={`w-full transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
           orientation={image.orientation}
           onClick={handleClick}
-          // Use best available image URL
+          // Utiliser les URLs correctes
           src={imageSrc}
           downloadUrl={downloadUrl}
           // S'assurer que les propriétés requises ont toujours des valeurs

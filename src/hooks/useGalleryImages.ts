@@ -1,3 +1,4 @@
+
 import { useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGalleryFilters } from './useGalleryFilters';
@@ -7,7 +8,6 @@ import { useGalleryCache } from './gallery/useGalleryCache';
 import { useGalleryPagination } from './gallery/useGalleryPagination';
 import { useGalleryFiltersHandlers } from './gallery/useGalleryFiltersHandlers';
 import { useGalleryQueryState } from './gallery/useGalleryQueryState';
-import { validateImageUrl } from '@/utils/image/urlUtils';
 import { Image } from '@/utils/image/types';
 
 export const useGalleryImages = (isAdmin: boolean) => {
@@ -137,18 +137,21 @@ export const useGalleryImages = (isAdmin: boolean) => {
 
   const formatImagesForGrid = useCallback((images: any[] = []) => {
     return images.map(image => {
-      const srcUrl = validateImageUrl(image.display_url) || validateImageUrl(image.url_miniature) || validateImageUrl(image.url) || '';
-      const downloadUrl = validateImageUrl(image.download_url) || validateImageUrl(image.url) || '';
+      // Utiliser directement les URLs générées par le service
+      const srcUrl = image.display_url || '';
+      const downloadUrl = image.download_url || '';
 
       return {
         id: image.id.toString(),
         src: srcUrl,
         download_url: downloadUrl,
+        display_url: srcUrl,
         alt: image.title || "Image sans titre",
         title: image.title || "Sans titre",
         author: image.created_by || 'Utilisateur',
         tags: image.tags || [],
         orientation: image.orientation || 'landscape',
+        // Conserver pour rétrocompatibilité
         url_miniature: image.url_miniature || null,
         url: image.url || null
       } as Image;

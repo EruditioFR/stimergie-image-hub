@@ -1,3 +1,4 @@
+
 /**
  * URL related utility functions
  */
@@ -102,12 +103,7 @@ function extractDomain(url: string): string {
  * @returns A URL for a small placeholder version of the image
  */
 export function getPlaceholderUrl(originalUrl: string | null, size: number = 20): string {
-  // Ne pas générer de placeholder pour les URLs SVG
-  if (originalUrl && isVectorImage(originalUrl)) {
-    return originalUrl;
-  }
-  
-  // Utiliser une image de placeholder PNG au lieu d'un SVG
+  // Toujours utiliser une image PNG de placeholder, jamais de SVG
   return `/placeholder.png?size=${size}`;
 }
 
@@ -121,38 +117,34 @@ export function isVectorImage(url: string | null | undefined): boolean {
 /**
  * Vérifie et valide une URL d'image
  * @param url URL à vérifier
- * @returns URL originale ou URL corrigée
+ * @returns URL originale ou URL corrigée si valide, null sinon
  */
 export function validateImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
+  
+  // Rejeter les URLs SVG et les placeholders
+  if (url.includes('data:image/svg+xml') || url.includes('placeholder.svg') || url.includes('placeholder.png')) {
+    console.warn('URL rejetée (placeholder):', url.substring(0, 50) + '...');
+    return null;
+  }
   
   // Vérifier si c'est déjà une URL valide
   try {
     new URL(url);
     
-    // Éviter les URL qui pointent vers des placeholders SVG par défaut
-    if (url.includes('data:image/svg+xml') || url.includes('placeholder.svg')) {
-      console.warn('Placeholder SVG détecté:', url.substring(0, 50) + '...');
-      return null;
-    }
-    
-    // S'assurer que l'URL se termine par une extension d'image
-    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+    // S'assurer que l'URL se termine par une extension d'image valide
     const urlLower = url.toLowerCase();
-    const hasImageExtension = imageExtensions.some(ext => urlLower.includes(ext));
+    const isPng = urlLower.endsWith('.png');
+    const isJpg = urlLower.endsWith('.jpg') || urlLower.endsWith('.jpeg');
     
-    if (!hasImageExtension) {
-      console.warn('URL sans extension d\'image:', url);
-      // Vérifier si c'est une URL stimergie qui devrait suivre le format spécifié
-      if (url.includes('stimergie.fr/photos')) {
-        // Ajouter l'extension .png pour les URLs de display
-        if (url.includes('/PNG/') && !url.endsWith('.png')) {
-          return `${url}.png`;
-        }
-        // Ajouter l'extension .jpg pour les URLs de téléchargement
-        else if (!url.includes('/PNG/') && !url.endsWith('.jpg')) {
-          return `${url}.jpg`;
-        }
+    // Vérifier si c'est une URL stimergie qui doit suivre le format spécifié
+    if (url.includes('stimergie.fr/photos')) {
+      // Ajouter l'extension si nécessaire
+      if (url.includes('/PNG/') && !isPng) {
+        return `${url}.png`;
+      } 
+      else if (!url.includes('/PNG/') && !isJpg) {
+        return `${url}.jpg`;
       }
     }
     
@@ -173,6 +165,9 @@ export function debugImageUrl(url: string): void {
     isValid: Boolean(url) && url.startsWith('http'),
     length: url?.length || 0,
     containsSpecialChars: /[^a-zA-Z0-9\-_\.\/:]/.test(url),
-    domain: url ? extractDomain(url) : 'none'
+    domain: url ? extractDomain(url) : 'none',
+    isPNG: url.toLowerCase().endsWith('.png'),
+    isJPG: url.toLowerCase().endsWith('.jpg') || url.toLowerCase().endsWith('.jpeg'),
+    isStimergieFormat: url.includes('stimergie.fr/photos')
   });
 }

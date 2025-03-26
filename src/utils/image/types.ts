@@ -7,9 +7,10 @@ export interface Image {
   author?: string;
   tags?: string[];
   orientation?: string;
-  // Additional properties for URL handling
+  // Ces URLs sont utilisées pour l'affichage et le téléchargement
   display_url?: string;
   download_url?: string;
+  // Pour rétrocompatibilité
   url_miniature?: string;
   url?: string;
 }

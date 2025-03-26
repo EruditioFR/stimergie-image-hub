@@ -13,13 +13,8 @@ export function generateDisplayImageUrl(folderName: string, imageTitle: string):
     return '';
   }
   
-  // Nettoyer les caractères spéciaux du titre et du dossier pour l'URL 
-  // Mais sans les encoder completement pour garder la lisibilité
-  const cleanFolder = folderName.trim();
-  const cleanTitle = imageTitle.trim();
-  
-  // Construire l'URL avec www.stimergie.fr au lieu de stimergie.fr
-  return `https://www.stimergie.fr/photos/${cleanFolder}/PNG/${cleanTitle}.png`;
+  // Utiliser les valeurs directement sans nettoyage supplémentaire
+  return `https://www.stimergie.fr/photos/${folderName}/PNG/${imageTitle}.png`;
 }
 
 /**
@@ -32,31 +27,6 @@ export function generateDownloadImageUrl(folderName: string, imageTitle: string)
     return '';
   }
   
-  // Nettoyer les caractères spéciaux du titre et du dossier pour l'URL
-  // Mais sans les encoder completement pour garder la lisibilité
-  const cleanFolder = folderName.trim();
-  const cleanTitle = imageTitle.trim();
-  
-  // Construire l'URL avec www.stimergie.fr au lieu de stimergie.fr
-  return `https://www.stimergie.fr/photos/${cleanFolder}/${cleanTitle}.jpg`;
+  // Utiliser les valeurs directement sans nettoyage supplémentaire
+  return `https://www.stimergie.fr/photos/${folderName}/${imageTitle}.jpg`;
 }
-
-/**
- * Normalise une chaîne pour être utilisée dans une URL
- * - Remplace les espaces par des tirets
- * - Supprime les caractères spéciaux
- * - Convertit en minuscules
- * 
- * Note: Cette fonction est conservée pour la rétrocompatibilité mais n'est plus utilisée
- * dans la génération des URLs d'images.
- */
-function normalizeForUrl(text: string): string {
-  if (!text) return '';
-  
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '') // Supprime les caractères spéciaux
-    .replace(/\s+/g, '-')     // Remplace les espaces par des tirets
-    .replace(/-+/g, '-');     // Évite les tirets multiples
-}
-

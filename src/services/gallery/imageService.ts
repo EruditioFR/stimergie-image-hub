@@ -54,36 +54,35 @@ export async function fetchGalleryImages(
   
   console.log(`Fetched ${data?.length || 0} images`);
   
-  // Transformer les données pour utiliser le nouveau format d'URL sans encodage
+  // Transformer les données pour générer les URLs d'images correctes
   const transformedData = (data || []).map(img => {
-    const folderName = img.projets?.nom_dossier || "default";
+    const folderName = img.projets?.nom_dossier || "";
     const imageTitle = img.title || `image-${img.id}`;
     
-    // Générer les nouvelles URLs avec le préfixe www
+    if (!folderName) {
+      console.warn(`Dossier manquant pour l'image ID ${img.id}, titre: ${imageTitle}`);
+    }
+    
+    // Générer les URLs au format demandé
     const display_url = generateDisplayImageUrl(folderName, imageTitle);
     const download_url = generateDownloadImageUrl(folderName, imageTitle);
     
-    // Valider et corriger les URLs si nécessaire
-    const validated_display_url = validateImageUrl(display_url) || img.url_miniature || img.url;
-    const validated_download_url = validateImageUrl(download_url) || img.url;
-    
-    console.log('Generated URLs:', {
+    console.log('URLs générées:', {
+      id: img.id,
       folder: folderName,
       title: imageTitle,
       display: display_url,
-      download: download_url,
-      final_display: validated_display_url,
-      final_download: validated_download_url
+      download: download_url
     });
     
     return {
       ...img,
-      // Générer les nouvelles URLs
-      display_url: validated_display_url,
-      download_url: validated_download_url,
-      // Conserver les anciens champs pour rétrocompatibilité
-      url: img.url || validated_display_url,
-      url_miniature: img.url_miniature || validated_display_url,
+      // Utiliser directement les nouvelles URLs sans validation additionnelle
+      display_url: display_url, 
+      download_url: download_url,
+      // Pour rétrocompatibilité
+      url: download_url,
+      url_miniature: display_url,
       // Parser les tags
       tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
     };
