@@ -1,7 +1,6 @@
 
 import React, { memo } from 'react';
 import { ImageCard } from '@/components/ImageCard';
-import { debugImageUrl } from '@/utils/image';
 import { Image } from '@/utils/image/types';
 
 interface MasonryColumnProps {
@@ -53,15 +52,9 @@ const ImageItem = memo(function ImageItem({
     }
   };
   
-  // Utiliser directement les URLs spécifiques sans fallback
-  const imageSrc = image.src;
+  // Utiliser directement les URLs spécifiques
+  const imageSrc = image.display_url || image.src;
   const downloadUrl = image.download_url || image.src;
-  
-  // Pour débogage en développement
-  if (!imageSrc || imageSrc.length < 10) {
-    debugImageUrl(imageSrc);
-    console.log('Image data:', image);
-  }
   
   return (
     <div className="opacity-100 relative group">

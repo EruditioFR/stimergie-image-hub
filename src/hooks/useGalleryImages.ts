@@ -1,4 +1,3 @@
-
 import { useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGalleryFilters } from './useGalleryFilters';
@@ -144,16 +143,20 @@ export const useGalleryImages = (isAdmin: boolean) => {
       return {
         id: image.id.toString(),
         src: srcUrl,
-        download_url: downloadUrl,
         display_url: srcUrl,
+        download_url: downloadUrl,
         alt: image.title || "Image sans titre",
         title: image.title || "Sans titre",
         author: image.created_by || 'Utilisateur',
         tags: image.tags || [],
         orientation: image.orientation || 'landscape',
+        width: image.width || 800,
+        height: image.height || 600,
+        created_at: image.created_at || new Date().toISOString(),
+        description: image.description || '',
         // Conserver pour rétrocompatibilité
-        url_miniature: image.url_miniature || null,
-        url: image.url || null
+        url_miniature: srcUrl,
+        url: downloadUrl
       } as Image;
     });
   }, []);

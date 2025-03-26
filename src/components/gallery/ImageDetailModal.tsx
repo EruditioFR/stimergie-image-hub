@@ -1,9 +1,9 @@
+
 import { useState } from 'react';
 import { X, Download, Heart, Share2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { LazyImage } from '@/components/LazyImage';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { parseTagsString } from '@/utils/imageUtils';
@@ -131,11 +131,10 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
               onMouseLeave={handleMouseUp}
               onClick={zoomLevel === 1 ? toggleFullscreen : undefined}
             >
-              <LazyImage 
+              <img 
                 src={image.display_url || image.url} 
                 alt={image.title} 
                 className="max-w-full max-h-[65vh] object-contain transition-transform duration-200"
-                aspectRatio="aspect-auto"
                 style={{ 
                   transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
                   transformOrigin: 'center',
@@ -297,7 +296,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
             onMouseLeave={handleMouseUp}
           >
             <img 
-              src={image.url} 
+              src={image.display_url || image.url} 
               alt={image.title} 
               className="max-w-full max-h-full object-contain animate-fade-in transition-transform duration-200"
               style={{ 

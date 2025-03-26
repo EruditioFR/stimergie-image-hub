@@ -43,9 +43,10 @@ export function ImagesTable({ images }: ImagesTableProps) {
                 <TableCell>
                   <div className="h-16 w-16 relative overflow-hidden rounded">
                     <img 
-                      src={image.url_miniature || image.url} 
+                      src={image.display_url || image.url_miniature || image.url} 
                       alt={image.title} 
-                      className="object-cover h-full w-full opacity-100" 
+                      className="object-cover h-full w-full" 
+                      loading="lazy"
                     />
                   </div>
                 </TableCell>

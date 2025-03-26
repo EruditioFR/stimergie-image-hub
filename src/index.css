@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -170,34 +169,21 @@
   }
 }
 
-/* Lazy load image styles */
-.lazy-image {
-  position: relative;
-  overflow: hidden;
-}
-
-.lazy-image-placeholder {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: hsl(var(--muted));
-  z-index: 1;
-}
-
-.lazy-image-actual {
-  position: relative;
-  z-index: 2;
-  opacity: 1;
-  transition: opacity 0.5s ease;
-}
-
-.lazy-image-actual.loaded {
-  opacity: 1;
-}
-
 /* Text balance for better typography */
 h1, h2, h3, p {
   text-wrap: balance;
+}
+
+/* Animation for fade-in elements */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-in-out;
 }

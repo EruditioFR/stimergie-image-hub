@@ -1,10 +1,10 @@
+
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useImageSelection } from '@/hooks/useImageSelection';
 import { useSearchParams } from 'react-router-dom';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { preloadImages } from '@/components/LazyImage';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { MasonryColumn } from './MasonryColumn';
 import { MasonryPagination } from './MasonryPagination';
@@ -39,7 +39,6 @@ export function MasonryGrid({
   const { user } = useAuth();
   const { selectedImages, toggleImageSelection, isImageSelected, clearSelection } = useImageSelection();
   const [searchParams] = useSearchParams();
-  const progressiveLoadRef = useRef<boolean>(false);
   const viewportRef = useRef<HTMLDivElement>(null);
   
   const isMobile = useIsMobile();
@@ -79,49 +78,6 @@ export function MasonryGrid({
     
     return columns;
   }, [images, columnCount]);
-
-  useEffect(() => {
-    if (images.length > 0 && !isLoading) {
-      if (progressiveLoadRef.current) return;
-      progressiveLoadRef.current = true;
-      
-      const firstTierCount = Math.min(6, images.length);
-      const firstTier = images.slice(0, firstTierCount).map(img => img.src);
-      
-      const secondTierCount = Math.min(16, images.length) - firstTierCount;
-      const secondTier = secondTierCount > 0 
-        ? images.slice(firstTierCount, firstTierCount + secondTierCount).map(img => img.src)
-        : [];
-        
-      const thirdTier = images.length > (firstTierCount + secondTierCount)
-        ? images.slice(firstTierCount + secondTierCount).map(img => img.src)
-        : [];
-      
-      preloadImages(firstTier, 1);
-      
-      if (secondTier.length > 0) {
-        setTimeout(() => {
-          preloadImages(secondTier, 2);
-        }, 300);
-      }
-      
-      if (thirdTier.length > 0) {
-        setTimeout(() => {
-          const chunkSize = 10;
-          for (let i = 0; i < thirdTier.length; i += chunkSize) {
-            const chunk = thirdTier.slice(i, i + chunkSize);
-            setTimeout(() => {
-              preloadImages(chunk, 3);
-            }, i * 100);
-          }
-          
-          progressiveLoadRef.current = false;
-        }, 800);
-      } else {
-        progressiveLoadRef.current = false;
-      }
-    }
-  }, [images, isLoading]);
   
   const infiniteScrollRef = useInfiniteScroll(loadMoreImages, isLoading);
   

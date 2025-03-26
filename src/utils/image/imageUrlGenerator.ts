@@ -13,7 +13,6 @@ export function generateDisplayImageUrl(folderName: string, imageTitle: string):
     return '';
   }
   
-  // Utiliser les valeurs directement sans nettoyage supplémentaire
   return `https://www.stimergie.fr/photos/${folderName}/PNG/${imageTitle}.png`;
 }
 
@@ -27,6 +26,5 @@ export function generateDownloadImageUrl(folderName: string, imageTitle: string)
     return '';
   }
   
-  // Utiliser les valeurs directement sans nettoyage supplémentaire
   return `https://www.stimergie.fr/photos/${folderName}/${imageTitle}.jpg`;
 }
