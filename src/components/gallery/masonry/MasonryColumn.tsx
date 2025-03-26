@@ -1,3 +1,4 @@
+
 import React, { memo } from 'react';
 import { ImageCard } from '@/components/ImageCard';
 import { debugImageUrl } from '@/utils/image';
@@ -52,9 +53,9 @@ const ImageItem = memo(function ImageItem({
     }
   };
   
-  // Prioritize the best available image URL
-  const imageSrc = image.display_url || image.src;
-  const downloadUrl = image.download_url || image.display_url || image.src;
+  // Prioritize the best available image URL - use properties that exist in the Image type
+  const imageSrc = image.src;
+  const downloadUrl = image.download_url || image.src;
   
   // Debug URL si elle semble problématique
   if (!imageSrc || imageSrc.length < 10) {
