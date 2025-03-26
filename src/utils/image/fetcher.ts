@@ -136,6 +136,7 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
       console.log(`Downloading: ${url}`);
     }
     
+    // Force proxy for problematic domains
     let fetchUrl;
     
     // Process Dropbox URLs differently
@@ -143,8 +144,16 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
       const directDownloadUrl = getDropboxDownloadUrl(url);
       console.log(`Dropbox URL converted to direct URL: ${directDownloadUrl}`);
       fetchUrl = getProxiedUrl(directDownloadUrl);
-    } else {
+    } 
+    // Force proxy for stimergie.fr domains
+    else if (url.includes('stimergie.fr')) {
       fetchUrl = getProxiedUrl(url);
+    } 
+    // For other URLs, use the proxy only if needed
+    else {
+      fetchUrl = url.startsWith('http') && !url.includes(window.location.hostname) 
+        ? getProxiedUrl(url) 
+        : url;
     }
     
     // Store the transformed URL in the cache
@@ -158,7 +167,7 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
     
     // Configure fetch with improved options
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
     
     // Use improved cache strategy with Cache API if available
     if ('caches' in window) {
@@ -187,86 +196,148 @@ async function fetchImageAsBlobInternal(url: string, cacheKey: string): Promise<
       }
     }
     
-    const response = await fetch(fetchUrl, {
-      method: 'GET',
-      mode: 'cors',
-      credentials: 'omit',
-      cache: 'force-cache', // Force using HTTP cache when possible
-      redirect: 'follow',
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'image/*, */*;q=0.8',
-        'Cache-Control': 'max-age=31536000', // Cache for one year
-        'Pragma': 'no-cache'
-      }
-    });
+    let fetchAttempts = 0;
+    let maxAttempts = 3;
+    let lastError;
     
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      console.error(`Download failed: ${response.status} ${response.statusText}`);
-      return null;
-    }
-    
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('text/html')) {
-      console.error(`HTML response detected via headers: ${contentType}`);
-      return null;
-    }
-    
-    const blob = await response.blob();
-    if (blob.size === 0) {
-      console.error("Empty download blob");
-      return null;
-    }
-    
-    // Check if the response is potentially HTML (error page) and not an image
-    if (isHtmlContent(blob)) {
-      console.error("Response seems to be an HTML page and not an image");
-      return null;
-    }
-    
-    // Store the blob in session storage for persistence across page loads
-    try {
-      // Convert blob to base64 and store in session storage
-      const base64Data = await blobToBase64(blob);
-      sessionImageCache.setItem(cacheKey, base64Data);
-      
-      // Also store in global cache for sharing between users
-      saveToGlobalCache(cacheKey, base64Data);
-      
-      console.log(`Image stored in cache: ${url}`);
-    } catch (e) {
-      console.warn("Failed to store image in session cache:", e);
-    }
-    
-    // Store in browser's Cache API if available
-    try {
-      if ('caches' in window) {
-        const cache = await caches.open('images-cache-v1');
+    // Retry strategy for failed fetches
+    while (fetchAttempts < maxAttempts) {
+      try {
+        fetchAttempts++;
         
-        // Create a response with proper cache headers
-        const headers = new Headers({
-          'Content-Type': blob.type,
-          'Cache-Control': 'max-age=31536000, immutable', // Cache for one year
+        // Adjust URL based on attempt number
+        let attemptUrl = fetchUrl;
+        if (fetchAttempts > 1) {
+          // On second attempt, try with a different proxy
+          if (fetchAttempts === 2 && url.includes('stimergie.fr')) {
+            attemptUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+            console.log(`Retry #${fetchAttempts} with different proxy: ${attemptUrl}`);
+          }
+          // On third attempt, try with no-cors mode
+          else if (fetchAttempts === 3) {
+            console.log(`Final attempt with no-cors mode: ${fetchUrl}`);
+          }
+        }
+        
+        const response = await fetch(attemptUrl, {
+          method: 'GET',
+          mode: fetchAttempts === 3 ? 'no-cors' : 'cors',
+          credentials: 'omit',
+          cache: 'force-cache', // Force using HTTP cache when possible
+          redirect: 'follow',
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'image/*, */*;q=0.8',
+            'Cache-Control': 'max-age=31536000', // Cache for one year
+            'Pragma': 'no-cache'
+          }
         });
         
-        const cachedResponse = new Response(blob.slice(0), {
-          headers: headers
-        });
+        // For no-cors mode, we can't actually check if it was successful,
+        // but we can try to use the opaque response
+        if (fetchAttempts === 3 && response.type === 'opaque') {
+          // Create a simple success response since we can't actually see the content
+          clearTimeout(timeoutId);
+          
+          try {
+            const blob = await response.blob();
+            if (blob.size > 0) {
+              // We got something, store it and hope it's an image
+              const base64Data = await blobToBase64(blob);
+              sessionImageCache.setItem(cacheKey, base64Data);
+              saveToGlobalCache(cacheKey, base64Data);
+              
+              console.log(`Opaque response blob size: ${blob.size}`);
+              return blob;
+            }
+          } catch (e) {
+            console.warn('Error processing opaque response:', e);
+            continue;
+          }
+        }
         
-        await cache.put(fetchUrl, cachedResponse);
-        console.log(`Image stored in application cache: ${url}`);
+        if (!response.ok) {
+          lastError = new Error(`HTTP error: ${response.status} ${response.statusText}`);
+          console.warn(`Attempt ${fetchAttempts} failed: ${lastError.message}`);
+          continue;
+        }
+        
+        clearTimeout(timeoutId);
+        
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('text/html')) {
+          lastError = new Error(`HTML response detected via headers: ${contentType}`);
+          console.warn(`Attempt ${fetchAttempts} failed: ${lastError.message}`);
+          continue;
+        }
+        
+        const blob = await response.blob();
+        if (blob.size === 0) {
+          lastError = new Error("Empty download blob");
+          console.warn(`Attempt ${fetchAttempts} failed: ${lastError.message}`);
+          continue;
+        }
+        
+        // Check if the response is potentially HTML (error page) and not an image
+        if (isHtmlContent(blob)) {
+          lastError = new Error("Response seems to be an HTML page and not an image");
+          console.warn(`Attempt ${fetchAttempts} failed: ${lastError.message}`);
+          continue;
+        }
+        
+        // Store the blob in session storage for persistence across page loads
+        try {
+          // Convert blob to base64 and store in session storage
+          const base64Data = await blobToBase64(blob);
+          sessionImageCache.setItem(cacheKey, base64Data);
+          
+          // Also store in global cache for sharing between users
+          saveToGlobalCache(cacheKey, base64Data);
+          
+          console.log(`Image stored in cache: ${url}`);
+        } catch (e) {
+          console.warn("Failed to store image in session cache:", e);
+        }
+        
+        // Store in browser's Cache API if available
+        try {
+          if ('caches' in window) {
+            const cache = await caches.open('images-cache-v1');
+            
+            // Create a response with proper cache headers
+            const headers = new Headers({
+              'Content-Type': blob.type,
+              'Cache-Control': 'max-age=31536000, immutable', // Cache for one year
+              'Access-Control-Allow-Origin': '*',
+            });
+            
+            const cachedResponse = new Response(blob.slice(0), {
+              headers: headers
+            });
+            
+            await cache.put(fetchUrl, cachedResponse);
+            console.log(`Image stored in application cache: ${url}`);
+          }
+        } catch (e) {
+          console.warn("Failed to store image in application cache:", e);
+        }
+        
+        console.log(`Image downloaded successfully, type: ${blob.type}, size: ${blob.size} bytes`);
+        return blob;
+      } catch (error) {
+        lastError = error;
+        console.warn(`Attempt ${fetchAttempts} failed:`, error);
       }
-    } catch (e) {
-      console.warn("Failed to store image in application cache:", e);
     }
     
-    console.log(`Image downloaded successfully, type: ${blob.type}, size: ${blob.size} bytes`);
-    return blob;
+    // All attempts failed
+    console.error("All download attempts failed:", lastError);
+    return null;
   } catch (error) {
     console.error("Error during download:", error);
     return null;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }

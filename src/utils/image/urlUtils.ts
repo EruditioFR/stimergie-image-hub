@@ -1,3 +1,4 @@
+
 /**
  * Vérifie si une URL est une URL Dropbox
  */
@@ -53,19 +54,33 @@ export function getDropboxDownloadUrl(url: string): string {
  * Solution pour contourner les problèmes CORS avec les sources externes
  */
 export function getProxiedUrl(url: string): string {
-  // Utiliser un proxy CORS pour toutes les URL externes
+  // Utiliser un proxy CORS pour les sites problématiques connus (comme stimergie.fr)
+  if (url.includes('stimergie.fr')) {
+    const corsProxyUrl = 'https://images.weserv.nl/?url=' + encodeURIComponent(url);
+    console.log(`URL Stimergie convertie via proxy: ${corsProxyUrl}`);
+    return corsProxyUrl;
+  }
+  
+  // Pour Dropbox, utiliser un proxy qui préserve les en-têtes binaires
+  if (url.includes('dropboxusercontent.com')) {
+    const corsProxyUrl = 'https://images.weserv.nl/?url=' + encodeURIComponent(url);
+    console.log(`URL Dropbox convertie via proxy: ${corsProxyUrl}`);
+    return corsProxyUrl;
+  }
+  
+  // Pour les autres URLs externes
   if (url.startsWith('http') && !url.includes(window.location.hostname)) {
-    // Pour Dropbox, utiliser un proxy qui préserve les en-têtes binaires
-    if (url.includes('dropboxusercontent.com')) {
+    if (url.match(/\.(jpe?g|png|gif|webp|svg)$/i)) {
+      // Pour les images, utiliser un proxy spécialisé
       const corsProxyUrl = 'https://images.weserv.nl/?url=' + encodeURIComponent(url);
-      console.log(`URL Dropbox convertie via proxy spécial: ${corsProxyUrl}`);
+      console.log(`URL image externe convertie via proxy: ${corsProxyUrl}`);
+      return corsProxyUrl;
+    } else {
+      // Pour les autres ressources
+      const corsProxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+      console.log(`URL externe convertie via proxy: ${corsProxyUrl}`);
       return corsProxyUrl;
     }
-    
-    // Pour les autres URLs
-    const corsProxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
-    console.log(`URL externe convertie via proxy: ${corsProxyUrl}`);
-    return corsProxyUrl;
   }
   
   // URLs internes - retourner telles quelles
