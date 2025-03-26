@@ -1,30 +1,43 @@
 
 /**
- * Génère les URLs pour les images selon le nouveau format
+ * Utility functions for generating image URLs
  */
 
-/**
- * Génère l'URL d'affichage pour une image (format PNG pour affichage)
- * Format: https://www.stimergie.fr/photos/[nom du dossier]/PNG/[titre].png
- */
+// Generate URL for displaying an image
 export function generateDisplayImageUrl(folderName: string, imageTitle: string): string {
   if (!folderName || !imageTitle) {
-    console.warn('Nom de dossier ou titre d\'image manquant pour générer l\'URL');
     return '';
   }
   
-  return `https://www.stimergie.fr/photos/${folderName}/PNG/${imageTitle}.png`;
+  // Return the URL to the PNG version from Dropbox if available
+  // First check if we have a URL_miniature which is already a Dropbox URL
+  if (imageTitle.includes('dropbox.com') || imageTitle.includes('dl.dropboxusercontent.com')) {
+    return imageTitle;
+  }
+  
+  // Since we're getting CORS errors, we'll use the URL_miniature field that already contains
+  // Dropbox URLs in most cases, or fall back to using the direct Dropbox URLs
+  // instead of trying to access stimergie.fr directly
+  return imageTitle;
 }
 
-/**
- * Génère l'URL de téléchargement pour une image (format original)
- * Format: https://www.stimergie.fr/photos/[nom du dossier]/[titre].jpg
- */
+// Generate URL for downloading an image
 export function generateDownloadImageUrl(folderName: string, imageTitle: string): string {
   if (!folderName || !imageTitle) {
-    console.warn('Nom de dossier ou titre d\'image manquant pour générer l\'URL');
     return '';
   }
   
-  return `https://www.stimergie.fr/photos/${folderName}/${imageTitle}.jpg`;
+  // Return the URL to the JPG version from Dropbox if available
+  // First check if we have a URL which is already a Dropbox URL
+  if (imageTitle.includes('dropbox.com') || imageTitle.includes('dl.dropboxusercontent.com')) {
+    // Make sure it's a direct download link
+    if (!imageTitle.includes('dl=1')) {
+      return imageTitle.includes('?') ? `${imageTitle}&dl=1` : `${imageTitle}?dl=1`;
+    }
+    return imageTitle;
+  }
+  
+  // Since direct access to stimergie.fr causes CORS issues, use the url field 
+  // which often contains Dropbox URLs that work better with CORS
+  return imageTitle;
 }

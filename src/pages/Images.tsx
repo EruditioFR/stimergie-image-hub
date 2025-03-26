@@ -11,7 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Image as ImageType } from '@/utils/image/types';
-import { generateDisplayImageUrl, generateDownloadImageUrl } from '@/utils/image/imageUrlGenerator';
 
 export interface Image {
   id: number;
@@ -57,11 +56,8 @@ const Images = () => {
     console.log(`Fetched ${data.length} images`);
     
     return data.map(img => {
-      const folderName = img.projets?.nom_dossier || "";
-      const imageTitle = img.title || `image-${img.id}`;
-      
-      const display_url = generateDisplayImageUrl(folderName, imageTitle);
-      const download_url = generateDownloadImageUrl(folderName, imageTitle);
+      const display_url = img.url_miniature || img.url || '';
+      const download_url = img.url || '';
       
       return {
         ...img,

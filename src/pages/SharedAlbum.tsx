@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -58,15 +57,19 @@ const SharedAlbum = () => {
       // Add each image to the zip file
       const fetchPromises = album.images.map(async (image: any, index: number) => {
         try {
-          // Create proper download URL from image data
-          const folderName = image.id_projet ? 
-            await getFolderName(image.id_projet) : 
-            "unknown-folder";
+          // Use image's original URL if available (likely Dropbox), rather than trying to construct one
+          const downloadUrl = image.url || '';
+          if (!downloadUrl) {
+            console.warn(`No download URL for image ${index}`);
+            return false;
+          }
           
-          const imageTitle = image.title || `image-${image.id}`;
-          const downloadUrl = generateDownloadImageUrl(folderName, imageTitle);
+          // Ensure it's a direct download link if it's Dropbox
+          const finalDownloadUrl = downloadUrl.includes('dropbox.com') && !downloadUrl.includes('dl=1') 
+            ? (downloadUrl.includes('?') ? `${downloadUrl}&dl=1` : `${downloadUrl}?dl=1`)
+            : downloadUrl;
           
-          const response = await fetch(downloadUrl);
+          const response = await fetch(finalDownloadUrl);
           if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
           
           const blob = await response.blob();
@@ -105,36 +108,15 @@ const SharedAlbum = () => {
     }
   };
   
-  // Helper function to get folder name for an image
-  const getFolderName = async (projectId: string): Promise<string> => {
-    try {
-      const { data, error } = await supabase
-        .from('projets')
-        .select('nom_dossier')
-        .eq('id', projectId)
-        .single();
-      
-      if (error) throw error;
-      return data.nom_dossier || '';
-    } catch (err) {
-      console.error('Error getting folder name:', err);
-      return '';
-    }
-  };
-  
   // Format the images for the MasonryGrid component
   const formatImagesForGrid = (): Image[] => {
     if (!album || !album.images || !Array.isArray(album.images)) return [];
     
     return album.images.map((image: any) => {
-      // Generate proper URLs for the image
-      const folderName = image.id_projet ? 
-        "unknown-folder" : // This will be replaced when we fetch folder names
-        "unknown-folder";
-      
-      const imageTitle = image.title || `image-${image.id}`;
-      const display_url = generateDisplayImageUrl(folderName, imageTitle);
-      const download_url = generateDownloadImageUrl(folderName, imageTitle);
+      // Use the original URLs from the image data instead of trying to construct them
+      // This avoids CORS issues as we're using the URLs that are already working
+      const display_url = image.url_miniature || image.url || '';
+      const download_url = image.url || image.url_miniature || '';
       
       return {
         id: image.id.toString(),
