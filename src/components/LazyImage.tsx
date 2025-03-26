@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useRef, CSSProperties, ReactNode } from 'react';
+import React, { useState, useEffect, useRef, CSSProperties, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
