@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -218,7 +219,7 @@ export function MasonryDetailModal({
           )}
           {image?.created_at && (
             <div>
-              <span className="block text-foreground font-medium">Date ajoutée</span>
+              <span className="block text-foreground font-medium">Date d'ajout</span>
               <span>{new Date(image.created_at).toLocaleDateString('fr-FR')}</span>
             </div>
           )}

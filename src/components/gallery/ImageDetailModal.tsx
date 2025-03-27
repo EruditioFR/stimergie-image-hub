@@ -225,7 +225,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
             
             <div className="flex flex-wrap gap-x-8 gap-y-4 text-sm text-muted-foreground">
               <div>
-                <span className="block text-foreground font-medium">Date ajoutée</span>
+                <span className="block text-foreground font-medium">Date d'ajout</span>
                 <span>{new Date(image.created_at).toLocaleDateString('fr-FR')}</span>
               </div>
               <div>

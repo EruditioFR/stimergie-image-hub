@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Download, Heart, Share2, ArrowLeft, X } from 'lucide-react';
@@ -9,7 +8,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Image } from '@/pages/Images';
 
-// Parse tags from string if needed
 const parseTagsString = (tagsString: string | null): string[] | null => {
   if (!tagsString) return null;
   try {
@@ -30,7 +28,6 @@ export function ImageDetail() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { toast } = useToast();
 
-  // Fetch image data from Supabase
   const { data: imageDetails, isLoading } = useQuery({
     queryKey: ['image-detail', id],
     queryFn: async () => {
@@ -52,7 +49,6 @@ export function ImageDetail() {
         throw error;
       }
       
-      // Parse tags if they're stored as a string
       return {
         ...data,
         tags: typeof data.tags === 'string' ? parseTagsString(data.tags) : data.tags
@@ -68,7 +64,6 @@ export function ImageDetail() {
 
   const handleLike = () => {
     setLiked(!liked);
-    // Update like count logic would go here
   };
 
   const handleShare = () => {
@@ -118,7 +113,6 @@ export function ImageDetail() {
 
   return (
     <>
-      {/* Fullscreen Image View */}
       {isFullscreen && (
         <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in">
           <Button 
@@ -140,7 +134,6 @@ export function ImageDetail() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 py-12 animate-fade-up">
-        {/* Back Button */}
         <Button 
           variant="ghost" 
           className="mb-6 pl-0 text-muted-foreground"
@@ -151,9 +144,7 @@ export function ImageDetail() {
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
-          {/* Main Image Section */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Image container */}
             <div 
               className="rounded-xl overflow-hidden cursor-zoom-in shadow-lg bg-card flex justify-center items-center"
               onClick={toggleFullscreen}
@@ -165,7 +156,6 @@ export function ImageDetail() {
               />
             </div>
 
-            {/* Mobile Action Buttons */}
             <div className="flex justify-between items-center">
               <div className="flex space-x-2">
                 <Button 
@@ -196,7 +186,6 @@ export function ImageDetail() {
               </Button>
             </div>
 
-            {/* Image Information */}
             <div className="bg-card rounded-xl p-6 shadow-sm">
               <h1 className="text-2xl font-bold mb-2">{imageDetails.title}</h1>
               <p className="text-muted-foreground mb-6">{imageDetails.description || 'Aucune description disponible'}</p>
@@ -217,7 +206,7 @@ export function ImageDetail() {
               
               <div className="flex flex-wrap gap-x-8 gap-y-4 text-sm text-muted-foreground">
                 <div>
-                  <span className="block text-foreground font-medium">Date ajoutée</span>
+                  <span className="block text-foreground font-medium">Date d'ajout</span>
                   <span>{new Date(imageDetails.created_at).toLocaleDateString('fr-FR')}</span>
                 </div>
                 <div>
@@ -232,9 +221,7 @@ export function ImageDetail() {
             </div>
           </div>
 
-          {/* Sidebar with Details */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Author Information */}
             <div className="bg-card rounded-xl p-6 shadow-sm">
               <div className="flex items-center space-x-4 mb-4">
                 <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
@@ -248,7 +235,6 @@ export function ImageDetail() {
               <Button variant="outline" className="w-full">Voir le profil</Button>
             </div>
 
-            {/* Desktop Action Buttons */}
             <div className="hidden lg:block bg-card rounded-xl p-6 shadow-sm space-y-4">
               <h3 className="font-medium mb-4">Actions</h3>
               
@@ -280,7 +266,6 @@ export function ImageDetail() {
               </div>
             </div>
 
-            {/* License Information */}
             <div className="bg-card rounded-xl p-6 shadow-sm">
               <h3 className="font-medium mb-4">Informations de licence</h3>
               <p className="text-sm text-muted-foreground mb-4">
@@ -293,7 +278,6 @@ export function ImageDetail() {
           </div>
         </div>
 
-        {/* Related Images */}
         <div className="mt-20">
           <ImageGallery 
             title="Images similaires" 
