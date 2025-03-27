@@ -23,6 +23,9 @@ export const ImageCard = memo(function ImageCard({
   id, src, alt, title, author, className, orientation, onClick, downloadUrl, width, height
 }: ImageCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [naturalRatio, setNaturalRatio] = useState<number | undefined>(undefined);
+  const imageRef = useRef<HTMLImageElement>(null);
   const mountedRef = useRef(true);
   
   useEffect(() => {
@@ -31,14 +34,44 @@ export const ImageCard = memo(function ImageCard({
     };
   }, []);
 
-  // Calculer le ratio d'aspect basé sur les dimensions réelles de l'image si disponibles
+  // Détecter les dimensions naturelles de l'image après chargement
+  useEffect(() => {
+    if (imageRef.current) {
+      if (imageRef.current.complete) {
+        handleImageLoad();
+      }
+    }
+  }, [imageRef.current]);
+
+  const handleImageLoad = () => {
+    if (!mountedRef.current) return;
+    
+    if (imageRef.current) {
+      const imgElement = imageRef.current;
+      // Calcul le ratio naturel basé sur les dimensions réelles de l'image chargée
+      if (imgElement.naturalWidth && imgElement.naturalHeight) {
+        setNaturalRatio(imgElement.naturalWidth / imgElement.naturalHeight);
+      }
+      setImageLoaded(true);
+    }
+  };
+
+  // Calculer le ratio d'aspect basé sur différentes sources:
+  // 1. Dimensions transmises en props
+  // 2. Orientation transmise en props
+  // 3. Dimensions naturelles de l'image chargée
   const getAspectRatio = () => {
-    // Si width et height sont disponibles, utiliser le ratio réel
-    if (width && height) {
+    // Priorité 1: Si width et height sont disponibles en props, utiliser ce ratio
+    if (width && height && width > 0 && height > 0) {
       return width / height;
     }
+
+    // Priorité 2: Si naturalRatio est disponible (après chargement de l'image)
+    if (naturalRatio && naturalRatio > 0) {
+      return naturalRatio;
+    }
     
-    // Fallback sur les valeurs d'orientation prédéfinies
+    // Priorité 3: Fallback sur les valeurs d'orientation prédéfinies
     switch (orientation?.toLowerCase()) {
       case 'landscape':
         return 4/3;
@@ -47,7 +80,7 @@ export const ImageCard = memo(function ImageCard({
       case 'square':
         return 1;
       default:
-        return undefined; // Pas de ratio forcé, laisse l'image déterminer sa taille naturelle
+        return undefined; // Pas de ratio forcé
     }
   };
 
@@ -59,6 +92,7 @@ export const ImageCard = memo(function ImageCard({
   };
 
   const aspectRatio = getAspectRatio();
+  const shouldUseAspectRatio = aspectRatio !== undefined;
 
   return (
     <div 
@@ -73,22 +107,26 @@ export const ImageCard = memo(function ImageCard({
       onClick={onClick}
     >
       <div className="block relative">
-        {aspectRatio ? (
+        {shouldUseAspectRatio ? (
           <AspectRatio ratio={aspectRatio}>
             <img 
+              ref={imageRef}
               src={src}
               alt={alt} 
               className="w-full h-full object-cover"
               loading="lazy"
+              onLoad={handleImageLoad}
             />
           </AspectRatio>
         ) : (
           <img 
+            ref={imageRef}
             src={src}
             alt={alt} 
             className="w-full object-contain"
             loading="lazy"
             style={{ maxHeight: '80vh' }}
+            onLoad={handleImageLoad}
           />
         )}
         

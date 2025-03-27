@@ -55,6 +55,25 @@ const ImageItem = memo(function ImageItem({
   // Utiliser directement les URLs spécifiques
   const imageSrc = image.display_url || image.src;
   const downloadUrl = image.download_url || image.src;
+
+  // Vérifier si les dimensions sont cohérentes avec l'orientation déclarée
+  const determineOrientation = () => {
+    if (image.width && image.height) {
+      // Déterminer l'orientation à partir des dimensions réelles
+      if (image.width > image.height) {
+        return 'landscape';
+      } else if (image.height > image.width) {
+        return 'portrait';
+      } else {
+        return 'square';
+      }
+    }
+    // Fallback sur l'orientation déclarée si disponible
+    return image.orientation || 'landscape';
+  };
+  
+  // L'orientation calculée en fonction des dimensions réelles
+  const actualOrientation = determineOrientation();
   
   return (
     <div className="opacity-100 relative group">
@@ -99,9 +118,10 @@ const ImageItem = memo(function ImageItem({
           title={image.title || "Sans titre"}
           author={image.author || "Inconnu"}
           alt={image.alt || image.title || "Image"}
-          // Transmettre les dimensions d'origine pour respecter les proportions
+          // Transmettre les dimensions d'origine et l'orientation calculée
           width={image.width}
           height={image.height}
+          orientation={actualOrientation}
         />
       </div>
     </div>
