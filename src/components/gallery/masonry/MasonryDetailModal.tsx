@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -63,7 +62,6 @@ export function MasonryDetailModal({
     }
   };
 
-  // Fonctions de zoom maintenues pour le zoom au clic
   const handleZoomIn = () => {
     setZoomLevel(prev => Math.min(prev + 0.5, 4));
     setDragPosition({ x: 0, y: 0 });
@@ -114,7 +112,6 @@ export function MasonryDetailModal({
     setDragPosition({ x: 0, y: 0 });
   };
 
-  // Gestionnaire de clic sur l'image pour ouvrir en plein écran
   const handleImageClick = (e: React.MouseEvent) => {
     if (zoomLevel === 1) {
       console.log("Image clicked, opening fullscreen");
@@ -271,6 +268,7 @@ export function MasonryDetailModal({
             size="icon" 
             className="absolute right-4 top-4 z-10" 
             onClick={toggleFullscreen}
+            aria-label="Fermer le mode plein écran"
           >
             <X className="h-6 w-6" />
           </Button>
@@ -304,6 +302,7 @@ export function MasonryDetailModal({
                 size="icon" 
                 className="absolute right-4 top-4 z-10" 
                 onClick={handleClose}
+                aria-label="Fermer le détail de l'image"
               >
                 <X className="h-6 w-6" />
               </Button>
