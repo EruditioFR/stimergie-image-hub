@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Download, ZoomIn, ZoomOut, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface MasonryDetailModalProps {
   image: any;
@@ -29,6 +30,25 @@ export function MasonryDetailModal({
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
   const [isFullPage, setIsFullPage] = useState(true);
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  useEffect(() => {
+    if (image && isOpen) {
+      setImageLoaded(false);
+      setZoomLevel(1);
+      setDragPosition({ x: 0, y: 0 });
+    }
+  }, [image, isOpen]);
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    setImageDimensions({
+      width: img.naturalWidth,
+      height: img.naturalHeight
+    });
+    setImageLoaded(true);
+  };
 
   const handleDownload = () => {
     if (image) {
@@ -79,6 +99,7 @@ export function MasonryDetailModal({
     setZoomLevel(1);
     setDragPosition({ x: 0, y: 0 });
     setIsFullPage(true);
+    setImageLoaded(false);
     onClose();
   };
 
@@ -129,6 +150,7 @@ export function MasonryDetailModal({
               transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
               transformOrigin: 'center',
             }}
+            onLoad={handleImageLoad}
             onError={(e) => {
               console.error('Erreur de chargement d\'image:', e, image);
               const imgElement = e.target as HTMLImageElement;
@@ -190,7 +212,7 @@ export function MasonryDetailModal({
         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
           <div>
             <span className="block text-foreground font-medium">Dimensions</span>
-            <span>{image?.width || '–'} × {image?.height || '–'}</span>
+            <span>{imageDimensions.width || image?.width || '–'} × {imageDimensions.height || image?.height || '–'}</span>
           </div>
           {image?.orientation && (
             <div>
@@ -215,6 +237,28 @@ export function MasonryDetailModal({
       </div>
     </div>
   );
+
+  // Calculate modal width based on image dimensions
+  let modalWidth = 'auto';
+  let modalClass = '';
+  if (imageLoaded && imageDimensions.width > 0) {
+    const aspectRatio = imageDimensions.width / imageDimensions.height;
+    
+    // Set a max width based on viewport and aspect ratio
+    if (aspectRatio > 1.5) {
+      // Wider images
+      modalWidth = `min(90vw, ${Math.min(imageDimensions.width + 120, 1200)}px)`;
+      modalClass = 'wide-image';
+    } else if (aspectRatio < 0.7) {
+      // Taller images
+      modalWidth = `min(70vw, ${Math.min(imageDimensions.width + 120, 800)}px)`;
+      modalClass = 'tall-image';
+    } else {
+      // More square images
+      modalWidth = `min(80vw, ${Math.min(imageDimensions.width + 120, 1000)}px)`;
+      modalClass = 'square-image';
+    }
+  }
 
   return (
     <>
@@ -246,7 +290,14 @@ export function MasonryDetailModal({
         </Sheet>
       ) : (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent 
+            className={`${modalClass} overflow-y-auto`}
+            style={{ 
+              width: modalWidth, 
+              maxHeight: '90vh',
+              padding: '24px'
+            }}
+          >
             <DialogTitle className="sr-only">{image?.title || 'Détail de l\'image'}</DialogTitle>
             <ImageContent />
           </DialogContent>
