@@ -91,7 +91,6 @@ const ImageItem = memo(function ImageItem({
         <ImageCard 
           {...image} 
           className={`w-full transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
-          orientation={image.orientation}
           onClick={handleClick}
           // Utiliser les URLs correctes
           src={imageSrc}
@@ -100,6 +99,9 @@ const ImageItem = memo(function ImageItem({
           title={image.title || "Sans titre"}
           author={image.author || "Inconnu"}
           alt={image.alt || image.title || "Image"}
+          // Transmettre les dimensions d'origine pour respecter les proportions
+          width={image.width}
+          height={image.height}
         />
       </div>
     </div>

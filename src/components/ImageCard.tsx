@@ -3,6 +3,7 @@ import { useState, memo, useRef, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface ImageCardProps {
   id: string;
@@ -14,10 +15,12 @@ interface ImageCardProps {
   orientation?: string;
   onClick?: (e: React.MouseEvent) => void;
   downloadUrl?: string;
+  width?: number;
+  height?: number;
 }
 
 export const ImageCard = memo(function ImageCard({ 
-  id, src, alt, title, author, className, orientation, onClick, downloadUrl 
+  id, src, alt, title, author, className, orientation, onClick, downloadUrl, width, height
 }: ImageCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const mountedRef = useRef(true);
@@ -28,16 +31,23 @@ export const ImageCard = memo(function ImageCard({
     };
   }, []);
 
+  // Calculer le ratio d'aspect basé sur les dimensions réelles de l'image si disponibles
   const getAspectRatio = () => {
+    // Si width et height sont disponibles, utiliser le ratio réel
+    if (width && height) {
+      return width / height;
+    }
+    
+    // Fallback sur les valeurs d'orientation prédéfinies
     switch (orientation?.toLowerCase()) {
       case 'landscape':
-        return 'aspect-[4/3]';
+        return 4/3;
       case 'portrait':
-        return 'aspect-[3/4]';
+        return 3/4;
       case 'square':
-        return 'aspect-square';
+        return 1;
       default:
-        return 'aspect-auto';
+        return undefined; // Pas de ratio forcé, laisse l'image déterminer sa taille naturelle
     }
   };
 
@@ -47,6 +57,8 @@ export const ImageCard = memo(function ImageCard({
     const url = downloadUrl || src;
     window.open(url, '_blank');
   };
+
+  const aspectRatio = getAspectRatio();
 
   return (
     <div 
@@ -61,12 +73,24 @@ export const ImageCard = memo(function ImageCard({
       onClick={onClick}
     >
       <div className="block relative">
-        <img 
-          src={src}
-          alt={alt} 
-          className={cn(`w-full ${getAspectRatio()} object-cover`)}
-          loading="lazy"
-        />
+        {aspectRatio ? (
+          <AspectRatio ratio={aspectRatio}>
+            <img 
+              src={src}
+              alt={alt} 
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </AspectRatio>
+        ) : (
+          <img 
+            src={src}
+            alt={alt} 
+            className="w-full object-contain"
+            loading="lazy"
+            style={{ maxHeight: '80vh' }}
+          />
+        )}
         
         <div className={cn(
           "absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent",
