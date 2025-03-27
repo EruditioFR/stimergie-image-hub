@@ -67,13 +67,23 @@ export async function fetchGalleryImages(
     const display_url = generateDisplayImageUrl(folderName, imageTitle);
     const download_url = generateDownloadImageUrl(folderName, imageTitle);
     
-    console.log('URLs générées:', {
-      id: img.id,
-      folder: folderName,
-      title: imageTitle,
-      display: display_url,
-      download: download_url
-    });
+    // Assurer que les dimensions sont des nombres valides
+    const width = parseInt(img.width) || 0;
+    const height = parseInt(img.height) || 0;
+    
+    // Déterminer l'orientation basée sur les dimensions réelles
+    let orientation = img.orientation || 'landscape';
+    if (width > 0 && height > 0) {
+      if (width > height) {
+        orientation = 'landscape';
+      } else if (height > width) {
+        orientation = 'portrait';
+      } else {
+        orientation = 'square';
+      }
+    }
+    
+    console.log(`Image ${img.id} (${imageTitle}): dims=${width}x${height}, orientation=${orientation}`);
     
     return {
       ...img,
@@ -83,6 +93,11 @@ export async function fetchGalleryImages(
       // Pour rétrocompatibilité
       url: download_url,
       url_miniature: display_url,
+      // Assurer que width et height sont des nombres
+      width: width,
+      height: height,
+      // Assurer que l'orientation est correcte selon les dimensions
+      orientation: orientation,
       // Parser les tags
       tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
     };

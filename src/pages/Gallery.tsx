@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
@@ -9,7 +8,7 @@ import { EmptyResults } from '@/components/gallery/EmptyResults';
 import { useAuth } from '@/context/AuthContext';
 import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { Image } from '@/utils/image/types'; // Update to use the correct Image type
+import { Image } from '@/utils/image/types'; 
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
@@ -61,6 +60,13 @@ const Gallery = () => {
 
   // Les images à afficher sont toujours celles de la requête actuelle (pas d'accumulation)
   const displayedImages = allImages;
+  
+  // Formater les images pour la grille masonry en prenant en compte les dimensions et proportions
+  const formattedImages = useMemo(() => {
+    console.log(`Formatting ${displayedImages.length} images for grid display...`);
+    return formatImagesForGrid(displayedImages);
+  }, [displayedImages, formatImagesForGrid]);
+  
   const shouldShowEmptyState = !isLoading && displayedImages.length === 0;
 
   // Gestionnaire de changement de page optimisé
@@ -135,7 +141,7 @@ const Gallery = () => {
             <MasonryGrid images={[]} isLoading={true} />
           ) : displayedImages.length > 0 ? (
             <MasonryGrid 
-              images={formatImagesForGrid(displayedImages)} 
+              images={formattedImages} 
               isLoading={isLoading || isFetching}
               totalCount={totalCount}
               currentPage={currentPage}

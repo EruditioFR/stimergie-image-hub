@@ -1,4 +1,3 @@
-
 import { useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGalleryFilters } from './useGalleryFilters';
@@ -137,9 +136,24 @@ export const useGalleryImages = (isAdmin: boolean) => {
 
   const formatImagesForGrid = useCallback((images: any[] = []) => {
     return images.map(image => {
-      // Privilégier les URLs directs si disponibles
       const srcUrl = image.display_url || image.url_miniature || image.url || '';
       const downloadUrl = image.download_url || image.url || '';
+      
+      const width = parseInt(image.width) || 0;
+      const height = parseInt(image.height) || 0;
+      
+      let orientation = image.orientation || 'landscape';
+      if (width > 0 && height > 0) {
+        if (width > height) {
+          orientation = 'landscape';
+        } else if (height > width) {
+          orientation = 'portrait';
+        } else {
+          orientation = 'square';
+        }
+      }
+      
+      console.log(`Image ${image.id} (${image.title}): dims=${width}x${height}, orientation=${orientation}`);
 
       return {
         id: image.id.toString(),
@@ -150,12 +164,11 @@ export const useGalleryImages = (isAdmin: boolean) => {
         title: image.title || "Sans titre",
         author: image.created_by || 'Utilisateur',
         tags: image.tags || [],
-        orientation: image.orientation || 'landscape',
-        width: image.width || 800,
-        height: image.height || 600,
+        orientation: orientation,
+        width: width,
+        height: height,
         created_at: image.created_at || new Date().toISOString(),
         description: image.description || '',
-        // Conserver pour rétrocompatibilité
         url_miniature: srcUrl,
         url: downloadUrl
       } as Image;
