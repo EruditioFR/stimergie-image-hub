@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -264,6 +265,7 @@ export function MasonryDetailModal({
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogTitle className="sr-only">{image?.title || 'Détail de l\'image'}</DialogTitle>
             <ImageContent />
+            {/* The default close button from DialogContent component is removed here */}
           </DialogContent>
         </Dialog>
       )}
