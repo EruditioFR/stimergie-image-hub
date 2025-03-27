@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -238,23 +237,18 @@ export function MasonryDetailModal({
     </div>
   );
 
-  // Calculate modal width based on image dimensions
   let modalWidth = 'auto';
   let modalClass = '';
   if (imageLoaded && imageDimensions.width > 0) {
     const aspectRatio = imageDimensions.width / imageDimensions.height;
     
-    // Set a max width based on viewport and aspect ratio
     if (aspectRatio > 1.5) {
-      // Wider images
       modalWidth = `min(90vw, ${Math.min(imageDimensions.width + 120, 1200)}px)`;
       modalClass = 'wide-image';
     } else if (aspectRatio < 0.7) {
-      // Taller images
       modalWidth = `min(70vw, ${Math.min(imageDimensions.width + 120, 800)}px)`;
       modalClass = 'tall-image';
     } else {
-      // More square images
       modalWidth = `min(80vw, ${Math.min(imageDimensions.width + 120, 1000)}px)`;
       modalClass = 'square-image';
     }
@@ -271,7 +265,7 @@ export function MasonryDetailModal({
       
       {isFullPage ? (
         <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-          <SheetContent side="bottom" className="h-screen p-0 max-w-none w-full sm:max-w-none">
+          <SheetContent side="right" className="h-screen p-0 max-w-none w-[50%] sm:max-w-none">
             <div className="h-full overflow-y-auto p-6 relative">
               <Button 
                 variant="ghost" 

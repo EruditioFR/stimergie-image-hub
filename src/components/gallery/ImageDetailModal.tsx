@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { X, Download, Heart, Share2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -298,14 +297,14 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
             <img 
               src={image.display_url || image.url} 
               alt={image.title} 
-              className="max-w-full max-h-full object-contain animate-fade-in transition-transform duration-200"
+              className="max-w-full max-h-[65vh] object-contain transition-transform duration-200"
               style={{ 
                 transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
                 transformOrigin: 'center',
               }}
             />
             
-            <div className="absolute bottom-8 right-8 flex gap-2">
+            <div className="absolute bottom-3 right-3 flex gap-2">
               <Button 
                 variant="secondary" 
                 size="icon" 
@@ -331,7 +330,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
 
       {isFullPage ? (
         <Sheet open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
-          <SheetContent side="bottom" className="h-screen p-0 max-w-none w-full sm:max-w-none">
+          <SheetContent side="right" className="h-screen p-0 max-w-none w-[50%] sm:max-w-none">
             <div className="h-full overflow-y-auto relative">
               <Button 
                 variant="ghost" 
@@ -350,7 +349,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
         </Sheet>
       ) : (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
-          <DialogContent className="max-w-7xl w-[95vw] max-h-[90vh] p-0 overflow-auto">
+          <DialogContent className="w-[50%] max-h-[90vh] p-0 overflow-auto">
             <DialogTitle className="sr-only">{image.title}</DialogTitle>
             <ImageContent />
           </DialogContent>
