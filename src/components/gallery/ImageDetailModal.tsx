@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { X, Download, Heart, Share2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { X, Download, Heart, Share2, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -19,10 +19,6 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isFullPage, setIsFullPage] = useState(false);
   const { toast } = useToast();
-  
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
 
   if (!image) return null;
 
@@ -48,64 +44,22 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
   const toggleFullscreen = () => {
     console.log("Toggling fullscreen mode");
     setIsFullscreen(!isFullscreen);
-    setZoomLevel(1);
-    setDragPosition({ x: 0, y: 0 });
   };
   
   const toggleFullPage = () => {
     setIsFullPage(!isFullPage);
-    setZoomLevel(1);
-    setDragPosition({ x: 0, y: 0 });
-  };
-  
-  const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 0.5, 4));
-    setDragPosition({ x: 0, y: 0 });
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel(prev => {
-      const newZoom = Math.max(prev - 0.5, 1);
-      if (newZoom === 1) {
-        setDragPosition({ x: 0, y: 0 });
-      }
-      return newZoom;
-    });
-  };
-  
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (zoomLevel > 1) {
-      setIsDragging(true);
-    }
-  };
-  
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging && zoomLevel > 1) {
-      setDragPosition(prev => ({
-        x: prev.x + e.movementX,
-        y: prev.y + e.movementY
-      }));
-    }
-  };
-  
-  const handleMouseUp = () => {
-    setIsDragging(false);
   };
   
   const handleModalClose = () => {
-    setZoomLevel(1);
-    setDragPosition({ x: 0, y: 0 });
     setIsFullPage(false);
     setIsFullscreen(false);
     onClose();
   };
 
   // Gestionnaire explicite pour le clic sur l'image
-  const handleImageClick = (e: React.MouseEvent) => {
+  const handleImageClick = () => {
     console.log("Image clicked, opening fullscreen");
-    if (zoomLevel === 1) {
-      toggleFullscreen();
-    }
+    toggleFullscreen();
   };
 
   const ImageContent = () => (
@@ -129,48 +83,18 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
             className="rounded-xl overflow-hidden shadow-lg bg-card flex justify-center relative"
           >
             <div 
-              className={`relative ${zoomLevel > 1 ? 'cursor-grab' : 'cursor-zoom-in'} ${isDragging ? 'cursor-grabbing' : ''}`}
+              className="relative cursor-zoom-in"
               style={{ 
                 overflow: 'hidden', 
-                height: zoomLevel > 1 ? '65vh' : 'auto',
                 width: '100%'
               }}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
               onClick={handleImageClick}
             >
               <img 
                 src={image.display_url || image.url} 
                 alt={image.title} 
                 className="max-w-full max-h-[65vh] object-contain transition-transform duration-200"
-                style={{ 
-                  transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
-                  transformOrigin: 'center',
-                }}
               />
-            </div>
-            
-            <div className="absolute bottom-3 right-3 flex gap-2">
-              <Button 
-                variant="secondary" 
-                size="icon" 
-                onClick={handleZoomOut} 
-                disabled={zoomLevel <= 1}
-                className="bg-background/80 hover:bg-background"
-              >
-                <ZoomOut className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="secondary" 
-                size="icon" 
-                onClick={handleZoomIn} 
-                disabled={zoomLevel >= 4}
-                className="bg-background/80 hover:bg-background"
-              >
-                <ZoomIn className="h-4 w-4" />
-              </Button>
             </div>
           </div>
 
@@ -298,43 +222,12 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
           >
             <X className="h-6 w-6" />
           </Button>
-          <div 
-            className={`w-full h-full p-4 md:p-8 flex items-center justify-center relative ${zoomLevel > 1 ? 'cursor-grab' : ''} ${isDragging ? 'cursor-grabbing' : ''}`}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-          >
+          <div className="w-full h-full p-4 md:p-8 flex items-center justify-center relative">
             <img 
               src={image.display_url || image.url} 
               alt={image.title} 
               className="max-w-full max-h-full object-contain animate-fade-in"
-              style={{ 
-                transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
-                transformOrigin: 'center',
-              }}
             />
-            
-            <div className="absolute bottom-8 right-8 flex gap-2">
-              <Button 
-                variant="secondary" 
-                size="icon" 
-                onClick={handleZoomOut} 
-                disabled={zoomLevel <= 1}
-                className="bg-background/80 hover:bg-background"
-              >
-                <ZoomOut className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="secondary" 
-                size="icon" 
-                onClick={handleZoomIn} 
-                disabled={zoomLevel >= 4}
-                className="bg-background/80 hover:bg-background"
-              >
-                <ZoomIn className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
         </div>
       )}
@@ -346,7 +239,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="absolute right-4 top-4 z-10" 
+                className="absolute right-4 top-4 z-10 text-foreground" 
                 onClick={handleModalClose}
               >
                 <X className="h-6 w-6" />

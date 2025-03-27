@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Download, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
@@ -26,19 +26,14 @@ export function MasonryDetailModal({
   selectedImages,
   images
 }: MasonryDetailModalProps) {
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
-  const [isFullPage, setIsFullPage] = useState(true);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullPage, setIsFullPage] = useState(true);
 
   useEffect(() => {
     if (image && isOpen) {
       setImageLoaded(false);
-      setZoomLevel(1);
-      setDragPosition({ x: 0, y: 0 });
       setIsFullscreen(false);
     }
   }, [image, isOpen]);
@@ -63,43 +58,7 @@ export function MasonryDetailModal({
     }
   };
 
-  const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 0.5, 4));
-    setDragPosition({ x: 0, y: 0 });
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel(prev => {
-      const newZoom = Math.max(prev - 0.5, 1);
-      if (newZoom === 1) {
-        setDragPosition({ x: 0, y: 0 });
-      }
-      return newZoom;
-    });
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (zoomLevel > 1) {
-      setIsDragging(true);
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging && zoomLevel > 1) {
-      setDragPosition(prev => ({
-        x: prev.x + e.movementX,
-        y: prev.y + e.movementY
-      }));
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
   const handleClose = () => {
-    setZoomLevel(1);
-    setDragPosition({ x: 0, y: 0 });
     setIsFullPage(true);
     setImageLoaded(false);
     setIsFullscreen(false);
@@ -109,15 +68,11 @@ export function MasonryDetailModal({
   const toggleFullscreen = () => {
     console.log("Toggling fullscreen mode");
     setIsFullscreen(!isFullscreen);
-    setZoomLevel(1);
-    setDragPosition({ x: 0, y: 0 });
   };
 
   const handleImageClick = (e: React.MouseEvent) => {
-    if (zoomLevel === 1) {
-      console.log("Image clicked, opening fullscreen");
-      toggleFullscreen();
-    }
+    console.log("Image clicked, opening fullscreen");
+    toggleFullscreen();
   };
 
   if (!image && isOpen) {
@@ -158,25 +113,17 @@ export function MasonryDetailModal({
       
       <div className="relative rounded-md overflow-hidden flex justify-center">
         <div 
-          className={`relative ${zoomLevel > 1 ? 'cursor-grab' : 'cursor-zoom-in'} ${isDragging ? 'cursor-grabbing' : ''}`}
+          className="relative cursor-zoom-in"
           style={{ 
             overflow: 'hidden', 
-            height: zoomLevel > 1 ? (isFullPage ? '75vh' : '65vh') : 'auto'
+            height: 'auto'
           }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
           onClick={handleImageClick}
         >
           <img 
             src={image?.display_url || image?.url_miniature || image?.src || image?.url || ''} 
             alt={image?.title || 'Image'} 
             className={`max-w-full ${isFullPage ? 'max-h-[80vh]' : 'max-h-[70vh]'} object-contain transition-transform duration-200 hover:scale-105`}
-            style={{ 
-              transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
-              transformOrigin: 'center',
-            }}
             onLoad={handleImageLoad}
             onError={(e) => {
               console.error('Erreur de chargement d\'image:', e, image);
@@ -277,26 +224,17 @@ export function MasonryDetailModal({
               size="icon" 
               onClick={toggleFullscreen}
               aria-label="Fermer le mode plein écran"
+              className="text-foreground"
             >
               <X className="h-6 w-6" />
             </Button>
           </div>
           
-          <div 
-            className={`w-full h-full p-4 md:p-8 flex items-center justify-center relative ${zoomLevel > 1 ? 'cursor-grab' : ''} ${isDragging ? 'cursor-grabbing' : ''}`}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-          >
+          <div className="w-full h-full p-4 md:p-8 flex items-center justify-center relative">
             <img 
               src={image?.display_url || image?.url_miniature || image?.src || image?.url || ''} 
               alt={image?.title || 'Image'} 
-              className="max-w-full max-h-full object-contain animate-fade-in hover:scale-105 transition-transform duration-200"
-              style={{ 
-                transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
-                transformOrigin: 'center',
-              }}
+              className="max-w-full max-h-full object-contain animate-fade-in transition-transform duration-200"
             />
           </div>
         </div>
@@ -312,6 +250,7 @@ export function MasonryDetailModal({
                   size="icon" 
                   onClick={handleClose}
                   aria-label="Fermer le détail de l'image"
+                  className="text-foreground"
                 >
                   <X className="h-6 w-6" />
                 </Button>
