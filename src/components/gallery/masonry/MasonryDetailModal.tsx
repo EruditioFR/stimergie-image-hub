@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Download, X } from 'lucide-react';
+import { Download, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
@@ -145,6 +146,14 @@ export function MasonryDetailModal({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">{image?.title || 'Sans titre'}</h2>
+        <Button 
+          onClick={handleDownload}
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          <Download className="h-4 w-4" />
+          <span>Télécharger</span>
+        </Button>
       </div>
       
       <div className="relative rounded-md overflow-hidden flex justify-center">
@@ -163,7 +172,7 @@ export function MasonryDetailModal({
           <img 
             src={image?.display_url || image?.url_miniature || image?.src || image?.url || ''} 
             alt={image?.title || 'Image'} 
-            className={`max-w-full ${isFullPage ? 'max-h-[80vh]' : 'max-h-[70vh]'} object-contain transition-transform duration-200`}
+            className={`max-w-full ${isFullPage ? 'max-h-[80vh]' : 'max-h-[70vh]'} object-contain transition-transform duration-200 hover:scale-105`}
             style={{ 
               transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
               transformOrigin: 'center',
@@ -194,15 +203,6 @@ export function MasonryDetailModal({
             </span>
           ))}
         </div>
-        
-        <Button 
-          onClick={handleDownload}
-          className="ml-auto"
-          variant="default"
-        >
-          <Download className="mr-2 h-4 w-4" />
-          Télécharger
-        </Button>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -263,15 +263,24 @@ export function MasonryDetailModal({
       
       {isFullscreen && (
         <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="absolute right-4 top-4 z-10" 
-            onClick={toggleFullscreen}
-            aria-label="Fermer le mode plein écran"
-          >
-            <X className="h-6 w-6" />
-          </Button>
+          <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+            <Button 
+              variant="secondary"
+              onClick={handleDownload}
+              aria-label="Télécharger l'image"
+              className="bg-background/80 hover:bg-background"
+            >
+              <Download className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleFullscreen}
+              aria-label="Fermer le mode plein écran"
+            >
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
           
           <div 
             className={`w-full h-full p-4 md:p-8 flex items-center justify-center relative ${zoomLevel > 1 ? 'cursor-grab' : ''} ${isDragging ? 'cursor-grabbing' : ''}`}
@@ -283,7 +292,7 @@ export function MasonryDetailModal({
             <img 
               src={image?.display_url || image?.url_miniature || image?.src || image?.url || ''} 
               alt={image?.title || 'Image'} 
-              className="max-w-full max-h-full object-contain animate-fade-in"
+              className="max-w-full max-h-full object-contain animate-fade-in hover:scale-105 transition-transform duration-200"
               style={{ 
                 transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
                 transformOrigin: 'center',
@@ -297,15 +306,24 @@ export function MasonryDetailModal({
         <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
           <SheetContent side="right" className="h-screen p-0 max-w-none w-[50%] sm:max-w-none">
             <div className="h-full overflow-y-auto p-6 relative">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="absolute right-4 top-4 z-10" 
-                onClick={handleClose}
-                aria-label="Fermer le détail de l'image"
-              >
-                <X className="h-6 w-6" />
-              </Button>
+              <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleDownload}
+                  aria-label="Télécharger l'image"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleClose}
+                  aria-label="Fermer le détail de l'image"
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+              </div>
               
               <div className="max-w-6xl mx-auto pt-8">
                 <ImageContent />
@@ -324,6 +342,16 @@ export function MasonryDetailModal({
             }}
           >
             <DialogTitle className="sr-only">{image?.title || 'Détail de l\'image'}</DialogTitle>
+            <div className="absolute right-12 top-4 z-10">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleDownload}
+                aria-label="Télécharger l'image"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            </div>
             <ImageContent />
           </DialogContent>
         </Dialog>
