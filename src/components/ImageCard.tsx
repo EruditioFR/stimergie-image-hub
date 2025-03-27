@@ -1,4 +1,3 @@
-
 import { useState, memo, useRef, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,7 +33,6 @@ export const ImageCard = memo(function ImageCard({
     };
   }, []);
 
-  // Détecter les dimensions naturelles de l'image après chargement
   useEffect(() => {
     if (imageRef.current) {
       if (imageRef.current.complete) {
@@ -48,7 +46,6 @@ export const ImageCard = memo(function ImageCard({
     
     if (imageRef.current) {
       const imgElement = imageRef.current;
-      // Calcul le ratio naturel basé sur les dimensions réelles de l'image chargée
       if (imgElement.naturalWidth && imgElement.naturalHeight) {
         setNaturalRatio(imgElement.naturalWidth / imgElement.naturalHeight);
       }
@@ -56,22 +53,15 @@ export const ImageCard = memo(function ImageCard({
     }
   };
 
-  // Calculer le ratio d'aspect basé sur différentes sources:
-  // 1. Dimensions transmises en props
-  // 2. Orientation transmise en props
-  // 3. Dimensions naturelles de l'image chargée
   const getAspectRatio = () => {
-    // Priorité 1: Si width et height sont disponibles en props, utiliser ce ratio
     if (width && height && width > 0 && height > 0) {
       return width / height;
     }
 
-    // Priorité 2: Si naturalRatio est disponible (après chargement de l'image)
     if (naturalRatio && naturalRatio > 0) {
       return naturalRatio;
     }
     
-    // Priorité 3: Fallback sur les valeurs d'orientation prédéfinies
     switch (orientation?.toLowerCase()) {
       case 'landscape':
         return 4/3;
@@ -80,7 +70,7 @@ export const ImageCard = memo(function ImageCard({
       case 'square':
         return 1;
       default:
-        return undefined; // Pas de ratio forcé
+        return undefined;
     }
   };
 
@@ -136,7 +126,6 @@ export const ImageCard = memo(function ImageCard({
           "flex flex-col justify-end p-4"
         )}>
           <h3 className="text-white font-medium truncate">{title}</h3>
-          <p className="text-white/80 text-sm">Par {author}</p>
         </div>
       </div>
       
