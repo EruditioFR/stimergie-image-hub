@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Download, ZoomIn, ZoomOut, X, Minimize2 } from 'lucide-react';
+import { Download, ZoomIn, ZoomOut, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 
@@ -82,12 +82,6 @@ export function MasonryDetailModal({
     onClose();
   };
 
-  const toggleFullPage = () => {
-    setIsFullPage(!isFullPage);
-    setZoomLevel(1);
-    setDragPosition({ x: 0, y: 0 });
-  };
-
   if (!image && isOpen) {
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
@@ -113,16 +107,6 @@ export function MasonryDetailModal({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">{image?.title || 'Sans titre'}</h2>
-        {isFullPage && (
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={toggleFullPage}
-            className="ml-auto"
-          >
-            <Minimize2 className="h-4 w-4" />
-          </Button>
-        )}
       </div>
       
       <div className="relative rounded-md overflow-hidden flex justify-center">
@@ -265,7 +249,6 @@ export function MasonryDetailModal({
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogTitle className="sr-only">{image?.title || 'Détail de l\'image'}</DialogTitle>
             <ImageContent />
-            {/* The default close button from DialogContent component is removed here */}
           </DialogContent>
         </Dialog>
       )}
