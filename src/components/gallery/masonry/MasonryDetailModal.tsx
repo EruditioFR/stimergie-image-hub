@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -308,14 +307,6 @@ export function MasonryDetailModal({
             <div className="h-full overflow-y-auto p-6 relative">
               <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
                 <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleDownload}
-                  aria-label="Télécharger l'image"
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-                <Button 
                   variant="ghost" 
                   size="icon" 
                   onClick={handleClose}
@@ -342,16 +333,6 @@ export function MasonryDetailModal({
             }}
           >
             <DialogTitle className="sr-only">{image?.title || 'Détail de l\'image'}</DialogTitle>
-            <div className="absolute right-12 top-4 z-10">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleDownload}
-                aria-label="Télécharger l'image"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-            </div>
             <ImageContent />
           </DialogContent>
         </Dialog>
