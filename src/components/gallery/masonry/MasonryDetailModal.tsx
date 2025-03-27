@@ -63,6 +63,22 @@ export function MasonryDetailModal({
     }
   };
 
+  // Fonctions de zoom maintenues pour le zoom au clic
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.5, 4));
+    setDragPosition({ x: 0, y: 0 });
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => {
+      const newZoom = Math.max(prev - 0.5, 1);
+      if (newZoom === 1) {
+        setDragPosition({ x: 0, y: 0 });
+      }
+      return newZoom;
+    });
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (zoomLevel > 1) {
       setIsDragging(true);
@@ -92,15 +108,25 @@ export function MasonryDetailModal({
   };
 
   const toggleFullscreen = () => {
+    console.log("Toggling fullscreen mode");
     setIsFullscreen(!isFullscreen);
     setZoomLevel(1);
     setDragPosition({ x: 0, y: 0 });
+  };
+
+  // Gestionnaire de clic sur l'image pour ouvrir en plein écran
+  const handleImageClick = (e: React.MouseEvent) => {
+    if (zoomLevel === 1) {
+      console.log("Image clicked, opening fullscreen");
+      toggleFullscreen();
+    }
   };
 
   if (!image && isOpen) {
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
         <DialogContent>
+          <DialogTitle className="sr-only">Aucune image</DialogTitle>
           <p>Aucune image sélectionnée</p>
         </DialogContent>
       </Dialog>
@@ -135,7 +161,7 @@ export function MasonryDetailModal({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          onClick={zoomLevel === 1 ? toggleFullscreen : undefined}
+          onClick={handleImageClick}
         >
           <img 
             src={image?.display_url || image?.url_miniature || image?.src || image?.url || ''} 

@@ -46,6 +46,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
   };
 
   const toggleFullscreen = () => {
+    console.log("Toggling fullscreen mode");
     setIsFullscreen(!isFullscreen);
     setZoomLevel(1);
     setDragPosition({ x: 0, y: 0 });
@@ -99,7 +100,9 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
     onClose();
   };
 
+  // Gestionnaire explicite pour le clic sur l'image
   const handleImageClick = (e: React.MouseEvent) => {
+    console.log("Image clicked, opening fullscreen");
     if (zoomLevel === 1) {
       toggleFullscreen();
     }
