@@ -16,7 +16,6 @@ interface ImageDetailModalProps {
 
 export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalProps) {
   const [liked, setLiked] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isFullPage, setIsFullPage] = useState(false);
   const { toast } = useToast();
 
@@ -40,11 +39,6 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
       description: 'Lien copié dans le presse-papier'
     });
   };
-
-  const toggleFullscreen = () => {
-    console.log("Toggling fullscreen mode");
-    setIsFullscreen(!isFullscreen);
-  };
   
   const toggleFullPage = () => {
     setIsFullPage(!isFullPage);
@@ -52,14 +46,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
   
   const handleModalClose = () => {
     setIsFullPage(false);
-    setIsFullscreen(false);
     onClose();
-  };
-
-  // Gestionnaire explicite pour le clic sur l'image
-  const handleImageClick = () => {
-    console.log("Image clicked, opening fullscreen");
-    toggleFullscreen();
   };
 
   const ImageContent = () => (
@@ -68,7 +55,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
         <div className="lg:col-span-3 space-y-6">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-2xl font-bold">{image.title}</h2>
-            {!isFullPage && !isFullscreen && (
+            {!isFullPage && (
               <Button
                 variant="outline"
                 size="icon"
@@ -82,18 +69,11 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
           <div 
             className="rounded-xl overflow-hidden shadow-lg bg-card flex justify-center relative"
           >
-            <div 
-              className="relative cursor-zoom-in"
-              style={{ 
-                overflow: 'hidden', 
-                width: '100%'
-              }}
-              onClick={handleImageClick}
-            >
+            <div className="relative w-full">
               <img 
                 src={image.display_url || image.url} 
                 alt={image.title} 
-                className="max-w-full max-h-[65vh] object-contain transition-transform duration-200"
+                className="max-w-full max-h-[65vh] object-contain"
               />
             </div>
           </div>
@@ -212,26 +192,6 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
 
   return (
     <>
-      {isFullscreen && (
-        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="absolute top-4 right-4 text-foreground z-10"
-            onClick={toggleFullscreen}
-          >
-            <X className="h-6 w-6" />
-          </Button>
-          <div className="w-full h-full p-4 md:p-8 flex items-center justify-center relative">
-            <img 
-              src={image.display_url || image.url} 
-              alt={image.title} 
-              className="max-w-full max-h-full object-contain animate-fade-in"
-            />
-          </div>
-        </div>
-      )}
-
       {isFullPage ? (
         <Sheet open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
           <SheetContent side="right" className="h-screen p-0 max-w-none w-[50%] sm:max-w-none">

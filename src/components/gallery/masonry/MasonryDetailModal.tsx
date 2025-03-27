@@ -28,13 +28,11 @@ export function MasonryDetailModal({
 }: MasonryDetailModalProps) {
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isFullPage, setIsFullPage] = useState(true);
 
   useEffect(() => {
     if (image && isOpen) {
       setImageLoaded(false);
-      setIsFullscreen(false);
     }
   }, [image, isOpen]);
 
@@ -61,18 +59,7 @@ export function MasonryDetailModal({
   const handleClose = () => {
     setIsFullPage(true);
     setImageLoaded(false);
-    setIsFullscreen(false);
     onClose();
-  };
-
-  const toggleFullscreen = () => {
-    console.log("Toggling fullscreen mode");
-    setIsFullscreen(!isFullscreen);
-  };
-
-  const handleImageClick = (e: React.MouseEvent) => {
-    console.log("Image clicked, opening fullscreen");
-    toggleFullscreen();
   };
 
   if (!image && isOpen) {
@@ -113,17 +100,16 @@ export function MasonryDetailModal({
       
       <div className="relative rounded-md overflow-hidden flex justify-center">
         <div 
-          className="relative cursor-zoom-in"
+          className="relative"
           style={{ 
             overflow: 'hidden', 
             height: 'auto'
           }}
-          onClick={handleImageClick}
         >
           <img 
             src={image?.display_url || image?.url_miniature || image?.src || image?.url || ''} 
             alt={image?.title || 'Image'} 
-            className={`max-w-full ${isFullPage ? 'max-h-[80vh]' : 'max-h-[70vh]'} object-contain transition-transform duration-200 hover:scale-105`}
+            className={`max-w-full ${isFullPage ? 'max-h-[80vh]' : 'max-h-[70vh]'} object-contain`}
             onLoad={handleImageLoad}
             onError={(e) => {
               console.error('Erreur de chargement d\'image:', e, image);
@@ -207,38 +193,6 @@ export function MasonryDetailModal({
         selectedImageIds={selectedImages}
         selectedImages={images}
       />
-      
-      {isFullscreen && (
-        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in">
-          <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-            <Button 
-              variant="secondary"
-              onClick={handleDownload}
-              aria-label="Télécharger l'image"
-              className="bg-background/80 hover:bg-background"
-            >
-              <Download className="h-5 w-5" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={toggleFullscreen}
-              aria-label="Fermer le mode plein écran"
-              className="text-foreground"
-            >
-              <X className="h-6 w-6" />
-            </Button>
-          </div>
-          
-          <div className="w-full h-full p-4 md:p-8 flex items-center justify-center relative">
-            <img 
-              src={image?.display_url || image?.url_miniature || image?.src || image?.url || ''} 
-              alt={image?.title || 'Image'} 
-              className="max-w-full max-h-full object-contain animate-fade-in transition-transform duration-200"
-            />
-          </div>
-        </div>
-      )}
       
       {isFullPage ? (
         <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
