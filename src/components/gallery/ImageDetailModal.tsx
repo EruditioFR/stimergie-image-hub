@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { X, Download, Heart, Share2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -94,7 +95,14 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
     setZoomLevel(1);
     setDragPosition({ x: 0, y: 0 });
     setIsFullPage(false);
+    setIsFullscreen(false);
     onClose();
+  };
+
+  const handleImageClick = (e: React.MouseEvent) => {
+    if (zoomLevel === 1) {
+      toggleFullscreen();
+    }
   };
 
   const ImageContent = () => (
@@ -128,7 +136,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
-              onClick={zoomLevel === 1 ? toggleFullscreen : undefined}
+              onClick={handleImageClick}
             >
               <img 
                 src={image.display_url || image.url} 
@@ -297,14 +305,14 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
             <img 
               src={image.display_url || image.url} 
               alt={image.title} 
-              className="max-w-full max-h-[65vh] object-contain transition-transform duration-200"
+              className="max-w-full max-h-full object-contain animate-fade-in"
               style={{ 
                 transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
                 transformOrigin: 'center',
               }}
             />
             
-            <div className="absolute bottom-3 right-3 flex gap-2">
+            <div className="absolute bottom-8 right-8 flex gap-2">
               <Button 
                 variant="secondary" 
                 size="icon" 

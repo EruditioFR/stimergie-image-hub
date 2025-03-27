@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -31,12 +32,14 @@ export function MasonryDetailModal({
   const [isFullPage, setIsFullPage] = useState(true);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     if (image && isOpen) {
       setImageLoaded(false);
       setZoomLevel(1);
       setDragPosition({ x: 0, y: 0 });
+      setIsFullscreen(false);
     }
   }, [image, isOpen]);
 
@@ -99,7 +102,14 @@ export function MasonryDetailModal({
     setDragPosition({ x: 0, y: 0 });
     setIsFullPage(true);
     setImageLoaded(false);
+    setIsFullscreen(false);
     onClose();
+  };
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+    setZoomLevel(1);
+    setDragPosition({ x: 0, y: 0 });
   };
 
   if (!image && isOpen) {
@@ -131,7 +141,7 @@ export function MasonryDetailModal({
       
       <div className="relative rounded-md overflow-hidden flex justify-center">
         <div 
-          className={`relative ${zoomLevel > 1 ? 'cursor-grab' : ''} ${isDragging ? 'cursor-grabbing' : ''}`}
+          className={`relative ${zoomLevel > 1 ? 'cursor-grab' : 'cursor-zoom-in'} ${isDragging ? 'cursor-grabbing' : ''}`}
           style={{ 
             overflow: 'hidden', 
             height: zoomLevel > 1 ? (isFullPage ? '75vh' : '65vh') : 'auto'
@@ -140,6 +150,7 @@ export function MasonryDetailModal({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onClick={zoomLevel === 1 ? toggleFullscreen : undefined}
         >
           <img 
             src={image?.display_url || image?.url_miniature || image?.src || image?.url || ''} 
@@ -262,6 +273,58 @@ export function MasonryDetailModal({
         selectedImageIds={selectedImages}
         selectedImages={images}
       />
+      
+      {isFullscreen && (
+        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex items-center justify-center animate-fade-in">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute right-4 top-4 z-10" 
+            onClick={toggleFullscreen}
+          >
+            <X className="h-6 w-6" />
+          </Button>
+          
+          <div 
+            className={`w-full h-full p-4 md:p-8 flex items-center justify-center relative ${zoomLevel > 1 ? 'cursor-grab' : ''} ${isDragging ? 'cursor-grabbing' : ''}`}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
+            <img 
+              src={image?.display_url || image?.url_miniature || image?.src || image?.url || ''} 
+              alt={image?.title || 'Image'} 
+              className="max-w-full max-h-full object-contain animate-fade-in"
+              style={{ 
+                transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
+                transformOrigin: 'center',
+              }}
+            />
+            
+            <div className="absolute bottom-8 right-8 flex gap-2">
+              <Button 
+                variant="secondary" 
+                size="icon" 
+                onClick={handleZoomOut} 
+                disabled={zoomLevel <= 1}
+                className="bg-background/80 hover:bg-background"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="secondary" 
+                size="icon" 
+                onClick={handleZoomIn} 
+                disabled={zoomLevel >= 4}
+                className="bg-background/80 hover:bg-background"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {isFullPage ? (
         <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
