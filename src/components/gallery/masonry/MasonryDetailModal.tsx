@@ -32,6 +32,7 @@ export function MasonryDetailModal({
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     if (image && isOpen) {
@@ -39,6 +40,7 @@ export function MasonryDetailModal({
       setZoomLevel(1);
       setDragPosition({ x: 0, y: 0 });
       setIsFullscreen(false);
+      setIsHovered(false);
     }
   }, [image, isOpen]);
 
@@ -102,6 +104,7 @@ export function MasonryDetailModal({
     setIsFullPage(true);
     setImageLoaded(false);
     setIsFullscreen(false);
+    setIsHovered(false);
     onClose();
   };
 
@@ -110,6 +113,7 @@ export function MasonryDetailModal({
     setIsFullscreen(!isFullscreen);
     setZoomLevel(1);
     setDragPosition({ x: 0, y: 0 });
+    setIsHovered(false);
   };
 
   const handleImageClick = (e: React.MouseEvent) => {
@@ -117,6 +121,16 @@ export function MasonryDetailModal({
       console.log("Image clicked, opening fullscreen");
       toggleFullscreen();
     }
+  };
+
+  const handleMouseEnter = () => {
+    if (zoomLevel === 1 && !isFullscreen && !isDragging) {
+      setIsHovered(true);
+    }
+  };
+  
+  const handleMouseLeave = () => {
+    setIsHovered(false);
   };
 
   if (!image && isOpen) {
@@ -149,23 +163,28 @@ export function MasonryDetailModal({
       
       <div className="relative rounded-md overflow-hidden flex justify-center">
         <div 
-          className={`relative ${zoomLevel > 1 ? 'cursor-grab' : 'cursor-zoom-in'} ${isDragging ? 'cursor-grabbing' : ''}`}
+          className={`relative ${zoomLevel > 1 ? 'cursor-grab' : 'cursor-zoom-in'} ${isDragging ? 'cursor-grabbing' : ''} overflow-hidden`}
           style={{ 
-            overflow: 'hidden', 
             height: zoomLevel > 1 ? (isFullPage ? '75vh' : '65vh') : 'auto'
           }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
+          onMouseLeave={(e) => {
+            handleMouseUp();
+            handleMouseLeave();
+          }}
+          onMouseEnter={handleMouseEnter}
           onClick={handleImageClick}
         >
           <img 
             src={image?.display_url || image?.url_miniature || image?.src || image?.url || ''} 
             alt={image?.title || 'Image'} 
-            className={`max-w-full ${isFullPage ? 'max-h-[80vh]' : 'max-h-[70vh]'} object-contain transition-transform duration-200`}
+            className={`max-w-full ${isFullPage ? 'max-h-[80vh]' : 'max-h-[70vh]'} object-contain transition-all duration-300`}
             style={{ 
-              transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
+              transform: isHovered 
+                ? `scale(${1.1}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)` 
+                : `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
               transformOrigin: 'center',
             }}
             onLoad={handleImageLoad}
@@ -279,11 +298,12 @@ export function MasonryDetailModal({
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onMouseEnter={handleMouseEnter}
           >
             <img 
               src={image?.display_url || image?.url_miniature || image?.src || image?.url || ''} 
               alt={image?.title || 'Image'} 
-              className="max-w-full max-h-full object-contain animate-fade-in"
+              className="max-w-full max-h-full object-contain animate-fade-in transition-transform duration-300"
               style={{ 
                 transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
                 transformOrigin: 'center',

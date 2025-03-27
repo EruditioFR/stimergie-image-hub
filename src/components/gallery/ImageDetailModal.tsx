@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { X, Download, Heart, Share2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = useState(false);
 
   if (!image) return null;
 
@@ -50,12 +50,14 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
     setIsFullscreen(!isFullscreen);
     setZoomLevel(1);
     setDragPosition({ x: 0, y: 0 });
+    setIsHovered(false);
   };
   
   const toggleFullPage = () => {
     setIsFullPage(!isFullPage);
     setZoomLevel(1);
     setDragPosition({ x: 0, y: 0 });
+    setIsHovered(false);
   };
   
   const handleZoomIn = () => {
@@ -97,10 +99,20 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
     setDragPosition({ x: 0, y: 0 });
     setIsFullPage(false);
     setIsFullscreen(false);
+    setIsHovered(false);
     onClose();
   };
+  
+  const handleMouseEnter = () => {
+    if (zoomLevel === 1 && !isFullscreen && !isDragging) {
+      setIsHovered(true);
+    }
+  };
+  
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+  };
 
-  // Gestionnaire explicite pour le clic sur l'image
   const handleImageClick = (e: React.MouseEvent) => {
     console.log("Image clicked, opening fullscreen");
     if (zoomLevel === 1) {
@@ -138,15 +150,21 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
+              onMouseLeave={(e) => {
+                handleMouseUp();
+                handleMouseLeave();
+              }}
+              onMouseEnter={handleMouseEnter}
               onClick={handleImageClick}
             >
               <img 
                 src={image.display_url || image.url} 
                 alt={image.title} 
-                className="max-w-full max-h-[65vh] object-contain transition-transform duration-200"
+                className="max-w-full max-h-[65vh] object-contain transition-all duration-300"
                 style={{ 
-                  transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
+                  transform: isHovered 
+                    ? `scale(${1.1}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)` 
+                    : `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
                   transformOrigin: 'center',
                 }}
               />
@@ -295,6 +313,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
             size="icon" 
             className="absolute top-4 right-4 text-foreground z-10"
             onClick={toggleFullscreen}
+            aria-label="Fermer le mode plein écran"
           >
             <X className="h-6 w-6" />
           </Button>
@@ -304,11 +323,12 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onMouseEnter={handleMouseEnter}
           >
             <img 
               src={image.display_url || image.url} 
               alt={image.title} 
-              className="max-w-full max-h-full object-contain animate-fade-in"
+              className="max-w-full max-h-full object-contain animate-fade-in transition-transform duration-300"
               style={{ 
                 transform: `scale(${zoomLevel}) translate(${dragPosition.x / zoomLevel}px, ${dragPosition.y / zoomLevel}px)`,
                 transformOrigin: 'center',
@@ -348,6 +368,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                 size="icon" 
                 className="absolute right-4 top-4 z-10" 
                 onClick={handleModalClose}
+                aria-label="Fermer le détail de l'image"
               >
                 <X className="h-6 w-6" />
               </Button>
