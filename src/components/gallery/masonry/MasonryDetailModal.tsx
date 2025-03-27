@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Download, ZoomIn, ZoomOut, X } from 'lucide-react';
+import { Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
@@ -61,21 +61,6 @@ export function MasonryDetailModal({
         console.error('Aucune URL de téléchargement disponible pour cette image');
       }
     }
-  };
-
-  const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 0.5, 4));
-    setDragPosition({ x: 0, y: 0 });
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel(prev => {
-      const newZoom = Math.max(prev - 0.5, 1);
-      if (newZoom === 1) {
-        setDragPosition({ x: 0, y: 0 });
-      }
-      return newZoom;
-    });
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -172,27 +157,6 @@ export function MasonryDetailModal({
               }
             }}
           />
-        </div>
-        
-        <div className="absolute bottom-3 right-3 flex gap-2">
-          <Button 
-            variant="secondary" 
-            size="icon" 
-            onClick={handleZoomOut} 
-            disabled={zoomLevel <= 1}
-            className="bg-background/80 hover:bg-background"
-          >
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="secondary" 
-            size="icon" 
-            onClick={handleZoomIn} 
-            disabled={zoomLevel >= 4}
-            className="bg-background/80 hover:bg-background"
-          >
-            <ZoomIn className="h-4 w-4" />
-          </Button>
         </div>
       </div>
       
@@ -301,27 +265,6 @@ export function MasonryDetailModal({
                 transformOrigin: 'center',
               }}
             />
-            
-            <div className="absolute bottom-8 right-8 flex gap-2">
-              <Button 
-                variant="secondary" 
-                size="icon" 
-                onClick={handleZoomOut} 
-                disabled={zoomLevel <= 1}
-                className="bg-background/80 hover:bg-background"
-              >
-                <ZoomOut className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="secondary" 
-                size="icon" 
-                onClick={handleZoomIn} 
-                disabled={zoomLevel >= 4}
-                className="bg-background/80 hover:bg-background"
-              >
-                <ZoomIn className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
         </div>
       )}
