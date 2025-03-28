@@ -38,8 +38,12 @@ export default function ImageDetail() {
     if (isDownloading) return;
     setIsDownloading(true);
     
+    console.log("Downloading image:", image.src);
+    
     try {
+      // Utilisez l'URL exacte de l'image sans la modifier
       await downloadImage(image.src, `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg`);
+      toast.success("Image téléchargée avec succès");
     } catch (error) {
       console.error('Download error:', error);
       toast.error('Échec du téléchargement');

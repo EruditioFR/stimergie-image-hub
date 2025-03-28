@@ -37,25 +37,30 @@ export function MasonryToolbar({
     
     setIsDownloading(true);
     toast.loading("Préparation du ZIP en cours, veuillez patienter...", {
-      duration: 60000, // Notification peut rester affichée jusqu'à 1 minute
+      duration: 120000, // Notification peut rester affichée jusqu'à 2 minutes
       id: "zip-preparation"
     });
     
     const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
     console.log("Selected images for download:", selectedImagesData);
     
-    // Create array with the format expected by downloadImagesAsZip
-    // Make sure to use the highest quality image URL available
-    const imagesForDownload = selectedImagesData.map(img => ({
-      url: img.download_url || img.url || img.src,
-      title: img.title || `image_${img.id}`,
-      id: img.id
-    }));
+    // Créer un tableau avec les formats attendus par downloadImagesAsZip
+    // Assurez-vous d'utiliser exactement l'URL fournie sans modifications
+    const imagesForDownload = selectedImagesData.map(img => {
+      const originalUrl = img.src || img.display_url || img.url || '';
+      
+      // Préserver l'URL exacte, sans la modifier
+      return {
+        url: originalUrl,
+        title: img.title || `image_${img.id}`,
+        id: img.id
+      };
+    });
     
     console.log("Images prepared for ZIP download:", imagesForDownload);
     
     try {
-      await downloadImagesAsZip(imagesForDownload, "images_haute_resolution.zip");
+      await downloadImagesAsZip(imagesForDownload, "images_stimergie.zip");
       toast.dismiss("zip-preparation");
       toast.success("Téléchargement terminé avec succès");
     } catch (error) {

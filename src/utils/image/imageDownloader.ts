@@ -8,12 +8,12 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { clearAllCaches } from './cacheManager';
 
-// CORS proxy options
+// CORS proxy options - maintenant optionnel
 const CORS_PROXY_URL = 'https://corsproxy.io/?';
 
 // Timeout configuration for large downloads
-const FETCH_TIMEOUT = 60000; // 60 seconds timeout for large files
-const MAX_RETRIES = 3;
+const FETCH_TIMEOUT = 120000; // 2 minutes timeout for large files
+const MAX_RETRIES = 5;
 const RETRY_DELAY = 1000; // 1 second
 
 /**
@@ -25,8 +25,7 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
     clearAllCaches();
     
     // Clean and encode URL
-    let encodedUrl = encodeURI(decodeURI(url));
-    const cleanUrl = encodedUrl.split('?')[0];
+    const cleanUrl = url;
     
     console.log('Attempting to download image:', cleanUrl);
     
@@ -120,17 +119,6 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
 }
 
 /**
- * Apply CORS proxy to a URL if needed
- */
-function applyCorsProxy(url: string): string {
-  // Only apply proxy to stimergie.fr URLs which are causing CORS issues
-  if (url.includes('stimergie.fr')) {
-    return `${CORS_PROXY_URL}${encodeURIComponent(url)}`;
-  }
-  return url;
-}
-
-/**
  * Fetch with timeout and retry logic for large files
  */
 async function fetchWithTimeout(url: string, options = {}, timeout = FETCH_TIMEOUT): Promise<Response> {
@@ -150,6 +138,24 @@ async function fetchWithTimeout(url: string, options = {}, timeout = FETCH_TIMEO
 }
 
 /**
+ * Ensure a URL uses CORS proxy if needed
+ */
+function ensureCorsProxyForStimergieUrls(url: string): string {
+  // Si l'URL est déjà proxy-fiée, ne rien changer
+  if (url.includes('corsproxy.io')) {
+    return url;
+  }
+  
+  // Si c'est une URL Stimergie, ajouter le proxy CORS
+  if (url.includes('stimergie.fr')) {
+    return `${CORS_PROXY_URL}${encodeURIComponent(url)}`;
+  }
+  
+  // Sinon retourner l'URL telle quelle
+  return url;
+}
+
+/**
  * Download multiple images as a ZIP file
  */
 export async function downloadImagesAsZip(images: Array<{
@@ -160,7 +166,7 @@ export async function downloadImagesAsZip(images: Array<{
   try {
     toast.loading('Création du fichier ZIP en cours...', {
       id: 'creating-zip',
-      duration: 60000 // Allow up to 1 minute for large files
+      duration: 120000 // Allow up to 2 minutes for large files
     });
     
     const zip = new JSZip();
@@ -174,13 +180,14 @@ export async function downloadImagesAsZip(images: Array<{
     // Download each image and add to ZIP
     const downloadPromises = images.map(async (image, index) => {
       try {
-        // Clean URL by removing query parameters
-        const cleanUrl = image.url.split('?')[0];
+        // Préserver l'URL exacte sans la modifier
+        const originalUrl = image.url;
         
-        // Apply CORS proxy to the URL to bypass CORS restrictions
-        const proxiedUrl = applyCorsProxy(cleanUrl);
+        // Ajouter le proxy CORS si nécessaire
+        const proxiedUrl = ensureCorsProxyForStimergieUrls(originalUrl);
         
-        console.log(`Processing image for ZIP: Original: ${cleanUrl}, Proxied: ${proxiedUrl}`);
+        console.log(`Processing image ${index + 1}/${images.length}: ${originalUrl}`);
+        console.log(`Using proxied URL: ${proxiedUrl}`);
         
         // Generate a unique filename
         let filename = `image_${index + 1}.jpg`;
@@ -188,7 +195,16 @@ export async function downloadImagesAsZip(images: Array<{
         // Use provided title or ID for filename if available
         if (image.title) {
           // Clean the title for use as a filename
-          filename = image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.jpg';
+          filename = image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+          
+          // Determine extension from URL
+          if (originalUrl.toLowerCase().endsWith('.png')) {
+            filename += '.png';
+          } else if (originalUrl.toLowerCase().endsWith('.svg')) {
+            filename += '.svg';
+          } else {
+            filename += '.jpg';
+          }
         } else if (image.id) {
           filename = `image_${image.id}.jpg`;
         }
@@ -201,11 +217,10 @@ export async function downloadImagesAsZip(images: Array<{
         while (attempts < maxAttempts && !blob) {
           attempts++;
           try {
-            console.log(`Attempt ${attempts} to fetch image: ${proxiedUrl}`);
+            console.log(`Attempt ${attempts}/${maxAttempts} to fetch image: ${proxiedUrl}`);
             
             const response = await fetchWithTimeout(proxiedUrl, {
               method: 'GET',
-              // Use cors for the proxy which handles the CORS headers
               credentials: 'omit',
               cache: 'no-store',
               redirect: 'follow',
@@ -268,7 +283,11 @@ export async function downloadImagesAsZip(images: Array<{
     const successCount = results.filter(success => success).length;
     
     // Log folder contents for debugging
-    console.log("ZIP folder contents:", folder.files);
+    console.log("ZIP folder structure:");
+    Object.keys(folder.files).forEach(filename => {
+      const fileSize = folder.files[filename]._data ? folder.files[filename]._data.length : "unknown";
+      console.log(`- ${filename}: ${fileSize} bytes`);
+    });
     
     if (Object.keys(folder.files).length === 0) {
       console.error("No files were added to the ZIP");
@@ -283,13 +302,18 @@ export async function downloadImagesAsZip(images: Array<{
     console.log("Generating ZIP file...");
     toast.loading("Compression des images en cours...", { 
       id: "compressing-zip",
-      duration: 60000 // 1 minute timeout for compression
+      duration: 120000 // 2 minutes timeout for compression
     });
     
     const zipBlob = await zip.generateAsync({ 
       type: 'blob',
       compression: 'DEFLATE',
       compressionOptions: { level: 6 }
+    }, (metadata) => {
+      const percent = metadata.percent.toFixed(0);
+      if (percent % 10 === 0) {
+        console.log(`ZIP compression: ${percent}%`);
+      }
     });
     
     console.log(`ZIP file created: ${zipBlob.size} bytes`);
