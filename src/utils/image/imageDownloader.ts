@@ -8,6 +8,9 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { clearAllCaches } from './cacheManager';
 
+// CORS proxy options
+const CORS_PROXY_URL = 'https://corsproxy.io/?';
+
 /**
  * Download a single image
  */
@@ -25,7 +28,7 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
     toast.loading('Téléchargement en cours...');
     
     try {
-      // Using fetch to get the image as a blob (most reliable method)
+      // Using fetch with blob() and saveAs for most reliable download method
       const response = await fetch(cleanUrl, {
         method: 'GET',
         cache: 'no-store',
@@ -112,6 +115,17 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
 }
 
 /**
+ * Apply CORS proxy to a URL if needed
+ */
+function applyCorsProxy(url: string): string {
+  // Only apply proxy to stimergie.fr URLs which are causing CORS issues
+  if (url.includes('stimergie.fr')) {
+    return `${CORS_PROXY_URL}${encodeURIComponent(url)}`;
+  }
+  return url;
+}
+
+/**
  * Download multiple images as a ZIP file
  */
 export async function downloadImagesAsZip(images: Array<{
@@ -136,7 +150,10 @@ export async function downloadImagesAsZip(images: Array<{
         // Clean URL by removing query parameters
         const cleanUrl = image.url.split('?')[0];
         
-        console.log(`Processing image for ZIP: ${cleanUrl}`);
+        // Apply CORS proxy to the URL to bypass CORS restrictions
+        const proxiedUrl = applyCorsProxy(cleanUrl);
+        
+        console.log(`Processing image for ZIP: Original: ${cleanUrl}, Proxied: ${proxiedUrl}`);
         
         // Generate a unique filename
         let filename = `image_${index + 1}.jpg`;
@@ -157,10 +174,11 @@ export async function downloadImagesAsZip(images: Array<{
         while (attempts < maxAttempts && !blob) {
           attempts++;
           try {
-            console.log(`Attempt ${attempts} to fetch image: ${cleanUrl}`);
+            console.log(`Attempt ${attempts} to fetch image: ${proxiedUrl}`);
             
-            const response = await fetch(cleanUrl, {
+            const response = await fetch(proxiedUrl, {
               method: 'GET',
+              // Use cors for the proxy which handles the CORS headers
               credentials: 'omit',
               cache: 'no-store',
               redirect: 'follow',
@@ -169,7 +187,7 @@ export async function downloadImagesAsZip(images: Array<{
               }
             });
             
-            if (!response.ok) {
+            if (!response.ok && response.type !== 'opaque') {
               console.warn(`Failed to fetch image on attempt ${attempts}: ${response.status} ${response.statusText}`);
               continue;
             }

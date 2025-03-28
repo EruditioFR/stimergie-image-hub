@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Share } from 'lucide-react';
@@ -30,15 +31,23 @@ export function MasonryToolbar({
     console.log("Selected images for download:", selectedImagesData);
     
     // Create array with the format expected by downloadImagesAsZip
-    // Prioritize download_url over src for high-resolution versions
+    // Make sure to use the highest quality image URL available
     const imagesForDownload = selectedImagesData.map(img => ({
       url: img.download_url || img.url || img.src,
-      title: img.title,
+      title: img.title || `image_${img.id}`,
       id: img.id
     }));
     
     console.log("Images prepared for ZIP download:", imagesForDownload);
-    await downloadImagesAsZip(imagesForDownload, "images_haute_resolution.zip");
+    
+    try {
+      await downloadImagesAsZip(imagesForDownload, "images_haute_resolution.zip");
+    } catch (error) {
+      console.error("Error during ZIP download:", error);
+      toast.error("Erreur lors du téléchargement du ZIP", {
+        description: "Une erreur est survenue pendant la création du fichier ZIP."
+      });
+    }
   };
 
   const openShareDialog = () => {
