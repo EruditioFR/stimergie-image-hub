@@ -48,7 +48,7 @@ export function MasonryToolbar({
     // Utiliser la source directe de l'image (src) ou l'URL de téléchargement
     const imagesForDownload = selectedImagesData.map(img => {
       // Utiliser l'URL de téléchargement si disponible, sinon l'URL d'affichage
-      const url = img.src;
+      const url = img.download_url || img.src;
       
       console.log(`Preparing image for download: ID=${img.id}, Title=${img.title}, URL=${url}`);
       

@@ -19,12 +19,18 @@ export async function fetchWithTimeout(
   const controller = new AbortController();
   const { signal } = controller;
   
+  // Create a new options object with our signal and merge with passed options
+  const fetchOptions = {
+    ...options,
+    signal
+  };
+  
   const timeoutId = setTimeout(() => {
     controller.abort();
   }, timeout);
   
   try {
-    const response = await fetch(url, { ...options, signal });
+    const response = await fetch(url, fetchOptions);
     return response;
   } finally {
     clearTimeout(timeoutId);

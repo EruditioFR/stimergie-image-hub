@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { X, Download, Heart, Share2, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
         ? `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` 
         : `image_${image.id || 'download'}.jpg`;
       
+      console.log(`Downloading image: ${image.title} (${downloadUrl})`);
       await downloadImage(downloadUrl, filename);
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);

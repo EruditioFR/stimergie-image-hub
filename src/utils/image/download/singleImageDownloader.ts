@@ -6,6 +6,7 @@
 import { toast } from 'sonner';
 import { saveAs } from 'file-saver';
 import { clearAllCaches } from '../cacheManager';
+import { fetchWithTimeout, FETCH_TIMEOUT, sleep } from './networkUtils';
 
 /**
  * Download a single image
@@ -22,10 +23,12 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
     
     toast.loading('Téléchargement en cours...');
     
+    // Primary download method: Using fetch with no-cors mode and retry logic
     try {
-      // Using fetch with blob() and saveAs for most reliable download method
-      const response = await fetch(cleanUrl, {
+      // Always use no-cors mode to avoid CORS issues with the Stimergie server
+      const response = await fetchWithTimeout(cleanUrl, {
         method: 'GET',
+        mode: 'no-cors', // Important: Set to no-cors to bypass CORS restrictions
         cache: 'no-store',
         credentials: 'omit',
         redirect: 'follow',
@@ -34,12 +37,13 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
         }
       });
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.status}`);
-      }
-      
+      // For no-cors, we get an opaque response, we can't check status
       // Convert response to blob
       const blob = await response.blob();
+      
+      if (blob.size === 0) {
+        throw new Error("Empty blob received");
+      }
       
       // Use file-saver to trigger the download
       saveAs(blob, filename || 'image.jpg');
@@ -49,56 +53,40 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
       return;
     } catch (fetchError) {
       console.warn('Primary download method failed:', fetchError);
-      // Continue to fallback methods
+      // Continue to fallback method
     }
     
-    // Fallback method: Using a download link with blob URL
+    // Fallback method: Using a direct link with iframe
     try {
-      const response = await fetch(cleanUrl, { 
-        mode: 'no-cors',
-        cache: 'no-store' 
-      });
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
       
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename || 'image.jpg';
-      link.style.display = 'none';
+      const form = document.createElement('form');
+      form.method = 'GET';
+      form.action = cleanUrl;
+      form.target = '_blank';
       
-      document.body.appendChild(link);
-      link.click();
+      document.body.appendChild(form);
+      form.submit();
       
-      // Clean up
+      // Remove the elements
       setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(iframe);
+        document.body.removeChild(form);
         toast.dismiss();
-        toast.success('Téléchargement réussi');
-      }, 100);
+        toast.success('Téléchargement commencé');
+      }, 1000);
       
       return;
-    } catch (blobError) {
-      console.warn('Blob URL download failed:', blobError);
-      // Try final fallback
+    } catch (directError) {
+      console.warn('Direct link download failed:', directError);
     }
     
-    // Last fallback: Direct link with download attribute
-    const link = document.createElement('a');
-    link.href = cleanUrl;
-    link.download = filename || 'image.jpg';
-    link.target = '_blank'; // This should be removed to prevent opening in new tab
-    link.rel = 'noopener noreferrer';
-    link.style.display = 'none';
-    
-    document.body.appendChild(link);
-    link.click();
-    
-    setTimeout(() => {
-      document.body.removeChild(link);
-      toast.dismiss();
-      toast.success('Téléchargement commencé');
-    }, 100);
+    // Last fallback: Using window.open
+    window.open(cleanUrl, '_blank');
+    toast.dismiss();
+    toast.success('Téléchargement demandé');
     
   } catch (error) {
     toast.dismiss();
