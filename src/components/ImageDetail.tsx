@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Download, Heart, Share2, ArrowLeft, X } from 'lucide-react';
@@ -58,9 +57,23 @@ export function ImageDetail() {
     enabled: !!id
   });
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!imageDetails) return;
-    window.open(imageDetails.url, '_blank');
+    
+    try {
+      const filename = imageDetails.title 
+        ? `${imageDetails.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` 
+        : `image_${imageDetails.id || 'download'}.jpg`;
+      
+      await downloadImage(imageDetails.url, filename);
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Échec du téléchargement',
+        description: 'Une erreur s\'est produite lors du téléchargement de l\'image.'
+      });
+    }
   };
 
   const handleLike = () => {

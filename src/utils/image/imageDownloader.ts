@@ -1,3 +1,4 @@
+
 /**
  * Utility functions for image downloading
  */
@@ -114,33 +115,85 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
       console.warn('XHR download failed, falling back to final method:', xhrError);
     }
     
-    // Final fallback: Force download with a temporary iframe
+    // Final fallback: Use Content-Disposition header with a dynamically created iframe
     try {
       toast.loading('Téléchargement en cours...');
       
-      // Create an iframe that tries to force the download
+      // Create a hidden form that targets a hidden iframe to force download
+      const form = document.createElement('form');
+      form.method = 'GET';
+      form.action = cleanUrl;
+      form.style.display = 'none';
+      
+      const hiddenInput = document.createElement('input');
+      hiddenInput.type = 'hidden';
+      hiddenInput.name = 'download';
+      hiddenInput.value = '1';
+      form.appendChild(hiddenInput);
+      
       const iframe = document.createElement('iframe');
+      iframe.name = 'download_iframe_' + Date.now();
       iframe.style.display = 'none';
-      iframe.src = cleanUrl;
+      form.target = iframe.name;
+      
+      document.body.appendChild(form);
       document.body.appendChild(iframe);
+      
+      form.submit();
       
       // Cleanup after a short delay
       setTimeout(() => {
+        document.body.removeChild(form);
         document.body.removeChild(iframe);
         toast.dismiss();
         toast.success('Téléchargement commencé');
       }, 1000);
       
       return;
-    } catch (iframeError) {
+    } catch (formError) {
       toast.dismiss();
-      console.warn('Iframe download failed, last resort:', iframeError);
+      console.warn('Form download failed, last resort:', formError);
       
-      // Last resort: Open in new tab with instructions
-      window.open(cleanUrl, '_blank');
-      toast.info('Image ouverte dans un nouvel onglet', {
-        description: 'Pour télécharger: clic droit sur l\'image et sélectionnez "Enregistrer l\'image sous..."'
-      });
+      // Last resort: Fallback to blob URL with a download attribute
+      try {
+        const blob = new Blob([''], { type: 'application/octet-stream' });
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename || 'image.jpg';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.style.display = 'none';
+        
+        // Add a hidden form field to redirect to the actual URL with download flag
+        link.setAttribute('data-downloadurl', cleanUrl);
+        
+        document.body.appendChild(link);
+        link.click();
+        
+        // Cleanup
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(blobUrl);
+          
+          // After the click, try to redirect to the real URL
+          window.location.href = cleanUrl + (cleanUrl.includes('?') ? '&' : '?') + 'download=1';
+          
+          toast.dismiss();
+          toast.success('Téléchargement commencé');
+        }, 100);
+        
+        return;
+      } catch (blobUrlError) {
+        toast.dismiss();
+        console.warn('Blob URL download failed:', blobUrlError);
+        
+        // Absolute last resort: Open in new tab with download instructions
+        window.open(cleanUrl, '_blank');
+        toast.info('Image ouverte dans un nouvel onglet', {
+          description: 'Pour télécharger: clic droit sur l\'image et sélectionnez "Enregistrer l\'image sous..."'
+        });
+      }
     }
   } catch (error) {
     toast.dismiss();

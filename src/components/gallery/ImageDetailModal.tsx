@@ -7,6 +7,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { parseTagsString } from '@/utils/imageUtils';
+import { downloadImage } from '@/utils/image/imageDownloader';
 
 interface ImageDetailModalProps {
   image: any;
@@ -17,15 +18,34 @@ interface ImageDetailModalProps {
 export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalProps) {
   const [liked, setLiked] = useState(false);
   const [isFullPage, setIsFullPage] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
 
   if (!image) return null;
 
   const tags = typeof image.tags === 'string' ? parseTagsString(image.tags) : image.tags;
 
-  const handleDownload = () => {
-    const downloadUrl = image.download_url || image.url;
-    window.open(downloadUrl, '_blank');
+  const handleDownload = async () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
+    
+    try {
+      const downloadUrl = image.download_url || image.url;
+      const filename = image.title 
+        ? `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` 
+        : `image_${image.id || 'download'}.jpg`;
+      
+      await downloadImage(downloadUrl, filename);
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
+      toast({
+        title: 'Échec du téléchargement',
+        description: 'Une erreur s\'est produite lors du téléchargement de l\'image.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleLike = () => {
