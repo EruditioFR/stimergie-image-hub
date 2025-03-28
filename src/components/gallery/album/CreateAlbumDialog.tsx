@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { nanoid } from 'nanoid';
 import { AlbumForm } from './AlbumForm';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 import {
   Dialog,
@@ -130,8 +131,8 @@ export function CreateAlbumDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden p-0">
+        <DialogHeader className="p-6 pb-2">
           <DialogTitle>Partage de photos</DialogTitle>
           <DialogDescription>
             Vous souhaitez partager {selectedImages.length} photo{selectedImages.length > 1 ? 's' : ''} avec des contacts externes ? 
@@ -139,12 +140,14 @@ export function CreateAlbumDialog({
           </DialogDescription>
         </DialogHeader>
         
-        <AlbumForm 
-          selectedImages={selectedImages}
-          isSubmitting={isSubmitting}
-          onSubmit={onSubmit}
-          onCancel={() => onOpenChange(false)}
-        />
+        <ScrollArea className="max-h-[calc(90vh-100px)] px-6 pb-6">
+          <AlbumForm 
+            selectedImages={selectedImages}
+            isSubmitting={isSubmitting}
+            onSubmit={onSubmit}
+            onCancel={() => onOpenChange(false)}
+          />
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

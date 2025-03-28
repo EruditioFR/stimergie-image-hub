@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { parseTagsString } from '@/utils/imageUtils';
 import { downloadImage } from '@/utils/image/download';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ImageDetailModalProps {
   image: any;
@@ -216,7 +217,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
       {isFullPage ? (
         <Sheet open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
           <SheetContent side="right" className="h-screen p-0 max-w-none w-[50%] sm:max-w-none">
-            <div className="h-full overflow-y-auto relative">
+            <ScrollArea className="h-full relative">
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -229,14 +230,16 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
               <div className="max-w-7xl mx-auto">
                 <ImageContent />
               </div>
-            </div>
+            </ScrollArea>
           </SheetContent>
         </Sheet>
       ) : (
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
-          <DialogContent className="w-[50%] max-h-[90vh] p-0 overflow-auto">
+          <DialogContent className="w-[50%] max-h-[90vh] p-0 overflow-hidden">
             <DialogTitle className="sr-only">{image.title}</DialogTitle>
-            <ImageContent />
+            <ScrollArea className="max-h-[90vh]">
+              <ImageContent />
+            </ScrollArea>
           </DialogContent>
         </Dialog>
       )}
