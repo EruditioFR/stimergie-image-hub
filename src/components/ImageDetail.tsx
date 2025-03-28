@@ -1,11 +1,12 @@
+
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useImages } from '@/context/ImageContext';
 import { Button } from '@/components/ui/button';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { X, Download } from 'lucide-react';
 import { downloadImage } from '@/utils/image/imageDownloader';
 import { toast } from 'sonner';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export default function ImageDetail() {
   const { id } = useParams<{ id: string }>();
@@ -74,8 +75,17 @@ export default function ImageDetail() {
                 disabled={isDownloading}
                 className="flex items-center gap-2"
               >
-                <Download className={`h-4 w-4 ${isDownloading ? 'animate-pulse' : ''}`} />
-                <span>Télécharger</span>
+                {isDownloading ? (
+                  <>
+                    <LoadingSpinner className="mr-1" size={16} />
+                    <span>Téléchargement...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    <span>Télécharger</span>
+                  </>
+                )}
               </Button>
             </div>
             

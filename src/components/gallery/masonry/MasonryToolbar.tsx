@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Share } from 'lucide-react';
 import { toast } from 'sonner';
 import { downloadImagesAsZip } from '@/utils/image/imageDownloader';
 import { Image } from '@/utils/image/types';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface MasonryToolbarProps {
   selectedImages: string[];
@@ -19,6 +20,8 @@ export function MasonryToolbar({
   onShareDialogChange,
   images
 }: MasonryToolbarProps) {
+  const [isDownloading, setIsDownloading] = useState(false);
+
   if (selectedImages.length === 0) return null;
 
   const handleDownload = async () => {
@@ -26,6 +29,17 @@ export function MasonryToolbar({
       toast.error("Veuillez sélectionner au moins une image à télécharger");
       return;
     }
+    
+    if (isDownloading) {
+      toast.info("Téléchargement déjà en cours, veuillez patienter");
+      return;
+    }
+    
+    setIsDownloading(true);
+    toast.loading("Préparation du ZIP en cours, veuillez patienter...", {
+      duration: 60000, // Notification peut rester affichée jusqu'à 1 minute
+      id: "zip-preparation"
+    });
     
     const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
     console.log("Selected images for download:", selectedImagesData);
@@ -42,11 +56,16 @@ export function MasonryToolbar({
     
     try {
       await downloadImagesAsZip(imagesForDownload, "images_haute_resolution.zip");
+      toast.dismiss("zip-preparation");
+      toast.success("Téléchargement terminé avec succès");
     } catch (error) {
       console.error("Error during ZIP download:", error);
+      toast.dismiss("zip-preparation");
       toast.error("Erreur lors du téléchargement du ZIP", {
         description: "Une erreur est survenue pendant la création du fichier ZIP."
       });
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -79,9 +98,19 @@ export function MasonryToolbar({
           variant="outline" 
           size="sm" 
           onClick={handleDownload}
+          disabled={isDownloading}
           className="flex items-center gap-2"
         >
-          <Download className="h-4 w-4" /> Télécharger ({selectedImages.length})
+          {isDownloading ? (
+            <>
+              <LoadingSpinner size={16} className="mr-1" /> 
+              Création du ZIP...
+            </>
+          ) : (
+            <>
+              <Download className="h-4 w-4" /> Télécharger ({selectedImages.length})
+            </>
+          )}
         </Button>
         <Button 
           variant="default" 

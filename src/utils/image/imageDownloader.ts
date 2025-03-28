@@ -11,6 +11,11 @@ import { clearAllCaches } from './cacheManager';
 // CORS proxy options
 const CORS_PROXY_URL = 'https://corsproxy.io/?';
 
+// Timeout configuration for large downloads
+const FETCH_TIMEOUT = 60000; // 60 seconds timeout for large files
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
+
 /**
  * Download a single image
  */
@@ -126,6 +131,25 @@ function applyCorsProxy(url: string): string {
 }
 
 /**
+ * Fetch with timeout and retry logic for large files
+ */
+async function fetchWithTimeout(url: string, options = {}, timeout = FETCH_TIMEOUT): Promise<Response> {
+  const controller = new AbortController();
+  const { signal } = controller;
+  
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, timeout);
+  
+  try {
+    const response = await fetch(url, { ...options, signal });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
  * Download multiple images as a ZIP file
  */
 export async function downloadImagesAsZip(images: Array<{
@@ -134,7 +158,10 @@ export async function downloadImagesAsZip(images: Array<{
   id?: string | number;
 }>, zipFilename: string = 'images.zip'): Promise<void> {
   try {
-    toast.info('Création du fichier ZIP en cours...');
+    toast.loading('Création du fichier ZIP en cours...', {
+      id: 'creating-zip',
+      duration: 60000 // Allow up to 1 minute for large files
+    });
     
     const zip = new JSZip();
     const folder = zip.folder('images');
@@ -169,14 +196,14 @@ export async function downloadImagesAsZip(images: Array<{
         // Fetch the image with retry mechanism
         let blob: Blob | null = null;
         let attempts = 0;
-        const maxAttempts = 3;
+        const maxAttempts = MAX_RETRIES;
         
         while (attempts < maxAttempts && !blob) {
           attempts++;
           try {
             console.log(`Attempt ${attempts} to fetch image: ${proxiedUrl}`);
             
-            const response = await fetch(proxiedUrl, {
+            const response = await fetchWithTimeout(proxiedUrl, {
               method: 'GET',
               // Use cors for the proxy which handles the CORS headers
               credentials: 'omit',
@@ -185,10 +212,15 @@ export async function downloadImagesAsZip(images: Array<{
               headers: {
                 'Cache-Control': 'no-cache',
               }
-            });
+            }, FETCH_TIMEOUT);
             
             if (!response.ok && response.type !== 'opaque') {
               console.warn(`Failed to fetch image on attempt ${attempts}: ${response.status} ${response.statusText}`);
+              
+              if (attempts < maxAttempts) {
+                // Wait before retry with exponential backoff
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * Math.pow(2, attempts - 1)));
+              }
               continue;
             }
             
@@ -197,13 +229,22 @@ export async function downloadImagesAsZip(images: Array<{
             if (blob.size === 0) {
               console.warn(`Image blob is empty, retrying... (${attempts}/${maxAttempts})`);
               blob = null;
+              
+              if (attempts < maxAttempts) {
+                // Wait before retry
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * Math.pow(2, attempts - 1)));
+              }
               continue;
             }
             
             console.log(`Successfully downloaded image: ${filename} (${blob.size} bytes, type: ${blob.type})`);
           } catch (fetchError) {
             console.error(`Error fetching image on attempt ${attempts}:`, fetchError);
-            await new Promise(resolve => setTimeout(resolve, 500)); // Wait before retry
+            
+            if (attempts < maxAttempts) {
+              // Wait before retry
+              await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * Math.pow(2, attempts - 1)));
+            }
           }
         }
         
@@ -231,14 +272,20 @@ export async function downloadImagesAsZip(images: Array<{
     
     if (Object.keys(folder.files).length === 0) {
       console.error("No files were added to the ZIP");
+      toast.dismiss('creating-zip');
       toast.error("Erreur lors de la création du ZIP", {
         description: "Aucune image n'a pu être téléchargée."
       });
       return;
     }
     
-    // Generate the ZIP file
+    // Generate the ZIP file with compression options for large files
     console.log("Generating ZIP file...");
+    toast.loading("Compression des images en cours...", { 
+      id: "compressing-zip",
+      duration: 60000 // 1 minute timeout for compression
+    });
+    
     const zipBlob = await zip.generateAsync({ 
       type: 'blob',
       compression: 'DEFLATE',
@@ -246,6 +293,8 @@ export async function downloadImagesAsZip(images: Array<{
     });
     
     console.log(`ZIP file created: ${zipBlob.size} bytes`);
+    toast.dismiss('creating-zip');
+    toast.dismiss('compressing-zip');
     
     // Download the ZIP file
     saveAs(zipBlob, zipFilename);
@@ -255,6 +304,8 @@ export async function downloadImagesAsZip(images: Array<{
     });
   } catch (error) {
     console.error('Error creating ZIP file:', error);
+    toast.dismiss('creating-zip');
+    toast.dismiss('compressing-zip');
     toast.error('Erreur lors de la création du ZIP', {
       description: 'Impossible de créer l\'archive ZIP.'
     });
