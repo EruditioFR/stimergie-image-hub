@@ -204,7 +204,7 @@ export function MasonryDetailModal({
                   size="icon" 
                   onClick={handleClose}
                   aria-label="Fermer le détail de l'image"
-                  className="text-foreground"
+                  className="text-foreground border-none hover:border-none focus:border-none active:border-none ring-0 hover:ring-0 focus:ring-0"
                 >
                   <X className="h-6 w-6" />
                 </Button>
