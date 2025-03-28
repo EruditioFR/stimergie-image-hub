@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for image downloading
  */
@@ -12,41 +11,19 @@ import { saveAs } from 'file-saver';
  */
 export async function downloadImage(url: string, filename?: string): Promise<void> {
   try {
-    // Properly encode URL components
+    // Clean and encode URL
     let encodedUrl = encodeURI(decodeURI(url));
-    
-    // Clean URL by removing query parameters
     const cleanUrl = encodedUrl.split('?')[0];
     
     console.log('Attempting to download image:', cleanUrl);
     
-    // Create blob URL for download (most compatible method)
+    // Primary download method: Fetch and use saveAs (most reliable on Chrome)
     try {
-      const link = document.createElement('a');
-      link.href = cleanUrl;
-      link.download = filename || 'image.jpg';
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
+      toast.loading('Téléchargement en cours...');
       
-      // Cleanup
-      setTimeout(() => {
-        document.body.removeChild(link);
-        toast.success('Téléchargement commencé');
-      }, 100);
-      
-      console.log('Download initiated via anchor tag');
-      return;
-    } catch (anchorError) {
-      console.warn('Anchor download failed, trying fetch method:', anchorError);
-    }
-    
-    // Second try: fetch as blob and use saveAs
-    try {
       const response = await fetch(cleanUrl, {
         method: 'GET',
-        mode: 'cors',
+        mode: 'no-cors',
         cache: 'no-store',
         credentials: 'omit',
         redirect: 'follow',
@@ -58,52 +35,92 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
       const blob = await response.blob();
       
       if (blob.size > 0) {
-        // Generate default filename if not provided
         const downloadFilename = filename || 'image.jpg';
-        
         saveAs(blob, downloadFilename);
         console.log('Download completed via fetch blob');
+        toast.dismiss();
         toast.success('Image téléchargée');
         return;
+      } else {
+        toast.dismiss();
+        console.warn('Blob size was 0, trying alternative method');
       }
     } catch (fetchError) {
+      toast.dismiss();
       console.warn('Fetch download failed, trying alternative method:', fetchError);
     }
     
-    // Third attempt: Use iframe for download
+    // Second attempt: Use download attribute with anchor tag
     try {
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
+      toast.loading('Téléchargement en cours...');
       
-      const iframeDoc = iframe.contentWindow?.document || iframe.contentDocument;
-      if (!iframeDoc) throw new Error('Could not access iframe document');
+      const link = document.createElement('a');
+      link.href = cleanUrl;
+      link.download = filename || 'image.jpg';
+      link.style.display = 'none';
       
-      iframeDoc.open();
-      iframeDoc.write(`<a href="${cleanUrl}" download="${filename || 'image.jpg'}" id="download-link">Download</a>`);
-      iframeDoc.close();
+      // Force download attribute to work by embedding in document
+      document.body.appendChild(link);
+      link.click();
       
-      const downloadLink = iframeDoc.getElementById('download-link');
-      if (downloadLink) {
-        downloadLink.click();
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-          toast.success('Téléchargement commencé');
-        }, 100);
-        console.log('Download initiated via iframe');
-        return;
-      }
-    } catch (iframeError) {
-      console.warn('Iframe download failed:', iframeError);
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(link);
+        toast.dismiss();
+        toast.success('Téléchargement commencé');
+      }, 100);
+      
+      console.log('Download initiated via anchor tag');
+      return;
+    } catch (anchorError) {
+      toast.dismiss();
+      console.warn('Anchor download failed, trying next method:', anchorError);
+    }
+    
+    // Third attempt: Use Blob URL with saveAs
+    try {
+      toast.loading('Téléchargement en cours...');
+      
+      // For cross-origin images that fail with fetch, try XMLHttpRequest
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', cleanUrl, true);
+      xhr.responseType = 'blob';
+      xhr.onload = function() {
+        if (this.status === 200) {
+          const blobUrl = URL.createObjectURL(this.response);
+          const downloadFilename = filename || 'image.jpg';
+          
+          saveAs(this.response, downloadFilename);
+          
+          // Clean up the Blob URL
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+          
+          toast.dismiss();
+          toast.success('Image téléchargée');
+          console.log('Download completed via XHR blob');
+        } else {
+          throw new Error(`XHR failed with status ${this.status}`);
+        }
+      };
+      xhr.onerror = function() {
+        throw new Error('XHR network error');
+      };
+      xhr.send();
+      return;
+    } catch (xhrError) {
+      toast.dismiss();
+      console.warn('XHR download failed, falling back to final method:', xhrError);
     }
     
     // Final fallback: Open in new tab with instructions
+    toast.dismiss();
     window.open(cleanUrl, '_blank');
     toast.info('Image ouverte dans un nouvel onglet', {
-      description: 'Pour télécharger: maintenez l\'image et sélectionnez "Enregistrer l\'image"'
+      description: 'Pour télécharger: clic droit sur l\'image et sélectionnez "Enregistrer l\'image sous..."'
     });
     
   } catch (error) {
+    toast.dismiss();
     console.error('Error downloading image:', error);
     toast.error('Erreur lors du téléchargement', {
       description: 'Impossible de télécharger cette image. Essayez d\'ouvrir l\'image dans un nouvel onglet, puis de l\'enregistrer manuellement.'
