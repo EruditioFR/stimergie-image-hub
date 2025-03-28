@@ -1,3 +1,4 @@
+
 /**
  * Utility functions for image downloading
  */
@@ -19,7 +20,7 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
     
     console.log('Attempting to download image:', cleanUrl);
     
-    // First try with anchor tag direct method - often most reliable for cross-origin
+    // Create blob URL for download (most compatible method)
     try {
       const link = document.createElement('a');
       link.href = cleanUrl;
@@ -32,6 +33,7 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
       // Cleanup
       setTimeout(() => {
         document.body.removeChild(link);
+        toast.success('Téléchargement commencé');
       }, 100);
       
       console.log('Download initiated via anchor tag');
@@ -40,47 +42,65 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
       console.warn('Anchor download failed, trying fetch method:', anchorError);
     }
     
-    // Second try: Direct download with fetch API
+    // Second try: fetch as blob and use saveAs
     try {
       const response = await fetch(cleanUrl, {
         method: 'GET',
-        credentials: 'omit',
+        mode: 'cors',
         cache: 'no-store',
+        credentials: 'omit',
         redirect: 'follow',
         headers: {
-          'Cache-Control': 'no-cache',
-          'Accept': 'image/*, */*;q=0.8',
-        },
-        mode: 'no-cors' // Using no-cors directly which might work better for Stimergie URLs
+          'Cache-Control': 'no-cache'
+        }
       });
       
-      // With no-cors we get an opaque response
       const blob = await response.blob();
       
       if (blob.size > 0) {
-        // Generate a default filename if not provided
-        let downloadFilename = filename;
-        if (!downloadFilename) {
-          const urlParts = cleanUrl.split('/');
-          downloadFilename = urlParts[urlParts.length - 1] || 'image.jpg';
-          
-          if (!downloadFilename.includes('.')) {
-            downloadFilename += '.jpg';
-          }
-        }
+        // Generate default filename if not provided
+        const downloadFilename = filename || 'image.jpg';
         
         saveAs(blob, downloadFilename);
         console.log('Download completed via fetch blob');
+        toast.success('Image téléchargée');
         return;
       }
     } catch (fetchError) {
-      console.warn('Fetch download failed:', fetchError);
+      console.warn('Fetch download failed, trying alternative method:', fetchError);
     }
     
-    // Final fallback: Open in new tab
+    // Third attempt: Use iframe for download
+    try {
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+      
+      const iframeDoc = iframe.contentWindow?.document || iframe.contentDocument;
+      if (!iframeDoc) throw new Error('Could not access iframe document');
+      
+      iframeDoc.open();
+      iframeDoc.write(`<a href="${cleanUrl}" download="${filename || 'image.jpg'}" id="download-link">Download</a>`);
+      iframeDoc.close();
+      
+      const downloadLink = iframeDoc.getElementById('download-link');
+      if (downloadLink) {
+        downloadLink.click();
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          toast.success('Téléchargement commencé');
+        }, 100);
+        console.log('Download initiated via iframe');
+        return;
+      }
+    } catch (iframeError) {
+      console.warn('Iframe download failed:', iframeError);
+    }
+    
+    // Final fallback: Open in new tab with instructions
     window.open(cleanUrl, '_blank');
     toast.info('Image ouverte dans un nouvel onglet', {
-      description: 'Vous pouvez faire un clic droit et "Enregistrer l\'image sous..." pour la télécharger.'
+      description: 'Pour télécharger: maintenez l\'image et sélectionnez "Enregistrer l\'image"'
     });
     
   } catch (error) {

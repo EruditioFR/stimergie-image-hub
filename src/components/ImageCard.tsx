@@ -1,9 +1,11 @@
+
 import { useState, memo, useRef, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { downloadImage } from '@/utils/image/imageDownloader';
+import { toast } from 'sonner';
 
 interface ImageCardProps {
   id: string;
@@ -24,6 +26,7 @@ export const ImageCard = memo(function ImageCard({
 }: ImageCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [naturalRatio, setNaturalRatio] = useState<number | undefined>(undefined);
   const imageRef = useRef<HTMLImageElement>(null);
   const mountedRef = useRef(true);
@@ -75,18 +78,30 @@ export const ImageCard = memo(function ImageCard({
     }
   };
 
-  const handleDownload = (e: React.MouseEvent) => {
+  const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    const url = downloadUrl || src;
-    console.log('Download requested for URL:', url);
+    if (isDownloading) return;
+    setIsDownloading(true);
     
-    const filename = title 
-      ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` 
-      : `image_${id}.jpg`;
-    
-    downloadImage(url, filename);
+    try {
+      const url = downloadUrl || src;
+      console.log('Download requested for URL:', url);
+      
+      const filename = title 
+        ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` 
+        : `image_${id}.jpg`;
+      
+      await downloadImage(url, filename);
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
+      toast.error('Échec du téléchargement', { 
+        description: 'Une erreur s\'est produite lors du téléchargement de l\'image.' 
+      });
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const aspectRatio = getAspectRatio();
@@ -147,8 +162,9 @@ export const ImageCard = memo(function ImageCard({
           variant="secondary" 
           className="bg-white/90 hover:bg-white w-8 h-8 rounded-full shadow-md"
           onClick={handleDownload}
+          disabled={isDownloading}
         >
-          <Download className="h-4 w-4 text-foreground" />
+          <Download className={`h-4 w-4 ${isDownloading ? 'animate-pulse' : ''} text-foreground`} />
           <span className="sr-only">Télécharger</span>
         </Button>
       </div>

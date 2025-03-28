@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { downloadImage } from '@/utils/image/imageDownloader';
+import { toast } from 'sonner';
 
 interface ImageContentProps {
   image: any;
@@ -17,19 +18,35 @@ export const ImageContent = ({
   isFullPage,
   onImageLoad 
 }: ImageContentProps) => {
-  const handleDownload = () => {
-    if (image) {
-      const downloadUrl = image.download_url || image.url_miniature || image.src || image.url;
-      console.log('Detail modal download requested for URL:', downloadUrl);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (image && !isDownloading) {
+      setIsDownloading(true);
       
-      if (downloadUrl) {
-        const filename = image.title 
-          ? `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` 
-          : `image_${image.id}.jpg`;
+      try {
+        // Get the best quality image URL available
+        const downloadUrl = image.download_url || image.url || image.display_url || image.url_miniature || image.src;
+        console.log('Detail modal download requested for URL:', downloadUrl);
         
-        downloadImage(downloadUrl, filename);
-      } else {
-        console.error('Aucune URL de téléchargement disponible pour cette image');
+        if (downloadUrl) {
+          // Create a descriptive filename based on the image title
+          const filename = image.title 
+            ? `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` 
+            : `image_${image.id || 'download'}.jpg`;
+          
+          await downloadImage(downloadUrl, filename);
+        } else {
+          console.error('Aucune URL de téléchargement disponible pour cette image');
+          toast.error('URL de téléchargement manquante');
+        }
+      } catch (error) {
+        console.error('Erreur lors du téléchargement:', error);
+        toast.error('Échec du téléchargement', { 
+          description: 'Une erreur s\'est produite lors du téléchargement de l\'image.' 
+        });
+      } finally {
+        setIsDownloading(false);
       }
     }
   };
@@ -42,9 +59,10 @@ export const ImageContent = ({
           onClick={handleDownload}
           size="sm"
           className="flex items-center gap-2"
+          disabled={isDownloading}
         >
           <Download className="h-4 w-4" />
-          <span>Télécharger</span>
+          <span>{isDownloading ? 'Téléchargement...' : 'Télécharger'}</span>
         </Button>
       </div>
       
