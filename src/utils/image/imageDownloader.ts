@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for image downloading
  */
@@ -15,55 +14,62 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
     // Clean URL by removing query parameters
     const cleanUrl = url.split('?')[0];
     
-    // Try to download the image directly
-    // Use fetch with credentials: 'omit' to avoid CORS issues
-    const response = await fetch(cleanUrl, {
-      method: 'GET',
-      credentials: 'omit',
-      cache: 'no-store',
-      redirect: 'follow',
-      headers: {
-        'Cache-Control': 'no-cache',
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to download image: ${response.status} ${response.statusText}`);
-    }
-    
-    const blob = await response.blob();
-    
-    // Generate a default filename if not provided
-    let downloadFilename = filename;
-    if (!downloadFilename) {
-      // Extract filename from URL or use default
-      const urlParts = cleanUrl.split('/');
-      downloadFilename = urlParts[urlParts.length - 1] || 'image.jpg';
+    // First try: Direct download with fetch API
+    try {
+      const response = await fetch(cleanUrl, {
+        method: 'GET',
+        credentials: 'omit',
+        cache: 'no-store',
+        redirect: 'follow',
+        headers: {
+          'Cache-Control': 'no-cache',
+        }
+      });
       
-      // Make sure it has an extension
-      if (!downloadFilename.includes('.')) {
-        downloadFilename += '.jpg';
+      if (response.ok) {
+        const blob = await response.blob();
+        
+        // Generate a default filename if not provided
+        let downloadFilename = filename;
+        if (!downloadFilename) {
+          // Extract filename from URL or use default
+          const urlParts = cleanUrl.split('/');
+          downloadFilename = urlParts[urlParts.length - 1] || 'image.jpg';
+          
+          // Make sure it has an extension
+          if (!downloadFilename.includes('.')) {
+            downloadFilename += '.jpg';
+          }
+        }
+        
+        // Use saveAs from file-saver for better cross-browser compatibility
+        saveAs(blob, downloadFilename);
+        return;
       }
+    } catch (fetchError) {
+      console.warn('Direct fetch download failed, trying fallback method:', fetchError);
+      // Continue to fallback method
     }
     
-    // Create a download link and trigger it
-    const downloadUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = downloadFilename;
-    document.body.appendChild(a);
-    a.click();
+    // Fallback method: Use anchor with download attribute
+    // This helps bypass CORS in some cases
+    const link = document.createElement('a');
+    link.href = cleanUrl;
+    link.download = filename || 'image.jpg';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
     
     // Clean up
     setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(link);
     }, 100);
     
   } catch (error) {
     console.error('Error downloading image:', error);
     toast.error('Erreur lors du téléchargement', {
-      description: 'Impossible de télécharger cette image.'
+      description: 'Impossible de télécharger cette image. Essayez d\'ouvrir l\'image dans un nouvel onglet, puis de l\'enregistrer manuellement.'
     });
   }
 }
