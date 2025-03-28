@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { CreateAlbumDialog } from '@/components/gallery/album/CreateAlbumDialog';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -49,8 +48,13 @@ export function MasonryDetailModal({
   const handleDownload = () => {
     if (image) {
       const downloadUrl = image.download_url || image.url_miniature || image.src || image.url;
+      console.log('Detail modal download requested for URL:', downloadUrl);
+      
       if (downloadUrl) {
-        const filename = image.title ? `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` : `image_${image.id}.jpg`;
+        const filename = image.title 
+          ? `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` 
+          : `image_${image.id}.jpg`;
+        
         downloadImage(downloadUrl, filename);
       } else {
         console.error('Aucune URL de téléchargement disponible pour cette image');

@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for image downloading
  */
@@ -12,10 +11,36 @@ import { saveAs } from 'file-saver';
  */
 export async function downloadImage(url: string, filename?: string): Promise<void> {
   try {
-    // Clean URL by removing query parameters
-    const cleanUrl = url.split('?')[0];
+    // Properly encode URL components
+    let encodedUrl = encodeURI(decodeURI(url));
     
-    // First try: Direct download with fetch API
+    // Clean URL by removing query parameters
+    const cleanUrl = encodedUrl.split('?')[0];
+    
+    console.log('Attempting to download image:', cleanUrl);
+    
+    // First try with anchor tag direct method - often most reliable for cross-origin
+    try {
+      const link = document.createElement('a');
+      link.href = cleanUrl;
+      link.download = filename || 'image.jpg';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 100);
+      
+      console.log('Download initiated via anchor tag');
+      return;
+    } catch (anchorError) {
+      console.warn('Anchor download failed, trying fetch method:', anchorError);
+    }
+    
+    // Second try: Direct download with fetch API
     try {
       const response = await fetch(cleanUrl, {
         method: 'GET',
@@ -26,69 +51,37 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
           'Cache-Control': 'no-cache',
           'Accept': 'image/*, */*;q=0.8',
         },
-        mode: 'cors' // Explicitly set CORS mode
+        mode: 'no-cors' // Using no-cors directly which might work better for Stimergie URLs
       });
       
-      if (response.ok) {
-        const blob = await response.blob();
-        
+      // With no-cors we get an opaque response
+      const blob = await response.blob();
+      
+      if (blob.size > 0) {
         // Generate a default filename if not provided
         let downloadFilename = filename;
         if (!downloadFilename) {
-          // Extract filename from URL or use default
           const urlParts = cleanUrl.split('/');
           downloadFilename = urlParts[urlParts.length - 1] || 'image.jpg';
           
-          // Make sure it has an extension
           if (!downloadFilename.includes('.')) {
             downloadFilename += '.jpg';
           }
         }
         
-        // Use saveAs from file-saver for better cross-browser compatibility
         saveAs(blob, downloadFilename);
+        console.log('Download completed via fetch blob');
         return;
       }
     } catch (fetchError) {
-      console.warn('Direct fetch download failed, trying fallback method:', fetchError);
-      // Continue to fallback method
+      console.warn('Fetch download failed:', fetchError);
     }
     
-    // Second try: fetch with no-cors mode (this will give opaque response)
-    try {
-      const response = await fetch(cleanUrl, {
-        method: 'GET',
-        credentials: 'omit',
-        cache: 'no-store',
-        redirect: 'follow',
-        mode: 'no-cors' // This might help with CORS issues but gives opaque response
-      });
-      
-      // Can't check status on opaque response, but can try to use the blob
-      const blob = await response.blob();
-      if (blob.size > 0) {
-        saveAs(blob, filename || 'image.jpg');
-        return;
-      }
-    } catch (noCorsError) {
-      console.warn('No-cors fetch download failed, trying final fallback:', noCorsError);
-      // Continue to final fallback
-    }
-    
-    // Final fallback: Use anchor with download attribute
-    // This helps bypass CORS in some cases
-    const link = document.createElement('a');
-    link.href = cleanUrl;
-    link.download = filename || 'image.jpg';
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    
-    // Clean up
-    setTimeout(() => {
-      document.body.removeChild(link);
-    }, 100);
+    // Final fallback: Open in new tab
+    window.open(cleanUrl, '_blank');
+    toast.info('Image ouverte dans un nouvel onglet', {
+      description: 'Vous pouvez faire un clic droit et "Enregistrer l\'image sous..." pour la télécharger.'
+    });
     
   } catch (error) {
     console.error('Error downloading image:', error);

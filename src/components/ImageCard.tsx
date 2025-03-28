@@ -80,7 +80,11 @@ export const ImageCard = memo(function ImageCard({
     e.stopPropagation();
     
     const url = downloadUrl || src;
-    const filename = title ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` : `image_${id}.jpg`;
+    console.log('Download requested for URL:', url);
+    
+    const filename = title 
+      ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` 
+      : `image_${id}.jpg`;
     
     downloadImage(url, filename);
   };
