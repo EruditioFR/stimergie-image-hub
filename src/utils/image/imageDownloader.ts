@@ -1,3 +1,4 @@
+
 /**
  * Utility functions for image downloading
  */
@@ -23,7 +24,9 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
         redirect: 'follow',
         headers: {
           'Cache-Control': 'no-cache',
-        }
+          'Accept': 'image/*, */*;q=0.8',
+        },
+        mode: 'cors' // Explicitly set CORS mode
       });
       
       if (response.ok) {
@@ -51,7 +54,28 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
       // Continue to fallback method
     }
     
-    // Fallback method: Use anchor with download attribute
+    // Second try: fetch with no-cors mode (this will give opaque response)
+    try {
+      const response = await fetch(cleanUrl, {
+        method: 'GET',
+        credentials: 'omit',
+        cache: 'no-store',
+        redirect: 'follow',
+        mode: 'no-cors' // This might help with CORS issues but gives opaque response
+      });
+      
+      // Can't check status on opaque response, but can try to use the blob
+      const blob = await response.blob();
+      if (blob.size > 0) {
+        saveAs(blob, filename || 'image.jpg');
+        return;
+      }
+    } catch (noCorsError) {
+      console.warn('No-cors fetch download failed, trying final fallback:', noCorsError);
+      // Continue to final fallback
+    }
+    
+    // Final fallback: Use anchor with download attribute
     // This helps bypass CORS in some cases
     const link = document.createElement('a');
     link.href = cleanUrl;
