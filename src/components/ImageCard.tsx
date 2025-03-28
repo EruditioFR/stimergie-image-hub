@@ -1,9 +1,9 @@
+
 import { useState, memo, useRef, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { downloadImage } from '@/utils/image';
 
 interface ImageCardProps {
   id: string;
@@ -75,11 +75,11 @@ export const ImageCard = memo(function ImageCard({
     }
   };
 
-  const handleDownload = async (e: React.MouseEvent) => {
+  const handleDownload = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const url = downloadUrl || src;
-    await downloadImage(url, title ? `${title}.jpg` : undefined);
+    window.open(url, '_blank');
   };
 
   const aspectRatio = getAspectRatio();

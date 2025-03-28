@@ -1,12 +1,12 @@
+
 import { useState } from 'react';
-import { X, Download, Heart, Share2 } from 'lucide-react';
+import { X, Download, Heart, Share2, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { parseTagsString } from '@/utils/imageUtils';
-import { downloadImage } from '@/utils/image';
 
 interface ImageDetailModalProps {
   image: any;
@@ -23,9 +23,9 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
 
   const tags = typeof image.tags === 'string' ? parseTagsString(image.tags) : image.tags;
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     const downloadUrl = image.download_url || image.url;
-    await downloadImage(downloadUrl, image.title ? `${image.title}.jpg` : undefined);
+    window.open(downloadUrl, '_blank');
   };
 
   const handleLike = () => {
@@ -62,7 +62,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                 onClick={toggleFullPage}
                 className="ml-2"
               >
-                
+                <Maximize2 className="h-4 w-4" />
               </Button>
             )}
           </div>
