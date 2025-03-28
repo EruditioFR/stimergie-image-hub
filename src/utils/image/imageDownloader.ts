@@ -21,82 +21,91 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
     
     console.log('Attempting to download image:', cleanUrl);
     
-    // Primary download method: Using direct anchor link (most reliable method)
-    try {
-      toast.loading('Téléchargement en cours...');
-      
-      // Create a download link with the 'download' attribute
-      const link = document.createElement('a');
-      link.href = cleanUrl;
-      link.download = filename || 'image.jpg';
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.style.display = 'none';
-      
-      // Force download attribute to work by embedding in document
-      document.body.appendChild(link);
-      link.click();
-      
-      // Cleanup
-      setTimeout(() => {
-        document.body.removeChild(link);
-        toast.dismiss();
-        toast.success('Téléchargement commencé');
-      }, 100);
-      
-      console.log('Download initiated via anchor tag');
-      return;
-    } catch (anchorError) {
-      toast.dismiss();
-      console.warn('Anchor download failed, trying next method:', anchorError);
-    }
+    toast.loading('Téléchargement en cours...');
     
-    // Secondary download method: Fetch with no-cors (works for cross-origin but gives opaque response)
     try {
-      toast.loading('Téléchargement en cours...');
-      
+      // Using fetch to get the image as a blob (most reliable method)
       const response = await fetch(cleanUrl, {
         method: 'GET',
-        mode: 'no-cors', // This is crucial for CORS issues
         cache: 'no-store',
         credentials: 'omit',
-        redirect: 'follow'
+        redirect: 'follow',
+        headers: {
+          'Cache-Control': 'no-cache',
+        }
       });
       
-      // We can't check status on an opaque response
-      // Just create a new link with the URL
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status}`);
+      }
+      
+      // Convert response to blob
+      const blob = await response.blob();
+      
+      // Use file-saver to trigger the download
+      saveAs(blob, filename || 'image.jpg');
+      
+      toast.dismiss();
+      toast.success('Téléchargement réussi');
+      return;
+    } catch (fetchError) {
+      console.warn('Primary download method failed:', fetchError);
+      // Continue to fallback methods
+    }
+    
+    // Fallback method: Using a download link with blob URL
+    try {
+      const response = await fetch(cleanUrl, { 
+        mode: 'no-cors',
+        cache: 'no-store' 
+      });
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
       const link = document.createElement('a');
-      link.href = cleanUrl;
+      link.href = blobUrl;
       link.download = filename || 'image.jpg';
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
       link.style.display = 'none';
       
       document.body.appendChild(link);
       link.click();
       
+      // Clean up
       setTimeout(() => {
         document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
         toast.dismiss();
-        toast.success('Téléchargement commencé');
+        toast.success('Téléchargement réussi');
       }, 100);
       
       return;
-    } catch (fetchError) {
-      toast.dismiss();
-      console.warn('Fetch download failed, trying final method:', fetchError);
+    } catch (blobError) {
+      console.warn('Blob URL download failed:', blobError);
+      // Try final fallback
     }
     
-    // Final fallback: Open in new tab with download instructions
-    window.open(cleanUrl, '_blank');
-    toast.info('Image ouverte dans un nouvel onglet', {
-      description: 'Pour télécharger: clic droit sur l\'image et sélectionnez "Enregistrer l\'image sous..."'
-    });
+    // Last fallback: Direct link with download attribute
+    const link = document.createElement('a');
+    link.href = cleanUrl;
+    link.download = filename || 'image.jpg';
+    link.target = '_blank'; // This should be removed to prevent opening in new tab
+    link.rel = 'noopener noreferrer';
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    
+    setTimeout(() => {
+      document.body.removeChild(link);
+      toast.dismiss();
+      toast.success('Téléchargement commencé');
+    }, 100);
+    
   } catch (error) {
     toast.dismiss();
     console.error('Error downloading image:', error);
     toast.error('Erreur lors du téléchargement', {
-      description: 'Impossible de télécharger cette image. Essayez d\'ouvrir l\'image dans un nouvel onglet, puis de l\'enregistrer manuellement.'
+      description: 'Impossible de télécharger cette image.'
     });
   }
 }
