@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useImageContext } from '@/context/ImageContext';
+import { useImages } from '@/context/ImageContext';
 import { Button } from '@/components/ui/button';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { X, Download } from 'lucide-react';
@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 export default function ImageDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { images } = useImageContext();
+  const { images } = useImages();
   const [isDownloading, setIsDownloading] = useState(false);
   
   const image = images.find(img => img.id === id);

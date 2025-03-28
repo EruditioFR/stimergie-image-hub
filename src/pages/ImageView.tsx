@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
-import { ImageDetail } from '@/components/ImageDetail';
+import ImageDetail from '@/components/ImageDetail';
 
 const ImageView = () => {
   const { id } = useParams<{ id: string }>();
