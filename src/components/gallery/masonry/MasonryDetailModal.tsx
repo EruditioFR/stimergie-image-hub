@@ -6,6 +6,7 @@ import { Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { downloadImage } from '@/utils/image';
 
 interface MasonryDetailModalProps {
   image: any;
@@ -45,11 +46,12 @@ export function MasonryDetailModal({
     setImageLoaded(true);
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (image) {
       const downloadUrl = image.download_url || image.url_miniature || image.src || image.url;
       if (downloadUrl) {
-        window.open(downloadUrl, '_blank');
+        // Use the downloadImage utility to download directly
+        await downloadImage(downloadUrl, image.title ? `${image.title}.jpg` : undefined);
       } else {
         console.error('Aucune URL de téléchargement disponible pour cette image');
       }

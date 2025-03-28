@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Download, Heart, Share2, ArrowLeft, X } from 'lucide-react';
@@ -8,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Image } from '@/pages/Images';
+import { downloadImage } from '@/utils/image';
 
 const parseTagsString = (tagsString: string | null): string[] | null => {
   if (!tagsString) return null;
@@ -58,9 +58,9 @@ export function ImageDetail() {
     enabled: !!id
   });
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!imageDetails) return;
-    window.open(imageDetails.url, '_blank');
+    await downloadImage(imageDetails.url, imageDetails.title ? `${imageDetails.title}.jpg` : undefined);
   };
 
   const handleLike = () => {
