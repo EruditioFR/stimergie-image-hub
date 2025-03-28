@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, ExternalLink } from 'lucide-react';
 import { downloadImage } from '@/utils/image/imageDownloader';
 import { toast } from 'sonner';
 
@@ -51,19 +51,43 @@ export const ImageContent = ({
     }
   };
 
+  const handleDirectDownload = () => {
+    if (image) {
+      const downloadUrl = image.download_url || image.url || image.display_url || image.url_miniature || image.src;
+      if (downloadUrl) {
+        // Ouvrir dans un nouvel onglet pour téléchargement manuel
+        window.open(downloadUrl, '_blank');
+        toast.info('Image ouverte dans un nouvel onglet', {
+          description: 'Pour télécharger: clic droit sur l\'image et sélectionnez "Enregistrer l\'image sous..."'
+        });
+      }
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">{image?.title || 'Sans titre'}</h2>
-        <Button 
-          onClick={handleDownload}
-          size="sm"
-          className="flex items-center gap-2"
-          disabled={isDownloading}
-        >
-          <Download className="h-4 w-4" />
-          <span>{isDownloading ? 'Téléchargement...' : 'Télécharger'}</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={handleDownload}
+            size="sm"
+            className="flex items-center gap-2"
+            disabled={isDownloading}
+          >
+            <Download className="h-4 w-4" />
+            <span>{isDownloading ? 'Téléchargement...' : 'Télécharger'}</span>
+          </Button>
+          <Button 
+            onClick={handleDirectDownload}
+            size="sm"
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <ExternalLink className="h-4 w-4" />
+            <span>Ouvrir</span>
+          </Button>
+        </div>
       </div>
       
       <div className="relative rounded-md overflow-hidden flex justify-center">

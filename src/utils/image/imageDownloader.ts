@@ -5,12 +5,16 @@
 import { toast } from 'sonner';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { clearAllCaches } from './cacheManager';
 
 /**
  * Download a single image
  */
 export async function downloadImage(url: string, filename?: string): Promise<void> {
   try {
+    // Clear any cached data first to ensure fresh downloads
+    clearAllCaches();
+    
     // Clean and encode URL
     let encodedUrl = encodeURI(decodeURI(url));
     const cleanUrl = encodedUrl.split('?')[0];
@@ -23,7 +27,7 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
       
       const response = await fetch(cleanUrl, {
         method: 'GET',
-        mode: 'no-cors',
+        mode: 'cors', // Try with cors first, not no-cors
         cache: 'no-store',
         credentials: 'omit',
         redirect: 'follow',
@@ -50,13 +54,16 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
       console.warn('Fetch download failed, trying alternative method:', fetchError);
     }
     
-    // Second attempt: Use download attribute with anchor tag
+    // Second attempt: Try a direct download link with download attribute
     try {
       toast.loading('Téléchargement en cours...');
       
+      // Create a download link with the 'download' attribute
       const link = document.createElement('a');
       link.href = cleanUrl;
       link.download = filename || 'image.jpg';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
       link.style.display = 'none';
       
       // Force download attribute to work by embedding in document
@@ -77,23 +84,18 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
       console.warn('Anchor download failed, trying next method:', anchorError);
     }
     
-    // Third attempt: Use Blob URL with saveAs
+    // Third attempt: Use file-saver directly with a new fetch
     try {
       toast.loading('Téléchargement en cours...');
       
-      // For cross-origin images that fail with fetch, try XMLHttpRequest
+      // Create a new Blob URL from the original URL
       const xhr = new XMLHttpRequest();
       xhr.open('GET', cleanUrl, true);
       xhr.responseType = 'blob';
       xhr.onload = function() {
         if (this.status === 200) {
-          const blobUrl = URL.createObjectURL(this.response);
           const downloadFilename = filename || 'image.jpg';
-          
-          saveAs(this.response, downloadFilename);
-          
-          // Clean up the Blob URL
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+          saveAs(new Blob([this.response]), downloadFilename);
           
           toast.dismiss();
           toast.success('Image téléchargée');
@@ -112,13 +114,34 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
       console.warn('XHR download failed, falling back to final method:', xhrError);
     }
     
-    // Final fallback: Open in new tab with instructions
-    toast.dismiss();
-    window.open(cleanUrl, '_blank');
-    toast.info('Image ouverte dans un nouvel onglet', {
-      description: 'Pour télécharger: clic droit sur l\'image et sélectionnez "Enregistrer l\'image sous..."'
-    });
-    
+    // Final fallback: Force download with a temporary iframe
+    try {
+      toast.loading('Téléchargement en cours...');
+      
+      // Create an iframe that tries to force the download
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = cleanUrl;
+      document.body.appendChild(iframe);
+      
+      // Cleanup after a short delay
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+        toast.dismiss();
+        toast.success('Téléchargement commencé');
+      }, 1000);
+      
+      return;
+    } catch (iframeError) {
+      toast.dismiss();
+      console.warn('Iframe download failed, last resort:', iframeError);
+      
+      // Last resort: Open in new tab with instructions
+      window.open(cleanUrl, '_blank');
+      toast.info('Image ouverte dans un nouvel onglet', {
+        description: 'Pour télécharger: clic droit sur l\'image et sélectionnez "Enregistrer l\'image sous..."'
+      });
+    }
   } catch (error) {
     toast.dismiss();
     console.error('Error downloading image:', error);

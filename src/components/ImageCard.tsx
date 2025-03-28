@@ -1,3 +1,4 @@
+
 import { useState, memo, useRef, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -92,6 +93,7 @@ export const ImageCard = memo(function ImageCard({
         ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` 
         : `image_${id}.jpg`;
       
+      // Utiliser la fonction modifiée qui vide le cache
       await downloadImage(url, filename);
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
