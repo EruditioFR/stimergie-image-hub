@@ -37,7 +37,7 @@ export function MasonryToolbar({
     
     setIsDownloading(true);
     toast.loading("Préparation du ZIP en cours, veuillez patienter...", {
-      duration: 120000, // Notification peut rester affichée jusqu'à 2 minutes
+      duration: 180000, // Notification peut rester affichée jusqu'à 3 minutes
       id: "zip-preparation"
     });
     
@@ -45,13 +45,15 @@ export function MasonryToolbar({
     console.log("Selected images for download:", selectedImagesData);
     
     // Créer un tableau avec les formats attendus par downloadImagesAsZip
-    // Assurez-vous d'utiliser exactement l'URL fournie sans modifications
+    // Utiliser la source directe de l'image (src) ou l'URL de téléchargement
     const imagesForDownload = selectedImagesData.map(img => {
-      const originalUrl = img.src || img.display_url || img.url || '';
+      // Utiliser l'URL de téléchargement si disponible, sinon l'URL d'affichage
+      const url = img.src;
       
-      // Préserver l'URL exacte, sans la modifier
+      console.log(`Preparing image for download: ID=${img.id}, Title=${img.title}, URL=${url}`);
+      
       return {
-        url: originalUrl,
+        url: url,
         title: img.title || `image_${img.id}`,
         id: img.id
       };

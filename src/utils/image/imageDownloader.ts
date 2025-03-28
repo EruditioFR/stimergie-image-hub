@@ -12,7 +12,7 @@ import { clearAllCaches } from './cacheManager';
 const CORS_PROXY_URL = 'https://corsproxy.io/?';
 
 // Timeout configuration for large downloads
-const FETCH_TIMEOUT = 120000; // 2 minutes timeout for large files
+const FETCH_TIMEOUT = 180000; // 3 minutes timeout for large files
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 1000; // 1 second
 
@@ -138,24 +138,6 @@ async function fetchWithTimeout(url: string, options = {}, timeout = FETCH_TIMEO
 }
 
 /**
- * Ensure a URL uses CORS proxy if needed
- */
-function ensureCorsProxyForStimergieUrls(url: string): string {
-  // Si l'URL est déjà proxy-fiée, ne rien changer
-  if (url.includes('corsproxy.io')) {
-    return url;
-  }
-  
-  // Si c'est une URL Stimergie, ajouter le proxy CORS
-  if (url.includes('stimergie.fr')) {
-    return `${CORS_PROXY_URL}${encodeURIComponent(url)}`;
-  }
-  
-  // Sinon retourner l'URL telle quelle
-  return url;
-}
-
-/**
  * Download multiple images as a ZIP file
  */
 export async function downloadImagesAsZip(images: Array<{
@@ -166,7 +148,7 @@ export async function downloadImagesAsZip(images: Array<{
   try {
     toast.loading('Création du fichier ZIP en cours...', {
       id: 'creating-zip',
-      duration: 120000 // Allow up to 2 minutes for large files
+      duration: 180000 // Allow up to 3 minutes for large files
     });
     
     const zip = new JSZip();
@@ -177,17 +159,15 @@ export async function downloadImagesAsZip(images: Array<{
       throw new Error('Failed to create folder in ZIP file');
     }
     
+    console.log("Preparing to download images:", images);
+    
     // Download each image and add to ZIP
     const downloadPromises = images.map(async (image, index) => {
       try {
-        // Préserver l'URL exacte sans la modifier
-        const originalUrl = image.url;
+        // Use the exact URL provided without modification
+        const imageUrl = image.url;
         
-        // Ajouter le proxy CORS si nécessaire
-        const proxiedUrl = ensureCorsProxyForStimergieUrls(originalUrl);
-        
-        console.log(`Processing image ${index + 1}/${images.length}: ${originalUrl}`);
-        console.log(`Using proxied URL: ${proxiedUrl}`);
+        console.log(`Processing image ${index + 1}/${images.length}: ${imageUrl}`);
         
         // Generate a unique filename
         let filename = `image_${index + 1}.jpg`;
@@ -198,9 +178,9 @@ export async function downloadImagesAsZip(images: Array<{
           filename = image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
           
           // Determine extension from URL
-          if (originalUrl.toLowerCase().endsWith('.png')) {
+          if (imageUrl.toLowerCase().endsWith('.png')) {
             filename += '.png';
-          } else if (originalUrl.toLowerCase().endsWith('.svg')) {
+          } else if (imageUrl.toLowerCase().endsWith('.svg')) {
             filename += '.svg';
           } else {
             filename += '.jpg';
@@ -217,17 +197,22 @@ export async function downloadImagesAsZip(images: Array<{
         while (attempts < maxAttempts && !blob) {
           attempts++;
           try {
-            console.log(`Attempt ${attempts}/${maxAttempts} to fetch image: ${proxiedUrl}`);
+            console.log(`Attempt ${attempts}/${maxAttempts} to fetch image: ${imageUrl}`);
             
-            const response = await fetchWithTimeout(proxiedUrl, {
+            // Make sure we're using proper mode for cross-origin requests
+            const response = await fetchWithTimeout(imageUrl, {
               method: 'GET',
               credentials: 'omit',
               cache: 'no-store',
+              mode: 'cors', // Use 'cors' instead of 'no-cors' to get actual data
               redirect: 'follow',
               headers: {
                 'Cache-Control': 'no-cache',
               }
             }, FETCH_TIMEOUT);
+            
+            console.log(`Response status for ${filename}: ${response.status} ${response.statusText}`);
+            console.log(`Response type: ${response.type}`);
             
             if (!response.ok && response.type !== 'opaque') {
               console.warn(`Failed to fetch image on attempt ${attempts}: ${response.status} ${response.statusText}`);
@@ -240,6 +225,7 @@ export async function downloadImagesAsZip(images: Array<{
             }
             
             blob = await response.blob();
+            console.log(`Blob received for ${filename}: size=${blob.size}, type=${blob.type}`);
             
             if (blob.size === 0) {
               console.warn(`Image blob is empty, retrying... (${attempts}/${maxAttempts})`);
@@ -263,8 +249,9 @@ export async function downloadImagesAsZip(images: Array<{
           }
         }
         
-        if (!blob) {
-          throw new Error(`Failed to download image after ${maxAttempts} attempts`);
+        if (!blob || blob.size === 0) {
+          console.error(`Failed to download image after ${maxAttempts} attempts or blob is empty`);
+          return false;
         }
         
         // Add the image to the ZIP file
@@ -305,7 +292,7 @@ export async function downloadImagesAsZip(images: Array<{
     console.log("Generating ZIP file...");
     toast.loading("Compression des images en cours...", { 
       id: "compressing-zip",
-      duration: 120000 // 2 minutes timeout for compression
+      duration: 180000 // 3 minutes timeout for compression
     });
     
     const zipBlob = await zip.generateAsync({ 
