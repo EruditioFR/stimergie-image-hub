@@ -1,3 +1,4 @@
+
 /**
  * Utility functions for image downloading
  */
@@ -135,6 +136,8 @@ export async function downloadImagesAsZip(images: Array<{
         // Clean URL by removing query parameters
         const cleanUrl = image.url.split('?')[0];
         
+        console.log(`Processing image for ZIP: ${cleanUrl}`);
+        
         // Generate a unique filename
         let filename = `image_${index + 1}.jpg`;
         
@@ -146,25 +149,53 @@ export async function downloadImagesAsZip(images: Array<{
           filename = `image_${image.id}.jpg`;
         }
         
-        // Fetch the image
-        const response = await fetch(cleanUrl, {
-          method: 'GET',
-          credentials: 'omit',
-          cache: 'no-store',
-          redirect: 'follow',
-          headers: {
-            'Cache-Control': 'no-cache',
-          }
-        });
+        // Fetch the image with retry mechanism
+        let blob: Blob | null = null;
+        let attempts = 0;
+        const maxAttempts = 3;
         
-        if (!response.ok) {
-          throw new Error(`Failed to download image: ${response.status} ${response.statusText}`);
+        while (attempts < maxAttempts && !blob) {
+          attempts++;
+          try {
+            console.log(`Attempt ${attempts} to fetch image: ${cleanUrl}`);
+            
+            const response = await fetch(cleanUrl, {
+              method: 'GET',
+              credentials: 'omit',
+              cache: 'no-store',
+              redirect: 'follow',
+              headers: {
+                'Cache-Control': 'no-cache',
+              }
+            });
+            
+            if (!response.ok) {
+              console.warn(`Failed to fetch image on attempt ${attempts}: ${response.status} ${response.statusText}`);
+              continue;
+            }
+            
+            blob = await response.blob();
+            
+            if (blob.size === 0) {
+              console.warn(`Image blob is empty, retrying... (${attempts}/${maxAttempts})`);
+              blob = null;
+              continue;
+            }
+            
+            console.log(`Successfully downloaded image: ${filename} (${blob.size} bytes, type: ${blob.type})`);
+          } catch (fetchError) {
+            console.error(`Error fetching image on attempt ${attempts}:`, fetchError);
+            await new Promise(resolve => setTimeout(resolve, 500)); // Wait before retry
+          }
         }
         
-        const blob = await response.blob();
+        if (!blob) {
+          throw new Error(`Failed to download image after ${maxAttempts} attempts`);
+        }
         
         // Add the image to the ZIP file
         folder.file(filename, blob);
+        console.log(`Added to ZIP: ${filename} (${blob.size} bytes)`);
         
         return true;
       } catch (error) {
@@ -177,8 +208,26 @@ export async function downloadImagesAsZip(images: Array<{
     const results = await Promise.all(downloadPromises);
     const successCount = results.filter(success => success).length;
     
+    // Log folder contents for debugging
+    console.log("ZIP folder contents:", folder.files);
+    
+    if (Object.keys(folder.files).length === 0) {
+      console.error("No files were added to the ZIP");
+      toast.error("Erreur lors de la création du ZIP", {
+        description: "Aucune image n'a pu être téléchargée."
+      });
+      return;
+    }
+    
     // Generate the ZIP file
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    console.log("Generating ZIP file...");
+    const zipBlob = await zip.generateAsync({ 
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 }
+    });
+    
+    console.log(`ZIP file created: ${zipBlob.size} bytes`);
     
     // Download the ZIP file
     saveAs(zipBlob, zipFilename);

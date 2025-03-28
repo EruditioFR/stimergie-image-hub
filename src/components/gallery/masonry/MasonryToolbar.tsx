@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Share } from 'lucide-react';
 import { toast } from 'sonner';
-import { downloadImagesAsZip } from '@/utils/image';
+import { downloadImagesAsZip } from '@/utils/image/imageDownloader';
 import { Image } from '@/utils/image/types';
 
 interface MasonryToolbarProps {
@@ -28,15 +27,18 @@ export function MasonryToolbar({
     }
     
     const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
+    console.log("Selected images for download:", selectedImagesData);
     
     // Create array with the format expected by downloadImagesAsZip
+    // Prioritize download_url over src for high-resolution versions
     const imagesForDownload = selectedImagesData.map(img => ({
-      url: img.download_url || img.src,
+      url: img.download_url || img.url || img.src,
       title: img.title,
       id: img.id
     }));
     
-    await downloadImagesAsZip(imagesForDownload);
+    console.log("Images prepared for ZIP download:", imagesForDownload);
+    await downloadImagesAsZip(imagesForDownload, "images_haute_resolution.zip");
   };
 
   const openShareDialog = () => {
