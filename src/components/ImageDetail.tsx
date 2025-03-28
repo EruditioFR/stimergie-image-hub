@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useImages } from '@/context/ImageContext';
 import { Button } from '@/components/ui/button';
 import { X, Download } from 'lucide-react';
-import { downloadImage } from '@/utils/image/imageDownloader';
+import { downloadImage } from '@/utils/image/download';
 import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 

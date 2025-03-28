@@ -6,7 +6,7 @@ export * from './fileUtils';
 export * from './fetcher';
 export * from './blobUtils';
 export * from './cacheManager';
-export * from './imageDownloader';
+export * from './download';
 export * from './imageUrlGenerator';
 
 // For backward compatibility

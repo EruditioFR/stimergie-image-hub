@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Share } from 'lucide-react';
 import { toast } from 'sonner';
-import { downloadImagesAsZip } from '@/utils/image/imageDownloader';
+import { downloadImagesAsZip } from '@/utils/image/download';
 import { Image } from '@/utils/image/types';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 

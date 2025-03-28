@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { X, Download, Heart, Share2, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { parseTagsString } from '@/utils/imageUtils';
-import { downloadImage } from '@/utils/image/imageDownloader';
+import { downloadImage } from '@/utils/image/download';
 
 interface ImageDetailModalProps {
   image: any;
