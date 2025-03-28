@@ -284,12 +284,15 @@ export async function downloadImagesAsZip(images: Array<{
     
     // Log folder contents for debugging
     console.log("ZIP folder structure:");
-    Object.keys(folder.files).forEach(filename => {
-      const fileSize = folder.files[filename]._data ? folder.files[filename]._data.length : "unknown";
-      console.log(`- ${filename}: ${fileSize} bytes`);
+    const fileList = Object.keys(folder.files);
+    fileList.forEach(filename => {
+      // Using the JSZip API to safely check file size
+      const zipFile = folder.files[filename];
+      const fileSize = zipFile ? "file present" : "unknown";
+      console.log(`- ${filename}: ${fileSize}`);
     });
     
-    if (Object.keys(folder.files).length === 0) {
+    if (fileList.length === 0) {
       console.error("No files were added to the ZIP");
       toast.dismiss('creating-zip');
       toast.error("Erreur lors de la création du ZIP", {
@@ -310,7 +313,7 @@ export async function downloadImagesAsZip(images: Array<{
       compression: 'DEFLATE',
       compressionOptions: { level: 6 }
     }, (metadata) => {
-      const percent = metadata.percent.toFixed(0);
+      const percent = Math.floor(metadata.percent);
       if (percent % 10 === 0) {
         console.log(`ZIP compression: ${percent}%`);
       }
