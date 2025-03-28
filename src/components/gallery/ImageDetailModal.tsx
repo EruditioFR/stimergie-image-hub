@@ -62,7 +62,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                 onClick={toggleFullPage}
                 className="ml-2"
               >
-                <Maximize2 className="h-4 w-4" />
+                
               </Button>
             )}
           </div>
