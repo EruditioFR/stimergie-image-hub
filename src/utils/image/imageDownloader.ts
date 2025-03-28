@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for image downloading
  */
@@ -22,40 +21,7 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
     
     console.log('Attempting to download image:', cleanUrl);
     
-    // Primary download method: Fetch and use saveAs (most reliable on Chrome)
-    try {
-      toast.loading('Téléchargement en cours...');
-      
-      const response = await fetch(cleanUrl, {
-        method: 'GET',
-        mode: 'cors', // Try with cors first, not no-cors
-        cache: 'no-store',
-        credentials: 'omit',
-        redirect: 'follow',
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      });
-      
-      const blob = await response.blob();
-      
-      if (blob.size > 0) {
-        const downloadFilename = filename || 'image.jpg';
-        saveAs(blob, downloadFilename);
-        console.log('Download completed via fetch blob');
-        toast.dismiss();
-        toast.success('Image téléchargée');
-        return;
-      } else {
-        toast.dismiss();
-        console.warn('Blob size was 0, trying alternative method');
-      }
-    } catch (fetchError) {
-      toast.dismiss();
-      console.warn('Fetch download failed, trying alternative method:', fetchError);
-    }
-    
-    // Second attempt: Try a direct download link with download attribute
+    // Primary download method: Using direct anchor link (most reliable method)
     try {
       toast.loading('Téléchargement en cours...');
       
@@ -85,116 +51,47 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
       console.warn('Anchor download failed, trying next method:', anchorError);
     }
     
-    // Third attempt: Use file-saver directly with a new fetch
+    // Secondary download method: Fetch with no-cors (works for cross-origin but gives opaque response)
     try {
       toast.loading('Téléchargement en cours...');
       
-      // Create a new Blob URL from the original URL
-      const xhr = new XMLHttpRequest();
-      xhr.open('GET', cleanUrl, true);
-      xhr.responseType = 'blob';
-      xhr.onload = function() {
-        if (this.status === 200) {
-          const downloadFilename = filename || 'image.jpg';
-          saveAs(new Blob([this.response]), downloadFilename);
-          
-          toast.dismiss();
-          toast.success('Image téléchargée');
-          console.log('Download completed via XHR blob');
-        } else {
-          throw new Error(`XHR failed with status ${this.status}`);
-        }
-      };
-      xhr.onerror = function() {
-        throw new Error('XHR network error');
-      };
-      xhr.send();
-      return;
-    } catch (xhrError) {
-      toast.dismiss();
-      console.warn('XHR download failed, falling back to final method:', xhrError);
-    }
-    
-    // Final fallback: Use Content-Disposition header with a dynamically created iframe
-    try {
-      toast.loading('Téléchargement en cours...');
+      const response = await fetch(cleanUrl, {
+        method: 'GET',
+        mode: 'no-cors', // This is crucial for CORS issues
+        cache: 'no-store',
+        credentials: 'omit',
+        redirect: 'follow'
+      });
       
-      // Create a hidden form that targets a hidden iframe to force download
-      const form = document.createElement('form');
-      form.method = 'GET';
-      form.action = cleanUrl;
-      form.style.display = 'none';
+      // We can't check status on an opaque response
+      // Just create a new link with the URL
+      const link = document.createElement('a');
+      link.href = cleanUrl;
+      link.download = filename || 'image.jpg';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.style.display = 'none';
       
-      const hiddenInput = document.createElement('input');
-      hiddenInput.type = 'hidden';
-      hiddenInput.name = 'download';
-      hiddenInput.value = '1';
-      form.appendChild(hiddenInput);
+      document.body.appendChild(link);
+      link.click();
       
-      const iframe = document.createElement('iframe');
-      iframe.name = 'download_iframe_' + Date.now();
-      iframe.style.display = 'none';
-      form.target = iframe.name;
-      
-      document.body.appendChild(form);
-      document.body.appendChild(iframe);
-      
-      form.submit();
-      
-      // Cleanup after a short delay
       setTimeout(() => {
-        document.body.removeChild(form);
-        document.body.removeChild(iframe);
+        document.body.removeChild(link);
         toast.dismiss();
         toast.success('Téléchargement commencé');
-      }, 1000);
+      }, 100);
       
       return;
-    } catch (formError) {
+    } catch (fetchError) {
       toast.dismiss();
-      console.warn('Form download failed, last resort:', formError);
-      
-      // Last resort: Fallback to blob URL with a download attribute
-      try {
-        const blob = new Blob([''], { type: 'application/octet-stream' });
-        const blobUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = filename || 'image.jpg';
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.style.display = 'none';
-        
-        // Add a hidden form field to redirect to the actual URL with download flag
-        link.setAttribute('data-downloadurl', cleanUrl);
-        
-        document.body.appendChild(link);
-        link.click();
-        
-        // Cleanup
-        setTimeout(() => {
-          document.body.removeChild(link);
-          URL.revokeObjectURL(blobUrl);
-          
-          // After the click, try to redirect to the real URL
-          window.location.href = cleanUrl + (cleanUrl.includes('?') ? '&' : '?') + 'download=1';
-          
-          toast.dismiss();
-          toast.success('Téléchargement commencé');
-        }, 100);
-        
-        return;
-      } catch (blobUrlError) {
-        toast.dismiss();
-        console.warn('Blob URL download failed:', blobUrlError);
-        
-        // Absolute last resort: Open in new tab with download instructions
-        window.open(cleanUrl, '_blank');
-        toast.info('Image ouverte dans un nouvel onglet', {
-          description: 'Pour télécharger: clic droit sur l\'image et sélectionnez "Enregistrer l\'image sous..."'
-        });
-      }
+      console.warn('Fetch download failed, trying final method:', fetchError);
     }
+    
+    // Final fallback: Open in new tab with download instructions
+    window.open(cleanUrl, '_blank');
+    toast.info('Image ouverte dans un nouvel onglet', {
+      description: 'Pour télécharger: clic droit sur l\'image et sélectionnez "Enregistrer l\'image sous..."'
+    });
   } catch (error) {
     toast.dismiss();
     console.error('Error downloading image:', error);
