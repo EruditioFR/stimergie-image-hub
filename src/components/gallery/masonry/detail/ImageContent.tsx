@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { downloadImage } from '@/utils/image/imageDownloader';
 import { toast } from 'sonner';
 
@@ -69,15 +68,6 @@ export const ImageContent = ({
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">{image?.title || 'Sans titre'}</h2>
         <div className="flex items-center gap-2">
-          <Button 
-            onClick={handleDownload}
-            size="sm"
-            className="flex items-center gap-2"
-            disabled={isDownloading}
-          >
-            <Download className="h-4 w-4" />
-            <span>{isDownloading ? 'Téléchargement...' : 'Télécharger'}</span>
-          </Button>
           <Button 
             onClick={handleDirectDownload}
             size="sm"
