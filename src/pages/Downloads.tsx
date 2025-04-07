@@ -63,7 +63,7 @@ const Downloads = () => {
           <div>
             <h1 className="text-3xl font-bold">Vos téléchargements HD</h1>
             <p className="text-muted-foreground mt-2">
-              Retrouvez ici toutes vos demandes de téléchargements haute définition (> 20 Mo).
+              Retrouvez ici toutes vos demandes de téléchargements haute définition (&gt; 20 Mo).
             </p>
           </div>
 
