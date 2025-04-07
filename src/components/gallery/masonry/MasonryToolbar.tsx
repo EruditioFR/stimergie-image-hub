@@ -115,7 +115,9 @@ export function MasonryToolbar({
             </>
           ) : (
             <>
-              <Download className="h-4 w-4" /> Télécharger ({selectedImages.length})
+              <Download className="h-4 w-4" />
+              <span className="hidden md:inline">Version web & réseaux sociaux</span>
+              <span className="md:hidden">Télécharger</span>
             </>
           )}
         </Button>
