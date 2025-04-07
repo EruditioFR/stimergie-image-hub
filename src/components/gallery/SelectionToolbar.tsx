@@ -26,7 +26,7 @@ export function SelectionToolbar({
           variant="ghost" 
           size="sm" 
           onClick={onClearSelection}
-          className="ml-2"
+          className="ml-2 py-4"
         >
           Désélectionner tout
         </Button>
@@ -36,7 +36,7 @@ export function SelectionToolbar({
           variant="outline" 
           size="sm" 
           onClick={onDownload}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 py-4"
         >
           <Download className="h-4 w-4" /> Télécharger ({selectedCount})
         </Button>
@@ -44,7 +44,7 @@ export function SelectionToolbar({
           variant="default" 
           size="sm" 
           onClick={onShare}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 py-4"
         >
           <Share className="h-4 w-4" /> Partager
         </Button>

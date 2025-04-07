@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Share, Printer } from 'lucide-react';
@@ -143,7 +142,7 @@ export function MasonryToolbar({
           variant="ghost" 
           size="sm" 
           onClick={clearSelection}
-          className="ml-2"
+          className="ml-2 py-4"
         >
           Désélectionner tout
         </Button>
@@ -154,7 +153,7 @@ export function MasonryToolbar({
           size="sm" 
           onClick={handleDownload}
           disabled={isDownloading}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 py-4"
         >
           {isDownloading ? (
             <>
@@ -177,7 +176,7 @@ export function MasonryToolbar({
           size="sm" 
           onClick={handleDownloadHD}
           disabled={isDownloadingHD}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 py-4"
         >
           {isDownloadingHD ? (
             <>
@@ -199,7 +198,7 @@ export function MasonryToolbar({
           variant="default" 
           size="sm" 
           onClick={openShareDialog}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 py-4"
         >
           <Share className="h-4 w-4" /> Partager
         </Button>

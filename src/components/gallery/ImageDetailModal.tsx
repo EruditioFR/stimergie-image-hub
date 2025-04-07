@@ -82,7 +82,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                 variant="outline"
                 size="icon"
                 onClick={toggleFullPage}
-                className="ml-2"
+                className="ml-2 py-4"
               >
                 <Maximize2 className="h-4 w-4" />
               </Button>
@@ -105,7 +105,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 py-4"
                 onClick={handleLike}
               >
                 <Heart className={`h-4 w-4 ${liked ? 'fill-red-500 text-red-500' : ''}`} />
@@ -114,7 +114,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 py-4"
                 onClick={handleShare}
               >
                 <Share2 className="h-4 w-4" />
@@ -123,7 +123,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
             </div>
             <Button
               onClick={handleDownload}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 py-4"
             >
               <Download className="h-4 w-4" />
               <span>Télécharger</span>
@@ -172,7 +172,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
             
             <Button 
               onClick={handleDownload}
-              className="w-full flex items-center justify-center gap-2"
+              className="w-full flex items-center justify-center gap-2 py-4"
             >
               <Download className="h-4 w-4" />
               <span>Télécharger</span>
@@ -181,7 +181,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
             <div className="flex gap-4">
               <Button 
                 variant="outline" 
-                className="flex-1 flex items-center justify-center gap-2"
+                className="flex-1 flex items-center justify-center gap-2 py-4"
                 onClick={handleLike}
               >
                 <Heart className={`h-4 w-4 ${liked ? 'fill-red-500 text-red-500' : ''}`} />
@@ -189,7 +189,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
               </Button>
               <Button 
                 variant="outline" 
-                className="flex-1 flex items-center justify-center gap-2"
+                className="flex-1 flex items-center justify-center gap-2 py-4"
                 onClick={handleShare}
               >
                 <Share2 className="h-4 w-4" />
@@ -221,7 +221,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="absolute right-4 top-4 z-10 text-foreground" 
+                className="absolute right-4 top-4 z-10 text-foreground py-4" 
                 onClick={handleModalClose}
               >
                 <X className="h-6 w-6" />
