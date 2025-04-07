@@ -6,7 +6,7 @@ import type { Database } from './types';
 
 // Mettez à jour ces valeurs avec vos nouvelles clés Supabase
 const SUPABASE_URL = "https://mjhbugzaqmtfnbxaqpss.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qaGJ1Z3phcW10Zm5ieGFxcHNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEzODU2MDQsImV4cCI6MjA1Njk2MTYwNH0.JLcLHyBk3G0wO6MuhJ4WMqv8ImbGxmcExEzGG2xWIsk";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qaGJ1Z3phcW10Zm5ieGFxcHNzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NDAyNDE4OSwiZXhwIjoyMDU5NjAwMTg5fQ._FXbURwegoyzZCuxJerdXO6nwBQVYyCGbJMWgrS4_Tw";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
