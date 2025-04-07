@@ -18,7 +18,7 @@ import { Download, User, Users, Image, Settings, LogOut } from 'lucide-react';
 
 export function UserMenu() {
   const { user, userRole, signOut } = useAuth();
-  const { userProfile, isLoading: isLoadingProfile } = useUserProfile(user, userRole);
+  const { userProfile, loading: isLoadingProfile } = useUserProfile(user, userRole);
   const [initials, setInitials] = useState('');
   const navigate = useNavigate();
 
