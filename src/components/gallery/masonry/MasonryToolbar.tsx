@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Share } from 'lucide-react';
+import { Download, Share, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { downloadImagesAsZip } from '@/utils/image/download';
 import { Image } from '@/utils/image/types';
@@ -21,6 +21,7 @@ export function MasonryToolbar({
   images
 }: MasonryToolbarProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloadingHD, setIsDownloadingHD] = useState(false);
 
   if (selectedImages.length === 0) return null;
 
@@ -76,6 +77,53 @@ export function MasonryToolbar({
     }
   };
 
+  const handleDownloadHD = async () => {
+    if (selectedImages.length === 0) {
+      toast.error("Veuillez sélectionner au moins une image à télécharger");
+      return;
+    }
+    
+    if (isDownloadingHD) {
+      toast.info("Téléchargement HD déjà en cours, veuillez patienter");
+      return;
+    }
+    
+    setIsDownloadingHD(true);
+    toast.loading("Préparation du ZIP HD en cours, veuillez patienter...", {
+      duration: 180000, // Notification peut rester affichée jusqu'à 3 minutes
+      id: "zip-hd-preparation"
+    });
+    
+    const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
+    
+    // Créer un tableau avec les formats attendus par downloadImagesAsZip
+    // Pour les HD, on utilise toujours l'URL de téléchargement car c'est la haute qualité
+    const imagesForDownload = selectedImagesData.map(img => {
+      // Toujours utiliser l'URL de téléchargement pour les versions HD
+      const url = img.download_url || img.url || img.src;
+      
+      return {
+        url: url,
+        title: img.title || `image_${img.id}`,
+        id: img.id
+      };
+    });
+    
+    try {
+      await downloadImagesAsZip(imagesForDownload, "images_hd_stimergie.zip");
+      toast.dismiss("zip-hd-preparation");
+      toast.success("Téléchargement HD terminé avec succès");
+    } catch (error) {
+      console.error("Error during HD ZIP download:", error);
+      toast.dismiss("zip-hd-preparation");
+      toast.error("Erreur lors du téléchargement du ZIP HD", {
+        description: "Une erreur est survenue pendant la création du fichier ZIP HD."
+      });
+    } finally {
+      setIsDownloadingHD(false);
+    }
+  };
+
   const openShareDialog = () => {
     // We would normally check for user here, but we're extracting the component
     // so we'll assume that's been checked before
@@ -100,7 +148,7 @@ export function MasonryToolbar({
           Désélectionner tout
         </Button>
       </div>
-      <div className="flex space-x-2">
+      <div className="flex flex-wrap gap-2">
         <Button 
           variant="outline" 
           size="sm" 
@@ -118,6 +166,26 @@ export function MasonryToolbar({
               <Download className="h-4 w-4" />
               <span className="hidden md:inline">Version web & réseaux sociaux</span>
               <span className="md:hidden">Télécharger</span>
+            </>
+          )}
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleDownloadHD}
+          disabled={isDownloadingHD}
+          className="flex items-center gap-2"
+        >
+          {isDownloadingHD ? (
+            <>
+              <LoadingSpinner size={16} className="mr-1" /> 
+              Création du ZIP HD...
+            </>
+          ) : (
+            <>
+              <Download className="h-4 w-4" />
+              <span className="hidden md:inline">Version HD impression</span>
+              <span className="md:hidden">HD</span>
             </>
           )}
         </Button>
