@@ -164,7 +164,10 @@ export function MasonryToolbar({
           ) : (
             <>
               <Download className="h-4 w-4" />
-              <span className="hidden md:inline">Version web & réseaux sociaux</span>
+              <div className="hidden md:flex flex-col items-center">
+                <span>Version web & réseaux sociaux</span>
+                <span className="text-xs text-muted-foreground">({"< 2 Mo"})</span>
+              </div>
               <span className="md:hidden">Télécharger</span>
             </>
           )}
@@ -184,7 +187,10 @@ export function MasonryToolbar({
           ) : (
             <>
               <Download className="h-4 w-4" />
-              <span className="hidden md:inline">Version HD impression</span>
+              <div className="hidden md:flex flex-col items-center">
+                <span>Version HD impression</span>
+                <span className="text-xs text-muted-foreground">({">"} 20 Mo)</span>
+              </div>
               <span className="md:hidden">HD</span>
             </>
           )}
