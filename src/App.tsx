@@ -24,6 +24,7 @@ import Ensemble from "@/pages/Ensemble";
 import BlogEditor from "@/pages/BlogEditor";
 import BlogPost from "@/pages/BlogPost";
 import ResetPassword from "@/pages/ResetPassword";
+import Downloads from "@/pages/Downloads";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,11 @@ const App = () => {
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/resources" element={<Resources />} />
                   <Route path="/ensemble" element={<Ensemble />} />
+                  <Route path="/downloads" element={
+                    <ProtectedRoute>
+                      <Downloads />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/blog/:slug" element={<BlogPost />} />
                   <Route 
                     path="/blog/new" 

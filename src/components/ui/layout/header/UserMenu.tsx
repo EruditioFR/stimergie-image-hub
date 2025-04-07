@@ -1,120 +1,120 @@
-import { useAuth } from "@/context/AuthContext";
-import { useUserProfile, formatRole } from "@/hooks/useUserProfile";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { ChevronDown, Lock, LogOut, Settings, UserCircle } from "lucide-react";
-import { useState } from "react";
-import { ChangePasswordForm } from "@/components/users/ChangePasswordForm";
-import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Download, User, Users, Image, Settings, LogOut } from 'lucide-react';
 
 export function UserMenu() {
   const { user, userRole, signOut } = useAuth();
-  const { userProfile } = useUserProfile(user, userRole);
-  const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { userProfile, isLoading: isLoadingProfile } = useUserProfile(user, userRole);
+  const [initials, setInitials] = useState('');
   const navigate = useNavigate();
-  const { toast } = useToast();
+
+  useEffect(() => {
+    if (userProfile?.firstName && userProfile?.lastName) {
+      setInitials(`${userProfile.firstName.charAt(0)}${userProfile.lastName.charAt(0)}`);
+    } else if (user?.email) {
+      setInitials(user.email.charAt(0).toUpperCase());
+    }
+  }, [userProfile, user]);
 
   const handleLogout = async () => {
-    try {
-      setIsLoggingOut(true);
-      await signOut();
-      navigate("/");
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast({
-        title: "Déconnexion",
-        description: "Une erreur est survenue mais vous avez été déconnecté",
-      });
-      navigate("/");
-    } finally {
-      setIsLoggingOut(false);
-    }
+    await signOut();
+    navigate('/');
   };
 
-  if (!user) return null;
-
-  const getInitials = () => {
-    const firstName = userProfile?.firstName || '';
-    const lastName = userProfile?.lastName || '';
-    
-    if (firstName && lastName) {
-      return `${firstName[0]}${lastName[0]}`.toUpperCase();
-    } else if (firstName) {
-      return firstName[0].toUpperCase();
-    } else if (user.email) {
-      return user.email[0].toUpperCase();
-    }
-    
-    return "U";
-  };
-
-  const initials = getInitials();
-  const displayName = userProfile?.firstName && userProfile?.lastName 
-    ? `${userProfile.firstName} ${userProfile.lastName}` 
-    : user.email?.split('@')[0] || 'Utilisateur';
-  const displayRole = formatRole(userProfile?.role || userRole);
+  const isAdmin = userRole === 'admin';
+  const isAdminClient = userRole === 'admin_client';
 
   return (
-    <>
-      {showChangePasswordForm ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="w-full max-w-md mx-auto">
-            <ChangePasswordForm onCancel={() => setShowChangePasswordForm(false)} />
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="rounded-full">
+          <Avatar className="h-8 w-8 border">
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56" align="end">
+        <DropdownMenuLabel>
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">
+              {userProfile?.firstName} {userProfile?.lastName}
+            </p>
+            <p className="text-xs leading-none text-muted-foreground">
+              {user?.email}
+            </p>
+            {!isLoadingProfile && userRole && (
+              <span className="mt-1 inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                {userRole === 'admin' && 'Administrateur'}
+                {userRole === 'admin_client' && 'Admin client'}
+                {userRole === 'user' && 'Utilisateur'}
+              </span>
+            )}
           </div>
-        </div>
-      ) : null}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="gap-2 flex items-center">
-            <Avatar className="h-8 w-8 border">
-              <AvatarFallback>{initials}</AvatarFallback>
-            </Avatar>
-            <div className="hidden md:flex flex-col items-start">
-              <span className="text-sm font-medium leading-none">
-                {displayName}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {displayRole}
-              </span>
-            </div>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <div className="px-2 py-1.5 text-sm md:hidden">
-            <p className="font-medium leading-none">{displayName}</p>
-            <p className="text-xs text-muted-foreground pt-0.5">{displayRole}</p>
-          </div>
-          <DropdownMenuSeparator className="md:hidden" />
-          <DropdownMenuItem className="flex items-center gap-2">
-            <UserCircle className="h-4 w-4" />
-            <span>Mon profil</span>
+        <DropdownMenuGroup>
+          <DropdownMenuItem>
+            <Link to="/downloads" className="flex w-full items-center">
+              <Download className="mr-2 h-4 w-4" />
+              <span>Vos téléchargements</span>
+            </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem className="flex items-center gap-2" onSelect={() => setShowChangePasswordForm(true)}>
-            <Lock className="h-4 w-4" />
-            <span>Changer de mot de passe</span>
+          
+          <DropdownMenuItem>
+            <User className="mr-2 h-4 w-4" />
+            <span>Profil</span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span>Paramètres</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="flex items-center gap-2" disabled={isLoggingOut} onSelect={handleLogout}>
-            <LogOut className="h-4 w-4" />
-            <span>{isLoggingOut ? "Déconnexion..." : "Déconnexion"}</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
+
+          {(isAdmin || isAdminClient) && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <Link to="/images" className="flex w-full items-center">
+                  <Image className="mr-2 h-4 w-4" />
+                  <span>Gestion des images</span>
+                </Link>
+              </DropdownMenuItem>
+              {isAdmin && (
+                <>
+                  <DropdownMenuItem>
+                    <Link to="/clients" className="flex w-full items-center">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Gestion des clients</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuItem>
+                <Link to="/users" className="flex w-full items-center">
+                  <Users className="mr-2 h-4 w-4" />
+                  <span>Gestion des utilisateurs</span>
+                </Link>
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Déconnexion</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
