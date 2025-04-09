@@ -37,35 +37,30 @@ export function MasonryToolbar({
     }
     
     setIsDownloading(true);
-    toast.loading("Préparation du ZIP en cours, veuillez patienter...", {
-      duration: 180000, // Notification peut rester affichée jusqu'à 3 minutes
-      id: "zip-preparation"
+    
+    // Notification courte au démarrage
+    toast.loading("Préparation du téléchargement...", {
+      id: "zip-preparation" 
     });
-    
-    const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
-    console.log("Selected images for download:", selectedImagesData);
-    
-    // Créer un tableau avec les formats attendus par downloadImagesAsZip
-    // MODIFICATION: Utiliser UNIQUEMENT le champ 'url' de la table images
-    const imagesForDownload = selectedImagesData.map(img => {
-      // Utiliser UNIQUEMENT le champ url
-      const url = img.url;
-      
-      console.log(`Preparing image for download: ID=${img.id}, Title=${img.title}, URL=${url}`);
-      
-      return {
-        url: url,
-        title: img.title || `image_${img.id}`,
-        id: img.id
-      };
-    });
-    
-    console.log("Images prepared for ZIP download:", imagesForDownload);
     
     try {
+      const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
+      
+      // Créer un tableau avec les formats attendus par downloadImagesAsZip
+      // MODIFICATION: Utiliser UNIQUEMENT le champ 'url' de la table images
+      const imagesForDownload = selectedImagesData.map(img => {
+        // Utiliser UNIQUEMENT le champ url
+        const url = img.url;
+        
+        return {
+          url: url,
+          title: img.title || `image_${img.id}`,
+          id: img.id
+        };
+      });
+      
       await downloadImagesAsZip(imagesForDownload, "images_stimergie.zip");
-      toast.dismiss("zip-preparation");
-      toast.success("Téléchargement terminé avec succès");
+      // La fonction de téléchargement gère ses propres notifications
     } catch (error) {
       console.error("Error during ZIP download:", error);
       toast.dismiss("zip-preparation");
@@ -89,29 +84,29 @@ export function MasonryToolbar({
     }
     
     setIsDownloadingHD(true);
-    toast.loading("Préparation du ZIP HD en cours, veuillez patienter...", {
-      duration: 180000, // Notification peut rester affichée jusqu'à 3 minutes
+    
+    // Notification courte au démarrage
+    toast.loading("Préparation du téléchargement HD...", {
       id: "zip-hd-preparation"
     });
     
-    const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
-    
-    // MODIFICATION: Utiliser UNIQUEMENT le champ 'url' de la table images pour la version HD également
-    const imagesForDownload = selectedImagesData.map(img => {
-      // Toujours utiliser uniquement le champ URL
-      const url = img.url;
-      
-      return {
-        url: url,
-        title: img.title || `image_${img.id}`,
-        id: img.id
-      };
-    });
-    
     try {
+      const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
+      
+      // MODIFICATION: Utiliser UNIQUEMENT le champ 'url' de la table images pour la version HD également
+      const imagesForDownload = selectedImagesData.map(img => {
+        // Toujours utiliser uniquement le champ URL
+        const url = img.url;
+        
+        return {
+          url: url,
+          title: img.title || `image_${img.id}`,
+          id: img.id
+        };
+      });
+      
       await downloadImagesAsZip(imagesForDownload, "images_hd_stimergie.zip");
-      toast.dismiss("zip-hd-preparation");
-      toast.success("Téléchargement HD terminé avec succès");
+      // La fonction de téléchargement gère ses propres notifications
     } catch (error) {
       console.error("Error during HD ZIP download:", error);
       toast.dismiss("zip-hd-preparation");

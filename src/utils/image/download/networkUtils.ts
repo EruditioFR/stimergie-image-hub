@@ -3,13 +3,13 @@
  * Network utilities for image downloads
  */
 
-// Timeout configuration for large downloads
-export const FETCH_TIMEOUT = 180000; // 3 minutes timeout for large files
-export const MAX_RETRIES = 5;
-export const RETRY_DELAY = 1000; // 1 second
+// Timeout configuration for downloads - reduces waiting time
+export const FETCH_TIMEOUT = 30000; // 30 seconds timeout (reduced from 3 minutes)
+export const MAX_RETRIES = 3; // Reduced from 5
+export const RETRY_DELAY = 800; // Slightly reduced base delay
 
 /**
- * Fetch with timeout and retry logic for large files
+ * Fetch with timeout and abort capabilities
  */
 export async function fetchWithTimeout(
   url: string, 
@@ -22,7 +22,12 @@ export async function fetchWithTimeout(
   // Create a new options object with our signal and merge with passed options
   const fetchOptions = {
     ...options,
-    signal
+    signal,
+    headers: {
+      ...(options.headers || {}),
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
+    }
   };
   
   const timeoutId = setTimeout(() => {
