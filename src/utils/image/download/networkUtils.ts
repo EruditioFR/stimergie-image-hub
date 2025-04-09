@@ -13,7 +13,7 @@ export const RETRY_DELAY = 800; // Slightly reduced base delay
  */
 export async function fetchWithTimeout(
   url: string, 
-  options = {}, 
+  options: RequestInit = {}, // Type the options parameter as RequestInit
   timeout = FETCH_TIMEOUT
 ): Promise<Response> {
   const controller = new AbortController();
