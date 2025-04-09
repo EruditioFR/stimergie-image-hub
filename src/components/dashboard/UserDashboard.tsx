@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -11,6 +10,7 @@ import {
   CarouselNext, 
   CarouselPrevious 
 } from "@/components/ui/carousel";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ClientImage {
   id: string;
@@ -162,20 +162,21 @@ export function UserDashboard() {
           ))}
         </div>
       ) : clientImages.length > 0 ? (
-        <div className="relative">
+        <div className="relative py-6">
           <Carousel
             opts={{
               align: "start",
-              loop: clientImages.length > 4
+              loop: clientImages.length > 4,
+              slidesToScroll: 1
             }}
             className="w-full"
           >
-            <CarouselContent className="-ml-2 md:-ml-4">
+            <CarouselContent className="-ml-4">
               {clientImages.map(image => (
-                <CarouselItem key={image.id} className="pl-2 md:pl-4 basis-1/4">
+                <CarouselItem key={image.id} className="pl-4 md:basis-1/4 sm:basis-1/3 basis-1/2">
                   <div className="h-full">
                     <Link to={`/image/${image.id}`} className="block h-full">
-                      <div className="aspect-square overflow-hidden rounded-md border bg-muted hover:opacity-90 transition-opacity h-full">
+                      <div className="aspect-square overflow-hidden rounded-md border bg-muted hover:opacity-90 transition-opacity">
                         <img
                           src={image.src}
                           alt={image.alt}
@@ -188,8 +189,18 @@ export function UserDashboard() {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <CarouselPrevious className="left-0 translate-x-[-50%]" />
-            <CarouselNext className="right-0 translate-x-[50%]" />
+            <CarouselPrevious 
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2"
+              aria-label="Précédent"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </CarouselPrevious>
+            <CarouselNext 
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2"
+              aria-label="Suivant"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </CarouselNext>
           </Carousel>
         </div>
       ) : (
