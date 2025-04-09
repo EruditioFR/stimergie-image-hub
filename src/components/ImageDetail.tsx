@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useImages } from '@/context/ImageContext';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,29 @@ export default function ImageDetail() {
   const navigate = useNavigate();
   const { images } = useImages();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [image, setImage] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   
-  const image = images.find(img => img.id === id);
+  // Trouver l'image correspondante
+  useEffect(() => {
+    console.log(`Recherche d'image avec ID: ${id} parmi ${images.length} images`);
+    
+    if (id && images.length > 0) {
+      const foundImage = images.find(img => img.id === id);
+      setImage(foundImage || null);
+    } else {
+      setImage(null);
+    }
+    setLoading(false);
+  }, [id, images]);
+  
+  if (loading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
+        <LoadingSpinner size={40} />
+      </div>
+    );
+  }
   
   if (!image) {
     return (
@@ -23,7 +44,7 @@ export default function ImageDetail() {
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4">Image introuvable</h2>
             <p className="mb-6">L'image que vous recherchez n'existe pas ou a été supprimée.</p>
-            <Button onClick={() => navigate(-1)}>Retour</Button>
+            <Button onClick={() => navigate('/gallery')}>Retour à la galerie</Button>
           </div>
         </div>
       </div>
@@ -41,8 +62,11 @@ export default function ImageDetail() {
     console.log("Downloading image:", image.src);
     
     try {
-      // Utilisez l'URL exacte de l'image sans la modifier
-      await downloadImage(image.src, `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg`);
+      // URL pour téléchargement
+      const downloadUrl = image.download_url || image.url || image.src;
+      
+      // Utiliser l'URL exacte de l'image sans la modifier
+      await downloadImage(downloadUrl, `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg`);
       toast.success("Image téléchargée avec succès");
     } catch (error) {
       console.error('Download error:', error);
@@ -65,9 +89,19 @@ export default function ImageDetail() {
         <div className="flex-1 overflow-auto p-6">
           <div className="max-h-[60vh] flex justify-center">
             <img 
-              src={image.src} 
-              alt={image.alt} 
+              src={image.display_url || image.src} 
+              alt={image.alt || image.title} 
               className="max-w-full max-h-full object-contain"
+              onError={(e) => {
+                console.error('Image load error');
+                const imgElement = e.target as HTMLImageElement;
+                // Fallback à une autre URL si disponible
+                if (image.url_miniature && imgElement.src !== image.url_miniature) {
+                  imgElement.src = image.url_miniature;
+                } else if (image.url && imgElement.src !== image.url) {
+                  imgElement.src = image.url;
+                }
+              }}
             />
           </div>
           

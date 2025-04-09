@@ -26,7 +26,16 @@ import BlogPost from "@/pages/BlogPost";
 import ResetPassword from "@/pages/ResetPassword";
 import Downloads from "@/pages/Downloads";
 
-const queryClient = new QueryClient();
+// Création du client de requête avec des options optimisées
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);

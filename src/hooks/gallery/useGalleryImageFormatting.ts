@@ -10,11 +10,17 @@ export const useGalleryImageFormatting = () => {
    * Formats raw image data from the API for display in the gallery grid
    */
   const formatImagesForGrid = useCallback((images: any[] = []) => {
+    console.log(`Formatting ${images.length} images for gallery display`);
+    
     return images.map(image => {
-      const srcUrl = image.display_url || image.url_miniature || image.url || '';
-      // Maintenant on conserve toujours le champ url original pour les téléchargements
-      const downloadUrl = image.url;
+      // Garantir que toutes les images ont un ID au format string
+      const id = image.id ? String(image.id) : `img-${Math.random().toString(36).substring(2, 9)}`;
       
+      // URLs pour affichage et téléchargement
+      const srcUrl = image.display_url || image.url_miniature || image.url || '';
+      const downloadUrl = image.url || image.download_url || srcUrl;
+      
+      // Dimensions et orientation
       const width = parseInt(image.width) || 0;
       const height = parseInt(image.height) || 0;
       
@@ -29,10 +35,8 @@ export const useGalleryImageFormatting = () => {
         }
       }
       
-      console.log(`Image ${image.id} (${image.title}): dims=${width}x${height}, orientation=${orientation}`);
-
       return {
-        id: image.id.toString(),
+        id: id,
         src: srcUrl,
         display_url: srcUrl,
         download_url: downloadUrl,

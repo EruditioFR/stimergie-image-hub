@@ -2,6 +2,7 @@
 import React, { memo } from 'react';
 import { ImageCard } from '@/components/ImageCard';
 import { Image } from '@/utils/image/types';
+import { Link } from 'react-router-dom';
 
 interface MasonryColumnProps {
   images: Image[];
@@ -77,7 +78,7 @@ const ImageItem = memo(function ImageItem({
   
   return (
     <div className="opacity-100 relative group">
-      {/* Selection indicator - now larger and more visible */}
+      {/* Selection indicator */}
       <div 
         className={`absolute top-3 left-3 w-7 h-7 rounded-full z-10 border-2 cursor-pointer 
           flex items-center justify-center transition-colors 
