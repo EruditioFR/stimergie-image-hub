@@ -181,46 +181,46 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
-          height: number
+          height: number | null
           id: number
           id_projet: string
-          orientation: string
+          orientation: string | null
           tags: string | null
           title: string
           updated_at: string
           url: string
           url_miniature: string | null
-          width: number
+          width: number | null
         }
         Insert: {
           created_at?: string
           created_by?: string | null
           description?: string | null
-          height: number
+          height?: number | null
           id?: number
           id_projet: string
-          orientation: string
+          orientation?: string | null
           tags?: string | null
           title: string
           updated_at?: string
           url: string
           url_miniature?: string | null
-          width: number
+          width?: number | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
           description?: string | null
-          height?: number
+          height?: number | null
           id?: number
           id_projet?: string
-          orientation?: string
+          orientation?: string | null
           tags?: string | null
           title?: string
           updated_at?: string
           url?: string
           url_miniature?: string | null
-          width?: number
+          width?: number | null
         }
         Relationships: [
           {
@@ -238,6 +238,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      logs_erreurs: {
+        Row: {
+          date: string | null
+          erreur: string | null
+          id: number
+          source: string | null
+        }
+        Insert: {
+          date?: string | null
+          erreur?: string | null
+          id?: number
+          source?: string | null
+        }
+        Update: {
+          date?: string | null
+          erreur?: string | null
+          id?: number
+          source?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -354,6 +375,10 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_last_image_id: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       get_user_client_id: {
         Args: { user_id: string }
