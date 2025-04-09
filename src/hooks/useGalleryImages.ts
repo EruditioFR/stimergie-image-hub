@@ -1,5 +1,4 @@
 
-import { useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGalleryFilters } from './useGalleryFilters';
 import { useAuth } from '@/context/AuthContext';
@@ -8,7 +7,9 @@ import { useGalleryCache } from './gallery/useGalleryCache';
 import { useGalleryPagination } from './gallery/useGalleryPagination';
 import { useGalleryFiltersHandlers } from './gallery/useGalleryFiltersHandlers';
 import { useGalleryQueryState } from './gallery/useGalleryQueryState';
-import { Image } from '@/utils/image/types';
+import { useGalleryImageFormatting } from './gallery/useGalleryImageFormatting';
+import { useGalleryInitialization } from './gallery/useGalleryInitialization';
+import { useGalleryDataFetching } from './gallery/useGalleryDataFetching';
 
 export const useGalleryImages = (isAdmin: boolean) => {
   const [searchParams] = useSearchParams();
@@ -91,91 +92,43 @@ export const useGalleryImages = (isAdmin: boolean) => {
     userClientId
   });
 
-  useEffect(() => {
-    resetPagination();
-    
-    updateRandomFetchMode(searchQuery, tagFilter, activeTab, selectedProject, userRole, selectedClient);
-    
-    updateFilterStatus(searchQuery, tagFilter);
-  }, [searchQuery, tagFilter, activeTab, updateFilterStatus, selectedClient, selectedProject, userRole, updateRandomFetchMode, resetPagination]);
+  // Use the extracted image formatting hook
+  const { formatImagesForGrid } = useGalleryImageFormatting();
 
-  useEffect(() => {
-    enforceClientForNonAdmin(selectedClient, baseHandleClientChange);
-  }, [userRole, userClientId, baseHandleClientChange, selectedClient, enforceClientForNonAdmin]);
+  // Use the initialization hook for side effects
+  useGalleryInitialization({
+    resetPagination,
+    updateRandomFetchMode,
+    updateFilterStatus,
+    enforceClientForNonAdmin,
+    searchQuery,
+    tagFilter,
+    activeTab,
+    selectedClient,
+    selectedProject,
+    userRole,
+    currentPage,
+    baseHandleClientChange
+  });
 
-  useEffect(() => {
-    if (isFetching || isLoading) return;
-    fetchTotalCount(
-      searchQuery,
-      tagFilter,
-      activeTab,
-      selectedClient,
-      selectedProject,
-      userRole,
-      userClientId,
-      totalCount,
-      setTotalCount
-    );
-  }, [fetchTotalCount, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, isFetching, isLoading, totalCount, userRole, userClientId, setTotalCount]);
-
-  useEffect(() => {
-    prefetchNextPage(
-      isLoading,
-      isFetching,
-      shouldFetchRandom,
-      searchQuery,
-      tagFilter,
-      activeTab,
-      selectedClient,
-      selectedProject,
-      currentPage,
-      totalCount,
-      userRole,
-      userClientId
-    );
-  }, [prefetchNextPage, isLoading, isFetching, shouldFetchRandom, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, currentPage, totalCount, userRole, userClientId]);
-
-  const formatImagesForGrid = useCallback((images: any[] = []) => {
-    return images.map(image => {
-      const srcUrl = image.display_url || image.url_miniature || image.url || '';
-      // Maintenant on conserve toujours le champ url original pour les téléchargements
-      const downloadUrl = image.url;
-      
-      const width = parseInt(image.width) || 0;
-      const height = parseInt(image.height) || 0;
-      
-      let orientation = image.orientation || 'landscape';
-      if (width > 0 && height > 0) {
-        if (width > height) {
-          orientation = 'landscape';
-        } else if (height > width) {
-          orientation = 'portrait';
-        } else {
-          orientation = 'square';
-        }
-      }
-      
-      console.log(`Image ${image.id} (${image.title}): dims=${width}x${height}, orientation=${orientation}`);
-
-      return {
-        id: image.id.toString(),
-        src: srcUrl,
-        display_url: srcUrl,
-        download_url: downloadUrl,
-        alt: image.title || "Image sans titre",
-        title: image.title || "Sans titre",
-        author: image.created_by || 'Utilisateur',
-        tags: image.tags || [],
-        orientation: orientation,
-        width: width,
-        height: height,
-        created_at: image.created_at || new Date().toISOString(),
-        description: image.description || '',
-        url_miniature: srcUrl,
-        url: downloadUrl
-      } as Image;
-    });
-  }, []);
+  // Use the data fetching hook for side effects
+  useGalleryDataFetching({
+    fetchTotalCount,
+    prefetchNextPage,
+    isLoading,
+    isFetching,
+    searchQuery,
+    tagFilter,
+    activeTab,
+    selectedClient,
+    selectedProject,
+    currentPage,
+    totalCount,
+    userRole,
+    userClientId,
+    shouldFetchRandom,
+    setTotalCount
+  });
 
   return {
     allImages,
