@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -27,11 +28,33 @@ export function UserDashboard() {
   const [clientId, setClientId] = useState<string | null>(null);
   const [clientName, setClientName] = useState<string>("");
 
+  // Fetch user's client ID
   useEffect(() => {
     async function fetchClientId() {
       if (!user) return;
 
       try {
+        // Use the userProfile.clientId if available, otherwise fetch from profiles table
+        if (userProfile?.clientId) {
+          setClientId(userProfile.clientId);
+          
+          // Fetch client name
+          const { data: clientData, error: clientError } = await supabase
+            .from("clients")
+            .select("nom")
+            .eq("id", userProfile.clientId)
+            .single();
+            
+          if (clientError) {
+            console.error("Erreur lors de la récupération du nom du client:", clientError);
+          } else if (clientData) {
+            setClientName(clientData.nom);
+          }
+          
+          return;
+        }
+        
+        // Fallback to direct query if userProfile doesn't have clientId
         const { data, error } = await supabase
           .from("profiles")
           .select("id_client")
@@ -64,10 +87,14 @@ export function UserDashboard() {
     }
 
     fetchClientId();
-  }, [user]);
+  }, [user, userProfile]);
 
+  // Fetch images for the client
   useEffect(() => {
-    if (!clientId) return;
+    if (!clientId) {
+      setLoading(false);
+      return;
+    }
 
     async function fetchClientImages() {
       setLoading(true);
@@ -105,6 +132,9 @@ export function UserDashboard() {
           }));
 
           setClientImages(formattedImages);
+        } else {
+          // No projects found, set empty images array
+          setClientImages([]);
         }
       } catch (error) {
         console.error("Erreur inattendue:", error);
@@ -115,14 +145,20 @@ export function UserDashboard() {
 
     fetchClientImages();
   }, [clientId]);
-
-  if (!loading && !clientId) {
+  
+  // Render loading state
+  if (loading) {
     return (
-      <div className="text-center py-10">
-        <h2 className="text-2xl font-bold mb-4">Aucun client associé</h2>
-        <p className="text-muted-foreground">
-          Votre compte n'est pas associé à un client. Veuillez contacter l'administrateur.
-        </p>
+      <div className="space-y-8">
+        <h2 className="text-3xl font-bold">
+          Bienvenue {userProfile?.firstName} {userProfile?.lastName}
+        </h2>
+        
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {[...Array(8)].map((_, index) => (
+            <div key={index} className="aspect-square bg-muted rounded animate-pulse"></div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -155,11 +191,12 @@ export function UserDashboard() {
         </Link>
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, index) => (
-            <div key={index} className="aspect-square bg-muted rounded animate-pulse"></div>
-          ))}
+      {!clientId ? (
+        <div className="text-center py-10">
+          <h2 className="text-xl font-medium mb-4">Aucun client associé</h2>
+          <p className="text-muted-foreground">
+            Votre compte n'est pas associé à un client. Veuillez contacter l'administrateur.
+          </p>
         </div>
       ) : clientImages.length > 0 ? (
         <div className="relative py-6">
