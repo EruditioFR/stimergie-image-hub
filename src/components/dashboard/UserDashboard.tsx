@@ -201,43 +201,37 @@ export function UserDashboard() {
       ) : clientImages.length > 0 ? (
         <div className="relative py-6">
           <Carousel
+            className="w-full"
             opts={{
               align: "start",
               loop: clientImages.length > 4,
               slidesToScroll: 1
             }}
-            className="w-full"
           >
-            <CarouselContent className="-ml-4">
+            <CarouselContent>
               {clientImages.map(image => (
-                <CarouselItem key={image.id} className="pl-4 md:basis-1/4 sm:basis-1/3 basis-1/2">
-                  <div className="h-full">
-                    <Link to={`/image/${image.id}`} className="block h-full">
-                      <div className="aspect-square overflow-hidden rounded-md border bg-muted hover:opacity-90 transition-opacity">
-                        <img
-                          src={image.src}
-                          alt={image.alt}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <p className="text-sm mt-1 truncate">{image.title}</p>
-                    </Link>
-                  </div>
+                <CarouselItem key={image.id} className="basis-full md:basis-1/2 lg:basis-1/3 xl:basis-1/4 p-2">
+                  <Link to={`/image/${image.id}`} className="block h-full">
+                    <div className="aspect-square overflow-hidden rounded-md border bg-muted hover:opacity-90 transition-opacity">
+                      <img
+                        src={image.src}
+                        alt={image.alt}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <p className="text-sm mt-1 truncate">{image.title}</p>
+                  </Link>
                 </CarouselItem>
               ))}
             </CarouselContent>
             <CarouselPrevious 
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2"
+              className="absolute left-0 top-1/2 -translate-y-1/2"
               aria-label="Précédent"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </CarouselPrevious>
+            />
             <CarouselNext 
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2"
+              className="absolute right-0 top-1/2 -translate-y-1/2"
               aria-label="Suivant"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </CarouselNext>
+            />
           </Carousel>
         </div>
       ) : (
