@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Image } from '@/pages/Images';
+import { Image } from '@/utils/image/types';
 import { fetchGalleryImages, generateCacheKey } from '@/services/galleryService';
 
 const EXTENDED_CACHE_TIME = 30 * 60 * 1000; // 30 minutes
