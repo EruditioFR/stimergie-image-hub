@@ -1,8 +1,12 @@
 
-// Service Worker pour le cache des images
+// Service Worker pour le cache des images et la redirection de domaine
 const CACHE_NAME = 'stimergie-images-cache-v2';
-const IMAGE_HOSTS = ['stimergie.fr'];
+const IMAGE_HOSTS = ['stimergie.fr', 'www.stimergie.fr'];
 const MAX_CACHE_SIZE = 300;
+
+// Redirection de stimergie.fr vers www.stimergie.fr
+const REDIRECT_FROM = 'https://stimergie.fr';
+const REDIRECT_TO = 'https://www.stimergie.fr';
 
 // Installation du Service Worker
 self.addEventListener('install', (event) => {
@@ -31,14 +35,34 @@ self.addEventListener('activate', (event) => {
 
 // Intercepter les requêtes
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
+  // Redirection de stimergie.fr vers www.stimergie.fr
+  if (url.origin === REDIRECT_FROM) {
+    const redirectUrl = event.request.url.replace(REDIRECT_FROM, REDIRECT_TO);
+    console.log(`Service Worker: Redirection de ${event.request.url} vers ${redirectUrl}`);
+    event.respondWith(
+      fetch(redirectUrl, {
+        method: event.request.method,
+        headers: event.request.headers,
+        body: event.request.body,
+        mode: event.request.mode,
+        credentials: event.request.credentials,
+        cache: event.request.cache,
+        redirect: event.request.redirect,
+        referrer: event.request.referrer,
+        integrity: event.request.integrity
+      })
+    );
+    return;
+  }
+  
   // Ne pas intercepter les requêtes de l'API ou non-GET
   if (event.request.method !== 'GET' || 
       event.request.url.includes('/auth/') || 
       event.request.url.includes('/api/')) {
     return;
   }
-  
-  const url = new URL(event.request.url);
   
   // Ne traiter que les requêtes d'images depuis les hôtes autorisés
   const isImageRequest = event.request.destination === 'image' || 
