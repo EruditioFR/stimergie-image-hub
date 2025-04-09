@@ -1,3 +1,4 @@
+
 import { useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGalleryFilters } from './useGalleryFilters';
@@ -137,7 +138,8 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const formatImagesForGrid = useCallback((images: any[] = []) => {
     return images.map(image => {
       const srcUrl = image.display_url || image.url_miniature || image.url || '';
-      const downloadUrl = image.download_url || image.url || '';
+      // Maintenant on conserve toujours le champ url original pour les téléchargements
+      const downloadUrl = image.url;
       
       const width = parseInt(image.width) || 0;
       const height = parseInt(image.height) || 0;

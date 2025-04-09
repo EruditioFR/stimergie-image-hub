@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Share, Printer } from 'lucide-react';
@@ -45,10 +46,10 @@ export function MasonryToolbar({
     console.log("Selected images for download:", selectedImagesData);
     
     // Créer un tableau avec les formats attendus par downloadImagesAsZip
-    // Utiliser la source directe de l'image (src) ou l'URL de téléchargement
+    // MODIFICATION: Utiliser UNIQUEMENT le champ 'url' de la table images
     const imagesForDownload = selectedImagesData.map(img => {
-      // Utiliser l'URL de téléchargement si disponible, sinon l'URL d'affichage
-      const url = img.download_url || img.src;
+      // Utiliser UNIQUEMENT le champ url
+      const url = img.url;
       
       console.log(`Preparing image for download: ID=${img.id}, Title=${img.title}, URL=${url}`);
       
@@ -95,11 +96,10 @@ export function MasonryToolbar({
     
     const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
     
-    // Créer un tableau avec les formats attendus par downloadImagesAsZip
-    // Pour les HD, on utilise toujours l'URL de téléchargement car c'est la haute qualité
+    // MODIFICATION: Utiliser UNIQUEMENT le champ 'url' de la table images pour la version HD également
     const imagesForDownload = selectedImagesData.map(img => {
-      // Toujours utiliser l'URL de téléchargement pour les versions HD
-      const url = img.download_url || img.url || img.src;
+      // Toujours utiliser uniquement le champ URL
+      const url = img.url;
       
       return {
         url: url,
