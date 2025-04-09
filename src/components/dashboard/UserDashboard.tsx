@@ -1,8 +1,16 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
+import { 
+  Carousel, 
+  CarouselContent, 
+  CarouselItem, 
+  CarouselNext, 
+  CarouselPrevious 
+} from "@/components/ui/carousel";
 
 interface ClientImage {
   id: string;
@@ -154,19 +162,35 @@ export function UserDashboard() {
           ))}
         </div>
       ) : clientImages.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {clientImages.map(image => (
-            <Link to={`/image/${image.id}`} key={image.id} className="block">
-              <div className="aspect-square overflow-hidden rounded-md border bg-muted hover:opacity-90 transition-opacity">
-                <img
-                  src={image.src}
-                  alt={image.alt}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <p className="text-sm mt-1 truncate">{image.title}</p>
-            </Link>
-          ))}
+        <div className="relative">
+          <Carousel
+            opts={{
+              align: "start",
+              loop: clientImages.length > 4
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {clientImages.map(image => (
+                <CarouselItem key={image.id} className="pl-2 md:pl-4 basis-1/4">
+                  <div className="h-full">
+                    <Link to={`/image/${image.id}`} className="block h-full">
+                      <div className="aspect-square overflow-hidden rounded-md border bg-muted hover:opacity-90 transition-opacity h-full">
+                        <img
+                          src={image.src}
+                          alt={image.alt}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <p className="text-sm mt-1 truncate">{image.title}</p>
+                    </Link>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="left-0 translate-x-[-50%]" />
+            <CarouselNext className="right-0 translate-x-[50%]" />
+          </Carousel>
         </div>
       ) : (
         <p className="text-muted-foreground">Aucune image disponible pour le moment.</p>
