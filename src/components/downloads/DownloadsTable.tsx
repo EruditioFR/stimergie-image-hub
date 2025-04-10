@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { formatDate } from "@/utils/dateFormatting";
+import { Badge } from "@/components/ui/badge";
 
 export interface DownloadRequest {
   id: string;
@@ -52,19 +53,19 @@ export const DownloadsTable = ({ downloads }: DownloadsTableProps) => {
                 <TableCell>{formatDate(download.requestDate)}</TableCell>
                 <TableCell>
                   {download.status === 'pending' && (
-                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100">
                       En cours de préparation
-                    </span>
+                    </Badge>
                   )}
                   {download.status === 'ready' && (
-                    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100">
                       Prêt à télécharger
-                    </span>
+                    </Badge>
                   )}
                   {download.status === 'expired' && (
-                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                    <Badge variant="secondary" className="bg-gray-100 text-gray-800 hover:bg-gray-100">
                       Expiré
-                    </span>
+                    </Badge>
                   )}
                 </TableCell>
                 <TableCell className="text-right">
