@@ -21,7 +21,7 @@ export async function requestImageDownload(options: DownloadRequestOptions): Pro
     const { data: userData, error: userError } = await supabase.auth.getUser();
     
     if (userError || !userData.user) {
-      console.error('Erreur d'authentification:', userError);
+      console.error("Erreur d'authentification:", userError);
       toast.error('Vous devez être connecté pour télécharger des images');
       return null;
     }
