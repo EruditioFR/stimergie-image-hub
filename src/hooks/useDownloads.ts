@@ -33,12 +33,12 @@ export function useDownloads() {
         
         console.log('Fetching downloads for user:', user.id);
         
-        // Use "any" type assertion to bypass TypeScript's type checking for the table name
+        // Utiliser une approche générique pour éviter les erreurs de typage
         const { data, error } = await supabase
-          .from('download_requests' as any)
+          .from('download_requests')
           .select('*')
           .eq('user_id', user.id) // Filtrer explicitement par user_id
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false }) as { data: DownloadRequestData[] | null, error: Error | null };
           
         if (error) {
           console.error('Error fetching downloads:', error);
@@ -55,9 +55,7 @@ export function useDownloads() {
         
         // Check for expired downloads and mark them
         const now = new Date();
-        // Properly cast the data to our expected type through unknown
-        const safeData = data as unknown as DownloadRequestData[];
-        const formattedData = safeData.map(item => ({
+        const formattedData = data.map(item => ({
           id: item.id,
           imageId: item.image_id,
           imageSrc: item.image_src,
@@ -93,7 +91,7 @@ export function useDownloads() {
           // When a new download is ready, add it to the list
           if (payload.new) {
             console.log('New download detected:', payload.new);
-            // Use double casting for better type safety
+            // Type assertion pour éviter les erreurs de typage
             const newItem = payload.new as unknown as DownloadRequestData;
             
             const newDownload: DownloadRequest = {
@@ -118,7 +116,7 @@ export function useDownloads() {
           // When a download status changes, update it in the list
           if (payload.new) {
             console.log('Download update detected:', payload.new);
-            // Use double casting for better type safety
+            // Type assertion pour éviter les erreurs de typage
             const updatedItem = payload.new as unknown as DownloadRequestData;
             
             setDownloads(prev => 
