@@ -41,11 +41,8 @@ export async function downloadImagesAsZip(images: ImageForZip[], zipFilename: st
     return;
   }
   
-  // Message initial
-  toast.loading(`Préparation du ZIP: 0/${images.length} images`, {
-    id: 'zip-download',
-    duration: Infinity
-  });
+  // Message initial (sera immédiatement remplacé par le message de progression)
+  // Supprimé pour éviter le double message
   
   // Traitement des images par lots pour limiter l'utilisation de la mémoire
   for (let i = 0; i < images.length; i += DOWNLOAD_CHUNK_SIZE) {

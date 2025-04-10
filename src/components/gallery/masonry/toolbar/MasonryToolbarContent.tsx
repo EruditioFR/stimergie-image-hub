@@ -37,10 +37,6 @@ export function MasonryToolbarContent({
     
     setIsDownloading(true);
     
-    toast.loading("Préparation du téléchargement...", {
-      id: "zip-preparation" 
-    });
-    
     try {
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
       
@@ -78,10 +74,6 @@ export function MasonryToolbarContent({
     }
     
     setIsDownloadingHD(true);
-    
-    toast.loading("Préparation du téléchargement HD...", {
-      id: "zip-hd-preparation"
-    });
     
     try {
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
