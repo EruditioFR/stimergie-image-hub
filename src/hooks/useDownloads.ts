@@ -29,14 +29,29 @@ export function useDownloads() {
       
       try {
         setIsLoading(true);
+        setError(null); // Reset any previous errors
+        
+        console.log('Fetching downloads for user:', user.id);
         
         // First cast to unknown, then to our expected type to avoid direct type assertion errors
         const { data, error } = await supabase
-          .from('download_requests' as any)
+          .from('download_requests')
           .select('*')
+          .eq('user_id', user.id) // Filtrer explicitement par user_id
           .order('created_at', { ascending: false });
           
-        if (error) throw new Error(error.message);
+        if (error) {
+          console.error('Error fetching downloads:', error);
+          throw new Error(error.message);
+        }
+        
+        console.log('Downloads data received:', data);
+        
+        if (!data || data.length === 0) {
+          console.log('No downloads found for user');
+          setDownloads([]);
+          return;
+        }
         
         // Check for expired downloads and mark them
         const now = new Date();
@@ -52,6 +67,7 @@ export function useDownloads() {
           status: new Date(item.expires_at) < now ? 'expired' : item.status as 'pending' | 'ready' | 'expired'
         }));
         
+        console.log('Formatted downloads:', formattedData);
         setDownloads(formattedData);
         
       } catch (err) {
@@ -71,10 +87,12 @@ export function useDownloads() {
         .on('postgres_changes', { 
           event: 'INSERT', 
           schema: 'public', 
-          table: 'download_requests'
+          table: 'download_requests',
+          filter: `user_id=eq.${user.id}` // Filtrer pour n'écouter que les changements de l'utilisateur actuel
         }, payload => {
           // When a new download is ready, add it to the list
-          if (payload.new && payload.new.user_id === user.id) {
+          if (payload.new) {
+            console.log('New download detected:', payload.new);
             // Use double casting for better type safety
             const newItem = payload.new as unknown as DownloadRequestData;
             
@@ -94,10 +112,12 @@ export function useDownloads() {
         .on('postgres_changes', { 
           event: 'UPDATE', 
           schema: 'public', 
-          table: 'download_requests'
+          table: 'download_requests',
+          filter: `user_id=eq.${user.id}` // Filtrer pour n'écouter que les changements de l'utilisateur actuel
         }, payload => {
           // When a download status changes, update it in the list
-          if (payload.new && payload.new.user_id === user.id) {
+          if (payload.new) {
+            console.log('Download update detected:', payload.new);
             // Use double casting for better type safety
             const updatedItem = payload.new as unknown as DownloadRequestData;
             
@@ -115,6 +135,8 @@ export function useDownloads() {
           }
         })
         .subscribe();
+      
+      console.log('Subscription to download_requests set up');
       
       // Cleanup subscription on unmount
       return () => {
