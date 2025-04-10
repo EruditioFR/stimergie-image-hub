@@ -11,25 +11,21 @@ export function useDownloads() {
   const { user } = useAuth();
 
   useEffect(() => {
-    // Cette fonction sera implémentée plus tard quand la fonctionnalité
-    // de téléchargement sera disponible. Pour le moment, elle simule un chargement.
     const fetchDownloads = async () => {
+      if (!user) return;
+      
       try {
         setIsLoading(true);
         
-        // Simulation d'un délai de chargement
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Dans le futur, ceci sera remplacé par un vrai appel API
-        /*
         const { data, error } = await supabase
           .from('download_requests')
           .select('*')
-          .eq('user_id', user?.id)
           .order('created_at', { ascending: false });
           
-        if (error) throw error;
+        if (error) throw new Error(error.message);
         
+        // Check for expired downloads and mark them
+        const now = new Date();
         const formattedData = data.map(item => ({
           id: item.id,
           imageId: item.image_id,
@@ -37,14 +33,10 @@ export function useDownloads() {
           imageTitle: item.image_title,
           requestDate: item.created_at,
           downloadUrl: item.download_url,
-          status: item.status
+          status: new Date(item.expires_at) < now ? 'expired' : item.status
         }));
         
         setDownloads(formattedData);
-        */
-        
-        // Pour le moment, on n'utilise pas de vraies données
-        setDownloads([]);
         
       } catch (err) {
         console.error('Erreur lors du chargement des téléchargements:', err);
@@ -56,6 +48,56 @@ export function useDownloads() {
 
     if (user) {
       fetchDownloads();
+      
+      // Set up a subscription to receive real-time updates
+      const downloadSubscription = supabase
+        .channel('table-db-changes')
+        .on('postgres_changes', { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'download_requests'
+        }, payload => {
+          // When a new download is ready, add it to the list
+          if (payload.new && payload.new.user_id === user.id) {
+            const newDownload: DownloadRequest = {
+              id: payload.new.id,
+              imageId: payload.new.image_id,
+              imageSrc: payload.new.image_src,
+              imageTitle: payload.new.image_title,
+              requestDate: payload.new.created_at,
+              downloadUrl: payload.new.download_url,
+              status: payload.new.status
+            };
+            
+            setDownloads(prev => [newDownload, ...prev]);
+          }
+        })
+        .on('postgres_changes', { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'download_requests'
+        }, payload => {
+          // When a download status changes, update it in the list
+          if (payload.new && payload.new.user_id === user.id) {
+            setDownloads(prev => 
+              prev.map(download => 
+                download.id === payload.new.id 
+                  ? {
+                      ...download,
+                      status: payload.new.status,
+                      downloadUrl: payload.new.download_url
+                    }
+                  : download
+              )
+            );
+          }
+        })
+        .subscribe();
+      
+      // Cleanup subscription on unmount
+      return () => {
+        supabase.removeChannel(downloadSubscription);
+      };
     }
   }, [user]);
 

@@ -2,11 +2,13 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Image } from '@/utils/image/types';
-import { downloadImagesAsZip } from '@/utils/image/download';
 import { SelectionInfo } from './SelectionInfo';
 import { DownloadButton } from './DownloadButton';
 import { ShareButton } from './ShareButton';
 import { ToolbarContainer } from './ToolbarContainer';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface MasonryToolbarContentProps {
   selectedImages: string[];
@@ -23,6 +25,8 @@ export function MasonryToolbarContent({
 }: MasonryToolbarContentProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDownloadingHD, setIsDownloadingHD] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const handleDownload = async () => {
     if (selectedImages.length === 0) {
@@ -50,12 +54,37 @@ export function MasonryToolbarContent({
         };
       });
       
-      await downloadImagesAsZip(imagesForDownload, "images_stimergie.zip");
+      // Call the Edge Function to generate the ZIP file
+      const { data, error } = await supabase.functions.invoke('generate-zip', {
+        body: {
+          images: imagesForDownload,
+          userId: user?.id,
+          isHD: false
+        }
+      });
+      
+      if (error) {
+        console.error("Error calling generate-zip function:", error);
+        throw new Error("Erreur lors de la génération du ZIP");
+      }
+      
+      toast.success("Demande de téléchargement envoyée", {
+        description: "Le ZIP sera disponible dans votre page Téléchargements"
+      });
+      
+      // Ask if the user wants to navigate to the downloads page
+      toast("Voir vos téléchargements ?", {
+        action: {
+          label: "Accéder",
+          onClick: () => navigate("/downloads")
+        },
+        duration: 10000
+      });
+      
     } catch (error) {
-      console.error("Error during ZIP download:", error);
-      toast.dismiss("zip-preparation");
-      toast.error("Erreur lors du téléchargement du ZIP", {
-        description: "Une erreur est survenue pendant la création du fichier ZIP."
+      console.error("Error during ZIP request:", error);
+      toast.error("Erreur lors de la préparation du téléchargement", {
+        description: "Une erreur est survenue lors du traitement de votre demande."
       });
     } finally {
       setIsDownloading(false);
@@ -88,12 +117,37 @@ export function MasonryToolbarContent({
         };
       });
       
-      await downloadImagesAsZip(imagesForDownload, "images_hd_stimergie.zip");
+      // Call the Edge Function to generate the HD ZIP file
+      const { data, error } = await supabase.functions.invoke('generate-zip', {
+        body: {
+          images: imagesForDownload,
+          userId: user?.id,
+          isHD: true
+        }
+      });
+      
+      if (error) {
+        console.error("Error calling generate-zip function:", error);
+        throw new Error("Erreur lors de la génération du ZIP HD");
+      }
+      
+      toast.success("Demande de téléchargement HD envoyée", {
+        description: "Le ZIP HD sera disponible dans votre page Téléchargements"
+      });
+      
+      // Ask if the user wants to navigate to the downloads page
+      toast("Voir vos téléchargements ?", {
+        action: {
+          label: "Accéder",
+          onClick: () => navigate("/downloads")
+        },
+        duration: 10000
+      });
+      
     } catch (error) {
-      console.error("Error during HD ZIP download:", error);
-      toast.dismiss("zip-hd-preparation");
-      toast.error("Erreur lors du téléchargement du ZIP HD", {
-        description: "Une erreur est survenue pendant la création du fichier ZIP HD."
+      console.error("Error during HD ZIP request:", error);
+      toast.error("Erreur lors de la préparation du téléchargement HD", {
+        description: "Une erreur est survenue lors du traitement de votre demande."
       });
     } finally {
       setIsDownloadingHD(false);
