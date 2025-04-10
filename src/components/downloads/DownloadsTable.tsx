@@ -34,8 +34,6 @@ export const DownloadsTable = ({ downloads }: DownloadsTableProps) => {
         <TableCaption>Liste de vos demandes de téléchargements HD</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Image</TableHead>
-            <TableHead>Titre</TableHead>
             <TableHead>Date de demande</TableHead>
             <TableHead>Statut</TableHead>
             <TableHead className="text-right">Action</TableHead>
@@ -44,23 +42,13 @@ export const DownloadsTable = ({ downloads }: DownloadsTableProps) => {
         <TableBody>
           {downloads.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-8">
+              <TableCell colSpan={3} className="text-center py-8">
                 Aucune demande de téléchargement HD pour le moment
               </TableCell>
             </TableRow>
           ) : (
             downloads.map((download) => (
               <TableRow key={download.id}>
-                <TableCell>
-                  <div className="relative h-16 w-16">
-                    <img
-                      src={download.imageSrc}
-                      alt={download.imageTitle}
-                      className="h-16 w-16 object-cover rounded-md"
-                    />
-                  </div>
-                </TableCell>
-                <TableCell className="font-medium">{download.imageTitle}</TableCell>
                 <TableCell>{formatDate(download.requestDate)}</TableCell>
                 <TableCell>
                   {download.status === 'pending' && (

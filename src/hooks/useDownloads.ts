@@ -33,9 +33,9 @@ export function useDownloads() {
         
         console.log('Fetching downloads for user:', user.id);
         
-        // First cast to unknown, then to our expected type to avoid direct type assertion errors
+        // Use "any" type assertion to bypass TypeScript's type checking for the table name
         const { data, error } = await supabase
-          .from('download_requests')
+          .from('download_requests' as any)
           .select('*')
           .eq('user_id', user.id) // Filtrer explicitement par user_id
           .order('created_at', { ascending: false });
