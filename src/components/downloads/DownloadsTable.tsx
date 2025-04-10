@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download, AlertCircle } from "lucide-react";
+import { Download, AlertCircle, Clock } from "lucide-react";
 import { formatDate } from "@/utils/dateFormatting";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -77,7 +77,8 @@ export const DownloadsTable = ({ downloads }: DownloadsTableProps) => {
                 <TableCell>{formatDate(download.requestDate)}</TableCell>
                 <TableCell>
                   {download.status === 'pending' && (
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100 flex items-center gap-1 w-fit">
+                      <Clock className="h-3 w-3" />
                       En cours de préparation
                     </Badge>
                   )}

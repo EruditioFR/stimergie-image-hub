@@ -33,11 +33,11 @@ export function useDownloads() {
         
         console.log('Fetching downloads for user:', user.id);
         
-        // Use explicit type assertion to avoid TypeScript errors
+        // Use type assertion to avoid TypeScript errors with the download_requests table
         const { data, error } = await supabase
           .from('download_requests')
           .select('*')
-          .eq('user_id', user.id) // Filter by user_id
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false }) as { data: DownloadRequestData[] | null, error: Error | null };
           
         if (error) {

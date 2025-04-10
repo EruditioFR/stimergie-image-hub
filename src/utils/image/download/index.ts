@@ -13,3 +13,8 @@ export {
   RETRY_DELAY,
   sleep
 } from './networkUtils';
+export { 
+  requestImageDownload,
+  prepareDownloadFile,
+  type DownloadRequestOptions 
+} from './requestDownload';
