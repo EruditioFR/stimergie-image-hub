@@ -25,6 +25,8 @@ export async function requestImageDownload(options: DownloadRequestOptions): Pro
       return null;
     }
     
+    console.log('Creating download request for:', { imageId, imageTitle, userId: user.id });
+    
     // Crée la requête de téléchargement avec le statut "pending"
     const { data, error } = await supabase
       .from('download_requests')
@@ -45,6 +47,7 @@ export async function requestImageDownload(options: DownloadRequestOptions): Pro
       throw new Error(error.message);
     }
     
+    console.log('Download request created successfully with ID:', data.id);
     return data.id;
   } catch (error) {
     console.error('Erreur lors de la demande de téléchargement:', error);
@@ -61,12 +64,17 @@ export async function requestImageDownload(options: DownloadRequestOptions): Pro
  */
 export async function prepareDownloadFile(imageInfo: DownloadRequestOptions): Promise<boolean> {
   try {
+    console.log('Preparing download file for:', imageInfo);
+    
     // Crée d'abord la demande de téléchargement
     const downloadId = await requestImageDownload(imageInfo);
     
     if (!downloadId) {
+      console.error('Failed to create download request');
       return false;
     }
+    
+    console.log('Download request created, ID:', downloadId);
     
     // Ici, on pourrait appeler une edge function pour préparer le fichier
     // par exemple:
@@ -83,6 +91,29 @@ export async function prepareDownloadFile(imageInfo: DownloadRequestOptions): Pr
       throw new Error(error.message);
     }
     */
+    
+    // For testing purposes, let's directly update the status to "ready" after a short delay
+    // This simulates the edge function completing its work
+    setTimeout(async () => {
+      try {
+        console.log('Simulating completed processing for download ID:', downloadId);
+        const { error } = await supabase
+          .from('download_requests')
+          .update({ 
+            status: 'ready',
+            download_url: imageInfo.imageSrc // Just use the original URL for now
+          })
+          .eq('id', downloadId);
+          
+        if (error) {
+          console.error('Error updating download status:', error);
+        } else {
+          console.log('Download status updated to ready');
+        }
+      } catch (err) {
+        console.error('Error in simulated processing:', err);
+      }
+    }, 5000); // Simulate 5 seconds of processing
     
     toast.success('Demande de téléchargement enregistrée', {
       description: 'Vous serez notifié lorsque votre fichier sera prêt à télécharger.'

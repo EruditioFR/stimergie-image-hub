@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { prepareDownloadFile } from '@/utils/image/download';
+import { useNavigate } from 'react-router-dom';
 
 interface DownloadRequestButtonProps {
   imageId: string;
@@ -25,17 +26,30 @@ export const DownloadRequestButton = ({
   isHD = true
 }: DownloadRequestButtonProps) => {
   const [isRequesting, setIsRequesting] = React.useState(false);
-
+  const navigate = useNavigate();
+  
   const handleClick = async () => {
     try {
       setIsRequesting(true);
       
-      await prepareDownloadFile({
+      console.log('Requesting download for image:', { imageId, imageTitle });
+      
+      const success = await prepareDownloadFile({
         imageId: imageId.toString(),
         imageTitle,
         imageSrc,
         isHD
       });
+      
+      if (success) {
+        toast.success('Demande de téléchargement enregistrée', { 
+          description: 'Vous pouvez suivre votre téléchargement dans la page téléchargements.',
+          action: {
+            label: 'Voir mes téléchargements',
+            onClick: () => navigate('/downloads')
+          }
+        });
+      }
       
     } catch (error) {
       console.error('Erreur lors de la demande de téléchargement:', error);

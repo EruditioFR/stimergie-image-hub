@@ -62,7 +62,7 @@ export function useDownloads() {
           imageTitle: item.image_title,
           requestDate: item.created_at,
           downloadUrl: item.download_url,
-          status: new Date(item.expires_at) < now ? 'expired' : item.status as 'pending' | 'ready' | 'expired'
+          status: item.status as 'pending' | 'ready' | 'expired'
         }));
         
         console.log('Formatted downloads:', formattedData);
@@ -81,7 +81,7 @@ export function useDownloads() {
       
       // Set up a subscription to receive real-time updates
       const downloadSubscription = supabase
-        .channel('table-db-changes')
+        .channel('download-requests-changes')
         .on('postgres_changes', { 
           event: 'INSERT', 
           schema: 'public', 
@@ -138,6 +138,7 @@ export function useDownloads() {
       
       // Cleanup subscription on unmount
       return () => {
+        console.log('Cleaning up download_requests subscription');
         supabase.removeChannel(downloadSubscription);
       };
     }

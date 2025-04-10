@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Header from '@/components/ui/layout/Header';
 import { DownloadsTable } from '@/components/downloads/DownloadsTable';
 import { useDownloads } from '@/hooks/useDownloads';
@@ -7,9 +7,36 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { Footer } from '@/components/ui/layout/Footer';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Toaster } from '@/components/ui/sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Downloads = () => {
   const { downloads, isLoading, error } = useDownloads();
+
+  useEffect(() => {
+    // Enable row-level changes for this session 
+    // This helps ensure Realtime changes are properly received
+    const enableRealtimeForTable = async () => {
+      try {
+        const { error } = await supabase.realtime.setConfig({
+          presence: { key: 'download_page' },
+        });
+        
+        if (error) {
+          console.error('Error setting realtime config:', error);
+        } else {
+          console.log('Realtime configured for downloads page');
+        }
+      } catch (err) {
+        console.error('Error configuring realtime:', err);
+      }
+    };
+    
+    enableRealtimeForTable();
+    
+    return () => {
+      // Cleanup logic if needed
+    };
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
