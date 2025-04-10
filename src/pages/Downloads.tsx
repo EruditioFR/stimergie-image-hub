@@ -13,28 +13,31 @@ const Downloads = () => {
   const { downloads, isLoading, error } = useDownloads();
 
   useEffect(() => {
-    // Enable row-level changes for this session 
-    // This helps ensure Realtime changes are properly received
-    const enableRealtimeForTable = async () => {
-      try {
-        const { error } = await supabase.realtime.setConfig({
-          presence: { key: 'download_page' },
-        });
-        
-        if (error) {
-          console.error('Error setting realtime config:', error);
-        } else {
-          console.log('Realtime configured for downloads page');
-        }
-      } catch (err) {
-        console.error('Error configuring realtime:', err);
+    // The previous approach using supabase.realtime.setConfig() was incorrect
+    // Let's create a channel subscription for downloads page presence
+    const downloadChannel = supabase.channel('download_page_presence', {
+      config: {
+        presence: {
+          key: 'download_page',
+        },
       }
-    };
+    });
     
-    enableRealtimeForTable();
+    // Set up the channel subscription
+    const subscription = downloadChannel
+      .on('presence', { event: 'sync' }, () => {
+        console.log('Realtime presence synchronized for downloads page');
+      })
+      .on('presence', { event: 'join' }, ({ key }) => {
+        console.log('User joined downloads page:', key);
+      })
+      .subscribe();
+    
+    console.log('Realtime configured for downloads page');
     
     return () => {
-      // Cleanup logic if needed
+      // Cleanup when component unmounts
+      supabase.removeChannel(downloadChannel);
     };
   }, []);
 
