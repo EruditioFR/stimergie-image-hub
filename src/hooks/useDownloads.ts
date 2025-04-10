@@ -30,7 +30,7 @@ export function useDownloads() {
       try {
         setIsLoading(true);
         
-        // Use a type assertion to tell TypeScript this is a valid table
+        // First cast to unknown, then to our expected type to avoid direct type assertion errors
         const { data, error } = await supabase
           .from('download_requests' as any)
           .select('*')
@@ -40,7 +40,9 @@ export function useDownloads() {
         
         // Check for expired downloads and mark them
         const now = new Date();
-        const formattedData = (data as DownloadRequestData[]).map(item => ({
+        // Properly cast the data to our expected type through unknown
+        const safeData = data as unknown as DownloadRequestData[];
+        const formattedData = safeData.map(item => ({
           id: item.id,
           imageId: item.image_id,
           imageSrc: item.image_src,
@@ -73,6 +75,7 @@ export function useDownloads() {
         }, payload => {
           // When a new download is ready, add it to the list
           if (payload.new && payload.new.user_id === user.id) {
+            // Use double casting for better type safety
             const newItem = payload.new as unknown as DownloadRequestData;
             
             const newDownload: DownloadRequest = {
@@ -95,6 +98,7 @@ export function useDownloads() {
         }, payload => {
           // When a download status changes, update it in the list
           if (payload.new && payload.new.user_id === user.id) {
+            // Use double casting for better type safety
             const updatedItem = payload.new as unknown as DownloadRequestData;
             
             setDownloads(prev => 
