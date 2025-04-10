@@ -42,6 +42,11 @@ export function MasonryToolbarContent({
     setIsDownloading(true);
     
     try {
+      if (!user) {
+        toast.error("Vous devez être connecté pour télécharger des images");
+        return;
+      }
+      
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
       
       const imagesForDownload = selectedImagesData.map(img => {
@@ -52,6 +57,12 @@ export function MasonryToolbarContent({
           title: img.title || `image_${img.id}`,
           id: img.id
         };
+      });
+      
+      console.log("Sending ZIP request:", {
+        userId: user.id,
+        imageCount: imagesForDownload.length,
+        isHD: false
       });
       
       // Call the Edge Function to generate the ZIP file
@@ -67,6 +78,8 @@ export function MasonryToolbarContent({
         console.error("Error calling generate-zip function:", error);
         throw new Error("Erreur lors de la génération du ZIP");
       }
+      
+      console.log("Function response:", data);
       
       toast.success("Demande de téléchargement envoyée", {
         description: "Le ZIP sera disponible dans votre page Téléchargements"
@@ -105,6 +118,11 @@ export function MasonryToolbarContent({
     setIsDownloadingHD(true);
     
     try {
+      if (!user) {
+        toast.error("Vous devez être connecté pour télécharger des images");
+        return;
+      }
+      
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
       
       const imagesForDownload = selectedImagesData.map(img => {
@@ -115,6 +133,12 @@ export function MasonryToolbarContent({
           title: img.title || `image_${img.id}`,
           id: img.id
         };
+      });
+      
+      console.log("Sending HD ZIP request:", {
+        userId: user.id,
+        imageCount: imagesForDownload.length,
+        isHD: true
       });
       
       // Call the Edge Function to generate the HD ZIP file
@@ -130,6 +154,8 @@ export function MasonryToolbarContent({
         console.error("Error calling generate-zip function:", error);
         throw new Error("Erreur lors de la génération du ZIP HD");
       }
+      
+      console.log("Function response:", data);
       
       toast.success("Demande de téléchargement HD envoyée", {
         description: "Le ZIP HD sera disponible dans votre page Téléchargements"

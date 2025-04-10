@@ -147,6 +147,16 @@ async function createDownloadRecord(
   downloadUrl: string,
   isHD: boolean
 ): Promise<string> {
+  console.log(`Creating download record for user ${userId}`, {
+    user_id: userId,
+    image_id: imageId,
+    image_title: imageTitle,
+    image_src: imageUrl,
+    download_url: downloadUrl,
+    status: 'ready',
+    is_hd: isHD
+  });
+  
   const { data, error } = await supabase
     .from('download_requests')
     .insert({
@@ -188,6 +198,18 @@ serve(async (req) => {
     const requestData: RequestBody = await req.json();
     const { images, userId, isHD } = requestData;
     
+    console.log(`Request received for user ${userId}:`, {
+      imageCount: images.length,
+      isHD: isHD
+    });
+    
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Missing userId' }), { 
+        status: 400,
+        headers: corsHeaders
+      });
+    }
+    
     if (!images || images.length === 0) {
       return new Response(JSON.stringify({ error: 'No images provided' }), { 
         status: 400,
@@ -213,35 +235,76 @@ serve(async (req) => {
     // and return a "processing" status to the client immediately
     const processPromise = (async () => {
       try {
-        // Create the ZIP file
-        const zipData = await createZipFile(images, isHD);
+        console.log("Starting ZIP processing in background");
         
-        // Upload to storage
-        const downloadUrl = await uploadZipToStorage(zipData, zipFileName, supabase);
-        
-        // Create a download record for each image
-        // Using the first image for the main record
-        const firstImage = images[0];
-        await createDownloadRecord(
-          supabase, 
-          userId, 
-          firstImage.id,
-          `${images.length} images (${isHD ? 'HD' : 'Web'})`, 
-          firstImage.url,
-          downloadUrl,
+        // First, create a pending download record
+        const pendingRecord = await createDownloadRecord(
+          supabase,
+          userId,
+          images[0].id,
+          `${images.length} images (${isHD ? 'HD' : 'Web'}) - Processing`,
+          images[0].url,
+          '', // Empty URL while processing
           isHD
         );
         
-        console.log('ZIP processing completed successfully');
-      } catch (error) {
-        console.error('Error in ZIP processing:', error);
-        // We could update the status to 'failed' in the download_requests table here
+        console.log(`Created pending download record: ${pendingRecord}`);
+        
+        try {
+          // Create the ZIP file
+          const zipData = await createZipFile(images, isHD);
+          
+          // Upload to storage
+          const downloadUrl = await uploadZipToStorage(zipData, zipFileName, supabase);
+          
+          console.log(`ZIP uploaded, download URL: ${downloadUrl}`);
+          
+          // Update the download record with the ready status and URL
+          const { error: updateError } = await supabase
+            .from('download_requests')
+            .update({ 
+              status: 'ready',
+              image_title: `${images.length} images (${isHD ? 'HD' : 'Web'})`,
+              download_url: downloadUrl
+            })
+            .eq('id', pendingRecord);
+            
+          if (updateError) {
+            console.error('Error updating download record:', updateError);
+          } else {
+            console.log(`Download record ${pendingRecord} updated to ready status`);
+          }
+        } catch (processingError) {
+          console.error('Error in ZIP processing:', processingError);
+          
+          // Update the download record with failed status
+          const { error: updateError } = await supabase
+            .from('download_requests')
+            .update({ 
+              status: 'expired',  // Using expired as a failure status
+              image_title: `Failed: ${images.length} images (${isHD ? 'HD' : 'Web'})`
+            })
+            .eq('id', pendingRecord);
+            
+          if (updateError) {
+            console.error('Error updating failed download record:', updateError);
+          }
+        }
+      } catch (outerError) {
+        console.error('Fatal error in ZIP processing:', outerError);
       }
     })();
     
     // Use waitUntil to continue processing after response is sent
     // This allows for long-running tasks without timing out the request
-    EdgeRuntime.waitUntil(processPromise);
+    try {
+      // @ts-ignore - EdgeRuntime.waitUntil is available in Deno Deploy
+      EdgeRuntime.waitUntil(processPromise);
+    } catch (waitError) {
+      console.error('Warning: EdgeRuntime.waitUntil not available:', waitError);
+      // If waitUntil is not available, we'll just let the promise run
+      // This could potentially be cut off if the runtime terminates too early
+    }
 
     // Return immediate response to client
     return new Response(
