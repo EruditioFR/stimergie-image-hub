@@ -10,9 +10,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, AlertCircle } from "lucide-react";
 import { formatDate } from "@/utils/dateFormatting";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 export interface DownloadRequest {
   id: string;
@@ -29,6 +30,29 @@ interface DownloadsTableProps {
 }
 
 export const DownloadsTable = ({ downloads }: DownloadsTableProps) => {
+  const handleDownload = (download: DownloadRequest) => {
+    if (download.status !== 'ready') {
+      return;
+    }
+    
+    try {
+      toast.loading('Préparation du téléchargement...');
+      
+      // Open the download URL in a new tab
+      window.open(download.downloadUrl, '_blank');
+      
+      toast.dismiss();
+      toast.success('Téléchargement lancé');
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
+      toast.dismiss();
+      toast.error('Échec du téléchargement', {
+        description: 'Une erreur est survenue. Veuillez réessayer plus tard.',
+        icon: <AlertCircle className="h-4 w-4" />
+      });
+    }
+  };
+
   return (
     <div className="w-full overflow-auto">
       <Table>
@@ -74,7 +98,7 @@ export const DownloadsTable = ({ downloads }: DownloadsTableProps) => {
                     size="sm" 
                     className="py-4"
                     disabled={download.status !== 'ready'}
-                    onClick={() => window.open(download.downloadUrl, '_blank')}
+                    onClick={() => handleDownload(download)}
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Télécharger

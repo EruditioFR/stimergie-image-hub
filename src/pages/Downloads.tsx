@@ -3,8 +3,10 @@ import React from 'react';
 import Header from '@/components/ui/layout/Header';
 import { DownloadsTable } from '@/components/downloads/DownloadsTable';
 import { useDownloads } from '@/hooks/useDownloads';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { Footer } from '@/components/ui/layout/Footer';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Toaster } from '@/components/ui/sonner';
 
 const Downloads = () => {
   const { downloads, isLoading, error } = useDownloads();
@@ -30,10 +32,14 @@ const Downloads = () => {
                 <span className="ml-2">Chargement des téléchargements...</span>
               </div>
             ) : error ? (
-              <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
-                <p>Une erreur est survenue lors du chargement des téléchargements.</p>
-                <p className="text-sm mt-1">{error.message}</p>
-              </div>
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erreur</AlertTitle>
+                <AlertDescription>
+                  Une erreur est survenue lors du chargement des téléchargements.
+                  <p className="text-sm mt-1">{error.message}</p>
+                </AlertDescription>
+              </Alert>
             ) : (
               <DownloadsTable downloads={downloads} />
             )}
@@ -48,6 +54,7 @@ const Downloads = () => {
         </div>
       </main>
       <Footer />
+      <Toaster />
     </div>
   );
 };
