@@ -18,14 +18,17 @@ export async function requestImageDownload(options: DownloadRequestOptions): Pro
   try {
     const { imageId, imageSrc, imageTitle, isHD = false } = options;
     
-    const user = (await supabase.auth.getUser()).data.user;
+    const { data: userData, error: userError } = await supabase.auth.getUser();
     
-    if (!user) {
+    if (userError || !userData.user) {
+      console.error('Erreur d'authentification:', userError);
       toast.error('Vous devez être connecté pour télécharger des images');
       return null;
     }
     
-    console.log('Creating download request for:', { imageId, imageTitle, userId: user.id, isHD });
+    const user = userData.user;
+    
+    console.log('Creating download request for:', { imageId, imageTitle, userId: user.id, isHD, imageSrc });
     
     // Crée la requête de téléchargement avec le statut "pending"
     const { data, error } = await supabase
@@ -40,16 +43,22 @@ export async function requestImageDownload(options: DownloadRequestOptions): Pro
         is_hd: isHD,
         // expires_at est défini par défaut dans la base de données comme now() + '7 days'
       })
-      .select('id')
-      .single();
+      .select('id');
     
     if (error) {
       console.error('Erreur lors de la création de la demande de téléchargement:', error);
-      throw new Error(error.message);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      throw new Error(`Erreur d'insertion: ${error.message} (${error.code})`);
     }
     
-    console.log('Download request created successfully with ID:', data.id);
-    return data.id;
+    if (!data || data.length === 0) {
+      console.error('Aucune donnée retournée après insertion');
+      throw new Error('Aucun ID de téléchargement retourné');
+    }
+    
+    const downloadId = data[0].id;
+    console.log('Download request created successfully with ID:', downloadId);
+    return downloadId;
   } catch (error) {
     console.error('Erreur lors de la demande de téléchargement:', error);
     toast.error('Échec de la demande de téléchargement', {
@@ -108,6 +117,7 @@ export async function prepareDownloadFile(imageInfo: DownloadRequestOptions): Pr
           
         if (error) {
           console.error('Error updating download status:', error);
+          console.error('Error details:', JSON.stringify(error, null, 2));
         } else {
           console.log('Download status updated to ready');
         }
@@ -115,10 +125,6 @@ export async function prepareDownloadFile(imageInfo: DownloadRequestOptions): Pr
         console.error('Error in simulated processing:', err);
       }
     }, 5000); // Simulate 5 seconds of processing
-    
-    toast.success('Demande de téléchargement enregistrée', {
-      description: 'Vous serez notifié lorsque votre fichier sera prêt à télécharger.'
-    });
     
     return true;
   } catch (error) {

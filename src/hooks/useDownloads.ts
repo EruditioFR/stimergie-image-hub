@@ -42,10 +42,11 @@ export function useDownloads() {
           .from('download_requests')
           .select('*')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false }) as { data: DownloadRequestData[] | null, error: Error | null };
+          .order('created_at', { ascending: false });
           
         if (error) {
           console.error('Error fetching downloads:', error);
+          console.error('Error details:', JSON.stringify(error, null, 2));
           throw new Error(error.message);
         }
         
@@ -54,6 +55,7 @@ export function useDownloads() {
         if (!data || data.length === 0) {
           console.log('No downloads found for user');
           setDownloads([]);
+          setIsLoading(false);
           return;
         }
         
