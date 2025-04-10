@@ -25,7 +25,11 @@ export function useDownloads() {
 
   useEffect(() => {
     const fetchDownloads = async () => {
-      if (!user) return;
+      if (!user) {
+        setDownloads([]);
+        setIsLoading(false);
+        return;
+      }
       
       try {
         setIsLoading(true);
@@ -53,8 +57,7 @@ export function useDownloads() {
           return;
         }
         
-        // Check for expired downloads and mark them
-        const now = new Date();
+        // Format the data for the UI
         const formattedData = data.map(item => ({
           id: item.id,
           imageId: item.image_id,

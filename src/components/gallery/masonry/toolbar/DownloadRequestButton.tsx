@@ -32,7 +32,7 @@ export const DownloadRequestButton = ({
     try {
       setIsRequesting(true);
       
-      console.log('Requesting download for image:', { imageId, imageTitle });
+      console.log('Requesting download for image:', { imageId, imageTitle, isHD });
       
       const success = await prepareDownloadFile({
         imageId: imageId.toString(),

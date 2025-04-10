@@ -25,7 +25,7 @@ export async function requestImageDownload(options: DownloadRequestOptions): Pro
       return null;
     }
     
-    console.log('Creating download request for:', { imageId, imageTitle, userId: user.id });
+    console.log('Creating download request for:', { imageId, imageTitle, userId: user.id, isHD });
     
     // Crée la requête de téléchargement avec le statut "pending"
     const { data, error } = await supabase
@@ -37,7 +37,8 @@ export async function requestImageDownload(options: DownloadRequestOptions): Pro
         image_src: imageSrc,
         status: 'pending',
         download_url: '', // Sera mis à jour par le système une fois le fichier prêt
-        is_hd: isHD
+        is_hd: isHD,
+        // expires_at est défini par défaut dans la base de données comme now() + '7 days'
       })
       .select('id')
       .single();
