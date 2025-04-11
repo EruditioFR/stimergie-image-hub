@@ -34,7 +34,7 @@ interface ProcessConfig {
 // Further reduced configuration to address resource limits
 const DEFAULT_CONFIG: ProcessConfig = {
   max_batch_size: 1, // Process one request at a time
-  processing_timeout_seconds: 90, // 90 seconds timeout (reduced from 120)
+  processing_timeout_seconds: 90, // 90 seconds timeout
 };
 
 /**
@@ -42,12 +42,12 @@ const DEFAULT_CONFIG: ProcessConfig = {
  */
 async function fetchImageWithRetries(
   url: string,
-  retries = 2, // Reduced retries to save resources
+  retries = 2, 
   delay = 200
 ): Promise<ArrayBuffer> {
   try {
     const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), 6000); // 6 second timeout (reduced)
+    const timeoutId = setTimeout(() => abortController.abort(), 6000); // 6 second timeout
     
     const response = await fetch(url, {
       method: 'GET',
@@ -88,7 +88,7 @@ async function createZipFile(
 ): Promise<{ zipData: Uint8Array; imageCount: number }> {
   // Set a strict timeout
   const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error("ZIP creation timeout exceeded")), 60000); // 60 seconds timeout (reduced)
+    setTimeout(() => reject(new Error("ZIP creation timeout exceeded")), 60000); // 60 seconds timeout
   });
 
   try {
@@ -172,7 +172,7 @@ async function processDownloadRequest(
 ): Promise<void> {
   // Create a tracking promise that will reject after the timeout
   const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error("Processing timeout exceeded")), 80000); // 80 seconds maximum (reduced)
+    setTimeout(() => reject(new Error("Processing timeout exceeded")), 80000); // 80 seconds maximum
   });
   
   try {
@@ -315,7 +315,7 @@ async function processQueue(
   }
 }
 
-// HTTP server with minimal overhead
+// HTTP server with minimal overhead and fixed body parsing
 serve(async (req) => {
   // CORS handling
   if (req.method === 'OPTIONS') {
@@ -333,17 +333,27 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Get configuration from request, if provided
+    // Get configuration from request, if provided - SAFELY handle absence of body
     let config = DEFAULT_CONFIG;
-    try {
-      const requestData = await req.json();
-      config = {
-        ...DEFAULT_CONFIG,
-        ...requestData
-      };
-    } catch (e) {
-      // If request parsing fails, use defaults
-      console.log("Using default configuration");
+    
+    // Only try to parse JSON if there's actually content
+    if (req.headers.get('content-length') && parseInt(req.headers.get('content-length') || '0') > 0) {
+      try {
+        const requestData = await req.json();
+        if (requestData && typeof requestData === 'object') {
+          // Merge with defaults but don't overwrite with undefined/null values
+          config = {
+            ...DEFAULT_CONFIG,
+            max_batch_size: requestData.max_batch_size || DEFAULT_CONFIG.max_batch_size,
+            processing_timeout_seconds: requestData.processing_timeout_seconds || DEFAULT_CONFIG.processing_timeout_seconds
+          };
+        }
+      } catch (e) {
+        // If request parsing fails, use defaults - log but don't fail
+        console.log("Failed to parse request body, using default configuration:", e.message);
+      }
+    } else {
+      console.log("No request body provided, using default configuration");
     }
     
     // Process the queue with strict resource constraints

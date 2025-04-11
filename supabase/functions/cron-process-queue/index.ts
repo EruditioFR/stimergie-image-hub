@@ -17,13 +17,15 @@ serve(async (_req) => {
     
     try {
       // Call the process-queue function with minimal configuration
+      // IMPORTANT: Do not send any body data for cron job
       const response = await fetch(`${SUPABASE_URL}/functions/v1/process-queue`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${ANON_KEY}`
         },
-        body: JSON.stringify({ max_batch_size: 1, processing_timeout_seconds: 80 }),
+        // Explicitly sending empty body to avoid any parsing issues
+        // body: undefined,
         signal: controller.signal
       });
       
