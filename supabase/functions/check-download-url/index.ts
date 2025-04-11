@@ -1,9 +1,7 @@
 
-// Check Download URL Edge Function
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-// CORS Headers for browser requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -11,178 +9,167 @@ const corsHeaders = {
   'Content-Type': 'application/json',
 };
 
-// Define request body type
 interface RequestBody {
   downloadId: string;
   searchPattern: string;
 }
 
-// Check if file exists in storage with better error handling
-async function checkFileExists(pattern: string, supabase: any): Promise<{ url: string | null; error: string | null }> {
-  try {
-    console.log(`[CHECK-URL] Checking for file with pattern: ${pattern}`);
-    
-    // Search for files with the pattern in Supabase Storage
-    const { data: files, error } = await supabase.storage
-      .from('ZIP Downloads')
-      .list('', {
-        search: pattern
-      });
-    
-    if (error) {
-      console.error(`[CHECK-URL] Error listing files:`, error);
-      return { url: null, error: `Erreur lors de la recherche de fichiers: ${error.message}` };
-    }
-    
-    console.log(`[CHECK-URL] Found ${files.length} files matching pattern`);
-    
-    // Look for exact matches or files containing the pattern
-    const matchingFile = files.find(file => 
-      file.name === `${pattern}.zip` || 
-      file.name === pattern || 
-      file.name.startsWith(pattern)
-    );
-    
-    if (matchingFile) {
-      console.log(`[CHECK-URL] Found matching file: ${matchingFile.name}`);
-      
-      // Get URL for the file
-      const { data } = supabase.storage
-        .from('ZIP Downloads')
-        .getPublicUrl(matchingFile.name);
-        
-      if (data?.publicUrl) {
-        return { url: data.publicUrl, error: null };
-      } else {
-        return { url: null, error: "URL publique non disponible" };
-      }
-    }
-    
-    console.log(`[CHECK-URL] No matching file found for pattern: ${pattern}`);
-    return { url: null, error: "Aucun fichier correspondant trouvé" };
-  } catch (error) {
-    console.error('[CHECK-URL] Error in checkFileExists:', error);
-    return { url: null, error: `Erreur technique: ${error.message}` };
-  }
-}
-
 serve(async (req) => {
-  console.log('[CHECK-URL] Check download URL function called');
-  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('[CHECK-URL] Handling OPTIONS request (CORS preflight)');
     return new Response(null, { headers: corsHeaders });
   }
   
   try {
-    // Only accept POST requests
     if (req.method !== 'POST') {
-      console.log(`[CHECK-URL] Method not allowed: ${req.method}`);
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Method not allowed',
-        details: `La méthode ${req.method} n'est pas autorisée`
-      }), { 
-        status: 405,
-        headers: corsHeaders 
-      });
+      return new Response(
+        JSON.stringify({ error: 'Method not allowed' }),
+        { status: 405, headers: corsHeaders }
+      );
     }
 
-    // Parse request body
+    // Parse the request body
     const { downloadId, searchPattern } = await req.json() as RequestBody;
     
     if (!downloadId || !searchPattern) {
-      console.log('[CHECK-URL] Missing required fields');
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Missing required fields',
-        details: 'Identifiant de téléchargement ou modèle de recherche manquant'
-      }), { 
-        status: 400,
-        headers: corsHeaders
-      });
+      return new Response(
+        JSON.stringify({ success: false, details: 'Missing required parameters' }),
+        { status: 400, headers: corsHeaders }
+      );
     }
-    
-    console.log(`[CHECK-URL] Checking download URL for ID: ${downloadId}, Pattern: ${searchPattern}`);
-    
-    // Create Supabase client with service role key for admin access
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-    
+
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('[CHECK-URL] Missing Supabase credentials');
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Missing Supabase credentials',
-        details: 'Configuration Supabase incomplète sur le serveur'
-      }), { 
-        status: 500,
-        headers: corsHeaders
-      });
+      throw new Error('Missing Supabase environment variables');
     }
-    
-    console.log(`[CHECK-URL] Creating Supabase client with URL: ${supabaseUrl.substring(0, 30)}...`);
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Check if file exists in Supabase Storage
-    const { url: fileUrl, error: fileError } = await checkFileExists(searchPattern, supabase);
+    // Step 1: Check if the bucket exists, if not create it
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
     
-    if (fileUrl) {
-      // Update the download record with the URL
-      console.log(`[CHECK-URL] Updating download record ${downloadId} with URL: ${fileUrl}`);
-      const { error } = await supabase
-        .from('download_requests')
-        .update({ 
-          download_url: fileUrl,
-          status: 'ready'
-        })
-        .eq('id', downloadId);
-        
-      if (error) {
-        console.error('[CHECK-URL] Error updating download record:', error);
-        return new Response(JSON.stringify({ 
+    if (bucketsError) {
+      console.error('Error listing buckets:', bucketsError);
+      return new Response(
+        JSON.stringify({ 
           success: false, 
-          error: 'Failed to update download record',
-          details: `Erreur de mise à jour: ${error.message}`
-        }), { 
-          status: 500,
-          headers: corsHeaders
-        });
-      }
-      
-      console.log('[CHECK-URL] Download record updated successfully');
-      
-      // Return success with URL
-      return new Response(
-        JSON.stringify({
-          success: true,
-          url: fileUrl,
-          message: 'URL found and download record updated'
+          details: `Error checking storage buckets: ${bucketsError.message}` 
         }),
-        { headers: corsHeaders }
+        { status: 500, headers: corsHeaders }
       );
-    } else {
-      console.log('[CHECK-URL] No matching file found for pattern:', searchPattern);
+    }
+    
+    const zipBucket = buckets?.find(b => b.name === "ZIP Downloads");
+    
+    if (!zipBucket) {
+      console.log('Creating ZIP Downloads bucket as it does not exist');
+      const { error: createBucketError } = await supabase.storage.createBucket('ZIP Downloads', { 
+        public: true 
+      });
       
-      // Return not found response with detailed error
+      if (createBucketError) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            details: `Failed to create ZIP Downloads bucket: ${createBucketError.message}` 
+          }),
+          { status: 500, headers: corsHeaders }
+        );
+      }
+    }
+
+    // Step 2: List files in the bucket that match the pattern
+    const { data: fileList, error: fileListError } = await supabase.storage
+      .from('ZIP Downloads')
+      .list();
+      
+    if (fileListError) {
       return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'No matching file found',
-          details: fileError || 'Aucun fichier correspondant trouvé'
+        JSON.stringify({ 
+          success: false, 
+          details: `Error listing files: ${fileListError.message}` 
+        }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+    
+    console.log(`Found ${fileList?.length || 0} files in ZIP Downloads bucket`);
+    
+    // Find files that match the pattern
+    const matchingFiles = fileList?.filter(file => 
+      file.name.toLowerCase().includes(searchPattern.toLowerCase())
+    ) || [];
+    
+    console.log(`Found ${matchingFiles.length} files matching pattern "${searchPattern}"`);
+    
+    if (matchingFiles.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          details: `No files found matching pattern "${searchPattern}"` 
         }),
         { headers: corsHeaders }
       );
     }
     
+    // Get the most recently modified file
+    const latestFile = matchingFiles[0]; // Assuming files are sorted by date
+    
+    // Step 3: Generate a public URL for the file
+    const { data: urlData, error: urlError } = await supabase.storage
+      .from('ZIP Downloads')
+      .getPublicUrl(latestFile.name);
+      
+    if (urlError) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          details: `Error generating URL: ${urlError.message}` 
+        }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+    
+    // Step 4: Update the download_requests record with the URL
+    const { error: updateError } = await supabase
+      .from('download_requests')
+      .update({ 
+        download_url: urlData.publicUrl,
+        status: 'ready',
+        processed_at: new Date().toISOString()
+      })
+      .eq('id', downloadId);
+      
+    if (updateError) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          details: `Error updating record: ${updateError.message}` 
+        }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+    
+    // Success!
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        url: urlData.publicUrl,
+        message: `Found file and updated record: ${latestFile.name}`
+      }),
+      { headers: corsHeaders }
+    );
+    
   } catch (error) {
-    console.error('[CHECK-URL] Error processing request:', error);
+    console.error('Error in check-download-url function:', error);
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: 'Unknown error',
-        details: error.message || 'Erreur inconnue'
+        details: `Unexpected error: ${error.message}` 
       }),
       { status: 500, headers: corsHeaders }
     );

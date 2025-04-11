@@ -6,8 +6,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 // Define constants
-const FUNCTION_ENDPOINT = Deno.env.get('PUBLIC_URL') || 'https://mjhbugzaqmtfnbxaqpss.supabase.co';
-const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
+const FUNCTION_ENDPOINT = Deno.env.get('SUPABASE_URL') || 'https://mjhbugzaqmtfnbxaqpss.supabase.co';
+const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qaGJ1Z3phcW10Zm5ieGFxcHNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEzODU2MDQsImV4cCI6MjA1Njk2MTYwNH0.JLcLHyBk3G0wO6MuhJ4WMqv8ImbGxmcExEzGG2xWIsk';
 const PROCESS_CONFIG = {
   max_batch_size: 5, // Process 5 requests at a time
   processing_timeout_seconds: 600, // Maximum processing time: 10 minutes
