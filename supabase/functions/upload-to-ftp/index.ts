@@ -1,7 +1,7 @@
 
 // Upload to FTP Edge Function
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { FTP } from "https://deno.land/x/ftp@v1.2.0/mod.ts";
+import { FTP } from "https://deno.land/x/ftp@v2.1.2/mod.ts";
 
 // CORS Headers for browser requests
 const corsHeaders = {
@@ -67,25 +67,9 @@ async function uploadFileToFTP(fileName: string, fileData: Uint8Array): Promise<
       }
     }
     
-    // Convert Uint8Array to Deno.Reader
-    const fileBlob = new Blob([fileData]);
-    const fileReader = fileBlob.stream().getReader();
-    
-    // Create a readable stream from the reader
-    const stream = new ReadableStream({
-      async start(controller) {
-        while (true) {
-          const { done, value } = await fileReader.read();
-          if (done) break;
-          controller.enqueue(value);
-        }
-        controller.close();
-      }
-    });
-    
-    // Upload the file
+    // Upload the file using a Uint8Array directly
     console.log(`Uploading file: ${fileName} (${fileData.length} bytes)`);
-    await ftp.uploadStream(stream, fileName);
+    await ftp.uploadFrom(fileData, fileName);
     console.log(`File uploaded successfully: ${fileName}`);
     
     // Construct the public URL
