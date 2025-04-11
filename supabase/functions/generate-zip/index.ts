@@ -65,7 +65,7 @@ async function createZipFile(images: RequestBody["images"], isHD: boolean): Prom
 
 async function uploadZipToStorage(zipData: Uint8Array, fileName: string, supabase: any): Promise<string> {
   const { error } = await supabase.storage
-    .from('downloads')
+    .from('ZIP Downloads')
     .upload(fileName, zipData, {
       contentType: 'application/zip',
       upsert: true,
@@ -73,7 +73,7 @@ async function uploadZipToStorage(zipData: Uint8Array, fileName: string, supabas
 
   if (error) throw new Error(`Storage upload failed: ${error.message}`);
 
-  const { data } = supabase.storage.from('downloads').getPublicUrl(fileName);
+  const { data } = supabase.storage.from('ZIP Downloads').getPublicUrl(fileName);
   if (!data?.publicUrl) throw new Error("Failed to get public URL");
   return data.publicUrl;
 }
@@ -134,4 +134,53 @@ serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const date = new Date();
+    const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
+    const zipFileName = `${isHD ? 'hd-' : ''}images_${dateStr}_${Date.now().toString().slice(-6)}.zip`;
+
+    const promise = (async () => {
+      try {
+        const pendingId = await createDownloadRecord(
+          supabase,
+          userId,
+          images[0].id,
+          `${images.length} images (${isHD ? 'HD' : 'Web'}) - Processing`,
+          images[0].url,
+          '',
+          isHD
+        );
+
+        const zip = await createZipFile(images, isHD);
+        const downloadUrl = await uploadZipToStorage(zip, zipFileName, supabase);
+
+        await updateDownloadRecord(
+          supabase,
+          pendingId,
+          downloadUrl,
+          'ready',
+          `${images.length} images (${isHD ? 'HD' : 'Web'})`
+        );
+      } catch (err) {
+        console.error("ZIP processing error:", err);
+      }
+    })();
+
+    try {
+      // @ts-ignore
+      Deno.core.opAsync("op_wait_until", promise);
+    } catch {
+      // Fallback if not supported
+    }
+
+    return new Response(JSON.stringify({
+      status: 'processing',
+      message: 'Votre archive est en cours de préparation. Elle apparaîtra dans votre espace téléchargement une fois prête.'
+    }), { headers: corsHeaders });
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
+  }
+});
