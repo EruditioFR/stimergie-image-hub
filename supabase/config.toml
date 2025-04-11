@@ -1,5 +1,5 @@
 
-project_id = "collabspace"
+project_id = "mjhbugzaqmtfnbxaqpss"
 
 [api]
 enabled = true
@@ -17,36 +17,17 @@ port = 54323
 enabled = true
 port = 54324
 
-[storage]
-enabled = true
-
 [auth]
 enabled = true
+uri = "http://localhost:54321/auth/v1"
 
-[realtime]
+[storage]
 enabled = true
+port = 54325
 
 [functions]
-  [functions.generate-zip]
-  verify_jwt = true
-  
-  [functions.upload-to-ftp]
-  verify_jwt = true
-  
-  [functions.check-download-url]
-  verify_jwt = true
-  
-  [functions.send-album-invitation]
-  verify_jwt = true
-  
-  [functions.analyze-image-ai]
-  verify_jwt = true
-  
-  [functions.analyze-image]
-  verify_jwt = true
-  
-  [functions.cache-dropbox-images]
-  verify_jwt = true
-  
-  [functions.cron-cache-dropbox]
-  verify_jwt = true
+enabled = true
+port = 54326
+
+[functions.process-queue]
+verify_jwt = false
