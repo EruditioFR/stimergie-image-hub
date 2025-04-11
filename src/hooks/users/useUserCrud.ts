@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -32,45 +31,51 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
         return false;
       }
 
-      console.log("Calling create_user_with_profile RPC function with:", {
-        email: trimmedEmail,
-        password: "[REDACTED]",
-        role: "user"
-      });
+      const firstName = userData.firstName || userData.first_name || '';
+      const lastName = userData.lastName || userData.last_name || '';
+      const clientId = userData.clientId || userData.id_client || null;
 
-      // Use TypeScript type assertion to bypass the type check
-      const { data, error } = await supabase.rpc(
-        'create_user_with_profile' as any, 
-        {
+      console.log("Calling admin-create-user function with email and user data");
+
+      // Call our new edge function to create the user
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify({
           email: trimmedEmail,
           password: trimmedPassword,
-          first_name: userData.firstName || userData.first_name || '',
-          last_name: userData.lastName || userData.last_name || '',
+          firstName,
+          lastName,
           role: userData.role || 'user',
-          company_id: userData.clientId || userData.id_client || null
-        }
-      );
+          clientId
+        })
+      });
+
+      const result = await response.json();
       
-      if (error) {
-        console.error("Erreur lors de la création de l'utilisateur:", error);
+      if (!response.ok) {
+        console.error("Erreur lors de la création de l'utilisateur:", result.error);
         
-        // More user-friendly error messages based on the error
-        if (error.message.includes("User with this email already exists")) {
+        // More user-friendly error messages
+        if (result.error.includes("User with this email already exists")) {
           toast.error("Un utilisateur avec cet email existe déjà");
-        } else if (error.message.includes("duplicate key")) {
+        } else if (result.error.includes("duplicate key")) {
           toast.error("Un utilisateur avec cet email existe déjà");
-        } else if (error.message.includes("permission denied")) {
+        } else if (result.error.includes("permission denied")) {
           toast.error("Vous n'avez pas les permissions nécessaires pour créer un utilisateur");
         } else {
-          toast.error(error.message || "Erreur lors de la création de l'utilisateur");
+          toast.error(result.error || "Erreur lors de la création de l'utilisateur");
         }
         
         return false;
       }
       
-      // Fetch the new user
-      if (data) {
-        console.log("New user created with ID:", data);
+      // Fetch the new user to get all details
+      if (result.id) {
+        console.log("New user created with ID:", result.id);
         const { data: newUser, error: fetchError } = await supabase
           .from("profiles")
           .select(`
@@ -82,7 +87,7 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
             id_client,
             clients(nom)
           `)
-          .eq('id', data)
+          .eq('id', result.id)
           .single();
           
         if (fetchError) {
@@ -113,9 +118,6 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
           
           toast.success("L'utilisateur a été créé avec succès");
           console.log("User added successfully:", newUser);
-          
-          // Add note about email verification
-          toast.info("Note: L'utilisateur devra vérifier son email avant de pouvoir se connecter");
         }
       }
       

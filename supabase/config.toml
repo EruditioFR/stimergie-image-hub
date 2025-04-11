@@ -42,6 +42,10 @@ verify_jwt = false
 [functions.process-queue]
 verify_jwt = false
 
+[functions.admin-create-user]
+verify_jwt = true
+
 [functions.cron-process-queue]
 verify_jwt = false
 schedule = "*/5 * * * *"  # Run every 5 minutes
+
