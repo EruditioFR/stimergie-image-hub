@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import JSZip from "https://esm.sh/jszip@3.10.1";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
@@ -31,10 +32,10 @@ interface ProcessConfig {
   processing_timeout_seconds: number;
 }
 
-// Configuration par défaut
+// Configuration par défaut - réduite pour minimiser l'utilisation des ressources
 const DEFAULT_CONFIG: ProcessConfig = {
-  max_batch_size: 5, // Maximum 5 demandes à la fois
-  processing_timeout_seconds: 600, // 10 minutes par traitement
+  max_batch_size: 2, // Réduit à 2 demandes à la fois (était 5)
+  processing_timeout_seconds: 300, // 5 minutes par traitement (était 10)
 };
 
 /**
@@ -42,18 +43,20 @@ const DEFAULT_CONFIG: ProcessConfig = {
  */
 async function fetchImageWithRetries(
   url: string,
-  retries = 3,
+  retries = 2, // Réduit à 2 tentatives (était 3)
   delay = 300
 ): Promise<ArrayBuffer> {
   try {
-    console.log(`🌐 Téléchargement de l'image: ${url}`);
+    console.log(`🌐 Téléchargement de l'image: ${url.substring(0, 50)}...`);
     const response = await fetch(url, {
       method: 'GET',
       headers: { 'Cache-Control': 'no-cache' },
+      // Ajout d'un timeout pour éviter les blocages
+      signal: AbortSignal.timeout(15000), // 15 secondes de timeout
     });
 
     if (!response.ok) {
-      console.warn(`⚠️ HTTP error ${response.status} pour ${url}`);
+      console.warn(`⚠️ HTTP error ${response.status} pour ${url.substring(0, 50)}...`);
       if (retries > 0 && response.status >= 500) {
         console.log(`🔄 Nouvelle tentative dans ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
@@ -75,6 +78,7 @@ async function fetchImageWithRetries(
 
 /**
  * Crée un fichier ZIP à partir d'un tableau d'images
+ * Optimisé pour utiliser moins de mémoire et être plus efficace
  */
 async function createZipFile(
   downloadRequest: DownloadRequest,
@@ -93,16 +97,18 @@ async function createZipFile(
       
       if (projectId) {
         console.log(`📂 Récupération des images du projet ${projectId}`);
+        // Récupère UNIQUEMENT les IDs, titres et URLs - pas les données complètes
         const { data: projectImages, error } = await supabase
           .from('images')
           .select('id, title, url')
-          .eq('id_projet', projectId);
+          .eq('id_projet', projectId)
+          .limit(10); // Limitez le nombre d'images par lot pour économiser des ressources
         
         if (error) throw new Error(`Erreur lors de la récupération des images: ${error.message}`);
         
         if (projectImages && projectImages.length > 0) {
           images = projectImages;
-          console.log(`📊 ${images.length} images trouvées pour le projet`);
+          console.log(`📊 ${images.length} images trouvées pour le projet (limite 10)`);
         }
       }
     }
@@ -123,7 +129,7 @@ async function createZipFile(
     if (!folder) throw new Error("Impossible de créer le dossier ZIP");
 
     let successfulImages = 0;
-    const BATCH_SIZE = 3; // Télécharger 3 images à la fois pour éviter de surcharger
+    const BATCH_SIZE = 2; // Réduit à 2 images à la fois (était 3)
     
     for (let i = 0; i < images.length; i += BATCH_SIZE) {
       const batch = images.slice(i, i + BATCH_SIZE);
@@ -142,6 +148,11 @@ async function createZipFile(
       
       // Compter les images téléchargées avec succès
       successfulImages += results.filter(r => r.status === "fulfilled" && r.value === true).length;
+      
+      // Ajouter une pause entre les lots pour éviter les surcharges
+      if (i + BATCH_SIZE < images.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
 
     if (successfulImages === 0) {
@@ -152,7 +163,7 @@ async function createZipFile(
     const zipData = await zip.generateAsync({
       type: "uint8array",
       compression: "DEFLATE",
-      compressionOptions: { level: 5 },
+      compressionOptions: { level: 3 }, // Niveau de compression réduit pour utiliser moins de CPU
     });
 
     return { zipData, imageCount: successfulImages };
@@ -225,6 +236,11 @@ async function processDownloadRequest(
   downloadRequest: DownloadRequest,
   supabase: any
 ): Promise<void> {
+  // Ajouter un timeout à la fonction
+  const timeout = setTimeout(() => {
+    throw new Error("Le traitement de la demande a dépassé le délai maximum");
+  }, 240000); // 4 minutes maximum
+  
   try {
     console.log(`🔄 Traitement de la demande ${downloadRequest.id} pour l'utilisateur ${downloadRequest.user_id}`);
     
@@ -265,7 +281,13 @@ async function processDownloadRequest(
       .eq('id', downloadRequest.id);
     
     console.log(`✅ Traitement terminé pour la demande ${downloadRequest.id}`);
+    
+    // Annuler le timeout
+    clearTimeout(timeout);
   } catch (error) {
+    // Annuler le timeout
+    clearTimeout(timeout);
+    
     console.error(`❌ Échec du traitement pour ${downloadRequest.id}: ${error.message}`);
     
     // En cas d'échec, mettre à jour le statut
@@ -338,6 +360,11 @@ async function processQueue(
     try {
       await processDownloadRequest(request, supabase);
       success++;
+      
+      // Ajouter une pause entre les traitements pour éviter la surcharge
+      if (success + failed < pendingRequests.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
     } catch (error) {
       console.error(`❌ Erreur globale lors du traitement: ${error.message}`);
       failed++;

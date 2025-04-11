@@ -67,7 +67,8 @@ serve(async (req) => {
     if (!zipBucket) {
       console.log('Creating ZIP Downloads bucket as it does not exist');
       const { error: createBucketError } = await supabase.storage.createBucket('ZIP Downloads', { 
-        public: true 
+        public: true,
+        fileSizeLimit: 104857600 // 100MB limit
       });
       
       if (createBucketError) {
@@ -78,6 +79,13 @@ serve(async (req) => {
           }),
           { status: 500, headers: corsHeaders }
         );
+      }
+      
+      // Set up proper bucket policies after creation
+      const { error: policyError } = await supabase.rpc('create_zip_storage_policies');
+      if (policyError) {
+        console.warn('Warning: Could not set storage policies:', policyError.message);
+        // Continue anyway as we can try to use the bucket even without policies
       }
     }
 
