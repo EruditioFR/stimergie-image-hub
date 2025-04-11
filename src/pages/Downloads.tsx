@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import Header from '@/components/ui/layout/Header';
 import { DownloadsTable } from '@/components/downloads/DownloadsTable';
 import { useDownloads } from '@/hooks/useDownloads';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Footer } from '@/components/ui/layout/Footer';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Toaster } from '@/components/ui/sonner';
@@ -11,7 +11,7 @@ import { supabase, refreshSession } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { RealtimeChannel } from '@supabase/supabase-js';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Downloads = () => {
   const { downloads, isLoading, error, refreshDownloads } = useDownloads();
@@ -158,9 +158,10 @@ const Downloads = () => {
             <h2 className="text-xl font-semibold mb-4">Historique des demandes</h2>
             
             {isLoading ? (
-              <div className="flex justify-center items-center h-40">
-                <LoadingSpinner size={32} className="text-primary mr-3" />
-                <span className="text-muted-foreground">Chargement des téléchargements...</span>
+              <div className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
               </div>
             ) : error ? (
               <Alert variant="destructive" className="mb-6">
