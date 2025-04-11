@@ -17,64 +17,43 @@ interface RequestBody {
   searchPattern: string;
 }
 
-// Check if file exists with pattern matching
-async function checkFileExists(pattern: string): Promise<string | null> {
+// Check if file exists in storage
+async function checkFileExists(pattern: string, supabase: any): Promise<string | null> {
   try {
     console.log(`[CHECK-URL] Checking for file with pattern: ${pattern}`);
     
-    // Use the domain provided in the requirements
-    const baseUrl = 'https://collabspace.veni6445.odns.fr/lovable-uploads';
+    // Search for files with the pattern in Supabase Storage
+    const { data: files, error } = await supabase.storage
+      .from('ZIP Downloads')
+      .list('', {
+        search: pattern
+      });
     
-    // Construct specific URL patterns to check
-    const urlsToCheck = [
-      `${baseUrl}/${pattern}.zip`,                    // Exact match with .zip
-      `${baseUrl}/${pattern}`                         // Without extension
-    ];
-    
-    console.log(`[CHECK-URL] URLs to check:`, urlsToCheck);
-    
-    // Try each URL pattern
-    for (const url of urlsToCheck) {
-      console.log(`[CHECK-URL] Checking URL: ${url}`);
-      try {
-        const response = await fetch(url, { 
-          method: 'HEAD',
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
-        });
-        
-        // Log detailed response status
-        console.log(`[CHECK-URL] Response for ${url}: status=${response.status}, ok=${response.ok}`);
-        
-        if (response.ok) {
-          console.log(`[CHECK-URL] File found at: ${url}`);
-          return url;
-        } else {
-          console.log(`[CHECK-URL] File not found at ${url}, status: ${response.status}`);
-        }
-      } catch (err) {
-        console.log(`[CHECK-URL] Error checking ${url}:`, err.message);
-      }
+    if (error) {
+      console.error(`[CHECK-URL] Error listing files:`, error);
+      return null;
     }
     
-    // Try direct GET request for verification
-    console.log(`[CHECK-URL] Attempting direct GET request for verification`);
-    const directUrl = `${baseUrl}/${pattern}.zip`;
-    try {
-      const response = await fetch(directUrl, { 
-        method: 'GET', 
-        headers: { 'Range': 'bytes=0-1024' } // Just fetch the beginning of the file
-      });
+    console.log(`[CHECK-URL] Found ${files.length} files matching pattern`);
+    
+    // Look for exact matches or files containing the pattern
+    const matchingFile = files.find(file => 
+      file.name === `${pattern}.zip` || 
+      file.name === pattern || 
+      file.name.startsWith(pattern)
+    );
+    
+    if (matchingFile) {
+      console.log(`[CHECK-URL] Found matching file: ${matchingFile.name}`);
       
-      if (response.ok || response.status === 206) {
-        console.log(`[CHECK-URL] File confirmed via GET at: ${directUrl}`);
-        return directUrl;
-      } else {
-        console.log(`[CHECK-URL] File not found via GET at ${directUrl}, status: ${response.status}`);
+      // Get URL for the file
+      const { data } = supabase.storage
+        .from('ZIP Downloads')
+        .getPublicUrl(matchingFile.name);
+        
+      if (data?.publicUrl) {
+        return data.publicUrl;
       }
-    } catch (err) {
-      console.log(`[CHECK-URL] Error in direct verification:`, err.message);
     }
     
     console.log(`[CHECK-URL] No matching file found for pattern: ${pattern}`);
@@ -129,8 +108,8 @@ serve(async (req) => {
     console.log(`[CHECK-URL] Creating Supabase client with URL: ${supabaseUrl.substring(0, 30)}...`);
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Check if file exists
-    const fileUrl = await checkFileExists(searchPattern);
+    // Check if file exists in Supabase Storage
+    const fileUrl = await checkFileExists(searchPattern, supabase);
     
     if (fileUrl) {
       // Update the download record with the URL
@@ -145,7 +124,6 @@ serve(async (req) => {
         
       if (error) {
         console.error('[CHECK-URL] Error updating download record:', error);
-        console.error('[CHECK-URL] Error details:', JSON.stringify(error, null, 2));
         throw new Error(`Failed to update download record: ${error.message}`);
       }
       
@@ -175,7 +153,6 @@ serve(async (req) => {
     
   } catch (error) {
     console.error('[CHECK-URL] Error processing request:', error);
-    console.error('[CHECK-URL] Stack trace:', error.stack);
     return new Response(
       JSON.stringify({ error: error.message || 'Unknown error' }),
       { status: 500, headers: corsHeaders }
