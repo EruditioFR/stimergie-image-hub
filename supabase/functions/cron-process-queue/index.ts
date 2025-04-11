@@ -1,29 +1,28 @@
 
-// This function will be called every X minutes via Supabase Cron Jobs
-// It triggers the process-queue function to handle pending download requests
-
-// Import necessary libraries
+// Optimized cron job handler for process-queue function
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-// Define constants with fallback values for local development
+// Define constants with fallback values
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || 'https://mjhbugzaqmtfnbxaqpss.supabase.co';
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qaGJ1Z3phcW10Zm5ieGFxcHNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEzODU2MDQsImV4cCI6MjA1Njk2MTYwNH0.JLcLHyBk3G0wO6MuhJ4WMqv8ImbGxmcExEzGG2xWIsk';
+
+// Configuration optimized for resource constraints
 const PROCESS_CONFIG = {
-  max_batch_size: 2, // Reduce batch size to avoid resource limits
-  processing_timeout_seconds: 300, // Reduce timeout to 5 minutes
+  max_batch_size: 1, // Process one at a time to avoid resource limits
+  processing_timeout_seconds: 180, // 3 minutes timeout
 };
 
-// Handle the cron job request more efficiently
+// Handle the cron job with proper error handling
 serve(async (_req) => {
   try {
     console.log('🕒 Starting scheduled ZIP queue processing job');
     
-    // Use signal to abort fetch if it takes too long
+    // Add timeout to avoid function hanging
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
     
     try {
-      // Call the process-queue function with the signal
+      // Call the process-queue function
       const response = await fetch(`${SUPABASE_URL}/functions/v1/process-queue`, {
         method: 'POST',
         headers: {
@@ -36,16 +35,17 @@ serve(async (_req) => {
       
       clearTimeout(timeoutId);
       
+      // Handle specific error status codes
       if (!response.ok) {
-        let errorText = '';
+        let errorText = 'Unknown error';
         try {
           errorText = await response.text();
         } catch (err) {
-          errorText = 'Could not read error response';
+          // Ignore text parsing errors
         }
         
-        // Handle specific errors
-        if (response.status === 546 && errorText.includes('WORKER_LIMIT')) {
+        // Special handling for worker resource limits
+        if (response.status === 546) {
           console.log('⚠️ Worker resource limit reached, will retry on next cron cycle');
           return new Response(
             JSON.stringify({ 
@@ -59,15 +59,15 @@ serve(async (_req) => {
         throw new Error(`Failed to trigger process-queue: ${response.status} - ${errorText}`);
       }
       
-      let result;
+      // Parse the response with error handling
+      let result = { message: 'OK' };
       try {
         result = await response.json();
       } catch (err) {
-        console.log('Response was not JSON, but the request succeeded:', await response.text());
-        result = { message: 'Non-JSON response received but request was successful' };
+        // If response isn't valid JSON, create a generic success result
       }
       
-      console.log('⚡ ZIP queue processing job completed successfully:', result);
+      console.log('⚡ ZIP queue processing job completed successfully');
       
       return new Response(
         JSON.stringify({ 
@@ -80,7 +80,7 @@ serve(async (_req) => {
     } catch (error) {
       clearTimeout(timeoutId);
       
-      // Check if the error was due to the timeout we set
+      // Check if the error was due to the timeout
       if (error.name === 'AbortError') {
         console.log('⏱️ Request timed out, will retry on next cron cycle');
         return new Response(
