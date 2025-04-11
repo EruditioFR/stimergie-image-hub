@@ -31,3 +31,6 @@ port = 54326
 
 [functions.process-queue]
 verify_jwt = false
+
+[functions.cron-process-queue]
+verify_jwt = false
