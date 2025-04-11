@@ -1,7 +1,7 @@
 
 // Upload to FTP Edge Function
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { FTP } from "https://deno.land/x/ftp@v2.1.2/mod.ts";
+import { Client } from "https://deno.land/x/ftp/mod.ts";
 
 // CORS Headers for browser requests
 const corsHeaders = {
@@ -33,12 +33,18 @@ const UPLOAD_PATH = "/collabspace.veni6445.odns.fr/lovable-uploads";
 async function uploadFileToFTP(fileName: string, fileData: Uint8Array): Promise<string> {
   console.log(`Connecting to FTP server ${FTP_CONFIG.host}:${FTP_CONFIG.port} as ${FTP_CONFIG.user}`);
   
-  const ftp = new FTP();
+  const ftp = new Client();
   let publicUrl = "";
   
   try {
     // Connect to the FTP server
-    await ftp.connect(FTP_CONFIG);
+    await ftp.connect({
+      host: FTP_CONFIG.host,
+      port: FTP_CONFIG.port,
+      user: FTP_CONFIG.user,
+      password: FTP_CONFIG.password,
+      secure: FTP_CONFIG.secure,
+    });
     console.log("Connected to FTP server");
     
     // Navigate to the upload directory
@@ -67,10 +73,17 @@ async function uploadFileToFTP(fileName: string, fileData: Uint8Array): Promise<
       }
     }
     
-    // Upload the file using a Uint8Array directly
+    // Create a local temporary file to upload
+    const tempFilePath = await Deno.makeTempFile();
+    await Deno.writeFile(tempFilePath, fileData);
+    
+    // Upload the file
     console.log(`Uploading file: ${fileName} (${fileData.length} bytes)`);
-    await ftp.uploadFrom(fileData, fileName);
+    await ftp.upload(await Deno.open(tempFilePath), fileName);
     console.log(`File uploaded successfully: ${fileName}`);
+    
+    // Clean up the temporary file
+    await Deno.remove(tempFilePath);
     
     // Construct the public URL
     publicUrl = `http://collabspace.veni6445.odns.fr/lovable-uploads/${fileName}`;
