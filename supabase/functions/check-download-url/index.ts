@@ -17,8 +17,8 @@ interface RequestBody {
   searchPattern: string;
 }
 
-// Check if file exists in storage
-async function checkFileExists(pattern: string, supabase: any): Promise<string | null> {
+// Check if file exists in storage with better error handling
+async function checkFileExists(pattern: string, supabase: any): Promise<{ url: string | null; error: string | null }> {
   try {
     console.log(`[CHECK-URL] Checking for file with pattern: ${pattern}`);
     
@@ -31,7 +31,7 @@ async function checkFileExists(pattern: string, supabase: any): Promise<string |
     
     if (error) {
       console.error(`[CHECK-URL] Error listing files:`, error);
-      return null;
+      return { url: null, error: `Erreur lors de la recherche de fichiers: ${error.message}` };
     }
     
     console.log(`[CHECK-URL] Found ${files.length} files matching pattern`);
@@ -52,15 +52,17 @@ async function checkFileExists(pattern: string, supabase: any): Promise<string |
         .getPublicUrl(matchingFile.name);
         
       if (data?.publicUrl) {
-        return data.publicUrl;
+        return { url: data.publicUrl, error: null };
+      } else {
+        return { url: null, error: "URL publique non disponible" };
       }
     }
     
     console.log(`[CHECK-URL] No matching file found for pattern: ${pattern}`);
-    return null;
+    return { url: null, error: "Aucun fichier correspondant trouvé" };
   } catch (error) {
     console.error('[CHECK-URL] Error in checkFileExists:', error);
-    return null;
+    return { url: null, error: `Erreur technique: ${error.message}` };
   }
 }
 
@@ -77,7 +79,11 @@ serve(async (req) => {
     // Only accept POST requests
     if (req.method !== 'POST') {
       console.log(`[CHECK-URL] Method not allowed: ${req.method}`);
-      return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Method not allowed',
+        details: `La méthode ${req.method} n'est pas autorisée`
+      }), { 
         status: 405,
         headers: corsHeaders 
       });
@@ -88,7 +94,11 @@ serve(async (req) => {
     
     if (!downloadId || !searchPattern) {
       console.log('[CHECK-URL] Missing required fields');
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), { 
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Missing required fields',
+        details: 'Identifiant de téléchargement ou modèle de recherche manquant'
+      }), { 
         status: 400,
         headers: corsHeaders
       });
@@ -102,14 +112,21 @@ serve(async (req) => {
     
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('[CHECK-URL] Missing Supabase credentials');
-      throw new Error('Missing Supabase credentials');
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Missing Supabase credentials',
+        details: 'Configuration Supabase incomplète sur le serveur'
+      }), { 
+        status: 500,
+        headers: corsHeaders
+      });
     }
     
     console.log(`[CHECK-URL] Creating Supabase client with URL: ${supabaseUrl.substring(0, 30)}...`);
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     // Check if file exists in Supabase Storage
-    const fileUrl = await checkFileExists(searchPattern, supabase);
+    const { url: fileUrl, error: fileError } = await checkFileExists(searchPattern, supabase);
     
     if (fileUrl) {
       // Update the download record with the URL
@@ -124,7 +141,14 @@ serve(async (req) => {
         
       if (error) {
         console.error('[CHECK-URL] Error updating download record:', error);
-        throw new Error(`Failed to update download record: ${error.message}`);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Failed to update download record',
+          details: `Erreur de mise à jour: ${error.message}`
+        }), { 
+          status: 500,
+          headers: corsHeaders
+        });
       }
       
       console.log('[CHECK-URL] Download record updated successfully');
@@ -141,11 +165,12 @@ serve(async (req) => {
     } else {
       console.log('[CHECK-URL] No matching file found for pattern:', searchPattern);
       
-      // Return not found response
+      // Return not found response with detailed error
       return new Response(
         JSON.stringify({
           success: false,
-          message: 'No matching file found'
+          message: 'No matching file found',
+          details: fileError || 'Aucun fichier correspondant trouvé'
         }),
         { headers: corsHeaders }
       );
@@ -154,7 +179,11 @@ serve(async (req) => {
   } catch (error) {
     console.error('[CHECK-URL] Error processing request:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Unknown error' }),
+      JSON.stringify({ 
+        success: false, 
+        error: 'Unknown error',
+        details: error.message || 'Erreur inconnue'
+      }),
       { status: 500, headers: corsHeaders }
     );
   }

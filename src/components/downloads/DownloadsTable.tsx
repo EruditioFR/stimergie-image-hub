@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download, AlertCircle, Clock, RefreshCw } from "lucide-react";
+import { Download, AlertCircle, Clock, RefreshCw, AlertTriangle } from "lucide-react";
 import { formatDate } from "@/utils/dateFormatting";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ export interface DownloadRequest {
   downloadUrl: string;
   status: 'pending' | 'ready' | 'expired';
   isHD?: boolean;
+  errorDetails?: string;
 }
 
 interface DownloadsTableProps {
@@ -36,6 +37,7 @@ interface DownloadsTableProps {
 export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) => {
   const [refreshingId, setRefreshingId] = React.useState<string | null>(null);
   const [processingDownloads, setProcessingDownloads] = useState<Set<string>>(new Set());
+  const [errorDetails, setErrorDetails] = useState<Record<string, string>>({});
   
   useEffect(() => {
     // Check for any downloads that need status updates
@@ -136,8 +138,12 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
         }
       });
       
+      // Si la première tentative échoue, essayer avec plus de précision
+      let successResult = data?.success;
+      let errorDetails = data?.details || error?.message || "Erreur inconnue";
+      
       // If not found, try with timestamp part
-      if (!data?.success && timepart) {
+      if (!successResult && timepart) {
         searchPattern = `${filePrefix}images_${timestamp}_${timepart}`;
         console.log(`Trying with more specific pattern: ${searchPattern}`);
         
@@ -149,8 +155,10 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
         });
         
         if (result.data?.success) {
-          data.success = result.data.success;
-          data.url = result.data.url;
+          successResult = true;
+          errorDetails = "";
+        } else if (result.data?.details) {
+          errorDetails = result.data.details;
         }
       }
       
@@ -158,14 +166,24 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
       
       if (error) {
         console.error('Error checking download URL:', error);
+        // Enregistrer l'erreur détaillée pour affichage
+        setErrorDetails(prev => ({...prev, [download.id]: error.message || "Erreur de communication"}));
         toast.error('Erreur de vérification', {
-          description: 'Une erreur est survenue lors de la vérification du téléchargement.'
+          description: `Une erreur est survenue: ${error.message || "Erreur de communication"}`,
+          duration: 5000
         });
         return;
       }
       
-      if (data?.success && data?.url) {
+      if (successResult) {
         console.log('URL found:', data.url);
+        // Effacer les erreurs si succès
+        setErrorDetails(prev => {
+          const newErrors = {...prev};
+          delete newErrors[download.id];
+          return newErrors;
+        });
+        
         toast.success('URL de téléchargement récupérée', {
           description: 'Vous pouvez maintenant télécharger le fichier.',
           action: {
@@ -175,14 +193,23 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
         });
         if (onRefresh) onRefresh();
       } else {
+        console.log('No matching file found. Error details:', errorDetails);
+        // Enregistrer l'erreur détaillée pour affichage
+        setErrorDetails(prev => ({...prev, [download.id]: errorDetails}));
+        
         toast.error('URL introuvable', {
-          description: 'Impossible de trouver l\'URL de téléchargement. Veuillez réessayer plus tard.'
+          description: errorDetails || 'Impossible de trouver l\'URL de téléchargement. Veuillez réessayer plus tard.',
+          duration: 5000
         });
       }
     } catch (error) {
       console.error('Error refreshing download:', error);
+      // Enregistrer l'erreur détaillée pour affichage
+      setErrorDetails(prev => ({...prev, [download.id]: error.message || "Erreur technique"}));
+      
       toast.error('Erreur de récupération', {
-        description: 'Une erreur est survenue lors de la tentative de récupération de l\'URL.'
+        description: `Une erreur est survenue: ${error.message || "Erreur inconnue"}`,
+        duration: 5000
       });
     } finally {
       setRefreshingId(null);
@@ -251,6 +278,15 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
                     <Badge variant="secondary" className="bg-gray-100 text-gray-800 hover:bg-gray-100">
                       Expiré
                     </Badge>
+                  )}
+                  
+                  {/* Affichage des erreurs détaillées si disponibles */}
+                  {errorDetails[download.id] && (
+                    <div className="flex items-center gap-1 mt-1 text-xs text-red-600">
+                      <AlertTriangle className="h-3 w-3" />
+                      {errorDetails[download.id].substring(0, 50)}
+                      {errorDetails[download.id].length > 50 ? '...' : ''}
+                    </div>
                   )}
                 </TableCell>
                 <TableCell className="text-right">
