@@ -14,7 +14,7 @@ const PROCESS_CONFIG = {
 };
 
 // Handle the cron job request
-Deno.serve(async (_req) => {
+serve(async (_req) => {
   try {
     console.log('🕒 Starting scheduled ZIP queue processing job');
     

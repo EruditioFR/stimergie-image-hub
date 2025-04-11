@@ -22,6 +22,8 @@ interface DownloadRequest {
   is_hd: boolean;
   download_url: string;
   created_at: string;
+  processed_at?: string;
+  error_details?: string;
 }
 
 // Interface pour la configuration de traitement
@@ -171,6 +173,26 @@ async function uploadZipToStorage(
 ): Promise<string> {
   try {
     console.log(`⬆️ Upload du fichier ZIP: ${fileName}`);
+    
+    // Vérifier d'abord si le bucket existe
+    const { data: buckets, error: bucketError } = await supabase.storage
+      .listBuckets();
+    
+    const zipBucket = buckets?.find(b => b.name === "ZIP Downloads");
+    
+    if (!zipBucket) {
+      console.log("❗ Bucket 'ZIP Downloads' non trouvé, tentative de création...");
+      
+      // Créer le bucket s'il n'existe pas
+      const { error: createError } = await supabase.storage
+        .createBucket("ZIP Downloads", { public: true });
+      
+      if (createError) {
+        throw new Error(`Échec de la création du bucket: ${createError.message}`);
+      }
+      console.log("✅ Bucket 'ZIP Downloads' créé avec succès");
+    }
+    
     const { error } = await supabase.storage
       .from('ZIP Downloads')
       .upload(fileName, zipData, {
@@ -180,17 +202,17 @@ async function uploadZipToStorage(
 
     if (error) throw new Error(`Échec de l'upload: ${error.message}`);
 
-    // Créer une URL signée valable 1 heure
-    const { data, error: signedUrlError } = await supabase.storage
+    // Créer une URL publique
+    const { data, error: publicUrlError } = await supabase.storage
       .from('ZIP Downloads')
-      .createSignedUrl(fileName, 3600); // 3600 secondes = 1 heure
+      .getPublicUrl(fileName);
 
-    if (signedUrlError || !data?.signedUrl) {
-      throw new Error("Échec de la génération de l'URL signée");
+    if (publicUrlError || !data?.publicUrl) {
+      throw new Error("Échec de la génération de l'URL publique");
     }
     
-    console.log(`✅ URL signée créée: ${data.signedUrl.substring(0, 50)}...`);
-    return data.signedUrl;
+    console.log(`✅ URL publique créée: ${data.publicUrl.substring(0, 50)}...`);
+    return data.publicUrl;
   } catch (error) {
     console.error(`❌ Erreur lors de l'upload: ${error.message}`);
     throw error;
@@ -210,7 +232,10 @@ async function processDownloadRequest(
     // 1. Marquer comme en cours de traitement
     await supabase
       .from('download_requests')
-      .update({ status: 'processing' })
+      .update({ 
+        status: 'processing',
+        error_details: null 
+      })
       .eq('id', downloadRequest.id);
     
     // 2. Générer le ZIP
@@ -223,7 +248,7 @@ async function processDownloadRequest(
     const { zipData, imageCount } = await createZipFile(downloadRequest, supabase);
     
     // 4. Upload le ZIP vers le stockage Supabase
-    const signedUrl = await uploadZipToStorage(zipData, zipFileName, supabase);
+    const publicUrl = await uploadZipToStorage(zipData, zipFileName, supabase);
     
     // 5. Mettre à jour la demande comme complétée
     const title = imageCount > 1 
@@ -234,7 +259,7 @@ async function processDownloadRequest(
       .from('download_requests')
       .update({
         status: 'ready',
-        download_url: signedUrl,
+        download_url: publicUrl,
         image_title: title,
         processed_at: new Date().toISOString(),
       })
@@ -381,28 +406,17 @@ serve(async (req) => {
       }
     }
     
-    // Lancer le traitement en tâche de fond si possible
-    try {
-      // @ts-ignore - EdgeRuntime est disponible dans l'environnement Deno
-      const result = await processQueue(config, supabase);
-      
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: `Traitement de la file terminé: ${result.processed} demandes traitées (${result.success} succès, ${result.failed} échecs)`,
-          data: result
-        }),
-        { headers: corsHeaders }
-      );
-    } catch (error) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: `Erreur lors du traitement: ${error.message}`
-        }),
-        { status: 500, headers: corsHeaders }
-      );
-    }
+    // Traiter la file d'attente
+    const result = await processQueue(config, supabase);
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: `Traitement de la file terminé: ${result.processed} demandes traitées (${result.success} succès, ${result.failed} échecs)`,
+        data: result
+      }),
+      { headers: corsHeaders }
+    );
   } catch (error) {
     console.error(`❌ Erreur globale: ${error.message}`);
     
