@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -37,8 +38,14 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
 
       console.log("Calling admin-create-user function with email and user data");
 
-      // Call our new edge function to create the user
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`, {
+      // Fix the URL to use the correct Supabase URL and edge function path
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://mjhbugzaqmtfnbxaqpss.supabase.co";
+      const functionUrl = `${SUPABASE_URL}/functions/v1/admin-create-user`;
+      
+      console.log("Calling edge function at URL:", functionUrl);
+
+      // Call our edge function to create the user
+      const response = await fetch(functionUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -54,24 +61,27 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
         })
       });
 
-      const result = await response.json();
-      
       if (!response.ok) {
-        console.error("Erreur lors de la création de l'utilisateur:", result.error);
+        const errorText = await response.text();
+        console.error("Error response from server:", errorText);
         
-        // More user-friendly error messages
-        if (result.error.includes("User with this email already exists")) {
-          toast.error("Un utilisateur avec cet email existe déjà");
-        } else if (result.error.includes("duplicate key")) {
-          toast.error("Un utilisateur avec cet email existe déjà");
-        } else if (result.error.includes("permission denied")) {
-          toast.error("Vous n'avez pas les permissions nécessaires pour créer un utilisateur");
-        } else {
-          toast.error(result.error || "Erreur lors de la création de l'utilisateur");
+        let errorMessage = "Erreur lors de la création de l'utilisateur";
+        try {
+          // Try to parse as JSON, but handle case where it's not JSON
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          // Not JSON, use text as is or a generic message
+          errorMessage = errorText.includes("<") ? 
+            "Erreur de serveur lors de la création de l'utilisateur" : 
+            errorText || errorMessage;
         }
         
+        toast.error(errorMessage);
         return false;
       }
+      
+      const result = await response.json();
       
       // Fetch the new user to get all details
       if (result.id) {
