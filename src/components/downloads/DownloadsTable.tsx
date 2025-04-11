@@ -35,18 +35,41 @@ interface DownloadsTableProps {
 
 export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) => {
   const [refreshingId, setRefreshingId] = React.useState<string | null>(null);
+  const [processingDownloads, setProcessingDownloads] = useState<Set<string>>(new Set());
   
   useEffect(() => {
-    const readyDownloadsWithoutUrl = downloads.filter(d => d.status === 'ready' && !d.downloadUrl);
+    // Check for any downloads that need status updates
+    const pendingIds = new Set<string>();
+    downloads.forEach(d => {
+      if (d.status === 'pending') {
+        pendingIds.add(d.id);
+      }
+    });
     
-    if (readyDownloadsWithoutUrl.length > 0) {
-      console.log('Found ready downloads with missing URLs:', readyDownloadsWithoutUrl.length);
-      // Only log this info, but don't automatically trigger a refresh
+    // Update our processing set
+    setProcessingDownloads(pendingIds);
+    
+    // If there are pending downloads, set up a timer to check them
+    if (pendingIds.size > 0) {
+      console.log('Found pending downloads:', pendingIds.size);
+      const timer = setTimeout(() => {
+        if (onRefresh) {
+          console.log('Auto-refreshing due to pending downloads');
+          onRefresh();
+        }
+      }, 10000); // Check every 10 seconds
+      
+      return () => clearTimeout(timer);
     }
-  }, [downloads]);
+  }, [downloads, onRefresh]);
 
   const handleDownload = (download: DownloadRequest) => {
     if (download.status !== 'ready') {
+      if (download.status === 'pending') {
+        toast.info('Téléchargement en cours de préparation', {
+          description: 'Veuillez patienter quelques instants.'
+        });
+      }
       return;
     }
     
@@ -65,6 +88,7 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
     try {
       toast.loading('Préparation du téléchargement...');
       
+      // Open in new tab
       window.open(download.downloadUrl, '_blank');
       
       toast.dismiss();
@@ -96,8 +120,11 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
       
       // Extract filename pattern based on date
       const timestamp = download.requestDate.split('T')[0].replace(/-/g, '');
+      const timepart = new Date(download.requestDate).getTime().toString().slice(-6);
       const filePrefix = download.isHD ? 'hd-' : '';
-      const searchPattern = `${filePrefix}images_${timestamp}`;
+      
+      // Try with and without timestamp part
+      let searchPattern = `${filePrefix}images_${timestamp}`;
       
       console.log(`Searching for file starting with pattern: ${searchPattern}`);
       
@@ -108,6 +135,24 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
           searchPattern: searchPattern
         }
       });
+      
+      // If not found, try with timestamp part
+      if (!data?.success && timepart) {
+        searchPattern = `${filePrefix}images_${timestamp}_${timepart}`;
+        console.log(`Trying with more specific pattern: ${searchPattern}`);
+        
+        const result = await supabase.functions.invoke('check-download-url', {
+          body: {
+            downloadId: download.id, 
+            searchPattern: searchPattern
+          }
+        });
+        
+        if (result.data?.success) {
+          data.success = result.data.success;
+          data.url = result.data.url;
+        }
+      }
       
       toast.dismiss('refresh-download');
       
@@ -209,7 +254,17 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  {download.status === 'ready' && !download.downloadUrl ? (
+                  {download.status === 'pending' ? (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="py-4"
+                      disabled={true}
+                    >
+                      <LoadingSpinner className="h-4 w-4 mr-2" />
+                      En cours...
+                    </Button>
+                  ) : download.status === 'ready' && !download.downloadUrl ? (
                     <Button 
                       variant="outline" 
                       size="sm" 

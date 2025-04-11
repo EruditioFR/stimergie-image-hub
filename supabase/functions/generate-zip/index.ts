@@ -72,7 +72,7 @@ async function createZipFile(images: RequestBody["images"], isHD: boolean): Prom
   }
 
   // Process images in batches to avoid memory issues
-  const BATCH_SIZE = 10;
+  const BATCH_SIZE = 5; // Smaller batch size to avoid memory issues
   let processedCount = 0;
   let failedCount = 0;
 
@@ -113,7 +113,7 @@ async function createZipFile(images: RequestBody["images"], isHD: boolean): Prom
     type: "uint8array",
     compression: "DEFLATE",
     compressionOptions: {
-      level: 5 // Balanced compression level
+      level: 3 // Lower compression level to speed up processing
     }
   });
   
@@ -121,15 +121,18 @@ async function createZipFile(images: RequestBody["images"], isHD: boolean): Prom
   return zipData;
 }
 
-// Upload ZIP to FTP server instead of Supabase Storage
+// Upload ZIP to FTP server
 async function uploadZipToFTP(zipData: Uint8Array, fileName: string, supabaseUrl: string, serviceRoleKey: string): Promise<string> {
   console.log(`[GENERATE-ZIP] Uploading ZIP file ${fileName} to FTP server (${zipData.length} bytes)`);
   
   try {
-    // IMPORTANT: Since we're sending binary data through JSON, we need to convert to an array of numbers
+    // Since we're sending binary data through JSON, we need to convert to an array of numbers
     console.log(`[GENERATE-ZIP] Converting ZIP to array for JSON serialization...`);
     const zipDataArray = Array.from(zipData);
     console.log(`[GENERATE-ZIP] Converted ZIP to array. Length: ${zipDataArray.length}`);
+    
+    // Log the first few elements of the array to verify data format
+    console.log(`[GENERATE-ZIP] First 10 byte values:`, zipDataArray.slice(0, 10));
     
     // Call the upload-to-ftp function
     console.log(`[GENERATE-ZIP] Calling upload-to-ftp function with file: ${fileName}`);
@@ -145,6 +148,10 @@ async function uploadZipToFTP(zipData: Uint8Array, fileName: string, supabaseUrl
       })
     });
 
+    // Log detailed response information
+    console.log(`[GENERATE-ZIP] FTP upload response status:`, response.status, response.statusText);
+    
+    // Check if the call was successful
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[GENERATE-ZIP] Error from FTP upload function: ${response.status} - ${errorText}`);
@@ -152,6 +159,9 @@ async function uploadZipToFTP(zipData: Uint8Array, fileName: string, supabaseUrl
     }
 
     const result = await response.json();
+    
+    // Log the full response from the FTP function
+    console.log(`[GENERATE-ZIP] FTP upload function response:`, JSON.stringify(result));
     
     if (!result.url) {
       console.error('[GENERATE-ZIP] No URL returned from FTP upload function');
@@ -321,7 +331,7 @@ serve(async (req) => {
     // Create timestamp for unique filename - use date without time for better file naming
     const date = new Date();
     const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
-    const zipFileName = `${isHD ? 'hd-' : ''}images_${dateStr}.zip`;
+    const zipFileName = `${isHD ? 'hd-' : ''}images_${dateStr}_${Date.now().toString().slice(-6)}.zip`;
     
     // We'll process the ZIP creation and upload asynchronously
     // and return a "processing" status to the client immediately
@@ -343,14 +353,14 @@ serve(async (req) => {
         console.log(`[GENERATE-ZIP] Created pending download record: ${pendingRecord}`);
         
         try {
-          // Create the ZIP file
+          // Create the ZIP file with fixed batch size to avoid memory issues
           const zipData = await createZipFile(images, isHD);
-          console.log(`[GENERATE-ZIP] ZIP file created, size: ${zipData.length} bytes`);
+          console.log(`[GENERATE-ZIP] ZIP file created successfully, size: ${zipData.length} bytes`);
           
           // Upload to FTP server and get the download URL
           const downloadUrl = await uploadZipToFTP(zipData, zipFileName, supabaseUrl, supabaseServiceKey);
           
-          console.log(`[GENERATE-ZIP] ZIP uploaded to FTP, download URL: ${downloadUrl}`);
+          console.log(`[GENERATE-ZIP] ZIP uploaded to FTP successfully, download URL: ${downloadUrl}`);
           
           // Update the download record with the ready status and URL
           await updateDownloadRecord(

@@ -28,6 +28,21 @@ export function MasonryToolbarContent({
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Helper function to decode query parameters from URLs if needed
+  const decodeUrlIfNeeded = (url: string): string => {
+    try {
+      // If URL appears to be encoded, decode it
+      if (url.includes('%')) {
+        // Only decode if it looks like a valid encoded URL
+        return decodeURIComponent(url);
+      }
+      return url;
+    } catch (e) {
+      console.error('Error decoding URL:', e);
+      return url; // Return original URL if decoding fails
+    }
+  };
+
   const handleDownload = async () => {
     if (selectedImages.length === 0) {
       toast.error("Veuillez sélectionner au moins une image à télécharger");
@@ -44,6 +59,7 @@ export function MasonryToolbarContent({
     try {
       if (!user) {
         toast.error("Vous devez être connecté pour télécharger des images");
+        setIsDownloading(false);
         return;
       }
       
@@ -51,7 +67,7 @@ export function MasonryToolbarContent({
       
       const imagesForDownload = selectedImagesData.map(img => {
         return {
-          url: img.url,
+          url: decodeUrlIfNeeded(img.url),
           title: img.title || `image_${img.id}`,
           id: img.id
         };
@@ -63,14 +79,22 @@ export function MasonryToolbarContent({
         isHD: false
       });
       
+      // Show immediate toast
+      toast.loading("Préparation du ZIP en cours", { 
+        id: "zip-preparation", 
+        duration: 10000
+      });
+      
       // Call the Edge Function to generate the ZIP file
       const { data, error } = await supabase.functions.invoke('generate-zip', {
         body: {
           images: imagesForDownload,
-          userId: user?.id,
+          userId: user.id,
           isHD: false
         }
       });
+      
+      toast.dismiss("zip-preparation");
       
       if (error) {
         console.error("Error calling generate-zip function:", error);
@@ -118,6 +142,7 @@ export function MasonryToolbarContent({
     try {
       if (!user) {
         toast.error("Vous devez être connecté pour télécharger des images");
+        setIsDownloadingHD(false);
         return;
       }
       
@@ -125,7 +150,7 @@ export function MasonryToolbarContent({
       
       const imagesForDownload = selectedImagesData.map(img => {
         return {
-          url: img.url,
+          url: decodeUrlIfNeeded(img.url),
           title: img.title || `image_${img.id}`,
           id: img.id
         };
@@ -137,14 +162,22 @@ export function MasonryToolbarContent({
         isHD: true
       });
       
+      // Show immediate toast
+      toast.loading("Préparation du ZIP HD en cours", { 
+        id: "zip-hd-preparation", 
+        duration: 10000
+      });
+      
       // Call the Edge Function to generate the HD ZIP file
       const { data, error } = await supabase.functions.invoke('generate-zip', {
         body: {
           images: imagesForDownload,
-          userId: user?.id,
+          userId: user.id,
           isHD: true
         }
       });
+      
+      toast.dismiss("zip-hd-preparation");
       
       if (error) {
         console.error("Error calling generate-zip function:", error);

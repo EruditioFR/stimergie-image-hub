@@ -27,7 +27,7 @@ async function checkFileExists(pattern: string): Promise<string | null> {
     
     // Construct specific URL patterns to check
     const urlsToCheck = [
-      `${baseUrl}/${pattern}.zip`,                    // Exact match
+      `${baseUrl}/${pattern}.zip`,                    // Exact match with .zip
       `${baseUrl}/${pattern}`                         // Without extension
     ];
     
@@ -44,6 +44,9 @@ async function checkFileExists(pattern: string): Promise<string | null> {
           }
         });
         
+        // Log detailed response status
+        console.log(`[CHECK-URL] Response for ${url}: status=${response.status}, ok=${response.ok}`);
+        
         if (response.ok) {
           console.log(`[CHECK-URL] File found at: ${url}`);
           return url;
@@ -55,14 +58,23 @@ async function checkFileExists(pattern: string): Promise<string | null> {
       }
     }
     
-    // Try listing directory to find files with a similar pattern
+    // Try direct GET request for verification
+    console.log(`[CHECK-URL] Attempting direct GET request for verification`);
+    const directUrl = `${baseUrl}/${pattern}.zip`;
     try {
-      console.log(`[CHECK-URL] Direct URL check failed, trying to find files with similar pattern`);
+      const response = await fetch(directUrl, { 
+        method: 'GET', 
+        headers: { 'Range': 'bytes=0-1024' } // Just fetch the beginning of the file
+      });
       
-      // We could implement additional checks here if needed
-      
-    } catch (error) {
-      console.log(`[CHECK-URL] Error during alternative check:`, error);
+      if (response.ok || response.status === 206) {
+        console.log(`[CHECK-URL] File confirmed via GET at: ${directUrl}`);
+        return directUrl;
+      } else {
+        console.log(`[CHECK-URL] File not found via GET at ${directUrl}, status: ${response.status}`);
+      }
+    } catch (err) {
+      console.log(`[CHECK-URL] Error in direct verification:`, err.message);
     }
     
     console.log(`[CHECK-URL] No matching file found for pattern: ${pattern}`);

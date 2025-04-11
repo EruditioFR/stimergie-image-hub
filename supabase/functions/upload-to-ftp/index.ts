@@ -1,7 +1,7 @@
 
 // Upload to FTP Edge Function
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Client } from "https://deno.land/x/ftp/mod.ts";
+import { FTPClient } from "https://deno.land/x/ftp@v2.2.0/mod.ts";
 
 // CORS Headers for browser requests
 const corsHeaders = {
@@ -37,7 +37,7 @@ async function uploadFileToFTP(fileName: string, fileData: Uint8Array): Promise<
   console.log(`[UPLOAD-FTP] Upload path: ${UPLOAD_PATH}`);
   console.log(`[UPLOAD-FTP] File name: ${fileName}, Size: ${fileData.length} bytes`);
   
-  const ftp = new Client();
+  const ftp = new FTPClient();
   let publicUrl = "";
   
   try {
@@ -48,6 +48,7 @@ async function uploadFileToFTP(fileName: string, fileData: Uint8Array): Promise<
       user: FTP_CONFIG.user,
       password: FTP_CONFIG.password,
       secure: FTP_CONFIG.secure,
+      passvTimeout: 30000, // Extended timeout
     });
     console.log("[UPLOAD-FTP] Connected to FTP server successfully");
     
@@ -91,7 +92,7 @@ async function uploadFileToFTP(fileName: string, fileData: Uint8Array): Promise<
     
     // List files in the directory before upload (for debugging)
     try {
-      const filesBeforeUpload = await ftp.list();
+      const filesBeforeUpload = await ftp.list(".");
       console.log("[UPLOAD-FTP] Files in directory before upload:", filesBeforeUpload.map(f => f.name));
     } catch (listErr) {
       console.error("[UPLOAD-FTP] Error listing directory before upload:", listErr);
@@ -100,14 +101,14 @@ async function uploadFileToFTP(fileName: string, fileData: Uint8Array): Promise<
     // Upload the file
     console.log(`[UPLOAD-FTP] Uploading file: ${fileName} (${fileData.length} bytes)`);
     try {
-      const fileHandle = await Deno.open(tempFilePath);
-      await ftp.upload(fileHandle, fileName);
-      fileHandle.close();
+      const file = await Deno.open(tempFilePath, { read: true });
+      await ftp.uploadFile(file, fileName);
+      file.close();
       console.log(`[UPLOAD-FTP] File uploaded successfully: ${fileName}`);
       
       // Verify file exists after upload
       try {
-        const filesAfterUpload = await ftp.list();
+        const filesAfterUpload = await ftp.list(".");
         const uploadedFile = filesAfterUpload.find(f => f.name === fileName);
         if (uploadedFile) {
           console.log(`[UPLOAD-FTP] Verified file exists after upload: ${fileName} (${uploadedFile.size} bytes)`);
