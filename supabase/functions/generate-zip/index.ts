@@ -121,79 +121,41 @@ async function createZipFile(images: RequestBody["images"], isHD: boolean): Prom
   return zipData;
 }
 
-// Upload ZIP to Supabase Storage
-async function uploadZipToStorage(zipData: Uint8Array, fileName: string, supabase: any): Promise<string> {
-  console.log(`Uploading ZIP file ${fileName} (${zipData.length} bytes)`);
+// Upload ZIP to FTP server instead of Supabase Storage
+async function uploadZipToFTP(zipData: Uint8Array, fileName: string, supabaseUrl: string, serviceRoleKey: string): Promise<string> {
+  console.log(`Uploading ZIP file ${fileName} to FTP server (${zipData.length} bytes)`);
   
   try {
-    console.log(`Storage bucket target: zip-downloads/public/${fileName}`);
+    // Call the upload-to-ftp function
+    const response = await fetch(`${supabaseUrl}/functions/v1/upload-to-ftp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${serviceRoleKey}`
+      },
+      body: JSON.stringify({
+        fileName,
+        fileData: Array.from(zipData)
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error from FTP upload function: ${response.status} - ${errorText}`);
+      throw new Error(`Failed to upload ZIP to FTP: ${response.status}`);
+    }
+
+    const result = await response.json();
     
-    // Make sure the bucket exists before attempting upload
-    try {
-      const { data: bucketData, error: bucketError } = await supabase
-        .storage
-        .getBucket('zip-downloads');
-      
-      if (bucketError) {
-        console.error('Error checking bucket:', bucketError);
-        console.log('Will try to create the bucket zip-downloads');
-        
-        const { data: createData, error: createError } = await supabase
-          .storage
-          .createBucket('zip-downloads', {
-            public: false,
-            fileSizeLimit: 52428800, // 50MB
-          });
-        
-        if (createError) {
-          console.error('Error creating bucket:', createError);
-        } else {
-          console.log('Bucket created successfully:', createData);
-        }
-      } else {
-        console.log('Bucket exists:', bucketData);
-      }
-    } catch (bucketCheckError) {
-      console.error('Exception checking bucket:', bucketCheckError);
+    if (!result.url) {
+      console.error('No URL returned from FTP upload function');
+      throw new Error('Failed to get download URL from FTP server');
     }
     
-    // Upload the file
-    const { data, error } = await supabase
-      .storage
-      .from('zip-downloads')
-      .upload(`public/${fileName}`, zipData, {
-        contentType: 'application/zip',
-        upsert: true 
-      });
-    
-    if (error) {
-      console.error('Error uploading ZIP:', error);
-      throw new Error(`Failed to upload ZIP: ${error.message || 'Unknown error'}`);
-    }
-    
-    console.log('ZIP upload successful, generating signed URL');
-    console.log('Upload data:', data);
-    
-    // Create a signed URL that expires in 7 days (604800 seconds)
-    const { data: urlData, error: urlError } = await supabase
-      .storage
-      .from('zip-downloads')
-      .createSignedUrl(`public/${fileName}`, 604800);
-    
-    if (urlError) {
-      console.error('Error creating signed URL:', urlError);
-      throw new Error(`Failed to create download URL: ${urlError.message || 'Unknown error'}`);
-    }
-    
-    if (!urlData || !urlData.signedUrl) {
-      console.error('No signed URL returned from storage');
-      throw new Error('Failed to get download URL: No URL was returned');
-    }
-    
-    console.log(`Signed URL created successfully: ${urlData.signedUrl.substring(0, 50)}...`);
-    return urlData.signedUrl;
+    console.log(`File uploaded to FTP successfully. URL: ${result.url}`);
+    return result.url;
   } catch (error) {
-    console.error('Error in uploadZipToStorage:', error);
+    console.error('Error in uploadZipToFTP:', error);
     throw error;
   }
 }
@@ -373,10 +335,10 @@ serve(async (req) => {
           // Create the ZIP file
           const zipData = await createZipFile(images, isHD);
           
-          // Upload to storage and get the download URL
-          const downloadUrl = await uploadZipToStorage(zipData, zipFileName, supabase);
+          // Upload to FTP server and get the download URL
+          const downloadUrl = await uploadZipToFTP(zipData, zipFileName, supabaseUrl, supabaseServiceKey);
           
-          console.log(`ZIP uploaded, download URL: ${downloadUrl.substring(0, 50)}...`);
+          console.log(`ZIP uploaded to FTP, download URL: ${downloadUrl}`);
           
           // Update the download record with the ready status and URL
           await updateDownloadRecord(

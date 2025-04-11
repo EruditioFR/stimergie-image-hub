@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import {
   Table,
@@ -95,71 +94,44 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
       setRefreshingId(download.id);
       toast.loading(`Tentative de récupération du téléchargement...`, { id: 'refresh-download' });
       
+      // Extract filename pattern based on date
       const timestamp = download.requestDate.split('T')[0].replace(/-/g, '');
-      const possiblePaths = [
-        `public/${download.isHD ? 'hd-' : ''}images_${timestamp}*.zip`,
-        `public/${download.isHD ? 'hd-' : ''}images_*.zip`
-      ];
+      const filePrefix = download.isHD ? 'hd-' : '';
+      const searchPattern = `${filePrefix}images_${timestamp}`;
       
-      let foundUrl = null;
+      // Direct URL check using the FTP host and timestamp
+      const possibleFtpUrl = `http://collabspace.veni6445.odns.fr/lovable-uploads/${filePrefix}images_`;
       
-      for (const searchPattern of possiblePaths) {
-        const { data: files, error } = await supabase
-          .storage
-          .from('zip-downloads')
-          .list('public', { 
-            limit: 100,
-            search: searchPattern.replace('*', '')
-          });
-        
-        if (error) {
-          console.error('Error searching for file:', error);
-          continue;
+      console.log(`Searching for file starting with: ${possibleFtpUrl}${timestamp}`);
+      
+      // Call the backend to check and update the URL if it exists
+      const { data, error } = await supabase.functions.invoke('check-download-url', {
+        body: {
+          downloadId: download.id, 
+          searchPattern: searchPattern
         }
-        
-        if (files && files.length > 0) {
-          const relevantFiles = files.filter(file => 
-            file.created_at && new Date(file.created_at).toISOString().startsWith(download.requestDate.substring(0, 10))
-          );
-          
-          if (relevantFiles.length > 0) {
-            const file = relevantFiles[0];
-            const { data: urlData, error: urlError } = await supabase
-              .storage
-              .from('zip-downloads')
-              .createSignedUrl(`public/${file.name}`, 604800);
-            
-            if (!urlError && urlData?.signedUrl) {
-              foundUrl = urlData.signedUrl;
-              
-              const { error: updateError } = await supabase
-                .from('download_requests')
-                .update({ download_url: foundUrl })
-                .eq('id', download.id);
-                
-              if (updateError) {
-                console.error('Error updating download record:', updateError);
-              } else {
-                console.log('Download record updated with URL');
-                if (onRefresh) onRefresh();
-              }
-              
-              break;
-            }
-          }
-        }
-      }
+      });
       
       toast.dismiss('refresh-download');
       
-      if (foundUrl) {
+      if (error) {
+        console.error('Error checking download URL:', error);
+        toast.error('Erreur de vérification', {
+          description: 'Une erreur est survenue lors de la vérification du téléchargement.'
+        });
+        return;
+      }
+      
+      if (data?.success && data?.url) {
+        console.log('URL found:', data.url);
         toast.success('URL de téléchargement récupérée', {
           description: 'Vous pouvez maintenant télécharger le fichier.',
           action: {
             label: 'Télécharger',
-            onClick: () => window.open(foundUrl, '_blank')
+            onClick: () => window.open(data.url, '_blank')
           }
         });
+        if (onRefresh) onRefresh();
       } else {
         toast.error('URL introuvable', {
           description: 'Impossible de trouver l\'URL de téléchargement. Veuillez réessayer plus tard.'
