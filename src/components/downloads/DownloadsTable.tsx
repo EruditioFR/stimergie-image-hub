@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -41,7 +42,6 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
     if (readyDownloadsWithoutUrl.length > 0) {
       console.log('Found ready downloads with missing URLs:', readyDownloadsWithoutUrl.length);
       // Only log this info, but don't automatically trigger a refresh
-      // Let the user click the "Récupérer" button instead to avoid refresh loops
     }
   }, [downloads]);
 
@@ -99,10 +99,7 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
       const filePrefix = download.isHD ? 'hd-' : '';
       const searchPattern = `${filePrefix}images_${timestamp}`;
       
-      // Direct URL check using the FTP host and timestamp
-      const possibleFtpUrl = `http://collabspace.veni6445.odns.fr/lovable-uploads/${filePrefix}images_`;
-      
-      console.log(`Searching for file starting with: ${possibleFtpUrl}${timestamp}`);
+      console.log(`Searching for file starting with pattern: ${searchPattern}`);
       
       // Call the backend to check and update the URL if it exists
       const { data, error } = await supabase.functions.invoke('check-download-url', {

@@ -26,7 +26,7 @@ interface RequestBody {
 // Fetch image with retries
 async function fetchImageWithRetries(url: string, retries = 3, delay = 300): Promise<ArrayBuffer> {
   try {
-    console.log(`Fetching image from URL: ${url.substring(0, 50)}...`);
+    console.log(`[GENERATE-ZIP] Fetching image from URL: ${url.substring(0, 50)}...`);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -36,10 +36,10 @@ async function fetchImageWithRetries(url: string, retries = 3, delay = 300): Pro
     });
 
     if (!response.ok) {
-      console.error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+      console.error(`[GENERATE-ZIP] Failed to fetch image: ${response.status} ${response.statusText}`);
       
       if (retries > 0 && response.status >= 500) {
-        console.log(`Retrying fetch, retries left: ${retries}`);
+        console.log(`[GENERATE-ZIP] Retrying fetch, retries left: ${retries}`);
         await new Promise(resolve => setTimeout(resolve, delay));
         return fetchImageWithRetries(url, retries - 1, delay * 2);
       }
@@ -47,13 +47,13 @@ async function fetchImageWithRetries(url: string, retries = 3, delay = 300): Pro
     }
 
     const buffer = await response.arrayBuffer();
-    console.log(`Image fetched successfully, size: ${buffer.byteLength} bytes`);
+    console.log(`[GENERATE-ZIP] Image fetched successfully, size: ${buffer.byteLength} bytes`);
     return buffer;
   } catch (error) {
-    console.error(`Network error fetching ${url.substring(0, 30)}...: ${error.message}`);
+    console.error(`[GENERATE-ZIP] Network error fetching ${url.substring(0, 30)}...: ${error.message}`);
     
     if (retries > 0) {
-      console.log(`Network error, retrying. Retries left: ${retries}`);
+      console.log(`[GENERATE-ZIP] Network error, retrying. Retries left: ${retries}`);
       await new Promise(resolve => setTimeout(resolve, delay));
       return fetchImageWithRetries(url, retries - 1, delay * 2);
     }
@@ -63,7 +63,7 @@ async function fetchImageWithRetries(url: string, retries = 3, delay = 300): Pro
 
 // Process images and create ZIP file
 async function createZipFile(images: RequestBody["images"], isHD: boolean): Promise<Uint8Array> {
-  console.log(`Creating ZIP with ${images.length} images`);
+  console.log(`[GENERATE-ZIP] Creating ZIP with ${images.length} images`);
   const zip = new JSZip();
   const imgFolder = zip.folder("images");
   
@@ -78,11 +78,11 @@ async function createZipFile(images: RequestBody["images"], isHD: boolean): Prom
 
   for (let i = 0; i < images.length; i += BATCH_SIZE) {
     const batch = images.slice(i, i + BATCH_SIZE);
-    console.log(`Processing batch ${i/BATCH_SIZE + 1} of ${Math.ceil(images.length/BATCH_SIZE)}`);
+    console.log(`[GENERATE-ZIP] Processing batch ${i/BATCH_SIZE + 1} of ${Math.ceil(images.length/BATCH_SIZE)}`);
     
     const batchPromises = batch.map(async (image) => {
       try {
-        console.log(`Processing image ${image.id}: ${image.title}`);
+        console.log(`[GENERATE-ZIP] Processing image ${image.id}: ${image.title}`);
         const imageData = await fetchImageWithRetries(image.url);
         
         // Create a safe filename
@@ -95,7 +95,7 @@ async function createZipFile(images: RequestBody["images"], isHD: boolean): Prom
         processedCount++;
         return { success: true, id: image.id };
       } catch (error) {
-        console.error(`Failed to process image ${image.id}: ${error.message}`);
+        console.error(`[GENERATE-ZIP] Failed to process image ${image.id}: ${error.message}`);
         failedCount++;
         return { success: false, id: image.id };
       }
@@ -105,10 +105,10 @@ async function createZipFile(images: RequestBody["images"], isHD: boolean): Prom
     await Promise.all(batchPromises);
   }
 
-  console.log(`ZIP creation: ${processedCount} images processed, ${failedCount} failed`);
+  console.log(`[GENERATE-ZIP] ZIP creation: ${processedCount} images processed, ${failedCount} failed`);
 
   // Generate ZIP with moderate compression
-  console.log('Generating ZIP file...');
+  console.log('[GENERATE-ZIP] Generating ZIP file...');
   const zipData = await zip.generateAsync({ 
     type: "uint8array",
     compression: "DEFLATE",
@@ -117,20 +117,22 @@ async function createZipFile(images: RequestBody["images"], isHD: boolean): Prom
     }
   });
   
-  console.log(`ZIP generated, size: ${zipData.length} bytes`);
+  console.log(`[GENERATE-ZIP] ZIP generated, size: ${zipData.length} bytes`);
   return zipData;
 }
 
 // Upload ZIP to FTP server instead of Supabase Storage
 async function uploadZipToFTP(zipData: Uint8Array, fileName: string, supabaseUrl: string, serviceRoleKey: string): Promise<string> {
-  console.log(`Uploading ZIP file ${fileName} to FTP server (${zipData.length} bytes)`);
+  console.log(`[GENERATE-ZIP] Uploading ZIP file ${fileName} to FTP server (${zipData.length} bytes)`);
   
   try {
     // IMPORTANT: Since we're sending binary data through JSON, we need to convert to an array of numbers
-    const zipDataArray = Array.from(zipData); 
-    console.log(`Converted ZIP to array for JSON serialization. Length: ${zipDataArray.length}`);
+    console.log(`[GENERATE-ZIP] Converting ZIP to array for JSON serialization...`);
+    const zipDataArray = Array.from(zipData);
+    console.log(`[GENERATE-ZIP] Converted ZIP to array. Length: ${zipDataArray.length}`);
     
     // Call the upload-to-ftp function
+    console.log(`[GENERATE-ZIP] Calling upload-to-ftp function with file: ${fileName}`);
     const response = await fetch(`${supabaseUrl}/functions/v1/upload-to-ftp`, {
       method: 'POST',
       headers: {
@@ -145,22 +147,22 @@ async function uploadZipToFTP(zipData: Uint8Array, fileName: string, supabaseUrl
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error from FTP upload function: ${response.status} - ${errorText}`);
+      console.error(`[GENERATE-ZIP] Error from FTP upload function: ${response.status} - ${errorText}`);
       throw new Error(`Failed to upload ZIP to FTP: ${response.status}`);
     }
 
     const result = await response.json();
     
     if (!result.url) {
-      console.error('No URL returned from FTP upload function');
+      console.error('[GENERATE-ZIP] No URL returned from FTP upload function');
       throw new Error('Failed to get download URL from FTP server');
     }
     
-    console.log(`File uploaded to FTP successfully. URL: ${result.url}`);
+    console.log(`[GENERATE-ZIP] File uploaded to FTP successfully. URL: ${result.url}`);
     return result.url;
   } catch (error) {
-    console.error('Error in uploadZipToFTP:', error);
-    console.error('Stack trace:', error.stack);
+    console.error('[GENERATE-ZIP] Error in uploadZipToFTP:', error);
+    console.error('[GENERATE-ZIP] Stack trace:', error.stack);
     throw error;
   }
 }
@@ -176,8 +178,8 @@ async function createDownloadRecord(
   isHD: boolean,
   status: string = 'pending'
 ): Promise<string> {
-  console.log(`Creating download record for user ${userId}`);
-  console.log('Record data:', {
+  console.log(`[GENERATE-ZIP] Creating download record for user ${userId}`);
+  console.log('[GENERATE-ZIP] Record data:', {
     user_id: userId,
     image_id: imageId,
     image_title: imageTitle,
@@ -203,16 +205,16 @@ async function createDownloadRecord(
       .single();
     
     if (error) {
-      console.error('Error creating download record:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
+      console.error('[GENERATE-ZIP] Error creating download record:', error);
+      console.error('[GENERATE-ZIP] Error details:', JSON.stringify(error, null, 2));
       throw new Error(`Failed to create download record: ${error.message}`);
     }
     
-    console.log(`Download record created with ID: ${data.id}`);
+    console.log(`[GENERATE-ZIP] Download record created with ID: ${data.id}`);
     return data.id;
   } catch (error) {
-    console.error('Error in createDownloadRecord:', error);
-    console.error('Stack trace:', error.stack);
+    console.error('[GENERATE-ZIP] Error in createDownloadRecord:', error);
+    console.error('[GENERATE-ZIP] Stack trace:', error.stack);
     throw error;
   }
 }
@@ -225,7 +227,7 @@ async function updateDownloadRecord(
   status: string = 'ready',
   imageTitle?: string
 ): Promise<void> {
-  console.log(`Updating download record ${recordId}`, {
+  console.log(`[GENERATE-ZIP] Updating download record ${recordId}`, {
     download_url: downloadUrl.substring(0, 50) + "...",
     status: status,
     ...(imageTitle && { image_title: imageTitle })
@@ -247,32 +249,32 @@ async function updateDownloadRecord(
       .eq('id', recordId);
     
     if (error) {
-      console.error('Error updating download record:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
+      console.error('[GENERATE-ZIP] Error updating download record:', error);
+      console.error('[GENERATE-ZIP] Error details:', JSON.stringify(error, null, 2));
       throw new Error(`Failed to update download record: ${error.message}`);
     }
     
-    console.log(`Download record ${recordId} updated successfully to ${status}`);
+    console.log(`[GENERATE-ZIP] Download record ${recordId} updated successfully to ${status}`);
   } catch (error) {
-    console.error('Error in updateDownloadRecord:', error);
-    console.error('Stack trace:', error.stack);
+    console.error('[GENERATE-ZIP] Error in updateDownloadRecord:', error);
+    console.error('[GENERATE-ZIP] Stack trace:', error.stack);
     throw error;
   }
 }
 
 serve(async (req) => {
-  console.log('Generate ZIP function called');
+  console.log('[GENERATE-ZIP] Generate ZIP function called');
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS request (CORS preflight)');
+    console.log('[GENERATE-ZIP] Handling OPTIONS request (CORS preflight)');
     return new Response(null, { headers: corsHeaders });
   }
   
   try {
     // Only accept POST requests
     if (req.method !== 'POST') {
-      console.log(`Method not allowed: ${req.method}`);
+      console.log(`[GENERATE-ZIP] Method not allowed: ${req.method}`);
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
         status: 405,
         headers: corsHeaders 
@@ -283,13 +285,13 @@ serve(async (req) => {
     const requestData: RequestBody = await req.json();
     const { images, userId, isHD } = requestData;
     
-    console.log(`Request received for user ${userId}:`, {
+    console.log(`[GENERATE-ZIP] Request received for user ${userId}:`, {
       imageCount: images.length,
       isHD: isHD
     });
     
     if (!userId) {
-      console.log('Missing userId in request');
+      console.log('[GENERATE-ZIP] Missing userId in request');
       return new Response(JSON.stringify({ error: 'Missing userId' }), { 
         status: 400,
         headers: corsHeaders
@@ -297,7 +299,7 @@ serve(async (req) => {
     }
     
     if (!images || images.length === 0) {
-      console.log('No images provided in request');
+      console.log('[GENERATE-ZIP] No images provided in request');
       return new Response(JSON.stringify({ error: 'No images provided' }), { 
         status: 400,
         headers: corsHeaders
@@ -309,11 +311,11 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Missing Supabase credentials');
+      console.error('[GENERATE-ZIP] Missing Supabase credentials');
       throw new Error('Missing Supabase credentials');
     }
     
-    console.log(`Creating Supabase client with URL: ${supabaseUrl.substring(0, 30)}...`);
+    console.log(`[GENERATE-ZIP] Creating Supabase client with URL: ${supabaseUrl.substring(0, 30)}...`);
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     // Create timestamp for unique filename - use date without time for better file naming
@@ -325,7 +327,7 @@ serve(async (req) => {
     // and return a "processing" status to the client immediately
     const processPromise = (async () => {
       try {
-        console.log("Starting ZIP processing in background");
+        console.log("[GENERATE-ZIP] Starting ZIP processing in background");
         
         // First, create a pending download record
         const pendingRecord = await createDownloadRecord(
@@ -338,16 +340,17 @@ serve(async (req) => {
           isHD
         );
         
-        console.log(`Created pending download record: ${pendingRecord}`);
+        console.log(`[GENERATE-ZIP] Created pending download record: ${pendingRecord}`);
         
         try {
           // Create the ZIP file
           const zipData = await createZipFile(images, isHD);
+          console.log(`[GENERATE-ZIP] ZIP file created, size: ${zipData.length} bytes`);
           
           // Upload to FTP server and get the download URL
           const downloadUrl = await uploadZipToFTP(zipData, zipFileName, supabaseUrl, supabaseServiceKey);
           
-          console.log(`ZIP uploaded to FTP, download URL: ${downloadUrl}`);
+          console.log(`[GENERATE-ZIP] ZIP uploaded to FTP, download URL: ${downloadUrl}`);
           
           // Update the download record with the ready status and URL
           await updateDownloadRecord(
@@ -358,10 +361,10 @@ serve(async (req) => {
             `${images.length} images (${isHD ? 'HD' : 'Web'})`
           );
           
-          console.log(`Download record ${pendingRecord} updated to ready status with URL`);
+          console.log(`[GENERATE-ZIP] Download record ${pendingRecord} updated to ready status with URL`);
         } catch (processingError) {
-          console.error('Error in ZIP processing:', processingError);
-          console.error('Stack trace:', processingError.stack);
+          console.error('[GENERATE-ZIP] Error in ZIP processing:', processingError);
+          console.error('[GENERATE-ZIP] Stack trace:', processingError.stack);
           
           // Update the download record with failed status
           await updateDownloadRecord(
@@ -372,20 +375,20 @@ serve(async (req) => {
             `Failed: ${images.length} images (${isHD ? 'HD' : 'Web'})`
           );
           
-          console.log(`Download record ${pendingRecord} updated to error status`);
+          console.log(`[GENERATE-ZIP] Download record ${pendingRecord} updated to error status`);
         }
       } catch (outerError) {
-        console.error('Fatal error in ZIP processing:', outerError);
-        console.error('Stack trace:', outerError.stack);
+        console.error('[GENERATE-ZIP] Fatal error in ZIP processing:', outerError);
+        console.error('[GENERATE-ZIP] Stack trace:', outerError.stack);
       }
     })();
     
     // Use waitUntil to continue processing after response is sent
     try {
-      // @ts-ignore - EdgeRuntime.waitUntil is available in Deno Deploy
+      // @ts-ignore - Deno.core.opAsync is available in Deno Deploy
       Deno.core.opAsync("op_wait_until", processPromise);
     } catch (waitError) {
-      console.error('Warning: waitUntil not available:', waitError);
+      console.error('[GENERATE-ZIP] Warning: waitUntil not available:', waitError);
       // If waitUntil is not available, we'll just let the promise run
       // This could potentially be cut off if the runtime terminates too early
     }
@@ -400,8 +403,8 @@ serve(async (req) => {
     );
     
   } catch (error) {
-    console.error('Error processing request:', error);
-    console.error('Stack trace:', error.stack);
+    console.error('[GENERATE-ZIP] Error processing request:', error);
+    console.error('[GENERATE-ZIP] Stack trace:', error.stack);
     return new Response(
       JSON.stringify({ error: error.message || 'Unknown error' }),
       { status: 500, headers: corsHeaders }

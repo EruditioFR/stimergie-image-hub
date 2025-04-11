@@ -50,10 +50,8 @@ export function MasonryToolbarContent({
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
       
       const imagesForDownload = selectedImagesData.map(img => {
-        const url = img.url;
-        
         return {
-          url: url,
+          url: img.url,
           title: img.title || `image_${img.id}`,
           id: img.id
         };
@@ -126,10 +124,8 @@ export function MasonryToolbarContent({
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
       
       const imagesForDownload = selectedImagesData.map(img => {
-        const url = img.url;
-        
         return {
-          url: url,
+          url: img.url,
           title: img.title || `image_${img.id}`,
           id: img.id
         };
