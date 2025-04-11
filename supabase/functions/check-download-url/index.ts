@@ -25,12 +25,12 @@ async function ensureZipBucketExists(supabase: any): Promise<void> {
       return;
     }
     
-    const zipBucket = buckets?.find((b: any) => b.name === "ZIP Downloads");
+    const zipBucket = buckets?.find((b: any) => b.name === "zip_downloads" || b.name === "ZIP Downloads");
     
     if (!zipBucket) {
       // Create the bucket if it doesn't exist
-      console.log('Creating ZIP Downloads bucket');
-      const { error: createError } = await supabase.storage.createBucket('ZIP Downloads', { 
+      console.log('Creating zip_downloads bucket');
+      const { error: createError } = await supabase.storage.createBucket('zip_downloads', { 
         public: true,
         fileSizeLimit: 50 * 1024 * 1024 // 50MB
       });
@@ -50,17 +50,17 @@ async function ensureZipBucketExists(supabase: any): Promise<void> {
       // Try direct policy creation as fallback
       try {
         // Create policies directly
-        const { error: policy1Error } = await supabase.storage.from('ZIP Downloads')
+        const { error: policy1Error } = await supabase.storage.from('zip_downloads')
           .createPolicy('Public can download ZIPs', {
-            definition: { bucket_id: 'ZIP Downloads' },
+            definition: { bucket_id: 'zip_downloads' },
             type: 'select'
           });
         
         if (policy1Error) console.error('Error creating download policy:', policy1Error.message);
         
-        const { error: policy2Error } = await supabase.storage.from('ZIP Downloads')
+        const { error: policy2Error } = await supabase.storage.from('zip_downloads')
           .createPolicy('Service can upload ZIPs', {
-            definition: { bucket_id: 'ZIP Downloads' },
+            definition: { bucket_id: 'zip_downloads' },
             type: 'insert'
           });
         
@@ -70,7 +70,7 @@ async function ensureZipBucketExists(supabase: any): Promise<void> {
         console.error('Error in direct policy creation:', err.message);
       }
     } else {
-      console.log('ZIP Downloads bucket policies have been verified');
+      console.log('zip_downloads bucket policies have been verified');
     }
   } catch (error) {
     console.error('Error in ensureZipBucketExists:', error.message);
@@ -116,7 +116,7 @@ serve(async (req) => {
     
     // List files in the bucket that match the pattern
     const { data: fileList, error: fileListError } = await supabase.storage
-      .from('ZIP Downloads')
+      .from('zip_downloads')
       .list();
       
     if (fileListError) {
@@ -129,7 +129,7 @@ serve(async (req) => {
       );
     }
     
-    console.log(`Found ${fileList?.length || 0} files in ZIP Downloads bucket`);
+    console.log(`Found ${fileList?.length || 0} files in zip_downloads bucket`);
     
     // Find files that match the pattern
     const matchingFiles = fileList?.filter(file => 
@@ -153,7 +153,7 @@ serve(async (req) => {
     
     // Generate a public URL for the file
     const { data: urlData, error: urlError } = await supabase.storage
-      .from('ZIP Downloads')
+      .from('zip_downloads')
       .getPublicUrl(latestFile.name);
       
     if (urlError) {

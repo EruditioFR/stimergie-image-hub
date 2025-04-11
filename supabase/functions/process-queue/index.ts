@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import JSZip from "https://esm.sh/jszip@3.10.1";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
@@ -38,7 +37,7 @@ const DEFAULT_CONFIG: ProcessConfig = {
 };
 
 /**
- * Ensure the ZIP Downloads bucket exists and has proper permissions
+ * Ensure the zip_downloads bucket exists and has proper permissions
  */
 async function ensureZipBucketExists(supabase: any): Promise<void> {
   try {
@@ -50,12 +49,12 @@ async function ensureZipBucketExists(supabase: any): Promise<void> {
       return;
     }
     
-    const zipBucket = buckets?.find((b: any) => b.name === "ZIP Downloads");
+    const zipBucket = buckets?.find((b: any) => b.name === "zip_downloads" || b.name === "ZIP Downloads");
     
     if (!zipBucket) {
       // Create the bucket if it doesn't exist
-      console.log('Creating ZIP Downloads bucket');
-      const { error: createError } = await supabase.storage.createBucket('ZIP Downloads', { 
+      console.log('Creating zip_downloads bucket');
+      const { error: createError } = await supabase.storage.createBucket('zip_downloads', { 
         public: true,
         fileSizeLimit: 50 * 1024 * 1024 // 50MB
       });
@@ -72,7 +71,7 @@ async function ensureZipBucketExists(supabase: any): Promise<void> {
     if (policyError) {
       console.error('Warning: Could not update storage policies:', policyError.message);
     } else {
-      console.log('ZIP Downloads bucket policies have been verified');
+      console.log('zip_downloads bucket policies have been verified');
     }
   } catch (error) {
     console.error('Error in ensureZipBucketExists:', error.message);
@@ -184,7 +183,7 @@ async function uploadZipToStorage(
     await ensureZipBucketExists(supabase);
     
     const { error } = await supabase.storage
-      .from('ZIP Downloads')
+      .from('zip_downloads')
       .upload(fileName, zipData, {
         contentType: 'application/zip',
         upsert: true,
@@ -194,7 +193,7 @@ async function uploadZipToStorage(
 
     // Get the public URL
     const { data, error: publicUrlError } = await supabase.storage
-      .from('ZIP Downloads')
+      .from('zip_downloads')
       .getPublicUrl(fileName);
 
     if (publicUrlError || !data?.publicUrl) {
@@ -315,7 +314,7 @@ async function processQueue(
   }, config.processing_timeout_seconds * 1000);
   
   try {
-    // Make sure the ZIP Downloads bucket exists with proper permissions
+    // Make sure the zip_downloads bucket exists with proper permissions
     await ensureZipBucketExists(supabase);
     
     // Get only one pending request at a time

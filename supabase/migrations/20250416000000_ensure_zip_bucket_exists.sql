@@ -1,5 +1,5 @@
 
--- Function to ensure the ZIP Downloads bucket exists (idempotent)
+-- Function to ensure the zip_downloads bucket exists (idempotent)
 CREATE OR REPLACE FUNCTION public.ensure_zip_bucket_exists()
 RETURNS void
 LANGUAGE plpgsql
@@ -8,11 +8,11 @@ AS $$
 BEGIN
   -- Check if bucket exists, create it if it doesn't
   IF NOT EXISTS (
-    SELECT 1 FROM storage.buckets WHERE id = 'ZIP Downloads'
+    SELECT 1 FROM storage.buckets WHERE id = 'zip_downloads'
   ) THEN
     INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
     VALUES (
-      'ZIP Downloads',
+      'zip_downloads',
       'ZIP Downloads',
       TRUE,
       52428800, -- 50MB limit
@@ -25,7 +25,7 @@ BEGIN
     CREATE POLICY "Anyone can download ZIPs"
     ON storage.objects
     FOR SELECT
-    USING (bucket_id = 'ZIP Downloads');
+    USING (bucket_id = 'zip_downloads');
   EXCEPTION WHEN duplicate_object THEN
     NULL;  -- Policy already exists
   END;
@@ -34,7 +34,7 @@ BEGIN
     CREATE POLICY "Service roles can upload ZIPs"
     ON storage.objects 
     FOR INSERT
-    WITH CHECK (bucket_id = 'ZIP Downloads');
+    WITH CHECK (bucket_id = 'zip_downloads');
   EXCEPTION WHEN duplicate_object THEN
     NULL;  -- Policy already exists
   END;

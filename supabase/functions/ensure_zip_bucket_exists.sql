@@ -1,5 +1,5 @@
 
--- Function to ensure the ZIP Downloads bucket exists and has proper policies
+-- Function to ensure the ZIP downloads bucket exists and has proper policies
 CREATE OR REPLACE FUNCTION public.ensure_zip_bucket_exists()
 RETURNS void
 LANGUAGE plpgsql
@@ -8,20 +8,20 @@ AS $$
 BEGIN
   -- Check if bucket exists, create if it doesn't
   IF NOT EXISTS (
-    SELECT 1 FROM storage.buckets WHERE id = 'ZIP Downloads'
+    SELECT 1 FROM storage.buckets WHERE id = 'zip_downloads'
   ) THEN
     INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
     VALUES (
-      'ZIP Downloads',
+      'zip_downloads',
       'ZIP Downloads',
       TRUE,
       52428800, -- 50MB limit
       ARRAY['application/zip', 'application/x-zip-compressed']::text[]
     );
     
-    RAISE NOTICE 'Created ZIP Downloads bucket';
+    RAISE NOTICE 'Created zip_downloads bucket';
   ELSE
-    RAISE NOTICE 'ZIP Downloads bucket already exists';
+    RAISE NOTICE 'zip_downloads bucket already exists';
   END IF;
   
   -- Ensure proper storage policies exist
@@ -30,7 +30,7 @@ BEGIN
     CREATE POLICY "Public can download ZIPs" 
     ON storage.objects 
     FOR SELECT 
-    USING (bucket_id = 'ZIP Downloads');
+    USING (bucket_id = 'zip_downloads');
   EXCEPTION WHEN duplicate_object THEN
     NULL;  -- Policy already exists
   END;
@@ -40,7 +40,7 @@ BEGIN
     CREATE POLICY "Service role can upload ZIPs" 
     ON storage.objects 
     FOR INSERT 
-    WITH CHECK (bucket_id = 'ZIP Downloads');
+    WITH CHECK (bucket_id = 'zip_downloads');
   EXCEPTION WHEN duplicate_object THEN
     NULL;  -- Policy already exists
   END;
@@ -50,7 +50,7 @@ BEGIN
     CREATE POLICY "Service role can update ZIP objects" 
     ON storage.objects 
     FOR UPDATE 
-    USING (bucket_id = 'ZIP Downloads');
+    USING (bucket_id = 'zip_downloads');
   EXCEPTION WHEN duplicate_object THEN
     NULL;  -- Policy already exists
   END;
@@ -74,7 +74,7 @@ BEGIN
   -- Make sure download_requests has full replica identity for realtime to work properly
   ALTER TABLE public.download_requests REPLICA IDENTITY FULL;
   
-  RAISE NOTICE 'Storage policies for ZIP Downloads bucket have been verified';
+  RAISE NOTICE 'Storage policies for zip_downloads bucket have been verified';
   RAISE NOTICE 'Realtime configuration for downloads has been verified';
 END;
 $$;

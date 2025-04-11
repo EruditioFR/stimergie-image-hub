@@ -67,7 +67,7 @@ async function createZipFile(images: RequestBody["images"], isHD: boolean): Prom
 
 async function uploadZipToStorage(zipData: Uint8Array, fileName: string, supabase: any): Promise<string> {
   const { error } = await supabase.storage
-    .from('ZIP Downloads')
+    .from('zip_downloads')
     .upload(fileName, zipData, {
       contentType: 'application/zip',
       upsert: true,
@@ -76,7 +76,7 @@ async function uploadZipToStorage(zipData: Uint8Array, fileName: string, supabas
   if (error) throw new Error(`Storage upload failed: ${error.message}`);
 
   const { data, error: signedUrlError } = await supabase.storage
-    .from('ZIP Downloads')
+    .from('zip_downloads')
     .createSignedUrl(fileName, 3600); // URL valable 1 heure
 
   if (signedUrlError || !data?.signedUrl) {
