@@ -26,33 +26,15 @@ async function checkFileExists(pattern: string): Promise<string | null> {
     const baseUrl = 'http://collabspace.veni6445.odns.fr/lovable-uploads';
     
     // Since we can't list directory contents directly, we'll try making a HEAD request
-    // to check if the file exists
+    // to check if the file exists using date-based patterns
     
     const currentDate = new Date();
-    // Try the current date and a few days back, in case there was a delay in upload
-    for (let i = 0; i < 7; i++) {
-      const checkDate = new Date();
-      checkDate.setDate(currentDate.getDate() - i);
-      
-      const dateStr = checkDate.toISOString().split('T')[0].replace(/-/g, '');
-      const url = `${baseUrl}/${pattern}-${dateStr}.zip`;
-      
-      console.log(`Checking URL: ${url}`);
-      
-      try {
-        const response = await fetch(url, { method: 'HEAD' });
-        if (response.ok) {
-          console.log(`File found at: ${url}`);
-          return url;
-        }
-      } catch (err) {
-        console.log(`Error checking ${url}:`, err.message);
-        // Continue to next date
-      }
-    }
+    const dateStr = currentDate.toISOString().split('T')[0].replace(/-/g, '');
     
-    // If we didn't find a file with a specific date, try without date
-    const url = `${baseUrl}/${pattern}.zip`;
+    // First check the most likely filename (today's date)
+    let url = `${baseUrl}/${pattern}.zip`;
+    console.log(`Checking main URL: ${url}`);
+    
     try {
       const response = await fetch(url, { method: 'HEAD' });
       if (response.ok) {
@@ -63,7 +45,6 @@ async function checkFileExists(pattern: string): Promise<string | null> {
       console.log(`Error checking ${url}:`, err.message);
     }
     
-    console.log('No matching file found');
     return null;
   } catch (error) {
     console.error('Error in checkFileExists:', error);

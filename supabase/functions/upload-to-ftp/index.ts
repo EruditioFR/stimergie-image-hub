@@ -14,7 +14,7 @@ const corsHeaders = {
 // Define request body type
 interface RequestBody {
   fileName: string;
-  fileData: Uint8Array;
+  fileData: number[]; // Changed to number[] as it will be an array when serialized through JSON
 }
 
 // Configuration for FTP
@@ -22,7 +22,7 @@ const FTP_CONFIG = {
   host: Deno.env.get("FTP_HOST") || "ftp.veni6445.odns.fr",
   port: parseInt(Deno.env.get("FTP_PORT") || "21"),
   user: Deno.env.get("FTP_USER") || "jbbejot@veni6445.odns.fr",
-  password: Deno.env.get("FTP_PASSWORD") || "",
+  password: Deno.env.get("FTP_PASSWORD") || "Eruditio2013@!",
   secure: Deno.env.get("FTP_SECURE") === "true",
 };
 
@@ -32,6 +32,8 @@ const UPLOAD_PATH = "/collabspace.veni6445.odns.fr/lovable-uploads";
 // Function to upload a file to the FTP server
 async function uploadFileToFTP(fileName: string, fileData: Uint8Array): Promise<string> {
   console.log(`Connecting to FTP server ${FTP_CONFIG.host}:${FTP_CONFIG.port} as ${FTP_CONFIG.user}`);
+  console.log(`Upload path: ${UPLOAD_PATH}`);
+  console.log(`File name: ${fileName}, Size: ${fileData.length} bytes`);
   
   const ftp = new Client();
   let publicUrl = "";
@@ -45,12 +47,13 @@ async function uploadFileToFTP(fileName: string, fileData: Uint8Array): Promise<
       password: FTP_CONFIG.password,
       secure: FTP_CONFIG.secure,
     });
-    console.log("Connected to FTP server");
+    console.log("Connected to FTP server successfully");
     
     // Navigate to the upload directory
     try {
       console.log(`Changing directory to ${UPLOAD_PATH}`);
       await ftp.cd(UPLOAD_PATH);
+      console.log("Changed directory successfully");
     } catch (cdErr) {
       console.error(`Error changing to directory ${UPLOAD_PATH}:`, cdErr.message);
       
@@ -64,26 +67,46 @@ async function uploadFileToFTP(fileName: string, fileData: Uint8Array): Promise<
       // Create path incrementally
       for (const part of pathParts) {
         try {
+          console.log(`Trying to navigate to ${part}`);
           await ftp.cd(part);
+          console.log(`Successfully navigated to ${part}`);
         } catch (err) {
           console.log(`Creating directory: ${part}`);
           await ftp.mkdir(part);
+          console.log(`Created directory: ${part}`);
           await ftp.cd(part);
+          console.log(`Navigated to newly created directory: ${part}`);
         }
       }
+      console.log(`Directory structure created and navigated to ${UPLOAD_PATH}`);
     }
     
     // Create a local temporary file to upload
+    console.log("Creating temporary file for upload");
     const tempFilePath = await Deno.makeTempFile();
     await Deno.writeFile(tempFilePath, fileData);
+    console.log(`Temporary file created at ${tempFilePath} with ${fileData.length} bytes`);
     
     // Upload the file
     console.log(`Uploading file: ${fileName} (${fileData.length} bytes)`);
-    await ftp.upload(await Deno.open(tempFilePath), fileName);
-    console.log(`File uploaded successfully: ${fileName}`);
+    try {
+      const fileHandle = await Deno.open(tempFilePath);
+      await ftp.upload(fileHandle, fileName);
+      fileHandle.close();
+      console.log(`File uploaded successfully: ${fileName}`);
+    } catch (uploadError) {
+      console.error(`Upload error for ${fileName}:`, uploadError);
+      throw uploadError;
+    }
     
     // Clean up the temporary file
-    await Deno.remove(tempFilePath);
+    try {
+      await Deno.remove(tempFilePath);
+      console.log("Temporary file cleaned up");
+    } catch (cleanupError) {
+      console.error("Error cleaning up temp file:", cleanupError);
+      // Non-fatal, continue
+    }
     
     // Construct the public URL
     publicUrl = `http://collabspace.veni6445.odns.fr/lovable-uploads/${fileName}`;
@@ -91,6 +114,9 @@ async function uploadFileToFTP(fileName: string, fileData: Uint8Array): Promise<
     
   } catch (error) {
     console.error("FTP Error:", error.message);
+    if (error.stack) {
+      console.error("Stack trace:", error.stack);
+    }
     throw new Error(`FTP Upload Error: ${error.message}`);
   } finally {
     // Always close the FTP connection
@@ -126,7 +152,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const requestData: RequestBody = await req.json();
+    const requestData = await req.json();
     const { fileName, fileData } = requestData;
     
     if (!fileName || !fileData) {
@@ -137,10 +163,13 @@ serve(async (req) => {
       });
     }
     
-    console.log(`Processing upload request for file: ${fileName}`);
+    console.log(`Processing upload request for file: ${fileName}, data length: ${fileData.length}`);
+    
+    // Convert the array back to Uint8Array
+    const binaryData = new Uint8Array(fileData);
     
     // Upload the file to FTP
-    const publicUrl = await uploadFileToFTP(fileName, new Uint8Array(fileData));
+    const publicUrl = await uploadFileToFTP(fileName, binaryData);
     
     // Return success response
     return new Response(
@@ -154,7 +183,9 @@ serve(async (req) => {
     
   } catch (error) {
     console.error('Error processing request:', error);
-    console.error('Stack trace:', error.stack);
+    if (error.stack) {
+      console.error('Stack trace:', error.stack);
+    }
     return new Response(
       JSON.stringify({ error: error.message || 'Unknown error' }),
       { status: 500, headers: corsHeaders }

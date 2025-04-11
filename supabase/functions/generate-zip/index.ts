@@ -126,6 +126,10 @@ async function uploadZipToFTP(zipData: Uint8Array, fileName: string, supabaseUrl
   console.log(`Uploading ZIP file ${fileName} to FTP server (${zipData.length} bytes)`);
   
   try {
+    // IMPORTANT: Since we're sending binary data through JSON, we need to convert to an array of numbers
+    const zipDataArray = Array.from(zipData); 
+    console.log(`Converted ZIP to array for JSON serialization. Length: ${zipDataArray.length}`);
+    
     // Call the upload-to-ftp function
     const response = await fetch(`${supabaseUrl}/functions/v1/upload-to-ftp`, {
       method: 'POST',
@@ -135,7 +139,7 @@ async function uploadZipToFTP(zipData: Uint8Array, fileName: string, supabaseUrl
       },
       body: JSON.stringify({
         fileName,
-        fileData: Array.from(zipData)
+        fileData: zipDataArray
       })
     });
 
@@ -156,6 +160,7 @@ async function uploadZipToFTP(zipData: Uint8Array, fileName: string, supabaseUrl
     return result.url;
   } catch (error) {
     console.error('Error in uploadZipToFTP:', error);
+    console.error('Stack trace:', error.stack);
     throw error;
   }
 }
@@ -171,7 +176,8 @@ async function createDownloadRecord(
   isHD: boolean,
   status: string = 'pending'
 ): Promise<string> {
-  console.log(`Creating download record for user ${userId}`, {
+  console.log(`Creating download record for user ${userId}`);
+  console.log('Record data:', {
     user_id: userId,
     image_id: imageId,
     image_title: imageTitle,
@@ -206,6 +212,7 @@ async function createDownloadRecord(
     return data.id;
   } catch (error) {
     console.error('Error in createDownloadRecord:', error);
+    console.error('Stack trace:', error.stack);
     throw error;
   }
 }
@@ -248,6 +255,7 @@ async function updateDownloadRecord(
     console.log(`Download record ${recordId} updated successfully to ${status}`);
   } catch (error) {
     console.error('Error in updateDownloadRecord:', error);
+    console.error('Stack trace:', error.stack);
     throw error;
   }
 }
@@ -308,9 +316,10 @@ serve(async (req) => {
     console.log(`Creating Supabase client with URL: ${supabaseUrl.substring(0, 30)}...`);
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Create timestamp for unique filename
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const zipFileName = `${isHD ? 'hd-' : ''}images_${timestamp}.zip`;
+    // Create timestamp for unique filename - use date without time for better file naming
+    const date = new Date();
+    const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
+    const zipFileName = `${isHD ? 'hd-' : ''}images_${dateStr}.zip`;
     
     // We'll process the ZIP creation and upload asynchronously
     // and return a "processing" status to the client immediately
@@ -374,9 +383,9 @@ serve(async (req) => {
     // Use waitUntil to continue processing after response is sent
     try {
       // @ts-ignore - EdgeRuntime.waitUntil is available in Deno Deploy
-      EdgeRuntime.waitUntil(processPromise);
+      Deno.core.opAsync("op_wait_until", processPromise);
     } catch (waitError) {
-      console.error('Warning: EdgeRuntime.waitUntil not available:', waitError);
+      console.error('Warning: waitUntil not available:', waitError);
       // If waitUntil is not available, we'll just let the promise run
       // This could potentially be cut off if the runtime terminates too early
     }
