@@ -29,11 +29,23 @@ serve(async (_req) => {
     });
     
     if (!response.ok) {
-      const errorText = await response.text();
+      let errorText = '';
+      try {
+        errorText = await response.text();
+      } catch (err) {
+        errorText = 'Could not read error response';
+      }
       throw new Error(`Failed to trigger process-queue: ${response.status} - ${errorText}`);
     }
     
-    const result = await response.json();
+    let result;
+    try {
+      result = await response.json();
+    } catch (err) {
+      console.log('Response was not JSON, but the request succeeded:', await response.text());
+      result = { message: 'Non-JSON response received but request was successful' };
+    }
+    
     console.log('⚡ ZIP queue processing job completed successfully:', result);
     
     return new Response(

@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import JSZip from "https://esm.sh/jszip@3.10.1";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
@@ -396,12 +395,17 @@ serve(async (req) => {
     let config = DEFAULT_CONFIG;
     if (req.method === 'POST') {
       try {
-        const body = await req.json();
-        config = {
-          ...DEFAULT_CONFIG,
-          ...body
-        };
-      } catch {
+        // Vérifier si la requête a un corps et l'analyser comme JSON
+        const text = await req.text();
+        if (text && text.trim()) {
+          const body = JSON.parse(text);
+          config = {
+            ...DEFAULT_CONFIG,
+            ...body
+          };
+        }
+      } catch (e) {
+        console.error('Erreur lors de l\'analyse du JSON:', e);
         // Utiliser la configuration par défaut en cas d'erreur
       }
     }
@@ -415,7 +419,7 @@ serve(async (req) => {
         message: `Traitement de la file terminé: ${result.processed} demandes traitées (${result.success} succès, ${result.failed} échecs)`,
         data: result
       }),
-      { headers: corsHeaders }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error(`❌ Erreur globale: ${error.message}`);
@@ -425,7 +429,7 @@ serve(async (req) => {
         success: false,
         message: `Erreur interne: ${error.message}`
       }),
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
