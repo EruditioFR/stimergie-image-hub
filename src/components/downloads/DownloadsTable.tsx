@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -14,6 +14,8 @@ import { Download, AlertCircle, Clock, RefreshCw } from "lucide-react";
 import { formatDate } from "@/utils/dateFormatting";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { supabase } from '@/integrations/supabase/client';
 
 export interface DownloadRequest {
   id: string;
@@ -31,6 +33,21 @@ interface DownloadsTableProps {
 }
 
 export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) => {
+  const [refreshingId, setRefreshingId] = React.useState<string | null>(null);
+  
+  // When receiving ready downloads without URLs, try to fetch the URLs
+  useEffect(() => {
+    const readyDownloadsWithoutUrl = downloads.filter(d => d.status === 'ready' && !d.downloadUrl);
+    
+    if (readyDownloadsWithoutUrl.length > 0) {
+      console.log('Found ready downloads with missing URLs:', readyDownloadsWithoutUrl.length);
+      // Try to refresh to get the URLs
+      if (onRefresh) {
+        onRefresh();
+      }
+    }
+  }, [downloads, onRefresh]);
+
   const handleDownload = (download: DownloadRequest) => {
     if (download.status !== 'ready') {
       return;
@@ -40,7 +57,6 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
       console.error('Download URL is missing for ready download:', download.id);
       toast.error('URL de téléchargement manquante', {
         description: 'Le lien de téléchargement n\'est pas disponible. Veuillez actualiser la page ou réessayer plus tard.',
-        icon: <AlertCircle className="h-4 w-4" />,
         action: {
           label: 'Actualiser',
           onClick: () => onRefresh && onRefresh()
@@ -69,10 +85,108 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
 
   const handleRefresh = () => {
     if (onRefresh) {
-      toast.loading('Actualisation des téléchargements...');
+      toast.loading('Actualisation des téléchargements...', { id: 'refresh-toast' });
       onRefresh();
-      setTimeout(() => toast.dismiss(), 1000);
+      setTimeout(() => toast.dismiss('refresh-toast'), 1000);
     }
+  };
+  
+  const handleRefreshDownload = async (download: DownloadRequest) => {
+    if (refreshingId === download.id) return;
+    
+    try {
+      setRefreshingId(download.id);
+      toast.loading(`Tentative de récupération du téléchargement...`, { id: 'refresh-download' });
+      
+      // Try to get the download URL from storage
+      const timestamp = download.requestDate.split('T')[0].replace(/-/g, '');
+      const possiblePaths = [
+        `public/${download.isHD ? 'hd-' : ''}images_${timestamp}*.zip`,
+        `public/${download.isHD ? 'hd-' : ''}images_*.zip`
+      ];
+      
+      let foundUrl = null;
+      
+      for (const searchPattern of possiblePaths) {
+        // List files in the bucket that match the pattern
+        const { data: files, error } = await supabase
+          .storage
+          .from('zip-downloads')
+          .list('public', { 
+            limit: 100,
+            search: searchPattern.replace('*', '')
+          });
+        
+        if (error) {
+          console.error('Error searching for file:', error);
+          continue;
+        }
+        
+        if (files && files.length > 0) {
+          // Find files created around the same time
+          const relevantFiles = files.filter(file => 
+            file.created_at && new Date(file.created_at).toISOString().startsWith(download.requestDate.substring(0, 10))
+          );
+          
+          if (relevantFiles.length > 0) {
+            // Try to get a signed URL for the first matching file
+            const file = relevantFiles[0];
+            const { data: urlData, error: urlError } = await supabase
+              .storage
+              .from('zip-downloads')
+              .createSignedUrl(`public/${file.name}`, 604800);
+            
+            if (!urlError && urlData?.signedUrl) {
+              foundUrl = urlData.signedUrl;
+              
+              // Update the download record
+              const { error: updateError } = await supabase
+                .from('download_requests')
+                .update({ download_url: foundUrl })
+                .eq('id', download.id);
+                
+              if (updateError) {
+                console.error('Error updating download record:', updateError);
+              } else {
+                console.log('Download record updated with URL');
+                // Force a refresh to get the updated record
+                if (onRefresh) onRefresh();
+              }
+              
+              break;
+            }
+          }
+        }
+      }
+      
+      toast.dismiss('refresh-download');
+      
+      if (foundUrl) {
+        toast.success('URL de téléchargement récupérée', {
+          description: 'Vous pouvez maintenant télécharger le fichier.',
+          action: {
+            label: 'Télécharger',
+            onClick: () => window.open(foundUrl, '_blank')
+          }
+        });
+      } else {
+        toast.error('URL introuvable', {
+          description: 'Impossible de trouver l\'URL de téléchargement. Veuillez réessayer plus tard.'
+        });
+      }
+    } catch (error) {
+      console.error('Error refreshing download:', error);
+      toast.error('Erreur de récupération', {
+        description: 'Une erreur est survenue lors de la tentative de récupération de l\'URL.'
+      });
+    } finally {
+      setRefreshingId(null);
+    }
+  };
+  
+  // Helper to check if download is HD
+  const isDownloadHD = (download: DownloadRequest): boolean => {
+    return download.imageTitle.toLowerCase().includes('hd');
   };
 
   return (
@@ -85,7 +199,7 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
       </div>
       
       <Table>
-        <TableCaption>Liste de vos demandes de téléchargements HD</TableCaption>
+        <TableCaption>Liste de vos demandes de téléchargements</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead>Date de demande</TableHead>
@@ -98,14 +212,19 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
           {downloads.length === 0 ? (
             <TableRow>
               <TableCell colSpan={4} className="text-center py-8">
-                Aucune demande de téléchargement HD pour le moment
+                Aucune demande de téléchargement pour le moment
               </TableCell>
             </TableRow>
           ) : (
             downloads.map((download) => (
               <TableRow key={download.id}>
                 <TableCell>{formatDate(download.requestDate)}</TableCell>
-                <TableCell className="max-w-[200px] truncate">{download.imageTitle}</TableCell>
+                <TableCell className="max-w-[200px] truncate">
+                  {download.imageTitle}
+                  {isDownloadHD(download) && (
+                    <Badge variant="outline" className="ml-2 bg-blue-50">HD</Badge>
+                  )}
+                </TableCell>
                 <TableCell>
                   {download.status === 'pending' && (
                     <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100 flex items-center gap-1 w-fit">
@@ -131,16 +250,33 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="py-4"
-                    disabled={download.status !== 'ready' || !download.downloadUrl}
-                    onClick={() => handleDownload(download)}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Télécharger
-                  </Button>
+                  {download.status === 'ready' && !download.downloadUrl ? (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="py-4"
+                      onClick={() => handleRefreshDownload(download)}
+                      disabled={refreshingId === download.id}
+                    >
+                      {refreshingId === download.id ? (
+                        <LoadingSpinner className="h-4 w-4 mr-2" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
+                      Récupérer
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="py-4"
+                      disabled={download.status !== 'ready' || !download.downloadUrl}
+                      onClick={() => handleDownload(download)}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Télécharger
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))

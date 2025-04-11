@@ -39,7 +39,7 @@ async function fetchImageWithRetries(url: string, retries = 3, delay = 300): Pro
       console.error(`Failed to fetch image: ${response.status} ${response.statusText}`);
       
       if (retries > 0 && response.status >= 500) {
-        console.log(`Retrying fetch for ${url.substring(0, 30)}..., retries left: ${retries}`);
+        console.log(`Retrying fetch, retries left: ${retries}`);
         await new Promise(resolve => setTimeout(resolve, delay));
         return fetchImageWithRetries(url, retries - 1, delay * 2);
       }
@@ -128,18 +128,46 @@ async function uploadZipToStorage(zipData: Uint8Array, fileName: string, supabas
   try {
     console.log(`Storage bucket target: zip-downloads/public/${fileName}`);
     
+    // Make sure the bucket exists before attempting upload
+    try {
+      const { data: bucketData, error: bucketError } = await supabase
+        .storage
+        .getBucket('zip-downloads');
+      
+      if (bucketError) {
+        console.error('Error checking bucket:', bucketError);
+        console.log('Will try to create the bucket zip-downloads');
+        
+        const { data: createData, error: createError } = await supabase
+          .storage
+          .createBucket('zip-downloads', {
+            public: false,
+            fileSizeLimit: 52428800, // 50MB
+          });
+        
+        if (createError) {
+          console.error('Error creating bucket:', createError);
+        } else {
+          console.log('Bucket created successfully:', createData);
+        }
+      } else {
+        console.log('Bucket exists:', bucketData);
+      }
+    } catch (bucketCheckError) {
+      console.error('Exception checking bucket:', bucketCheckError);
+    }
+    
+    // Upload the file
     const { data, error } = await supabase
       .storage
       .from('zip-downloads')
       .upload(`public/${fileName}`, zipData, {
         contentType: 'application/zip',
-        upsert: true // Changed to true to handle potential duplicates
+        upsert: true 
       });
     
     if (error) {
       console.error('Error uploading ZIP:', error);
-      if (error.message) console.error('Error message:', error.message);
-      if (error.data) console.error('Error data:', error.data);
       throw new Error(`Failed to upload ZIP: ${error.message || 'Unknown error'}`);
     }
     
@@ -154,7 +182,6 @@ async function uploadZipToStorage(zipData: Uint8Array, fileName: string, supabas
     
     if (urlError) {
       console.error('Error creating signed URL:', urlError);
-      if (urlError.message) console.error('Error message:', urlError.message);
       throw new Error(`Failed to create download URL: ${urlError.message || 'Unknown error'}`);
     }
     
@@ -307,7 +334,7 @@ serve(async (req) => {
       });
     }
 
-    // Create Supabase client
+    // Create Supabase client with service role key for admin access
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     
@@ -383,7 +410,6 @@ serve(async (req) => {
     })();
     
     // Use waitUntil to continue processing after response is sent
-    // This allows for long-running tasks without timing out the request
     try {
       // @ts-ignore - EdgeRuntime.waitUntil is available in Deno Deploy
       EdgeRuntime.waitUntil(processPromise);

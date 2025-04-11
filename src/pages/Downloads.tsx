@@ -17,6 +17,7 @@ const Downloads = () => {
   const { downloads, isLoading, error, refreshDownloads } = useDownloads();
   const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
   const [hasInitialLoad, setHasInitialLoad] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     // Set up a channel subscription for downloads page presence and monitoring
@@ -61,10 +62,6 @@ const Downloads = () => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.log('Attempting to refresh session due to subscription error');
           await refreshSession();
-          // Force a refresh of downloads after session refresh
-          if (hasInitialLoad) {
-            setTimeout(() => refreshDownloads(), 1000);
-          }
         }
       });
     
@@ -95,30 +92,25 @@ const Downloads = () => {
       if (readyWithoutUrl.length > 0) {
         console.warn('Found ready downloads without download URLs:', readyWithoutUrl);
       }
-      
-      // Detailed logging of all downloads
-      downloads.forEach(download => {
-        console.log(`Download ID: ${download.id}, Status: ${download.status}, Has URL: ${!!download.downloadUrl}`);
-        if (download.status === 'ready' && !download.downloadUrl) {
-          console.warn(`Ready download missing URL: ${download.id}, Title: ${download.imageTitle}`);
-        }
-      });
     }
   }, [downloads, isLoading]);
 
-  // Modified reconnection effect to prevent refresh loops
-  useEffect(() => {
-    // Only refresh once when realtime status becomes connected from another state
-    // and we have completed the initial load
-    if (realtimeStatus === 'connected' && hasInitialLoad) {
-      console.log('Refreshing downloads after realtime connection established');
-      // We won't call refreshDownloads() automatically here as it's causing refresh loops
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
+    toast.info('Actualisation des téléchargements...', { id: 'refresh-toast' });
+    
+    try {
+      await refreshDownloads();
+      toast.dismiss('refresh-toast');
+      toast.success('Téléchargements actualisés');
+    } catch (err) {
+      toast.dismiss('refresh-toast');
+      toast.error('Erreur lors de l\'actualisation');
+    } finally {
+      setIsRefreshing(false);
     }
-  }, [realtimeStatus, hasInitialLoad]);
-
-  const handleManualRefresh = () => {
-    toast.info('Actualisation des téléchargements...');
-    refreshDownloads();
   };
 
   return (
@@ -137,9 +129,19 @@ const Downloads = () => {
               variant="outline" 
               onClick={handleManualRefresh}
               className="flex items-center gap-2"
+              disabled={isRefreshing}
             >
-              <RefreshCw className="h-4 w-4" />
-              Actualiser
+              {isRefreshing ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Actualisation...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4" />
+                  Actualiser
+                </>
+              )}
             </Button>
           </div>
 
@@ -155,6 +157,7 @@ const Downloads = () => {
                   variant="link" 
                   onClick={handleManualRefresh} 
                   className="p-0 h-auto text-primary underline ml-2"
+                  disabled={isRefreshing}
                 >
                   Actualiser manuellement
                 </Button>
@@ -182,13 +185,14 @@ const Downloads = () => {
                     variant="link" 
                     onClick={handleManualRefresh} 
                     className="p-0 h-auto text-primary underline mt-2"
+                    disabled={isRefreshing}
                   >
                     Essayer à nouveau
                   </Button>
                 </AlertDescription>
               </Alert>
             ) : (
-              <DownloadsTable downloads={downloads} onRefresh={refreshDownloads} />
+              <DownloadsTable downloads={downloads} onRefresh={handleManualRefresh} />
             )}
           </div>
 
