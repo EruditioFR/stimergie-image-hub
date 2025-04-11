@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import JSZip from "https://esm.sh/jszip@3.10.1";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
@@ -53,7 +52,9 @@ async function createZipFile(images: RequestBody["images"], isHD: boolean): Prom
         const buffer = await fetchImageWithRetries(image.url);
         const name = (image.title || `image_${image.id}`).replace(/[^a-z0-9]/gi, "_").toLowerCase();
         folder.file(`${name}.jpg`, buffer);
-      } catch {}
+      } catch (err) {
+        console.error(`Erreur ZIP pour ${image.id} : ${err.message}`);
+      }
     }));
   }
 
@@ -74,9 +75,15 @@ async function uploadZipToStorage(zipData: Uint8Array, fileName: string, supabas
 
   if (error) throw new Error(`Storage upload failed: ${error.message}`);
 
-  const { data } = supabase.storage.from('ZIP Downloads').getPublicUrl(fileName);
-  if (!data?.publicUrl) throw new Error("Failed to get public URL");
-  return data.publicUrl;
+  const { data, error: signedUrlError } = await supabase.storage
+    .from('ZIP Downloads')
+    .createSignedUrl(fileName, 3600); // URL valable 1 heure
+
+  if (signedUrlError || !data?.signedUrl) {
+    throw new Error("Failed to generate signed URL");
+  }
+
+  return data.signedUrl;
 }
 
 async function createDownloadRecord(
@@ -85,9 +92,7 @@ async function createDownloadRecord(
   imageId: string,
   imageTitle: string,
   imageUrl: string,
-  downloadUrl: string,
-  isHD: boolean,
-  status: string = 'pending'
+  isHD: boolean
 ): Promise<string> {
   const { data, error } = await supabase
     .from('download_requests')
@@ -96,8 +101,8 @@ async function createDownloadRecord(
       image_id: imageId,
       image_title: imageTitle,
       image_src: imageUrl,
-      download_url: downloadUrl,
-      status: status,
+      download_url: '',
+      status: 'pending',
       is_hd: isHD
     })
     .select('id')
@@ -142,15 +147,15 @@ serve(async (req) => {
     const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
     const zipFileName = `${isHD ? 'hd-' : ''}images_${dateStr}_${Date.now().toString().slice(-6)}.zip`;
 
-    const promise = (async () => {
+    // ➕ Exécution asynchrone en tâche de fond
+    const backgroundTask = async () => {
       try {
-        const pendingId = await createDownloadRecord(
+        const recordId = await createDownloadRecord(
           supabase,
           userId,
           images[0].id,
-          `${images.length} images (${isHD ? 'HD' : 'Web'}) - Processing`,
+          `${images.length} images (${isHD ? 'HD' : 'Web'}) - En traitement`,
           images[0].url,
-          '',
           isHD
         );
 
@@ -159,30 +164,35 @@ serve(async (req) => {
 
         await updateDownloadRecord(
           supabase,
-          pendingId,
+          recordId,
           downloadUrl,
           'ready',
           `${images.length} images (${isHD ? 'HD' : 'Web'})`
         );
+
+        console.log(`[ZIP] Fichier prêt pour ${userId}`);
       } catch (err) {
-        console.error("ZIP processing error:", err);
+        console.error('[ZIP] Erreur durant le traitement en tâche de fond :', err);
       }
-    })();
+    };
 
     try {
+      // ✅ Traitement en tâche de fond compatible Deno Deploy
       // @ts-ignore
-      console.log('[GENERATE-ZIP] using op_wait_until...');
-      Deno.core.opAsync("op_wait_until", promise);
+      Deno.core.opAsync("op_wait_until", backgroundTask());
     } catch {
-       console.log('[GENERATE-ZIP] op_wait_until not supported');
+      console.warn('[ZIP] op_wait_until non supporté, fallback direct');
+      await backgroundTask();
     }
 
+    // 🎯 Réponse immédiate au client
     return new Response(JSON.stringify({
       status: 'processing',
-      message: 'Votre archive est en cours de préparation. Elle apparaîtra dans votre espace téléchargement une fois prête.'
+      message: 'Votre fichier ZIP est en cours de préparation.',
     }), { headers: corsHeaders });
 
   } catch (err) {
+    console.error('[ZIP] Erreur principale :', err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
   }
 });
