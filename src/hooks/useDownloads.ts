@@ -105,6 +105,9 @@ export function useDownloads() {
       console.log('Formatted downloads:', formattedData);
       setDownloads(formattedData);
       
+      // Important: Always set isLoading to false after data is processed, regardless of data state
+      setIsLoading(false);
+      
     } catch (err) {
       console.error('Error loading downloads:', err);
       setError(err instanceof Error ? err : new Error('An unknown error occurred'));
@@ -126,9 +129,10 @@ export function useDownloads() {
         toast.error('Erreur de connexion', {
           description: 'Impossible de récupérer vos téléchargements. Veuillez réessayer plus tard.'
         });
+        
+        // Important: Set isLoading to false even in case of error after retries
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
     }
   }, [user, formatDownload]);
 

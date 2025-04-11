@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Ellipsis } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LoadingSpinnerProps {
@@ -10,8 +10,6 @@ interface LoadingSpinnerProps {
 
 export function LoadingSpinner({ className, size = 24 }: LoadingSpinnerProps) {
   return (
-    <div className={cn("animate-pulse", className)}>
-      <Ellipsis size={size} className="text-muted-foreground" />
-    </div>
+    <Loader2 className={cn("animate-spin", className)} size={size} />
   );
 }

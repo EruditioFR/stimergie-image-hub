@@ -11,6 +11,7 @@ import { supabase, refreshSession } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const Downloads = () => {
   const { downloads, isLoading, error, refreshDownloads } = useDownloads();
@@ -158,8 +159,8 @@ const Downloads = () => {
             
             {isLoading ? (
               <div className="flex justify-center items-center h-40">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-2">Chargement des téléchargements...</span>
+                <LoadingSpinner size={32} className="text-primary mr-3" />
+                <span className="text-muted-foreground">Chargement des téléchargements...</span>
               </div>
             ) : error ? (
               <Alert variant="destructive" className="mb-6">
@@ -168,6 +169,13 @@ const Downloads = () => {
                 <AlertDescription>
                   Une erreur est survenue lors du chargement des téléchargements.
                   <p className="text-sm mt-1">{error.message}</p>
+                  <Button 
+                    variant="link" 
+                    onClick={handleManualRefresh} 
+                    className="p-0 h-auto text-primary underline mt-2"
+                  >
+                    Essayer à nouveau
+                  </Button>
                 </AlertDescription>
               </Alert>
             ) : (
