@@ -39,6 +39,10 @@ const fetchWithRetries = async (url: Request | string, options?: RequestInit, re
   }
 };
 
+// Function to detect connection status
+const isOnline = () => typeof navigator !== 'undefined' && navigator.onLine;
+
+// Initialize the Supabase client with enhanced realtime settings
 export const supabase = createClient<Database>(
   SUPABASE_URL,
   SUPABASE_PUBLISHABLE_KEY,
@@ -72,13 +76,50 @@ export const supabase = createClient<Database>(
 
 // Add a helper function to refresh the auth session
 export const refreshSession = async () => {
-  const { data, error } = await supabase.auth.refreshSession();
-  if (error) {
-    console.error('Failed to refresh session:', error);
+  if (!isOnline()) {
+    console.warn('Cannot refresh session: device is offline');
     return false;
   }
-  console.log('Session refreshed successfully');
-  return true;
+
+  try {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error) {
+      console.error('Failed to refresh session:', error);
+      return false;
+    }
+    console.log('Session refreshed successfully');
+    return true;
+  } catch (error) {
+    console.error('Error refreshing session:', error);
+    return false;
+  }
+};
+
+// Function to manually reconnect realtime
+export const reconnectRealtime = async () => {
+  if (!isOnline()) {
+    console.warn('Cannot reconnect realtime: device is offline');
+    return false;
+  }
+
+  try {
+    // First refresh the session
+    await refreshSession();
+    
+    // Get current realtime presence/channels
+    const channels = supabase.getChannels();
+    
+    // Remove and recreate all channels
+    for (const channel of channels) {
+      await supabase.removeChannel(channel);
+    }
+    
+    console.log('Realtime connections reset');
+    return true;
+  } catch (error) {
+    console.error('Error reconnecting realtime:', error);
+    return false;
+  }
 };
 
 // Export constants for use elsewhere

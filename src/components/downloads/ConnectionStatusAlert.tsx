@@ -1,34 +1,70 @@
 
 import React from 'react';
-import { AlertCircle } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 interface ConnectionStatusAlertProps {
-  status: 'connected' | 'connecting' | 'disconnected';
-  onRefresh: () => void;
-  isRefreshing: boolean;
+  realtimeStatus: 'connected' | 'connecting' | 'disconnected';
+  className?: string;
+  lastConnectedAt?: Date | null;
+  reconnectAttempts?: number;
 }
 
-export function ConnectionStatusAlert({ status, onRefresh, isRefreshing }: ConnectionStatusAlertProps) {
-  if (status === 'connected') return null;
+export function ConnectionStatusAlert({ 
+  realtimeStatus, 
+  className,
+  lastConnectedAt,
+  reconnectAttempts = 0
+}: ConnectionStatusAlertProps) {
+  // Render nothing if connected
+  if (realtimeStatus === 'connected') {
+    return null;
+  }
+
+  const isDisconnected = realtimeStatus === 'disconnected';
   
   return (
-    <Alert className="bg-amber-50">
-      <AlertCircle className="h-4 w-4" />
-      <AlertTitle>État de la connexion: {status === 'connecting' ? 'En cours de connexion' : 'Déconnecté'}</AlertTitle>
-      <AlertDescription>
-        {status === 'connecting' 
-          ? 'Connexion à Supabase en cours. Les mises à jour en temps réel seront bientôt disponibles.'
-          : 'La connexion temps réel est interrompue. Les mises à jour automatiques sont suspendues.'}
-        <Button 
-          variant="link" 
-          onClick={onRefresh} 
-          className="p-0 h-auto text-primary underline ml-2"
-          disabled={isRefreshing}
-        >
-          Actualiser manuellement
-        </Button>
+    <Alert 
+      variant={isDisconnected ? "destructive" : "default"}
+      className={cn(
+        "animate-pulse transition-colors duration-500 mb-4", 
+        className
+      )}
+    >
+      <div className="flex items-center gap-2">
+        {isDisconnected ? (
+          <WifiOff className="h-4 w-4" />
+        ) : (
+          <Wifi className="h-4 w-4" />
+        )}
+        <AlertTitle>
+          {isDisconnected 
+            ? "Connexion perdue" 
+            : "Reconnexion en cours..."}
+        </AlertTitle>
+      </div>
+      <AlertDescription className="mt-2">
+        {isDisconnected ? (
+          <span>
+            La connexion au service de téléchargement a été perdue. 
+            Vos requêtes seront traitées une fois la connexion rétablie.
+            {reconnectAttempts > 0 && (
+              <span className="block mt-1 text-xs">
+                Tentatives de reconnexion: {reconnectAttempts}
+              </span>
+            )}
+          </span>
+        ) : (
+          <span>
+            Tentative de reconnexion au service de téléchargement...
+            {lastConnectedAt && (
+              <span className="block mt-1 text-xs">
+                Dernière connexion: {lastConnectedAt.toLocaleTimeString()}
+              </span>
+            )}
+          </span>
+        )}
       </AlertDescription>
     </Alert>
   );
