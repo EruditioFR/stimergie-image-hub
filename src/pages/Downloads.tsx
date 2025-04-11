@@ -19,7 +19,7 @@ const Downloads = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [initialRefreshDone, setInitialRefreshDone] = useState(false);
   const { user } = useAuth();
-  const { realtimeStatus, lastConnectedAt, reconnectAttempts } = useRealtimeStatus();
+  const { realtimeStatus, lastConnectedAt, reconnectAttempts, manualReconnect } = useRealtimeStatus();
   const { isAdmin } = useAdminStatus(user);
   
   // Force a refresh when the component mounts - but only once
@@ -37,6 +37,14 @@ const Downloads = () => {
       console.log('Downloads ready to render:', downloads.length);
     }
   }, [downloads, isLoading]);
+
+  // Add automatic refresh when connection is reestablished
+  useEffect(() => {
+    if (realtimeStatus === 'connected' && initialRefreshDone) {
+      console.log('Connection reestablished, refreshing downloads');
+      refreshDownloads();
+    }
+  }, [realtimeStatus, initialRefreshDone, refreshDownloads]);
 
   const handleManualRefresh = async () => {
     if (isRefreshing) return;
@@ -70,11 +78,13 @@ const Downloads = () => {
             realtimeStatus={realtimeStatus}
             lastConnectedAt={lastConnectedAt}
             reconnectAttempts={reconnectAttempts}
+            onManualReconnect={manualReconnect}
           />
 
           <AdminDebugPanel 
             isAdmin={isAdmin}
             downloads={downloads}
+            realtimeStatus={realtimeStatus}
           />
 
           <DownloadsContent 

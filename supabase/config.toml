@@ -15,6 +15,11 @@ port = 54322
 
 [realtime]
 enabled = true
+# Add explicit realtime configuration
+[realtime.limits]
+max_bytes = 1048576 # 1MB
+max_channels_per_client = 100
+max_subscribers_per_channel = 200
 
 [studio]
 port = 54323

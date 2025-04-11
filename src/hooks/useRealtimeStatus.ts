@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { supabase, refreshSession } from '@/integrations/supabase/client';
+import { supabase, refreshSession, reconnectRealtime } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
@@ -17,6 +18,9 @@ export function useRealtimeStatus() {
         presence: {
           key: 'download_page',
         },
+        broadcast: {
+          self: true
+        }
       }
     });
     
@@ -74,6 +78,22 @@ export function useRealtimeStatus() {
               last_seen_at: new Date().toISOString()
             });
             console.log('Presence tracking active');
+            
+            // Also add a listener for download_requests table changes
+            const downloadRequestsChannel = supabase.channel('public:download_requests')
+              .on('postgres_changes', 
+                { event: '*', schema: 'public', table: 'download_requests' }, 
+                (payload) => {
+                  console.log('Download request changed:', payload);
+                  // You could dispatch an action here or use a callback
+                })
+              .subscribe();
+            
+            // Clean up this channel when the main channel is removed
+            return () => {
+              supabase.removeChannel(downloadRequestsChannel);
+            };
+            
           } catch (error) {
             console.error('Failed to track presence:', error);
           }
@@ -94,6 +114,12 @@ export function useRealtimeStatus() {
         } catch (error) {
           console.error('Error during ping interval:', error);
         }
+      } else if (realtimeStatus === 'disconnected' && reconnectAttempts < 5) {
+        // Attempt to manually reconnect if disconnected
+        console.log('Attempting manual reconnection...');
+        reconnectRealtime().catch(err => {
+          console.error('Manual reconnect failed:', err);
+        });
       }
     }, 30000); // Ping every 30 seconds
     
@@ -105,9 +131,26 @@ export function useRealtimeStatus() {
     };
   }, [reconnectAttempts]); // Add reconnectAttempts as dependency to recreate channel after multiple failures
   
+  // Add a manual reconnect function
+  const manualReconnect = async () => {
+    setRealtimeStatus('connecting');
+    try {
+      await reconnectRealtime();
+      toast.success('Reconnexion initiée', {
+        description: 'Tentative de reconnexion au service en cours...'
+      });
+    } catch (error) {
+      console.error('Manual reconnect failed:', error);
+      toast.error('Échec de la reconnexion', {
+        description: 'Veuillez rafraîchir la page pour réessayer.'
+      });
+    }
+  };
+  
   return { 
     realtimeStatus,
     lastConnectedAt,
-    reconnectAttempts
+    reconnectAttempts,
+    manualReconnect
   };
 }

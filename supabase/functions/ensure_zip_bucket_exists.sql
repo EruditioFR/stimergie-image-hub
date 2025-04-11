@@ -58,6 +58,23 @@ BEGIN
   -- Make sure RLS is enabled
   ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
   
+  -- Add tables to the realtime publication for change listening
+  -- Check if the supabase_realtime publication contains our table
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' 
+    AND schemaname = 'public' 
+    AND tablename = 'download_requests'
+  ) THEN
+    -- Add the download_requests table to the realtime publication
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.download_requests;
+    RAISE NOTICE 'Added download_requests table to supabase_realtime publication';
+  END IF;
+
+  -- Make sure download_requests has full replica identity for realtime to work properly
+  ALTER TABLE public.download_requests REPLICA IDENTITY FULL;
+  
   RAISE NOTICE 'Storage policies for ZIP Downloads bucket have been verified';
+  RAISE NOTICE 'Realtime configuration for downloads has been verified';
 END;
 $$;
