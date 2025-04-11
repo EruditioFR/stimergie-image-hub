@@ -1,7 +1,7 @@
 
 // Upload to FTP Edge Function
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { FTPClient } from "https://deno.land/x/ftp@v2.2.0/mod.ts";
+import { FTPClient } from "https://deno.land/x/ftp@v1.2.0/mod.ts";
 
 // CORS Headers for browser requests
 const corsHeaders = {

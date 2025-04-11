@@ -4,134 +4,54 @@ import { toast } from 'sonner';
 
 export interface DownloadRequestOptions {
   imageId: string;
-  imageSrc: string;
   imageTitle: string;
+  imageSrc: string;
   isHD?: boolean;
 }
 
 /**
- * Crée une demande de téléchargement dans la base de données
- * La demande est initialement créée avec le statut "pending"
- * et sera mise à jour par le système une fois le fichier prêt
+ * Prepare a download file by requesting it from the backend
+ * Returns a Promise that resolves to true if the request was successful
  */
-export async function requestImageDownload(options: DownloadRequestOptions): Promise<string | null> {
+export async function prepareDownloadFile(options: DownloadRequestOptions): Promise<boolean> {
+  const { imageId, imageTitle, imageSrc, isHD = false } = options;
+  
   try {
-    const { imageId, imageSrc, imageTitle, isHD = false } = options;
+    console.log(`Requesting ${isHD ? 'HD' : 'standard'} download for image: ${imageTitle}`);
     
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !userData.user) {
-      console.error("Erreur d'authentification:", userError);
-      toast.error('Vous devez être connecté pour télécharger des images');
-      return null;
-    }
-    
-    const user = userData.user;
-    
-    console.log('Creating download request for:', { imageId, imageTitle, userId: user.id, isHD, imageSrc });
-    
-    // Crée la requête de téléchargement avec le statut "pending"
-    const { data, error } = await supabase
-      .from('download_requests')
-      .insert({
-        user_id: user.id,
-        image_id: imageId,
-        image_title: imageTitle,
-        image_src: imageSrc,
-        status: 'pending',
-        download_url: '', // Sera mis à jour par le système une fois le fichier prêt
-        is_hd: isHD,
-        // expires_at est défini par défaut dans la base de données comme now() + '7 days'
-      })
-      .select('id');
+    // Call the Edge Function to generate the ZIP file with just this image
+    const { data, error } = await supabase.functions.invoke('generate-zip', {
+      body: {
+        images: [{
+          id: imageId,
+          url: imageSrc,
+          title: imageTitle
+        }],
+        userId: supabase.auth.getUser().then(res => res.data.user?.id),
+        isHD: isHD
+      }
+    });
     
     if (error) {
-      console.error('Erreur lors de la création de la demande de téléchargement:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
-      throw new Error(`Erreur d'insertion: ${error.message} (${error.code})`);
+      console.error("Error calling generate-zip function:", error);
+      throw new Error("Erreur lors de la préparation du téléchargement");
     }
     
-    if (!data || data.length === 0) {
-      console.error('Aucune donnée retournée après insertion');
-      throw new Error('Aucun ID de téléchargement retourné');
-    }
-    
-    const downloadId = data[0].id;
-    console.log('Download request created successfully with ID:', downloadId);
-    return downloadId;
+    console.log("Download request response:", data);
+    return true;
   } catch (error) {
-    console.error('Erreur lors de la demande de téléchargement:', error);
-    toast.error('Échec de la demande de téléchargement', {
-      description: 'Une erreur est survenue. Veuillez réessayer plus tard.'
+    console.error("Error requesting download:", error);
+    toast.error("Erreur de préparation", {
+      description: "Impossible de préparer le téléchargement. Veuillez réessayer plus tard."
     });
-    return null;
+    return false;
   }
 }
 
 /**
- * Cette fonction peut être utilisée pour déclencher une 
- * préparation de fichier côté serveur (edge function)
+ * Legacy function for requesting image download
+ * @deprecated Use prepareDownloadFile instead
  */
-export async function prepareDownloadFile(imageInfo: DownloadRequestOptions): Promise<boolean> {
-  try {
-    console.log('Preparing download file for:', imageInfo);
-    
-    // Crée d'abord la demande de téléchargement
-    const downloadId = await requestImageDownload(imageInfo);
-    
-    if (!downloadId) {
-      console.error('Failed to create download request');
-      return false;
-    }
-    
-    console.log('Download request created, ID:', downloadId);
-    
-    // Ici, on pourrait appeler une edge function pour préparer le fichier
-    // par exemple:
-    /*
-    const { error } = await supabase.functions.invoke('prepare-download', {
-      body: { 
-        downloadId,
-        imageInfo
-      }
-    });
-    
-    if (error) {
-      console.error('Erreur lors de la préparation du fichier:', error);
-      throw new Error(error.message);
-    }
-    */
-    
-    // For testing purposes, let's directly update the status to "ready" after a short delay
-    // This simulates the edge function completing its work
-    setTimeout(async () => {
-      try {
-        console.log('Simulating completed processing for download ID:', downloadId);
-        const { error } = await supabase
-          .from('download_requests')
-          .update({ 
-            status: 'ready',
-            download_url: imageInfo.imageSrc // Just use the original URL for now
-          })
-          .eq('id', downloadId);
-          
-        if (error) {
-          console.error('Error updating download status:', error);
-          console.error('Error details:', JSON.stringify(error, null, 2));
-        } else {
-          console.log('Download status updated to ready');
-        }
-      } catch (err) {
-        console.error('Error in simulated processing:', err);
-      }
-    }, 5000); // Simulate 5 seconds of processing
-    
-    return true;
-  } catch (error) {
-    console.error('Erreur lors de la préparation du fichier:', error);
-    toast.error('Échec de la préparation du fichier', {
-      description: 'Une erreur est survenue. Veuillez réessayer plus tard.'
-    });
-    return false;
-  }
+export async function requestImageDownload(options: DownloadRequestOptions): Promise<boolean> {
+  return prepareDownloadFile(options);
 }
