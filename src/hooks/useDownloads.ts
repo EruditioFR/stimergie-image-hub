@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { DownloadRequest } from '@/components/downloads/DownloadsTable';
@@ -23,63 +23,79 @@ export function useDownloads() {
   const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
 
-  useEffect(() => {
-    const fetchDownloads = async () => {
-      if (!user) {
+  // Function to convert DB format to component format
+  const formatDownload = useCallback((item: DownloadRequestData): DownloadRequest => {
+    console.log(`Formatting download ${item.id}, status: ${item.status}, URL: ${item.download_url ? 'present' : 'missing'}`);
+    
+    return {
+      id: item.id,
+      imageId: item.image_id,
+      imageSrc: item.image_src,
+      imageTitle: item.image_title,
+      requestDate: item.created_at,
+      downloadUrl: item.download_url || '', // Ensure we have at least an empty string
+      status: item.status as 'pending' | 'ready' | 'expired'
+    };
+  }, []);
+
+  // Function to fetch downloads
+  const fetchDownloads = useCallback(async () => {
+    if (!user) {
+      setDownloads([]);
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      setError(null); // Reset any previous errors
+      
+      console.log('Fetching downloads for user:', user.id);
+      
+      const { data, error } = await supabase
+        .from('download_requests')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        console.error('Error fetching downloads:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        throw new Error(error.message);
+      }
+      
+      console.log('Downloads data received:', data);
+      
+      if (!data || data.length === 0) {
+        console.log('No downloads found for user');
         setDownloads([]);
         setIsLoading(false);
         return;
       }
       
-      try {
-        setIsLoading(true);
-        setError(null); // Reset any previous errors
-        
-        console.log('Fetching downloads for user:', user.id);
-        
-        const { data, error } = await supabase
-          .from('download_requests')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-          
-        if (error) {
-          console.error('Error fetching downloads:', error);
-          console.error('Error details:', JSON.stringify(error, null, 2));
-          throw new Error(error.message);
-        }
-        
-        console.log('Downloads data received:', data);
-        
-        if (!data || data.length === 0) {
-          console.log('No downloads found for user');
-          setDownloads([]);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Format the data for the UI
-        const formattedData = data.map(item => ({
-          id: item.id,
-          imageId: item.image_id,
-          imageSrc: item.image_src,
-          imageTitle: item.image_title,
-          requestDate: item.created_at,
-          downloadUrl: item.download_url || '', // Ensure we have at least an empty string
-          status: item.status as 'pending' | 'ready' | 'expired'
-        }));
-        
-        console.log('Formatted downloads:', formattedData);
-        setDownloads(formattedData);
-        
-      } catch (err) {
-        console.error('Error loading downloads:', err);
-        setError(err instanceof Error ? err : new Error('An unknown error occurred'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      // Format the data for the UI
+      const formattedData = data.map(item => formatDownload(item as DownloadRequestData));
+      
+      console.log('Formatted downloads:', formattedData);
+      setDownloads(formattedData);
+      
+    } catch (err) {
+      console.error('Error loading downloads:', err);
+      setError(err instanceof Error ? err : new Error('An unknown error occurred'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, formatDownload]);
 
+  // Function to refresh downloads on demand
+  const refreshDownloads = useCallback(() => {
+    if (user) {
+      console.log('Manually refreshing downloads');
+      fetchDownloads();
+    }
+  }, [user, fetchDownloads]);
+
+  useEffect(() => {
     if (user) {
       fetchDownloads();
       
@@ -98,15 +114,8 @@ export function useDownloads() {
             // Type assertion to handle type errors
             const newItem = payload.new as unknown as DownloadRequestData;
             
-            const newDownload: DownloadRequest = {
-              id: newItem.id,
-              imageId: newItem.image_id,
-              imageSrc: newItem.image_src,
-              imageTitle: newItem.image_title,
-              requestDate: newItem.created_at,
-              downloadUrl: newItem.download_url || '', // Ensure we have at least an empty string
-              status: newItem.status
-            };
+            const newDownload = formatDownload(newItem);
+            console.log('New download formatted:', newDownload);
             
             setDownloads(prev => [newDownload, ...prev]);
           }
@@ -151,7 +160,7 @@ export function useDownloads() {
         supabase.removeChannel(downloadSubscription);
       };
     }
-  }, [user]);
+  }, [user, formatDownload, fetchDownloads]);
 
-  return { downloads, isLoading, error };
+  return { downloads, isLoading, error, refreshDownloads };
 }

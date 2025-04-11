@@ -10,7 +10,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 const Downloads = () => {
-  const { downloads, isLoading, error } = useDownloads();
+  const { downloads, isLoading, error, refreshDownloads } = useDownloads();
 
   useEffect(() => {
     // Set up a channel subscription for downloads page presence
@@ -34,11 +34,14 @@ const Downloads = () => {
     
     console.log('Realtime configured for downloads page');
     
+    // Force a refresh when the component mounts
+    refreshDownloads();
+    
     return () => {
       // Cleanup when component unmounts
       supabase.removeChannel(downloadChannel);
     };
-  }, []);
+  }, [refreshDownloads]);
 
   // Debug logging
   useEffect(() => {
@@ -52,6 +55,14 @@ const Downloads = () => {
       if (readyWithoutUrl.length > 0) {
         console.warn('Found ready downloads without download URLs:', readyWithoutUrl);
       }
+      
+      // Detailed logging of all downloads
+      downloads.forEach(download => {
+        console.log(`Download ID: ${download.id}, Status: ${download.status}, Has URL: ${!!download.downloadUrl}`);
+        if (download.status === 'ready' && !download.downloadUrl) {
+          console.warn(`Ready download missing URL: ${download.id}, Title: ${download.imageTitle}`);
+        }
+      });
     }
   }, [downloads]);
 
@@ -85,7 +96,7 @@ const Downloads = () => {
                 </AlertDescription>
               </Alert>
             ) : (
-              <DownloadsTable downloads={downloads} />
+              <DownloadsTable downloads={downloads} onRefresh={refreshDownloads} />
             )}
           </div>
 

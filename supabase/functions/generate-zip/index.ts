@@ -26,6 +26,8 @@ interface RequestBody {
 // Fetch image with retries
 async function fetchImageWithRetries(url: string, retries = 3, delay = 300): Promise<ArrayBuffer> {
   try {
+    console.log(`Fetching image from URL: ${url.substring(0, 50)}...`);
+    
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -34,18 +36,24 @@ async function fetchImageWithRetries(url: string, retries = 3, delay = 300): Pro
     });
 
     if (!response.ok) {
+      console.error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+      
       if (retries > 0 && response.status >= 500) {
-        console.log(`Retrying fetch for ${url}, retries left: ${retries}`);
+        console.log(`Retrying fetch for ${url.substring(0, 30)}..., retries left: ${retries}`);
         await new Promise(resolve => setTimeout(resolve, delay));
         return fetchImageWithRetries(url, retries - 1, delay * 2);
       }
       throw new Error(`Failed to fetch image: ${response.status}`);
     }
 
-    return await response.arrayBuffer();
+    const buffer = await response.arrayBuffer();
+    console.log(`Image fetched successfully, size: ${buffer.byteLength} bytes`);
+    return buffer;
   } catch (error) {
+    console.error(`Network error fetching ${url.substring(0, 30)}...: ${error.message}`);
+    
     if (retries > 0) {
-      console.log(`Network error fetching ${url}, retrying. Retries left: ${retries}`);
+      console.log(`Network error, retrying. Retries left: ${retries}`);
       await new Promise(resolve => setTimeout(resolve, delay));
       return fetchImageWithRetries(url, retries - 1, delay * 2);
     }
@@ -70,8 +78,11 @@ async function createZipFile(images: RequestBody["images"], isHD: boolean): Prom
 
   for (let i = 0; i < images.length; i += BATCH_SIZE) {
     const batch = images.slice(i, i + BATCH_SIZE);
+    console.log(`Processing batch ${i/BATCH_SIZE + 1} of ${Math.ceil(images.length/BATCH_SIZE)}`);
+    
     const batchPromises = batch.map(async (image) => {
       try {
+        console.log(`Processing image ${image.id}: ${image.title}`);
         const imageData = await fetchImageWithRetries(image.url);
         
         // Create a safe filename
@@ -84,7 +95,7 @@ async function createZipFile(images: RequestBody["images"], isHD: boolean): Prom
         processedCount++;
         return { success: true, id: image.id };
       } catch (error) {
-        console.error(`Failed to process image ${image.id}: ${error}`);
+        console.error(`Failed to process image ${image.id}: ${error.message}`);
         failedCount++;
         return { success: false, id: image.id };
       }
@@ -97,13 +108,17 @@ async function createZipFile(images: RequestBody["images"], isHD: boolean): Prom
   console.log(`ZIP creation: ${processedCount} images processed, ${failedCount} failed`);
 
   // Generate ZIP with moderate compression
-  return await zip.generateAsync({ 
+  console.log('Generating ZIP file...');
+  const zipData = await zip.generateAsync({ 
     type: "uint8array",
     compression: "DEFLATE",
     compressionOptions: {
       level: 5 // Balanced compression level
     }
   });
+  
+  console.log(`ZIP generated, size: ${zipData.length} bytes`);
+  return zipData;
 }
 
 // Upload ZIP to Supabase Storage
@@ -111,6 +126,8 @@ async function uploadZipToStorage(zipData: Uint8Array, fileName: string, supabas
   console.log(`Uploading ZIP file ${fileName} (${zipData.length} bytes)`);
   
   try {
+    console.log(`Storage bucket target: zip-downloads/public/${fileName}`);
+    
     const { data, error } = await supabase
       .storage
       .from('zip-downloads')
@@ -121,10 +138,13 @@ async function uploadZipToStorage(zipData: Uint8Array, fileName: string, supabas
     
     if (error) {
       console.error('Error uploading ZIP:', error);
-      throw new Error(`Failed to upload ZIP: ${error.message}`);
+      if (error.message) console.error('Error message:', error.message);
+      if (error.data) console.error('Error data:', error.data);
+      throw new Error(`Failed to upload ZIP: ${error.message || 'Unknown error'}`);
     }
     
     console.log('ZIP upload successful, generating signed URL');
+    console.log('Upload data:', data);
     
     // Create a signed URL that expires in 7 days (604800 seconds)
     const { data: urlData, error: urlError } = await supabase
@@ -134,7 +154,13 @@ async function uploadZipToStorage(zipData: Uint8Array, fileName: string, supabas
     
     if (urlError) {
       console.error('Error creating signed URL:', urlError);
-      throw new Error(`Failed to create download URL: ${urlError.message}`);
+      if (urlError.message) console.error('Error message:', urlError.message);
+      throw new Error(`Failed to create download URL: ${urlError.message || 'Unknown error'}`);
+    }
+    
+    if (!urlData || !urlData.signedUrl) {
+      console.error('No signed URL returned from storage');
+      throw new Error('Failed to get download URL: No URL was returned');
     }
     
     console.log(`Signed URL created successfully: ${urlData.signedUrl.substring(0, 50)}...`);
@@ -183,6 +209,7 @@ async function createDownloadRecord(
     
     if (error) {
       console.error('Error creating download record:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       throw new Error(`Failed to create download record: ${error.message}`);
     }
     
@@ -203,7 +230,7 @@ async function updateDownloadRecord(
   imageTitle?: string
 ): Promise<void> {
   console.log(`Updating download record ${recordId}`, {
-    download_url: downloadUrl,
+    download_url: downloadUrl.substring(0, 50) + "...",
     status: status,
     ...(imageTitle && { image_title: imageTitle })
   });
@@ -225,6 +252,7 @@ async function updateDownloadRecord(
     
     if (error) {
       console.error('Error updating download record:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       throw new Error(`Failed to update download record: ${error.message}`);
     }
     
@@ -236,14 +264,18 @@ async function updateDownloadRecord(
 }
 
 serve(async (req) => {
+  console.log('Generate ZIP function called');
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request (CORS preflight)');
     return new Response(null, { headers: corsHeaders });
   }
   
   try {
     // Only accept POST requests
     if (req.method !== 'POST') {
+      console.log(`Method not allowed: ${req.method}`);
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
         status: 405,
         headers: corsHeaders 
@@ -260,6 +292,7 @@ serve(async (req) => {
     });
     
     if (!userId) {
+      console.log('Missing userId in request');
       return new Response(JSON.stringify({ error: 'Missing userId' }), { 
         status: 400,
         headers: corsHeaders
@@ -267,6 +300,7 @@ serve(async (req) => {
     }
     
     if (!images || images.length === 0) {
+      console.log('No images provided in request');
       return new Response(JSON.stringify({ error: 'No images provided' }), { 
         status: 400,
         headers: corsHeaders
@@ -278,6 +312,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     
     if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase credentials');
       throw new Error('Missing Supabase credentials');
     }
     
@@ -328,6 +363,7 @@ serve(async (req) => {
           console.log(`Download record ${pendingRecord} updated to ready status with URL`);
         } catch (processingError) {
           console.error('Error in ZIP processing:', processingError);
+          console.error('Stack trace:', processingError.stack);
           
           // Update the download record with failed status
           await updateDownloadRecord(
@@ -337,9 +373,12 @@ serve(async (req) => {
             'expired', // Using expired as a failure status
             `Failed: ${images.length} images (${isHD ? 'HD' : 'Web'})`
           );
+          
+          console.log(`Download record ${pendingRecord} updated to error status`);
         }
       } catch (outerError) {
         console.error('Fatal error in ZIP processing:', outerError);
+        console.error('Stack trace:', outerError.stack);
       }
     })();
     
@@ -365,8 +404,9 @@ serve(async (req) => {
     
   } catch (error) {
     console.error('Error processing request:', error);
+    console.error('Stack trace:', error.stack);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || 'Unknown error' }),
       { status: 500, headers: corsHeaders }
     );
   }
