@@ -38,6 +38,48 @@ const DEFAULT_CONFIG: ProcessConfig = {
 };
 
 /**
+ * Ensure the ZIP Downloads bucket exists and has proper permissions
+ */
+async function ensureZipBucketExists(supabase: any): Promise<void> {
+  try {
+    // Check if bucket exists
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    
+    if (bucketsError) {
+      console.error('Error checking buckets:', bucketsError.message);
+      return;
+    }
+    
+    const zipBucket = buckets?.find((b: any) => b.name === "ZIP Downloads");
+    
+    if (!zipBucket) {
+      // Create the bucket if it doesn't exist
+      console.log('Creating ZIP Downloads bucket');
+      const { error: createError } = await supabase.storage.createBucket('ZIP Downloads', { 
+        public: true,
+        fileSizeLimit: 50 * 1024 * 1024 // 50MB
+      });
+      
+      if (createError) {
+        console.error('Failed to create bucket:', createError.message);
+        return;
+      }
+    }
+    
+    // Create the necessary policies via RPC function
+    const { error: policyError } = await supabase.rpc('ensure_zip_bucket_exists');
+    
+    if (policyError) {
+      console.error('Warning: Could not update storage policies:', policyError.message);
+    } else {
+      console.log('ZIP Downloads bucket policies have been verified');
+    }
+  } catch (error) {
+    console.error('Error in ensureZipBucketExists:', error.message);
+  }
+}
+
+/**
  * Extremely optimized image fetcher with strict resource limits
  */
 async function fetchImageWithRetries(
@@ -138,6 +180,9 @@ async function uploadZipToStorage(
   supabase: any
 ): Promise<string> {
   try {
+    // First ensure the bucket exists with proper policies
+    await ensureZipBucketExists(supabase);
+    
     const { error } = await supabase.storage
       .from('ZIP Downloads')
       .upload(fileName, zipData, {
@@ -270,6 +315,9 @@ async function processQueue(
   }, config.processing_timeout_seconds * 1000);
   
   try {
+    // Make sure the ZIP Downloads bucket exists with proper permissions
+    await ensureZipBucketExists(supabase);
+    
     // Get only one pending request at a time
     const pendingRequests = await fetchPendingRequests(supabase);
     
@@ -332,6 +380,9 @@ serve(async (req) => {
     }
     
     const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Ensure the bucket exists with proper policies
+    await ensureZipBucketExists(supabase);
     
     // Get configuration from request, if provided - SAFELY handle absence of body
     let config = DEFAULT_CONFIG;
