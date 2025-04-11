@@ -35,6 +35,15 @@ export const DownloadsTable = ({ downloads }: DownloadsTableProps) => {
       return;
     }
     
+    if (!download.downloadUrl) {
+      console.error('Download URL is missing for ready download:', download.id);
+      toast.error('URL de téléchargement manquante', {
+        description: 'Le lien de téléchargement n\'est pas disponible. Veuillez réessayer plus tard.',
+        icon: <AlertCircle className="h-4 w-4" />
+      });
+      return;
+    }
+    
     try {
       toast.loading('Préparation du téléchargement...');
       
@@ -60,6 +69,7 @@ export const DownloadsTable = ({ downloads }: DownloadsTableProps) => {
         <TableHeader>
           <TableRow>
             <TableHead>Date de demande</TableHead>
+            <TableHead>Contenu</TableHead>
             <TableHead>Statut</TableHead>
             <TableHead className="text-right">Action</TableHead>
           </TableRow>
@@ -67,7 +77,7 @@ export const DownloadsTable = ({ downloads }: DownloadsTableProps) => {
         <TableBody>
           {downloads.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={3} className="text-center py-8">
+              <TableCell colSpan={4} className="text-center py-8">
                 Aucune demande de téléchargement HD pour le moment
               </TableCell>
             </TableRow>
@@ -75,6 +85,7 @@ export const DownloadsTable = ({ downloads }: DownloadsTableProps) => {
             downloads.map((download) => (
               <TableRow key={download.id}>
                 <TableCell>{formatDate(download.requestDate)}</TableCell>
+                <TableCell className="max-w-[200px] truncate">{download.imageTitle}</TableCell>
                 <TableCell>
                   {download.status === 'pending' && (
                     <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100 flex items-center gap-1 w-fit">
@@ -98,7 +109,7 @@ export const DownloadsTable = ({ downloads }: DownloadsTableProps) => {
                     variant="outline" 
                     size="sm" 
                     className="py-4"
-                    disabled={download.status !== 'ready'}
+                    disabled={download.status !== 'ready' || !download.downloadUrl}
                     onClick={() => handleDownload(download)}
                   >
                     <Download className="h-4 w-4 mr-2" />

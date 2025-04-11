@@ -37,7 +37,6 @@ export function useDownloads() {
         
         console.log('Fetching downloads for user:', user.id);
         
-        // Use type assertion to avoid TypeScript errors with the download_requests table
         const { data, error } = await supabase
           .from('download_requests')
           .select('*')
@@ -66,7 +65,7 @@ export function useDownloads() {
           imageSrc: item.image_src,
           imageTitle: item.image_title,
           requestDate: item.created_at,
-          downloadUrl: item.download_url,
+          downloadUrl: item.download_url || '', // Ensure we have at least an empty string
           status: item.status as 'pending' | 'ready' | 'expired'
         }));
         
@@ -74,8 +73,8 @@ export function useDownloads() {
         setDownloads(formattedData);
         
       } catch (err) {
-        console.error('Erreur lors du chargement des téléchargements:', err);
-        setError(err instanceof Error ? err : new Error('Une erreur inconnue est survenue'));
+        console.error('Error loading downloads:', err);
+        setError(err instanceof Error ? err : new Error('An unknown error occurred'));
       } finally {
         setIsLoading(false);
       }
@@ -105,7 +104,7 @@ export function useDownloads() {
               imageSrc: newItem.image_src,
               imageTitle: newItem.image_title,
               requestDate: newItem.created_at,
-              downloadUrl: newItem.download_url,
+              downloadUrl: newItem.download_url || '', // Ensure we have at least an empty string
               status: newItem.status
             };
             
@@ -124,13 +123,15 @@ export function useDownloads() {
             // Type assertion to handle type errors
             const updatedItem = payload.new as unknown as DownloadRequestData;
             
+            console.log(`Updating download ${updatedItem.id} with new status: ${updatedItem.status} and URL: ${updatedItem.download_url || 'empty'}`);
+            
             setDownloads(prev => 
               prev.map(download => 
                 download.id === updatedItem.id 
                   ? {
                       ...download,
                       status: updatedItem.status,
-                      downloadUrl: updatedItem.download_url,
+                      downloadUrl: updatedItem.download_url || '', // Ensure we have at least an empty string
                       imageTitle: updatedItem.image_title
                     }
                   : download

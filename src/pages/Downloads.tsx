@@ -13,8 +13,7 @@ const Downloads = () => {
   const { downloads, isLoading, error } = useDownloads();
 
   useEffect(() => {
-    // The previous approach using supabase.realtime.setConfig() was incorrect
-    // Let's create a channel subscription for downloads page presence
+    // Set up a channel subscription for downloads page presence
     const downloadChannel = supabase.channel('download_page_presence', {
       config: {
         presence: {
@@ -40,6 +39,21 @@ const Downloads = () => {
       supabase.removeChannel(downloadChannel);
     };
   }, []);
+
+  // Debug logging
+  useEffect(() => {
+    if (downloads.length > 0) {
+      console.log('Downloads ready to render:', downloads.length);
+      console.log('Downloads with ready status:', downloads.filter(d => d.status === 'ready').length);
+      console.log('Downloads with download URLs:', downloads.filter(d => !!d.downloadUrl).length);
+      
+      // Check for ready downloads without URLs
+      const readyWithoutUrl = downloads.filter(d => d.status === 'ready' && !d.downloadUrl);
+      if (readyWithoutUrl.length > 0) {
+        console.warn('Found ready downloads without download URLs:', readyWithoutUrl);
+      }
+    }
+  }, [downloads]);
 
   return (
     <div className="min-h-screen flex flex-col">
