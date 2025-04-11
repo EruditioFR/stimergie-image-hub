@@ -171,9 +171,10 @@ serve(async (req) => {
 
     try {
       // @ts-ignore
+      console.log('[GENERATE-ZIP] using op_wait_until...');
       Deno.core.opAsync("op_wait_until", promise);
     } catch {
-      // Fallback if not supported
+       console.log('[GENERATE-ZIP] op_wait_until not supported');
     }
 
     return new Response(JSON.stringify({
