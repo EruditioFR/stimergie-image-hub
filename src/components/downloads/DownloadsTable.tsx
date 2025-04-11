@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import {
   Table,
@@ -40,11 +41,10 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
     
     if (readyDownloadsWithoutUrl.length > 0) {
       console.log('Found ready downloads with missing URLs:', readyDownloadsWithoutUrl.length);
-      if (onRefresh) {
-        onRefresh();
-      }
+      // Only log this info, but don't automatically trigger a refresh
+      // Let the user click the "Récupérer" button instead to avoid refresh loops
     }
-  }, [downloads, onRefresh]);
+  }, [downloads]);
 
   const handleDownload = (download: DownloadRequest) => {
     if (download.status !== 'ready') {

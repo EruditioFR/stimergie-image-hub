@@ -28,6 +28,7 @@ export function useDownloads() {
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const retryCountRef = useRef(0);
   const hasInitialFetchRef = useRef(false);
+  const isMountedRef = useRef(true);
   
   // Function to convert DB format to component format
   const formatDownload = useCallback((item: DownloadRequestData): DownloadRequest => {
@@ -47,6 +48,9 @@ export function useDownloads() {
 
   // Function to fetch downloads with retry logic
   const fetchDownloads = useCallback(async (retryAttempt = 0) => {
+    // Guard to prevent fetch when unmounted
+    if (!isMountedRef.current) return;
+    
     if (!user) {
       setDownloads([]);
       setIsLoading(false);
@@ -75,7 +79,7 @@ export function useDownloads() {
           const refreshed = await refreshSession();
           
           // If refreshed successfully, retry the fetch
-          if (refreshed && retryAttempt < 3) {
+          if (refreshed && retryAttempt < 3 && isMountedRef.current) {
             console.log(`Retrying fetch after session refresh (attempt ${retryAttempt + 1})`);
             // Clear any existing timeout
             if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
@@ -95,6 +99,8 @@ export function useDownloads() {
       retryCountRef.current = 0; // Reset retry counter on success
       hasInitialFetchRef.current = true;
       
+      if (!isMountedRef.current) return; // Early return if unmounted during async operation
+      
       if (!data || data.length === 0) {
         console.log('No downloads found for user');
         setDownloads([]);
@@ -112,11 +118,13 @@ export function useDownloads() {
       setIsLoading(false);
       
     } catch (err) {
+      if (!isMountedRef.current) return; // Early return if unmounted during error handling
+      
       console.error('Error loading downloads:', err);
       setError(err instanceof Error ? err : new Error('An unknown error occurred'));
       
       // Implement retry with backoff if appropriate
-      if (retryAttempt < 3) {
+      if (retryAttempt < 3 && isMountedRef.current) {
         const backoffTime = Math.pow(2, retryAttempt) * 1000;
         console.log(`Will retry fetching downloads in ${backoffTime}ms (attempt ${retryAttempt + 1})`);
         
@@ -125,7 +133,9 @@ export function useDownloads() {
         
         // Set timeout for retry with backoff
         fetchTimeoutRef.current = setTimeout(() => {
-          fetchDownloads(retryAttempt + 1);
+          if (isMountedRef.current) {
+            fetchDownloads(retryAttempt + 1);
+          }
         }, backoffTime);
       } else {
         // After multiple retries, show user-facing error
@@ -141,21 +151,21 @@ export function useDownloads() {
 
   // Function to refresh downloads on demand with connection error handling
   const refreshDownloads = useCallback(async () => {
-    if (user) {
-      console.log('Manually refreshing downloads');
-      
-      // Check for existing subscription and recreate if needed
-      if (!subscriptionRef.current) {
-        setupRealtimeSubscription();
-      }
-      
-      await fetchDownloads();
+    if (!user || !isMountedRef.current) return;
+    
+    console.log('Manually refreshing downloads');
+    
+    // Check for existing subscription and recreate if needed
+    if (!subscriptionRef.current) {
+      setupRealtimeSubscription();
     }
+    
+    await fetchDownloads();
   }, [user, fetchDownloads]);
 
   // Setup the realtime subscription with better error handling
   const setupRealtimeSubscription = useCallback(() => {
-    if (!user) return null;
+    if (!user || !isMountedRef.current) return null;
     
     try {
       console.log('Setting up download-requests-changes subscription');
@@ -176,6 +186,8 @@ export function useDownloads() {
           table: 'download_requests',
           filter: `user_id=eq.${user.id}` // Listen only to changes for current user
         }, payload => {
+          if (!isMountedRef.current) return; // Skip if component unmounted
+          
           // When a new download is ready, add it to the list
           if (payload.new) {
             console.log('New download detected:', payload.new);
@@ -194,6 +206,8 @@ export function useDownloads() {
           table: 'download_requests',
           filter: `user_id=eq.${user.id}` // Listen only to changes for current user
         }, payload => {
+          if (!isMountedRef.current) return; // Skip if component unmounted
+          
           // When a download status changes, update it in the list
           if (payload.new) {
             console.log('Download update detected:', payload.new);
@@ -228,10 +242,12 @@ export function useDownloads() {
           console.log('Realtime disconnected for downloads subscription');
           
           // Queue reconnection attempt, but don't refresh
-          setTimeout(() => {
-            console.log('Attempting to recreate downloads subscription after disconnect');
-            setupRealtimeSubscription();
-          }, 3000);
+          if (isMountedRef.current) {
+            setTimeout(() => {
+              console.log('Attempting to recreate downloads subscription after disconnect');
+              if (isMountedRef.current) setupRealtimeSubscription();
+            }, 3000);
+          }
         })
         .subscribe((status) => {
           console.log('Download subscription status:', status);
@@ -243,10 +259,12 @@ export function useDownloads() {
             // Try to refresh the session
             refreshSession().then(() => {
               // After refreshing, setup subscription again
-              setTimeout(() => {
-                console.log('Retrying subscription setup after session refresh');
-                setupRealtimeSubscription();
-              }, 1000);
+              if (isMountedRef.current) {
+                setTimeout(() => {
+                  console.log('Retrying subscription setup after session refresh');
+                  if (isMountedRef.current) setupRealtimeSubscription();
+                }, 1000);
+              }
             });
           }
         });
@@ -262,21 +280,30 @@ export function useDownloads() {
 
   // Initial setup - with protection against multiple fetches
   useEffect(() => {
+    isMountedRef.current = true;  // Mark as mounted
+    
     if (user && !hasInitialFetchRef.current) {
+      console.log('Initial setup in useDownloads');
       fetchDownloads();
       const subscription = setupRealtimeSubscription();
-      
-      // Cleanup subscription on unmount
-      return () => {
-        console.log('Cleaning up download_requests subscription');
-        if (fetchTimeoutRef.current) {
-          clearTimeout(fetchTimeoutRef.current);
-        }
-        if (subscription) {
-          supabase.removeChannel(subscription);
-        }
-      };
     }
+    
+    // Cleanup on unmount
+    return () => {
+      console.log('Cleaning up download_requests subscription');
+      isMountedRef.current = false;  // Mark as unmounted
+      
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+        fetchTimeoutRef.current = null;
+      }
+      
+      if (subscriptionRef.current) {
+        console.log('Removing subscription on unmount');
+        supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
+      }
+    };
   }, [user, fetchDownloads, setupRealtimeSubscription]);
 
   return { downloads, isLoading, error, refreshDownloads };

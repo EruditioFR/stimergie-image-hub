@@ -18,6 +18,7 @@ const Downloads = () => {
   const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
   const [hasInitialLoad, setHasInitialLoad] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [initialRefreshDone, setInitialRefreshDone] = useState(false);
 
   useEffect(() => {
     // Set up a channel subscription for downloads page presence and monitoring
@@ -68,9 +69,10 @@ const Downloads = () => {
     console.log('Realtime configured for downloads page');
     
     // Force a refresh when the component mounts - but only once
-    if (!hasInitialLoad) {
+    if (!initialRefreshDone && !isLoading) {
+      console.log('Performing initial refresh on Downloads page mount');
       refreshDownloads();
-      setHasInitialLoad(true);
+      setInitialRefreshDone(true);
     }
     
     return () => {
@@ -78,20 +80,15 @@ const Downloads = () => {
       console.log('Removing download page channel');
       supabase.removeChannel(downloadChannel);
     };
-  }, [refreshDownloads, hasInitialLoad]);
+  }, [refreshDownloads, initialRefreshDone, isLoading]);
 
   // Debug logging - reducing frequency by only logging when downloads change
   useEffect(() => {
     if (downloads.length > 0 && !isLoading) {
       console.log('Downloads ready to render:', downloads.length);
-      console.log('Downloads with ready status:', downloads.filter(d => d.status === 'ready').length);
-      console.log('Downloads with download URLs:', downloads.filter(d => !!d.downloadUrl).length);
       
-      // Check for ready downloads without URLs
-      const readyWithoutUrl = downloads.filter(d => d.status === 'ready' && !d.downloadUrl);
-      if (readyWithoutUrl.length > 0) {
-        console.warn('Found ready downloads without download URLs:', readyWithoutUrl);
-      }
+      // Don't automatically refresh when we detect ready downloads without URLs
+      // Instead, let the user manually refresh or use the refresh button in the table
     }
   }, [downloads, isLoading]);
 
