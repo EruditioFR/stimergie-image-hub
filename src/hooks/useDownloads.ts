@@ -27,6 +27,7 @@ export function useDownloads() {
   const subscriptionRef = useRef<RealtimeChannel | null>(null);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const retryCountRef = useRef(0);
+  const hasInitialFetchRef = useRef(false);
   
   // Function to convert DB format to component format
   const formatDownload = useCallback((item: DownloadRequestData): DownloadRequest => {
@@ -91,6 +92,7 @@ export function useDownloads() {
       
       console.log('Downloads data received:', data);
       retryCountRef.current = 0; // Reset retry counter on success
+      hasInitialFetchRef.current = true;
       
       if (!data || data.length === 0) {
         console.log('No downloads found for user');
@@ -224,7 +226,7 @@ export function useDownloads() {
         .on('system', { event: 'disconnect' }, () => {
           console.log('Realtime disconnected for downloads subscription');
           
-          // Queue reconnection attempt
+          // Queue reconnection attempt, but don't refresh
           setTimeout(() => {
             console.log('Attempting to recreate downloads subscription after disconnect');
             setupRealtimeSubscription();
@@ -257,9 +259,9 @@ export function useDownloads() {
     }
   }, [user, formatDownload, downloads]);
 
-  // Initial setup
+  // Initial setup - with protection against multiple fetches
   useEffect(() => {
-    if (user) {
+    if (user && !hasInitialFetchRef.current) {
       fetchDownloads();
       const subscription = setupRealtimeSubscription();
       
@@ -274,7 +276,7 @@ export function useDownloads() {
         }
       };
     }
-  }, [user, formatDownload, fetchDownloads, setupRealtimeSubscription]);
+  }, [user, fetchDownloads, setupRealtimeSubscription]);
 
   return { downloads, isLoading, error, refreshDownloads };
 }

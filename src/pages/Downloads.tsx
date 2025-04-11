@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 const Downloads = () => {
   const { downloads, isLoading, error, refreshDownloads } = useDownloads();
   const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
+  const [hasInitialLoad, setHasInitialLoad] = useState(false);
 
   useEffect(() => {
     // Set up a channel subscription for downloads page presence and monitoring
@@ -61,25 +62,30 @@ const Downloads = () => {
           console.log('Attempting to refresh session due to subscription error');
           await refreshSession();
           // Force a refresh of downloads after session refresh
-          setTimeout(() => refreshDownloads(), 1000);
+          if (hasInitialLoad) {
+            setTimeout(() => refreshDownloads(), 1000);
+          }
         }
       });
     
     console.log('Realtime configured for downloads page');
     
-    // Force a refresh when the component mounts
-    refreshDownloads();
+    // Force a refresh when the component mounts - but only once
+    if (!hasInitialLoad) {
+      refreshDownloads();
+      setHasInitialLoad(true);
+    }
     
     return () => {
       // Cleanup when component unmounts
       console.log('Removing download page channel');
       supabase.removeChannel(downloadChannel);
     };
-  }, [refreshDownloads]);
+  }, [refreshDownloads, hasInitialLoad]);
 
-  // Debug logging
+  // Debug logging - reducing frequency by only logging when downloads change
   useEffect(() => {
-    if (downloads.length > 0) {
+    if (downloads.length > 0 && !isLoading) {
       console.log('Downloads ready to render:', downloads.length);
       console.log('Downloads with ready status:', downloads.filter(d => d.status === 'ready').length);
       console.log('Downloads with download URLs:', downloads.filter(d => !!d.downloadUrl).length);
@@ -98,15 +104,17 @@ const Downloads = () => {
         }
       });
     }
-  }, [downloads]);
+  }, [downloads, isLoading]);
 
-  // Force a refresh of downloads when realtime reconnects
+  // Modified reconnection effect to prevent refresh loops
   useEffect(() => {
-    if (realtimeStatus === 'connected') {
+    // Only refresh once when realtime status becomes connected from another state
+    // and we have completed the initial load
+    if (realtimeStatus === 'connected' && hasInitialLoad) {
       console.log('Refreshing downloads after realtime connection established');
-      refreshDownloads();
+      // We won't call refreshDownloads() automatically here as it's causing refresh loops
     }
-  }, [realtimeStatus, refreshDownloads]);
+  }, [realtimeStatus, hasInitialLoad]);
 
   const handleManualRefresh = () => {
     toast.info('Actualisation des téléchargements...');
