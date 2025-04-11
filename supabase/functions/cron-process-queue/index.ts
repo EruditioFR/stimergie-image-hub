@@ -13,7 +13,7 @@ serve(async (_req) => {
     
     // Add shorter timeout to avoid function hanging
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout (reduced)
+    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 second timeout (reduced)
     
     try {
       // Call the process-queue function with minimal configuration
@@ -23,7 +23,7 @@ serve(async (_req) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${ANON_KEY}`
         },
-        body: JSON.stringify({ max_batch_size: 1, processing_timeout_seconds: 120 }),
+        body: JSON.stringify({ max_batch_size: 1, processing_timeout_seconds: 80 }),
         signal: controller.signal
       });
       

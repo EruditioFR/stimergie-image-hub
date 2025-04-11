@@ -34,7 +34,7 @@ interface ProcessConfig {
 // Further reduced configuration to address resource limits
 const DEFAULT_CONFIG: ProcessConfig = {
   max_batch_size: 1, // Process one request at a time
-  processing_timeout_seconds: 120, // 2 minutes timeout (reduced from 3)
+  processing_timeout_seconds: 90, // 90 seconds timeout (reduced from 120)
 };
 
 /**
@@ -42,12 +42,12 @@ const DEFAULT_CONFIG: ProcessConfig = {
  */
 async function fetchImageWithRetries(
   url: string,
-  retries = 0, // No retries by default to save resources
+  retries = 2, // Reduced retries to save resources
   delay = 200
 ): Promise<ArrayBuffer> {
   try {
     const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), 8000); // 8 second timeout (reduced)
+    const timeoutId = setTimeout(() => abortController.abort(), 6000); // 6 second timeout (reduced)
     
     const response = await fetch(url, {
       method: 'GET',
@@ -64,6 +64,7 @@ async function fetchImageWithRetries(
       }
       throw new Error(`HTTP error ${response.status}`);
     }
+    
     return await response.arrayBuffer();
   } catch (error) {
     if (error.name === 'AbortError') {
@@ -86,18 +87,11 @@ async function createZipFile(
   supabase: any
 ): Promise<{ zipData: Uint8Array; imageCount: number }> {
   // Set a strict timeout
-  const zipCreationTimeoutId = setTimeout(() => {
-    throw new Error("ZIP creation timeout exceeded");
-  }, 100000); // 100 seconds timeout (reduced)
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error("ZIP creation timeout exceeded")), 60000); // 60 seconds timeout (reduced)
+  });
 
   try {
-    // Only handle one image at a time to reduce memory usage
-    const image = {
-      id: downloadRequest.image_id,
-      title: downloadRequest.image_title || `image_${downloadRequest.image_id}`,
-      url: downloadRequest.image_src
-    };
-    
     // Create a minimal ZIP object
     const zip = new JSZip();
     const folder = zip.folder("images");
@@ -105,7 +99,10 @@ async function createZipFile(
     
     try {
       // Download with strict timeout
-      const buffer = await fetchImageWithRetries(image.url);
+      const buffer = await Promise.race([
+        fetchImageWithRetries(downloadRequest.image_src),
+        timeoutPromise
+      ]);
       
       // Use simpler file naming
       const safeName = `image.jpg`;
@@ -114,7 +111,7 @@ async function createZipFile(
       // Explicitly help garbage collection
       (buffer as any) = null;
     } catch (err) {
-      console.error(`Error for image ${image.id}: ${err.message}`);
+      console.error(`Error for image ${downloadRequest.image_id}: ${err.message}`);
       throw new Error(`Failed to download image: ${err.message}`);
     }
 
@@ -125,10 +122,8 @@ async function createZipFile(
       compressionOptions: { level: 1 }, // Lowest compression level
     });
 
-    clearTimeout(zipCreationTimeoutId);
     return { zipData, imageCount: 1 };
   } catch (error) {
-    clearTimeout(zipCreationTimeoutId);
     console.error(`Error creating ZIP: ${error.message}`);
     throw error;
   }
@@ -175,10 +170,10 @@ async function processDownloadRequest(
   downloadRequest: DownloadRequest,
   supabase: any
 ): Promise<void> {
-  // Add a strict global timeout
-  const timeout = setTimeout(() => {
-    throw new Error("Processing timeout exceeded");
-  }, 120000); // 2 minutes maximum (reduced)
+  // Create a tracking promise that will reject after the timeout
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error("Processing timeout exceeded")), 80000); // 80 seconds maximum (reduced)
+  });
   
   try {
     // Mark as processing
@@ -195,8 +190,11 @@ async function processDownloadRequest(
     const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
     const zipFileName = `${prefix}image_${dateStr}_${downloadRequest.id.slice(0, 8)}.zip`;
     
-    // Create the ZIP with optimized settings
-    const { zipData, imageCount } = await createZipFile(downloadRequest, supabase);
+    // Create the ZIP with optimized settings and race against timeout
+    const { zipData } = await Promise.race([
+      createZipFile(downloadRequest, supabase),
+      timeoutPromise
+    ]);
     
     // Upload the ZIP
     const publicUrl = await uploadZipToStorage(zipData, zipFileName, supabase);
@@ -213,11 +211,7 @@ async function processDownloadRequest(
         processed_at: new Date().toISOString(),
       })
       .eq('id', downloadRequest.id);
-    
-    clearTimeout(timeout);
   } catch (error) {
-    clearTimeout(timeout);
-    
     console.error(`Processing failed for ${downloadRequest.id}: ${error.message}`);
     
     // Update as failed
@@ -260,26 +254,26 @@ async function fetchPendingRequests(
  * Main queue processing function with strict resource control
  */
 async function processQueue(
-  supabase: any
+  supabase: any,
+  config: ProcessConfig = DEFAULT_CONFIG
 ): Promise<{
   processed: number;
   success: number;
   failed: number;
   remaining: number;
 }> {
-  // Set a strict global timeout
+  // Set a global timeout flag
   let isTimedOut = false;
-  const queueTimeout = setTimeout(() => {
+  setTimeout(() => {
     isTimedOut = true;
     console.log("Queue processing timeout reached");
-  }, 120000); // 2 minutes - reduced to avoid resource limits
+  }, config.processing_timeout_seconds * 1000);
   
   try {
     // Get only one pending request at a time
     const pendingRequests = await fetchPendingRequests(supabase);
     
     if (pendingRequests.length === 0) {
-      clearTimeout(queueTimeout);
       return { processed: 0, success: 0, failed: 0, remaining: 0 };
     }
     
@@ -303,8 +297,6 @@ async function processQueue(
       .select('*', { count: 'exact', head: true })
       .eq('status', 'pending');
     
-    clearTimeout(queueTimeout);
-    
     return {
       processed: pendingRequests.length,
       success,
@@ -312,7 +304,6 @@ async function processQueue(
       remaining: count || 0
     };
   } catch (error) {
-    clearTimeout(queueTimeout);
     console.error(`Queue processing error: ${error.message}`);
     
     return {
@@ -342,8 +333,21 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
     
+    // Get configuration from request, if provided
+    let config = DEFAULT_CONFIG;
+    try {
+      const requestData = await req.json();
+      config = {
+        ...DEFAULT_CONFIG,
+        ...requestData
+      };
+    } catch (e) {
+      // If request parsing fails, use defaults
+      console.log("Using default configuration");
+    }
+    
     // Process the queue with strict resource constraints
-    const result = await processQueue(supabase);
+    const result = await processQueue(supabase, config);
     
     return new Response(
       JSON.stringify({

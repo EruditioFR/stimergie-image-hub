@@ -10,6 +10,7 @@ interface DownloadButtonProps {
   label: string;
   sizeHint?: string;
   mobileLabel?: string;
+  disabled?: boolean;
 }
 
 export function DownloadButton({ 
@@ -17,20 +18,21 @@ export function DownloadButton({
   onClick, 
   label, 
   sizeHint,
-  mobileLabel = "Télécharger"
+  mobileLabel = "Télécharger",
+  disabled = false
 }: DownloadButtonProps) {
   return (
     <Button 
       variant="outline" 
       size="sm" 
       onClick={onClick}
-      disabled={isLoading}
+      disabled={isLoading || disabled}
       className="flex items-center gap-2 py-4"
     >
       {isLoading ? (
         <>
           <LoadingSpinner size={16} className="mr-1" /> 
-          Préparation...
+          <span className="text-xs">Préparation...</span>
         </>
       ) : (
         <>
