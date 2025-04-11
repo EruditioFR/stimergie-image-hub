@@ -30,7 +30,7 @@ export function DownloadButton({
       {isLoading ? (
         <>
           <LoadingSpinner size={16} className="mr-1" /> 
-          Création du ZIP...
+          Préparation...
         </>
       ) : (
         <>

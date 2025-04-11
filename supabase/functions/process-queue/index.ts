@@ -31,23 +31,23 @@ interface ProcessConfig {
   processing_timeout_seconds: number;
 }
 
-// Configuration with optimized default values
+// Further reduced configuration to address resource limits
 const DEFAULT_CONFIG: ProcessConfig = {
-  max_batch_size: 1, // Process one request at a time to minimize resource usage
-  processing_timeout_seconds: 180, // 3 minutes per processing (reduced from 5)
+  max_batch_size: 1, // Process one request at a time
+  processing_timeout_seconds: 120, // 2 minutes timeout (reduced from 3)
 };
 
 /**
- * Fetch image with optimized retry logic
+ * Extremely optimized image fetcher with strict resource limits
  */
 async function fetchImageWithRetries(
   url: string,
-  retries = 1, // Reduced to 1 retry (was 2)
-  delay = 300
+  retries = 0, // No retries by default to save resources
+  delay = 200
 ): Promise<ArrayBuffer> {
   try {
     const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => abortController.abort(), 8000); // 8 second timeout (reduced)
     
     const response = await fetch(url, {
       method: 'GET',
@@ -79,63 +79,54 @@ async function fetchImageWithRetries(
 }
 
 /**
- * Creates a ZIP file - completely rewritten for efficiency
+ * Extremely memory-efficient ZIP creation 
  */
 async function createZipFile(
   downloadRequest: DownloadRequest,
   supabase: any
 ): Promise<{ zipData: Uint8Array; imageCount: number }> {
-  // Set a reasonable timeout for the entire ZIP creation process
+  // Set a strict timeout
   const zipCreationTimeoutId = setTimeout(() => {
     throw new Error("ZIP creation timeout exceeded");
-  }, 180000); // 3 minute timeout
+  }, 100000); // 100 seconds timeout (reduced)
 
   try {
-    let images: { id: string; title: string; url: string }[] = [{
+    // Only handle one image at a time to reduce memory usage
+    const image = {
       id: downloadRequest.image_id,
       title: downloadRequest.image_title || `image_${downloadRequest.image_id}`,
       url: downloadRequest.image_src
-    }];
+    };
     
-    // Create a more lightweight ZIP object
+    // Create a minimal ZIP object
     const zip = new JSZip();
     const folder = zip.folder("images");
     if (!folder) throw new Error("Unable to create ZIP folder");
-
-    let successfulImages = 0;
     
-    // Process images one at a time to preserve memory
-    for (const image of images) {
-      try {
-        // Enforce timeout per image download
-        const buffer = await fetchImageWithRetries(image.url);
-        
-        // Use simpler, memory-efficient file naming
-        const safeName = `image_${successfulImages + 1}.jpg`;
-        folder.file(safeName, buffer);
-        successfulImages++;
-        
-        // Free memory explicitly
-        (buffer as any) = null;
-      } catch (err) {
-        console.error(`Error for image ${image.id}: ${err.message}`);
-        continue;
-      }
+    try {
+      // Download with strict timeout
+      const buffer = await fetchImageWithRetries(image.url);
+      
+      // Use simpler file naming
+      const safeName = `image.jpg`;
+      folder.file(safeName, buffer);
+      
+      // Explicitly help garbage collection
+      (buffer as any) = null;
+    } catch (err) {
+      console.error(`Error for image ${image.id}: ${err.message}`);
+      throw new Error(`Failed to download image: ${err.message}`);
     }
 
-    if (successfulImages === 0) {
-      throw new Error("No images could be downloaded");
-    }
-
-    // Generate ZIP with lower compression for efficiency
+    // Generate ZIP with minimal compression
     const zipData = await zip.generateAsync({
       type: "uint8array",
       compression: "DEFLATE",
-      compressionOptions: { level: 1 }, // Lowest compression level to save CPU
+      compressionOptions: { level: 1 }, // Lowest compression level
     });
 
     clearTimeout(zipCreationTimeoutId);
-    return { zipData, imageCount: successfulImages };
+    return { zipData, imageCount: 1 };
   } catch (error) {
     clearTimeout(zipCreationTimeoutId);
     console.error(`Error creating ZIP: ${error.message}`);
@@ -144,7 +135,7 @@ async function createZipFile(
 }
 
 /**
- * Upload ZIP to storage with optimized settings
+ * Upload ZIP to storage with minimal resource usage
  */
 async function uploadZipToStorage(
   zipData: Uint8Array,
@@ -152,7 +143,6 @@ async function uploadZipToStorage(
   supabase: any
 ): Promise<string> {
   try {
-    // Ensure the bucket exists
     const { error } = await supabase.storage
       .from('ZIP Downloads')
       .upload(fileName, zipData, {
@@ -179,16 +169,16 @@ async function uploadZipToStorage(
 }
 
 /**
- * Process a single download request with proper timeouts
+ * Process a single download request with strict resource limits
  */
 async function processDownloadRequest(
   downloadRequest: DownloadRequest,
   supabase: any
 ): Promise<void> {
-  // Add a global timeout for the entire processing function
+  // Add a strict global timeout
   const timeout = setTimeout(() => {
     throw new Error("Processing timeout exceeded");
-  }, 180000); // 3 minutes maximum
+  }, 120000); // 2 minutes maximum (reduced)
   
   try {
     // Mark as processing
@@ -203,7 +193,7 @@ async function processDownloadRequest(
     // Generate simplified file name
     const prefix = downloadRequest.is_hd ? 'hd-' : '';
     const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
-    const zipFileName = `${prefix}images_${dateStr}_${downloadRequest.id.slice(0, 8)}.zip`;
+    const zipFileName = `${prefix}image_${dateStr}_${downloadRequest.id.slice(0, 8)}.zip`;
     
     // Create the ZIP with optimized settings
     const { zipData, imageCount } = await createZipFile(downloadRequest, supabase);
@@ -212,9 +202,7 @@ async function processDownloadRequest(
     const publicUrl = await uploadZipToStorage(zipData, zipFileName, supabase);
     
     // Mark as completed
-    const title = imageCount > 1 
-      ? `${imageCount} images (${downloadRequest.is_hd ? 'HD' : 'Web'})` 
-      : `${downloadRequest.image_title} (${downloadRequest.is_hd ? 'HD' : 'Web'})`;
+    const title = downloadRequest.image_title || `Image (${downloadRequest.is_hd ? 'HD' : 'Web'})`;
     
     await supabase
       .from('download_requests')
@@ -245,20 +233,19 @@ async function processDownloadRequest(
 }
 
 /**
- * Fetch pending requests with minimal fields
+ * Fetch pending requests with minimal fields - one at a time only
  */
 async function fetchPendingRequests(
-  supabase: any,
-  config: ProcessConfig
+  supabase: any
 ): Promise<DownloadRequest[]> {
   try {
-    // Only select necessary fields to reduce payload size
+    // Only select necessary fields and limit to 1 record always
     const { data, error } = await supabase
       .from('download_requests')
       .select('id, user_id, image_id, image_title, image_src, is_hd, created_at')
       .eq('status', 'pending')
       .order('created_at', { ascending: true })
-      .limit(config.max_batch_size);
+      .limit(1); // Always limit to 1 to reduce resource usage
     
     if (error) throw new Error(`Error fetching requests: ${error.message}`);
     
@@ -270,10 +257,9 @@ async function fetchPendingRequests(
 }
 
 /**
- * Main queue processing function with resource control
+ * Main queue processing function with strict resource control
  */
 async function processQueue(
-  config: ProcessConfig = DEFAULT_CONFIG,
   supabase: any
 ): Promise<{
   processed: number;
@@ -281,16 +267,16 @@ async function processQueue(
   failed: number;
   remaining: number;
 }> {
-  // Set a global timeout for the entire queue processing
+  // Set a strict global timeout
   let isTimedOut = false;
   const queueTimeout = setTimeout(() => {
     isTimedOut = true;
     console.log("Queue processing timeout reached");
-  }, 230000); // 3 minutes and 50 seconds - just under the 4 minute function limit
+  }, 120000); // 2 minutes - reduced to avoid resource limits
   
   try {
-    // Get pending requests (limiting to just 1 for lower resource usage)
-    const pendingRequests = await fetchPendingRequests(supabase, config);
+    // Get only one pending request at a time
+    const pendingRequests = await fetchPendingRequests(supabase);
     
     if (pendingRequests.length === 0) {
       clearTimeout(queueTimeout);
@@ -300,16 +286,10 @@ async function processQueue(
     let success = 0;
     let failed = 0;
     
-    // Process one request at a time
-    for (const request of pendingRequests) {
-      // Check if we've exceeded our time budget
-      if (isTimedOut) {
-        console.log("Stopping queue processing due to timeout");
-        break;
-      }
-      
+    // Process exactly one request
+    if (!isTimedOut && pendingRequests.length > 0) {
       try {
-        await processDownloadRequest(request, supabase);
+        await processDownloadRequest(pendingRequests[0], supabase);
         success++;
       } catch (error) {
         console.error(`Processing error: ${error.message}`);
@@ -344,7 +324,7 @@ async function processQueue(
   }
 }
 
-// HTTP server with improved error handling
+// HTTP server with minimal overhead
 serve(async (req) => {
   // CORS handling
   if (req.method === 'OPTIONS') {
@@ -352,14 +332,6 @@ serve(async (req) => {
   }
   
   try {
-    // Validate request method
-    if (req.method !== 'GET' && req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { status: 405, headers: corsHeaders }
-      );
-    }
-    
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -370,14 +342,8 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Use minimal configuration
-    const config = {
-      ...DEFAULT_CONFIG,
-      max_batch_size: 1 // Force to 1 to minimize resource usage
-    };
-    
-    // Process the queue with resource constraints
-    const result = await processQueue(config, supabase);
+    // Process the queue with strict resource constraints
+    const result = await processQueue(supabase);
     
     return new Response(
       JSON.stringify({
