@@ -125,6 +125,23 @@ async function updateDownloadRecord(
   if (error) throw new Error(`Update failed: ${error.message}`);
 }
 
+async function triggerProcessQueue(supabase: any): Promise<void> {
+  try {
+    console.log("[ZIP] 🔄 Déclenchement immédiat du traitement");
+    const { data, error } = await supabase.functions.invoke('process-queue', {
+      body: { max_batch_size: 1, processing_timeout_seconds: 600 }
+    });
+    
+    if (error) {
+      console.error("[ZIP] ❌ Échec du déclenchement du traitement:", error.message);
+    } else {
+      console.log("[ZIP] ✅ Traitement déclenché avec succès:", data);
+    }
+  } catch (err) {
+    console.error("[ZIP] ❌ Erreur lors du déclenchement du traitement:", err);
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
@@ -176,13 +193,33 @@ serve(async (req) => {
       }
     };
 
+    // Créer l'enregistrement initial et déclencher le traitement immédiat
     try {
-      // ✅ Traitement en tâche de fond compatible Deno Deploy
-      // @ts-ignore
-      Deno.core.opAsync("op_wait_until", backgroundTask());
-    } catch {
-      console.warn('[ZIP] op_wait_until non supporté, fallback direct');
-      await backgroundTask();
+      const recordId = await createDownloadRecord(
+        supabase,
+        userId,
+        images[0].id,
+        `${images.length} images (${isHD ? 'HD' : 'Web'}) - En attente`,
+        images[0].url,
+        isHD
+      );
+      
+      console.log(`[ZIP] Enregistrement créé: ${recordId}, déclenchement du traitement`);
+      
+      // Déclencher le traitement immédiat au lieu d'attendre le cron
+      await triggerProcessQueue(supabase);
+      
+      // Ensuite exécuter le traitement en tâche de fond comme avant
+      try {
+        // ✅ Traitement en tâche de fond compatible Deno Deploy
+        // @ts-ignore
+        Deno.core.opAsync("op_wait_until", backgroundTask());
+      } catch {
+        console.warn('[ZIP] op_wait_until non supporté, fallback direct');
+        await backgroundTask();
+      }
+    } catch (err) {
+      console.error('[ZIP] Erreur lors de la création de l\'enregistrement:', err);
     }
 
     // 🎯 Réponse immédiate au client

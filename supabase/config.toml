@@ -1,36 +1,47 @@
 
+# This file is used to configure your Supabase project.
+# It's very similar to package.json, but for Deno/Supabase instead of Node/npm.
+
+# A string used to distinguish different Supabase projects on the same host. Defaults to the
+# working directory name when running `supabase init`.
 project_id = "mjhbugzaqmtfnbxaqpss"
 
 [api]
-enabled = true
 port = 54321
-schemas = ["public", "storage"]
+schemas = ["public", "storage", "graphql_public"]
 
 [db]
 port = 54322
 
-[studio]
+[realtime]
 enabled = true
+
+[studio]
 port = 54323
 
 [inbucket]
-enabled = true
 port = 54324
 
 [auth]
 enabled = true
-uri = "http://localhost:54321/auth/v1"
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
 
 [storage]
 enabled = true
-port = 54325
 
 [functions]
-enabled = true
-port = 54326
+# Configurer l'accès public aux fonctions
+[functions.generate-zip]
+verify_jwt = false
+
+[functions.check-download-url]
+verify_jwt = false
 
 [functions.process-queue]
 verify_jwt = false
 
 [functions.cron-process-queue]
 verify_jwt = false
+schedule = "*/5 * * * *"  # Exécuter toutes les 5 minutes
