@@ -4,6 +4,7 @@ import { supabase, refreshSession } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { DownloadRequest } from '@/components/downloads/DownloadsTable';
 import { toast } from 'sonner';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface DownloadRequestData {
   id: string;
@@ -23,7 +24,7 @@ export function useDownloads() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
-  const subscriptionRef = useRef<any>(null);
+  const subscriptionRef = useRef<RealtimeChannel | null>(null);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const retryCountRef = useRef(0);
   
@@ -228,8 +229,8 @@ export function useDownloads() {
         .subscribe((status) => {
           console.log('Download subscription status:', status);
           
-          // Handle subscription errors
-          if (status === 'SUBSCRIPTION_ERROR' || status === 'CHANNEL_ERROR') {
+          // Handle subscription errors - using the correct status values
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
             console.error(`Subscription error: ${status}`);
             
             // Try to refresh the session

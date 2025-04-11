@@ -10,6 +10,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { supabase, refreshSession } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 const Downloads = () => {
   const { downloads, isLoading, error, refreshDownloads } = useDownloads();
@@ -55,7 +56,7 @@ const Downloads = () => {
         console.log('Subscription status:', status);
         
         // If subscription fails, try to refresh the session
-        if (status === 'SUBSCRIPTION_ERROR' || status === 'CHANNEL_ERROR') {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.log('Attempting to refresh session due to subscription error');
           await refreshSession();
           // Force a refresh of downloads after session refresh
@@ -134,7 +135,7 @@ const Downloads = () => {
           </div>
 
           {realtimeStatus !== 'connected' && (
-            <Alert variant="warning" className="bg-amber-50">
+            <Alert className="bg-amber-50">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>État de la connexion: {realtimeStatus === 'connecting' ? 'En cours de connexion' : 'Déconnecté'}</AlertTitle>
               <AlertDescription>
