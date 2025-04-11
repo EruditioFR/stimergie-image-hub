@@ -130,14 +130,17 @@ export function useDownloads() {
                   ? {
                       ...download,
                       status: updatedItem.status,
-                      downloadUrl: updatedItem.download_url
+                      downloadUrl: updatedItem.download_url,
+                      imageTitle: updatedItem.image_title
                     }
                   : download
               )
             );
           }
         })
-        .subscribe();
+        .subscribe((status) => {
+          console.log('Subscription status:', status);
+        });
       
       console.log('Subscription to download_requests set up');
       

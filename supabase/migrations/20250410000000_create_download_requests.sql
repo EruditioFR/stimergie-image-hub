@@ -34,10 +34,11 @@ CREATE POLICY "System can update download requests"
   FOR UPDATE 
   USING (true);
 
--- Create storage bucket for ZIP downloads
+-- Create storage bucket for ZIP downloads if it doesn't exist
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('zip-downloads', 'ZIP Downloads', false)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE
+SET public = false; -- Ensure it's not public for security
 
 -- Allow authenticated users to read from the bucket
 CREATE POLICY "Authenticated users can download their ZIPs"
@@ -50,3 +51,9 @@ CREATE POLICY "System can upload ZIPs"
   ON storage.objects
   FOR INSERT
   WITH CHECK (bucket_id = 'zip-downloads');
+
+-- Add a policy for the system to update objects in the bucket (for signed URLs)
+CREATE POLICY "System can update ZIP objects"
+  ON storage.objects
+  FOR UPDATE
+  USING (bucket_id = 'zip-downloads');

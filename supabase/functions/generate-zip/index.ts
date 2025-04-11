@@ -110,31 +110,39 @@ async function createZipFile(images: RequestBody["images"], isHD: boolean): Prom
 async function uploadZipToStorage(zipData: Uint8Array, fileName: string, supabase: any): Promise<string> {
   console.log(`Uploading ZIP file ${fileName} (${zipData.length} bytes)`);
   
-  const { data, error } = await supabase
-    .storage
-    .from('zip-downloads')
-    .upload(`public/${fileName}`, zipData, {
-      contentType: 'application/zip',
-      upsert: false
-    });
-  
-  if (error) {
-    console.error('Error uploading ZIP:', error);
-    throw new Error(`Failed to upload ZIP: ${error.message}`);
+  try {
+    const { data, error } = await supabase
+      .storage
+      .from('zip-downloads')
+      .upload(`public/${fileName}`, zipData, {
+        contentType: 'application/zip',
+        upsert: true // Changed to true to handle potential duplicates
+      });
+    
+    if (error) {
+      console.error('Error uploading ZIP:', error);
+      throw new Error(`Failed to upload ZIP: ${error.message}`);
+    }
+    
+    console.log('ZIP upload successful, generating signed URL');
+    
+    // Create a signed URL that expires in 7 days (604800 seconds)
+    const { data: urlData, error: urlError } = await supabase
+      .storage
+      .from('zip-downloads')
+      .createSignedUrl(`public/${fileName}`, 604800);
+    
+    if (urlError) {
+      console.error('Error creating signed URL:', urlError);
+      throw new Error(`Failed to create download URL: ${urlError.message}`);
+    }
+    
+    console.log(`Signed URL created successfully: ${urlData.signedUrl.substring(0, 50)}...`);
+    return urlData.signedUrl;
+  } catch (error) {
+    console.error('Error in uploadZipToStorage:', error);
+    throw error;
   }
-  
-  // Create a signed URL that expires in 7 days (604800 seconds)
-  const { data: urlData, error: urlError } = await supabase
-    .storage
-    .from('zip-downloads')
-    .createSignedUrl(`public/${fileName}`, 604800);
-  
-  if (urlError) {
-    console.error('Error creating signed URL:', urlError);
-    throw new Error(`Failed to create download URL: ${urlError.message}`);
-  }
-  
-  return urlData.signedUrl;
 }
 
 // Create a download request record in the database
@@ -145,7 +153,8 @@ async function createDownloadRecord(
   imageTitle: string,
   imageUrl: string,
   downloadUrl: string,
-  isHD: boolean
+  isHD: boolean,
+  status: string = 'pending'
 ): Promise<string> {
   console.log(`Creating download record for user ${userId}`, {
     user_id: userId,
@@ -153,30 +162,77 @@ async function createDownloadRecord(
     image_title: imageTitle,
     image_src: imageUrl,
     download_url: downloadUrl,
-    status: 'ready',
+    status: status,
     is_hd: isHD
   });
   
-  const { data, error } = await supabase
-    .from('download_requests')
-    .insert({
-      user_id: userId,
-      image_id: imageId,
-      image_title: imageTitle,
-      image_src: imageUrl,
-      download_url: downloadUrl,
-      status: 'ready',
-      is_hd: isHD
-    })
-    .select('id')
-    .single();
-  
-  if (error) {
-    console.error('Error creating download record:', error);
-    throw new Error(`Failed to create download record: ${error.message}`);
+  try {
+    const { data, error } = await supabase
+      .from('download_requests')
+      .insert({
+        user_id: userId,
+        image_id: imageId,
+        image_title: imageTitle,
+        image_src: imageUrl,
+        download_url: downloadUrl,
+        status: status,
+        is_hd: isHD
+      })
+      .select('id')
+      .single();
+    
+    if (error) {
+      console.error('Error creating download record:', error);
+      throw new Error(`Failed to create download record: ${error.message}`);
+    }
+    
+    console.log(`Download record created with ID: ${data.id}`);
+    return data.id;
+  } catch (error) {
+    console.error('Error in createDownloadRecord:', error);
+    throw error;
   }
+}
+
+// Update an existing download record with new data
+async function updateDownloadRecord(
+  supabase: any,
+  recordId: string,
+  downloadUrl: string,
+  status: string = 'ready',
+  imageTitle?: string
+): Promise<void> {
+  console.log(`Updating download record ${recordId}`, {
+    download_url: downloadUrl,
+    status: status,
+    ...(imageTitle && { image_title: imageTitle })
+  });
   
-  return data.id;
+  try {
+    const updateData: any = { 
+      download_url: downloadUrl,
+      status: status
+    };
+    
+    if (imageTitle) {
+      updateData.image_title = imageTitle;
+    }
+    
+    const { error } = await supabase
+      .from('download_requests')
+      .update(updateData)
+      .eq('id', recordId);
+    
+    if (error) {
+      console.error('Error updating download record:', error);
+      throw new Error(`Failed to update download record: ${error.message}`);
+    }
+    
+    console.log(`Download record ${recordId} updated successfully to ${status}`);
+  } catch (error) {
+    console.error('Error in updateDownloadRecord:', error);
+    throw error;
+  }
 }
 
 serve(async (req) => {
@@ -225,6 +281,7 @@ serve(async (req) => {
       throw new Error('Missing Supabase credentials');
     }
     
+    console.log(`Creating Supabase client with URL: ${supabaseUrl.substring(0, 30)}...`);
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     // Create timestamp for unique filename
@@ -254,41 +311,32 @@ serve(async (req) => {
           // Create the ZIP file
           const zipData = await createZipFile(images, isHD);
           
-          // Upload to storage
+          // Upload to storage and get the download URL
           const downloadUrl = await uploadZipToStorage(zipData, zipFileName, supabase);
           
-          console.log(`ZIP uploaded, download URL: ${downloadUrl}`);
+          console.log(`ZIP uploaded, download URL: ${downloadUrl.substring(0, 50)}...`);
           
           // Update the download record with the ready status and URL
-          const { error: updateError } = await supabase
-            .from('download_requests')
-            .update({ 
-              status: 'ready',
-              image_title: `${images.length} images (${isHD ? 'HD' : 'Web'})`,
-              download_url: downloadUrl
-            })
-            .eq('id', pendingRecord);
-            
-          if (updateError) {
-            console.error('Error updating download record:', updateError);
-          } else {
-            console.log(`Download record ${pendingRecord} updated to ready status`);
-          }
+          await updateDownloadRecord(
+            supabase,
+            pendingRecord,
+            downloadUrl,
+            'ready',
+            `${images.length} images (${isHD ? 'HD' : 'Web'})`
+          );
+          
+          console.log(`Download record ${pendingRecord} updated to ready status with URL`);
         } catch (processingError) {
           console.error('Error in ZIP processing:', processingError);
           
           // Update the download record with failed status
-          const { error: updateError } = await supabase
-            .from('download_requests')
-            .update({ 
-              status: 'expired',  // Using expired as a failure status
-              image_title: `Failed: ${images.length} images (${isHD ? 'HD' : 'Web'})`
-            })
-            .eq('id', pendingRecord);
-            
-          if (updateError) {
-            console.error('Error updating failed download record:', updateError);
-          }
+          await updateDownloadRecord(
+            supabase,
+            pendingRecord,
+            '', // Empty URL since processing failed
+            'expired', // Using expired as a failure status
+            `Failed: ${images.length} images (${isHD ? 'HD' : 'Web'})`
+          );
         }
       } catch (outerError) {
         console.error('Fatal error in ZIP processing:', outerError);
