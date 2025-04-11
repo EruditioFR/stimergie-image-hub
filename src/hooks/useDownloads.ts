@@ -40,7 +40,8 @@ export function useDownloads() {
       imageTitle: item.image_title,
       requestDate: item.created_at,
       downloadUrl: item.download_url || '', // Ensure we have at least an empty string
-      status: item.status as 'pending' | 'ready' | 'expired'
+      status: item.status as 'pending' | 'ready' | 'expired',
+      isHD: item.is_hd // Map the is_hd field from the database to isHD in our interface
     };
   }, []);
 

@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import {
   Table,
@@ -25,6 +24,7 @@ export interface DownloadRequest {
   requestDate: string;
   downloadUrl: string;
   status: 'pending' | 'ready' | 'expired';
+  isHD?: boolean;
 }
 
 interface DownloadsTableProps {
@@ -35,13 +35,11 @@ interface DownloadsTableProps {
 export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) => {
   const [refreshingId, setRefreshingId] = React.useState<string | null>(null);
   
-  // When receiving ready downloads without URLs, try to fetch the URLs
   useEffect(() => {
     const readyDownloadsWithoutUrl = downloads.filter(d => d.status === 'ready' && !d.downloadUrl);
     
     if (readyDownloadsWithoutUrl.length > 0) {
       console.log('Found ready downloads with missing URLs:', readyDownloadsWithoutUrl.length);
-      // Try to refresh to get the URLs
       if (onRefresh) {
         onRefresh();
       }
@@ -68,7 +66,6 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
     try {
       toast.loading('Préparation du téléchargement...');
       
-      // Open the download URL in a new tab
       window.open(download.downloadUrl, '_blank');
       
       toast.dismiss();
@@ -98,7 +95,6 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
       setRefreshingId(download.id);
       toast.loading(`Tentative de récupération du téléchargement...`, { id: 'refresh-download' });
       
-      // Try to get the download URL from storage
       const timestamp = download.requestDate.split('T')[0].replace(/-/g, '');
       const possiblePaths = [
         `public/${download.isHD ? 'hd-' : ''}images_${timestamp}*.zip`,
@@ -108,7 +104,6 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
       let foundUrl = null;
       
       for (const searchPattern of possiblePaths) {
-        // List files in the bucket that match the pattern
         const { data: files, error } = await supabase
           .storage
           .from('zip-downloads')
@@ -123,13 +118,11 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
         }
         
         if (files && files.length > 0) {
-          // Find files created around the same time
           const relevantFiles = files.filter(file => 
             file.created_at && new Date(file.created_at).toISOString().startsWith(download.requestDate.substring(0, 10))
           );
           
           if (relevantFiles.length > 0) {
-            // Try to get a signed URL for the first matching file
             const file = relevantFiles[0];
             const { data: urlData, error: urlError } = await supabase
               .storage
@@ -139,7 +132,6 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
             if (!urlError && urlData?.signedUrl) {
               foundUrl = urlData.signedUrl;
               
-              // Update the download record
               const { error: updateError } = await supabase
                 .from('download_requests')
                 .update({ download_url: foundUrl })
@@ -149,7 +141,6 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
                 console.error('Error updating download record:', updateError);
               } else {
                 console.log('Download record updated with URL');
-                // Force a refresh to get the updated record
                 if (onRefresh) onRefresh();
               }
               
@@ -184,9 +175,8 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
     }
   };
   
-  // Helper to check if download is HD
   const isDownloadHD = (download: DownloadRequest): boolean => {
-    return download.imageTitle.toLowerCase().includes('hd');
+    return download.isHD === true || download.imageTitle.toLowerCase().includes('hd');
   };
 
   return (
