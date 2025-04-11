@@ -19,7 +19,7 @@ const Downloads = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [initialRefreshDone, setInitialRefreshDone] = useState(false);
   const { user } = useAuth();
-  const { realtimeStatus } = useRealtimeStatus();
+  const { realtimeStatus, lastConnectedAt, reconnectAttempts } = useRealtimeStatus();
   const { isAdmin } = useAdminStatus(user);
   
   // Force a refresh when the component mounts - but only once
@@ -67,9 +67,9 @@ const Downloads = () => {
           />
 
           <ConnectionStatusAlert 
-            status={realtimeStatus}
-            onRefresh={handleManualRefresh}
-            isRefreshing={isRefreshing}
+            realtimeStatus={realtimeStatus}
+            lastConnectedAt={lastConnectedAt}
+            reconnectAttempts={reconnectAttempts}
           />
 
           <AdminDebugPanel 
