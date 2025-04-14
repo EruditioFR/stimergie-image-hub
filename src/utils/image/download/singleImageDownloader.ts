@@ -9,16 +9,16 @@ import { clearAllCaches } from '../cacheManager';
 import { fetchWithTimeout, FETCH_TIMEOUT, sleep } from './networkUtils';
 
 /**
- * Format options for image downloads
+ * Download a single image with format options
  */
-export type ImageDownloadFormat = 'jpg' | 'png' | 'original';
+export type ImageDownloadFormat = 'original';
 
 /**
- * Download a single image with format options
+ * Download a single image
  */
 export async function downloadImage(
   url: string, 
-  filename?: string, 
+  filename?: string,
   format: ImageDownloadFormat = 'original'
 ): Promise<void> {
   try {
@@ -28,30 +28,14 @@ export async function downloadImage(
     // Clean URL and prepare for download
     const cleanUrl = url;
     
-    // Convert URL to PNG format if requested
-    let downloadUrl = cleanUrl;
-    let fileExtension = 'jpg';
-    
-    if (format === 'png') {
-      // If it's a Stimergie URL, modify to access the PNG version
-      if (url.includes('stimergie.fr') && !url.includes('/PNG/')) {
-        downloadUrl = url.replace(/\/([^\/]+)\.jpg$/, '/PNG/$1.png');
-        fileExtension = 'png';
-      } else if (!url.includes('PNG') && !url.includes('.png')) {
-        // For other URLs, just change the extension if it's not already PNG
-        downloadUrl = url.replace(/\.(jpg|jpeg|webp)$/, '.png');
-        fileExtension = 'png';
-      }
-    }
-    
-    console.log(`Attempting direct download image in ${format} format:`, downloadUrl);
+    console.log(`Attempting to download image:`, cleanUrl);
     
     toast.loading('Téléchargement en cours...');
     
     // Primary download method: Using fetch with no-cors mode and retry logic
     try {
       // Always use no-cors mode to avoid CORS issues with the Stimergie server
-      const response = await fetchWithTimeout(downloadUrl, {
+      const response = await fetchWithTimeout(cleanUrl, {
         method: 'GET',
         mode: 'no-cors', // Important: Set to no-cors to bypass CORS restrictions
         cache: 'no-store',
@@ -71,12 +55,12 @@ export async function downloadImage(
       }
       
       // Create filename with correct extension if not provided
-      const defaultFilename = `image.${fileExtension}`;
+      const defaultFilename = `image.jpg`;
       let finalFilename = filename || defaultFilename;
       
       // Ensure the filename has the correct extension
-      if (format === 'png' && !finalFilename.endsWith('.png')) {
-        finalFilename = finalFilename.replace(/\.[^.]+$/, '.png') || `image.png`;
+      if (!finalFilename.endsWith('.jpg') && !finalFilename.endsWith('.png')) {
+        finalFilename = finalFilename.replace(/\.[^.]+$/, '.jpg') || `image.jpg`;
       }
       
       // Use file-saver to trigger the download
@@ -98,7 +82,7 @@ export async function downloadImage(
       
       const form = document.createElement('form');
       form.method = 'GET';
-      form.action = downloadUrl;
+      form.action = cleanUrl;
       form.target = '_blank';
       
       document.body.appendChild(form);
@@ -118,7 +102,7 @@ export async function downloadImage(
     }
     
     // Last fallback: Using window.open
-    window.open(downloadUrl, '_blank');
+    window.open(cleanUrl, '_blank');
     toast.dismiss();
     toast.success('Téléchargement demandé');
     

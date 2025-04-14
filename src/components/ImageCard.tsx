@@ -27,7 +27,6 @@ export const ImageCard = memo(function ImageCard({
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isDownloadingPng, setIsDownloadingPng] = useState(false);
   const [naturalRatio, setNaturalRatio] = useState<number | undefined>(undefined);
   const imageRef = useRef<HTMLImageElement>(null);
   const mountedRef = useRef(true);
@@ -79,38 +78,30 @@ export const ImageCard = memo(function ImageCard({
     }
   };
 
-  const handleDownload = async (e: React.MouseEvent, format: 'jpg' | 'png' = 'jpg') => {
+  const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if ((format === 'jpg' && isDownloading) || (format === 'png' && isDownloadingPng)) return;
+    if (isDownloading) return;
     
-    if (format === 'jpg') {
-      setIsDownloading(true);
-    } else {
-      setIsDownloadingPng(true);
-    }
+    setIsDownloading(true);
     
     try {
       const url = downloadUrl || src;
-      console.log(`Download requested for URL (${format}):`, url);
+      console.log(`Download requested for URL:`, url);
       
       const filename = title 
-        ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${format}` 
-        : `image_${id}.${format}`;
+        ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` 
+        : `image_${id}.jpg`;
       
-      await downloadImage(url, filename, format);
+      await downloadImage(url, filename);
     } catch (error) {
-      console.error(`Erreur lors du téléchargement (${format}):`, error);
+      console.error(`Erreur lors du téléchargement:`, error);
       toast.error('Échec du téléchargement', { 
         description: 'Une erreur s\'est produite lors du téléchargement de l\'image.' 
       });
     } finally {
-      if (format === 'jpg') {
-        setIsDownloading(false);
-      } else {
-        setIsDownloadingPng(false);
-      }
+      setIsDownloading(false);
     }
   };
 
@@ -162,42 +153,21 @@ export const ImageCard = memo(function ImageCard({
         </div>
       </div>
       
-      <div className="absolute top-3 flex items-center gap-2">
-        {/* PNG download button (left side) */}
+      <div className="absolute top-3 right-3 transform">
         <div className={cn(
-          "left-3 transform",
-          "transition-all duration-300 ease-in-out",
+          "transform transition-all duration-300 ease-in-out",
           isHovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
         )}>
           <Button 
             size="icon" 
             variant="secondary" 
             className="bg-white/90 hover:bg-white w-8 h-8 rounded-full shadow-md"
-            onClick={(e) => handleDownload(e, 'png')}
-            disabled={isDownloadingPng}
-            title="Télécharger en PNG"
-          >
-            <Download className={`h-4 w-4 ${isDownloadingPng ? 'animate-pulse' : ''} text-emerald-600`} />
-            <span className="sr-only">Télécharger en PNG</span>
-          </Button>
-        </div>
-        
-        {/* JPG download button (right side) */}
-        <div className={cn(
-          "right-3 absolute transform",
-          "transition-all duration-300 ease-in-out",
-          isHovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
-        )}>
-          <Button 
-            size="icon" 
-            variant="secondary" 
-            className="bg-white/90 hover:bg-white w-8 h-8 rounded-full shadow-md"
-            onClick={(e) => handleDownload(e, 'jpg')}
+            onClick={handleDownload}
             disabled={isDownloading}
-            title="Télécharger en JPG"
+            title="Télécharger"
           >
             <Download className={`h-4 w-4 ${isDownloading ? 'animate-pulse' : ''} text-foreground`} />
-            <span className="sr-only">Télécharger en JPG</span>
+            <span className="sr-only">Télécharger</span>
           </Button>
         </div>
       </div>
