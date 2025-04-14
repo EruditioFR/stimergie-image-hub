@@ -44,7 +44,7 @@ export async function downloadImage(
       }
     }
     
-    console.log(`Attempting to download image in ${format} format:`, downloadUrl);
+    console.log(`Attempting direct download image in ${format} format:`, downloadUrl);
     
     toast.loading('Téléchargement en cours...');
     
