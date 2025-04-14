@@ -3,16 +3,18 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useImages } from '@/context/ImageContext';
 import { Button } from '@/components/ui/button';
-import { X, Download } from 'lucide-react';
+import { X, Download, FileImage } from 'lucide-react';
 import { downloadImage } from '@/utils/image/download';
 import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { ImageDownloadFormat } from '@/utils/image/download/singleImageDownloader';
 
 export default function ImageDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { images } = useImages();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloadingPng, setIsDownloadingPng] = useState(false);
   const [image, setImage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
@@ -55,24 +57,37 @@ export default function ImageDetail() {
     navigate(-1);
   };
 
-  const handleDownload = async () => {
-    if (isDownloading) return;
-    setIsDownloading(true);
+  const handleDownload = async (format: ImageDownloadFormat = 'original') => {
+    if ((format === 'original' && isDownloading) || (format === 'png' && isDownloadingPng)) return;
     
-    console.log("Downloading image:", image.src);
+    if (format === 'original') {
+      setIsDownloading(true);
+    } else {
+      setIsDownloadingPng(true);
+    }
+    
+    console.log(`Downloading image in ${format} format:`, image.src);
     
     try {
       // URL pour téléchargement
       const downloadUrl = image.download_url || image.url || image.src;
       
+      // Générer un nom de fichier approprié
+      const fileExt = format === 'png' ? 'png' : 'jpg';
+      const filename = `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${fileExt}`;
+      
       // Utiliser l'URL exacte de l'image sans la modifier
-      await downloadImage(downloadUrl, `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg`);
-      toast.success("Image téléchargée avec succès");
+      await downloadImage(downloadUrl, filename, format);
+      toast.success(`Image téléchargée en ${format.toUpperCase()}`);
     } catch (error) {
       console.error('Download error:', error);
       toast.error('Échec du téléchargement');
     } finally {
-      setIsDownloading(false);
+      if (format === 'original') {
+        setIsDownloading(false);
+      } else {
+        setIsDownloadingPng(false);
+      }
     }
   };
   
@@ -108,23 +123,44 @@ export default function ImageDetail() {
           <div className="mt-6 space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">{image.title}</h3>
-              <Button 
-                onClick={handleDownload}
-                disabled={isDownloading}
-                className="flex items-center gap-2"
-              >
-                {isDownloading ? (
-                  <>
-                    <LoadingSpinner className="mr-1" size={16} />
-                    <span>Téléchargement...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4" />
-                    <span>Télécharger</span>
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => handleDownload('png')}
+                  disabled={isDownloadingPng}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  {isDownloadingPng ? (
+                    <>
+                      <LoadingSpinner className="mr-1" size={16} />
+                      <span>Téléchargement...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileImage className="h-4 w-4" />
+                      <span>PNG</span>
+                    </>
+                  )}
+                </Button>
+                
+                <Button 
+                  onClick={() => handleDownload('original')}
+                  disabled={isDownloading}
+                  className="flex items-center gap-2"
+                >
+                  {isDownloading ? (
+                    <>
+                      <LoadingSpinner className="mr-1" size={16} />
+                      <span>Téléchargement...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4" />
+                      <span>Télécharger</span>
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
             
             <p className="text-sm text-muted-foreground">

@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { X, Download, Heart, Share2, Maximize2 } from 'lucide-react';
+import { X, Download, Heart, Share2, Maximize2, FileImage } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { parseTagsString } from '@/utils/imageUtils';
 import { downloadImage } from '@/utils/image/download';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ImageDownloadFormat } from '@/utils/image/download/singleImageDownloader';
 
 interface ImageDetailModalProps {
   image: any;
@@ -20,24 +21,35 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
   const [liked, setLiked] = useState(false);
   const [isFullPage, setIsFullPage] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloadingPng, setIsDownloadingPng] = useState(false);
   const { toast } = useToast();
 
   if (!image) return null;
 
   const tags = typeof image.tags === 'string' ? parseTagsString(image.tags) : image.tags;
 
-  const handleDownload = async () => {
-    if (isDownloading) return;
-    setIsDownloading(true);
+  const handleDownload = async (format: ImageDownloadFormat = 'original') => {
+    if ((format === 'original' && isDownloading) || (format === 'png' && isDownloadingPng)) return;
+    
+    if (format === 'original') {
+      setIsDownloading(true);
+    } else {
+      setIsDownloadingPng(true);
+    }
     
     try {
       const downloadUrl = image.download_url || image.url;
+      const fileExt = format === 'png' ? 'png' : 'jpg';
       const filename = image.title 
-        ? `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` 
-        : `image_${image.id || 'download'}.jpg`;
+        ? `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${fileExt}` 
+        : `image_${image.id || 'download'}.${fileExt}`;
       
-      console.log(`Downloading image: ${image.title} (${downloadUrl})`);
-      await downloadImage(downloadUrl, filename);
+      console.log(`Downloading image in ${format} format: ${image.title} (${downloadUrl})`);
+      await downloadImage(downloadUrl, filename, format);
+      toast({
+        title: `Image téléchargée en ${format.toUpperCase()}`,
+        description: 'Téléchargement réussi'
+      });
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
       toast({
@@ -46,7 +58,11 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
         variant: 'destructive'
       });
     } finally {
-      setIsDownloading(false);
+      if (format === 'original') {
+        setIsDownloading(false);
+      } else {
+        setIsDownloadingPng(false);
+      }
     }
   };
 
@@ -68,6 +84,8 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
   
   const handleModalClose = () => {
     setIsFullPage(false);
+    setIsDownloading(false);
+    setIsDownloadingPng(false);
     onClose();
   };
 
@@ -121,13 +139,27 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
                 <span>Partager</span>
               </Button>
             </div>
-            <Button
-              onClick={handleDownload}
-              className="flex items-center gap-2 py-4"
-            >
-              <Download className="h-4 w-4" />
-              <span>Télécharger</span>
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleDownload('png')}
+                disabled={isDownloadingPng}
+                className="flex items-center gap-1"
+                size="sm"
+              >
+                <FileImage className="h-4 w-4" />
+                <span>PNG</span>
+              </Button>
+              <Button
+                onClick={() => handleDownload('original')}
+                disabled={isDownloading}
+                className="flex items-center gap-1"
+                size="sm"
+              >
+                <Download className="h-4 w-4" />
+                <span>JPG</span>
+              </Button>
+            </div>
           </div>
 
           <div className="bg-card rounded-xl p-6 shadow-sm">
@@ -170,13 +202,25 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
           <div className="hidden lg:block bg-card rounded-xl p-6 shadow-sm space-y-4">
             <h3 className="font-medium mb-4">Actions</h3>
             
-            <Button 
-              onClick={handleDownload}
-              className="w-full flex items-center justify-center gap-2 py-4"
-            >
-              <Download className="h-4 w-4" />
-              <span>Télécharger</span>
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => handleDownload('png')}
+                disabled={isDownloadingPng}
+                className="w-1/2 flex items-center justify-center gap-2 py-4"
+              >
+                <FileImage className="h-4 w-4" />
+                <span>Télécharger PNG</span>
+              </Button>
+              <Button 
+                onClick={() => handleDownload('original')}
+                disabled={isDownloading}
+                className="w-1/2 flex items-center justify-center gap-2 py-4"
+              >
+                <Download className="h-4 w-4" />
+                <span>Télécharger JPG</span>
+              </Button>
+            </div>
             
             <div className="flex gap-4">
               <Button 
