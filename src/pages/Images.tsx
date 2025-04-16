@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
@@ -30,6 +29,7 @@ export interface Image {
   url_miniature?: string | null;
   display_url?: string;
   download_url?: string;
+  download_url_sd?: string;
 }
 
 const Images = () => {

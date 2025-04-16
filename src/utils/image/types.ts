@@ -14,6 +14,8 @@ export interface Image {
   // These URLs are used for display and download - now required
   display_url: string;
   download_url: string;
+  // Add the SD download URL
+  download_url_sd: string;
   // For backwards compatibility
   url_miniature?: string;
   url?: string;
