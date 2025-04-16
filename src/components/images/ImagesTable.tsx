@@ -54,7 +54,9 @@ export function ImagesTable({ images }: ImagesTableProps) {
                 <TableCell>{`${image.width} × ${image.height}`}</TableCell>
                 <TableCell>
                   <Badge variant="outline" className="capitalize">
-                    {image.orientation}
+                    {image.orientation === 'landscape' ? 'Paysage' : 
+                     image.orientation === 'square' ? 'Carré' : 
+                     image.orientation}
                   </Badge>
                 </TableCell>
                 <TableCell>

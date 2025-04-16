@@ -91,14 +91,14 @@ export async function fetchGalleryImages(
     const height = parseInt(img.height) || 0;
     
     // Déterminer l'orientation basée sur les dimensions réelles
-    let orientation = img.orientation || 'landscape';
+    let orientation = img.orientation || 'paysage';
     if (width > 0 && height > 0) {
       if (width > height) {
-        orientation = 'landscape';
+        orientation = 'paysage';
       } else if (height > width) {
         orientation = 'portrait';
       } else {
-        orientation = 'square';
+        orientation = 'carré';
       }
     }
     

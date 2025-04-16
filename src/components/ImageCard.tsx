@@ -70,10 +70,12 @@ export const ImageCard = memo(function ImageCard({
     }
     
     switch (orientation?.toLowerCase()) {
+      case 'paysage':
       case 'landscape':
         return 4/3;
       case 'portrait':
         return 3/4;
+      case 'carré':
       case 'square':
         return 1;
       default:

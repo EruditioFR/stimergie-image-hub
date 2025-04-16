@@ -24,14 +24,14 @@ export const useGalleryImageFormatting = () => {
       const width = parseInt(image.width) || 0;
       const height = parseInt(image.height) || 0;
       
-      let orientation = image.orientation || 'landscape';
+      let orientation = image.orientation || 'paysage';
       if (width > 0 && height > 0) {
         if (width > height) {
-          orientation = 'landscape';
+          orientation = 'paysage';
         } else if (height > width) {
           orientation = 'portrait';
         } else {
-          orientation = 'square';
+          orientation = 'carré';
         }
       }
       

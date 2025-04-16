@@ -62,15 +62,15 @@ const ImageItem = memo(function ImageItem({
     if (image.width && image.height) {
       // Déterminer l'orientation à partir des dimensions réelles
       if (image.width > image.height) {
-        return 'landscape';
+        return 'paysage';
       } else if (image.height > image.width) {
         return 'portrait';
       } else {
-        return 'square';
+        return 'carré';
       }
     }
     // Fallback sur l'orientation déclarée si disponible
-    return image.orientation || 'landscape';
+    return image.orientation || 'paysage';
   };
   
   // L'orientation calculée en fonction des dimensions réelles
