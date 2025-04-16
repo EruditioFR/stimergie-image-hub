@@ -17,4 +17,10 @@ export interface Image {
   // For backwards compatibility
   url_miniature?: string;
   url?: string;
+  // Project information
+  projets?: {
+    nom_projet?: string;
+    nom_dossier?: string;
+  };
+  id_projet?: string;
 }

@@ -53,6 +53,14 @@ export function generateDownloadImageHDUrl(folderName: string, imageTitle: strin
 }
 
 /**
+ * Pour rétrocompatibilité - Alias de generateDownloadImageHDUrl
+ * @deprecated Utiliser generateDownloadImageHDUrl à la place
+ */
+export function generateDownloadImageUrl(folderName: string, imageTitle: string): string {
+  return generateDownloadImageHDUrl(folderName, imageTitle);
+}
+
+/**
  * Vérifie si une URL stimergie.fr est accessible, sinon retourne une URL alternative
  */
 export async function validateAndFixImageUrl(url: string): Promise<string> {
@@ -80,4 +88,18 @@ export async function validateAndFixImageUrl(url: string): Promise<string> {
     // En dernier recours, utiliser une image de remplacement
     return '/placeholder.png';
   }
+}
+
+/**
+ * Décode l'URL si nécessaire (ex: URL avec proxy)
+ */
+export function decodeUrlIfNeeded(url: string): string {
+  if (!url) return '';
+  
+  // Si l'URL utilise un proxy, extraire l'URL originale
+  if (url.includes('corsproxy.io')) {
+    return decodeURIComponent(url.split('corsproxy.io/?')[1]);
+  }
+  
+  return url;
 }

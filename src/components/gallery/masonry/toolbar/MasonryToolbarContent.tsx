@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Image } from '@/utils/image/types';
@@ -9,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { downloadImagesAsZip } from '@/utils/image/download';
+import { generateDownloadImageSDUrl, generateDownloadImageHDUrl, decodeUrlIfNeeded } from '@/utils/image/imageUrlGenerator';
 
 interface MasonryToolbarContentProps {
   selectedImages: string[];
@@ -51,7 +53,14 @@ export function MasonryToolbarContent({
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
       
       const imagesForDownload = selectedImagesData.map(img => {
-        const folderName = img.projets?.nom_dossier || "";
+        let folderName = "";
+        if (img.projets?.nom_dossier) {
+          folderName = img.projets.nom_dossier;
+        } else if (img.id_projet) {
+          // Si nous avons l'ID du projet mais pas le dossier, on utilise un placeholder
+          folderName = `project-${img.id_projet}`;
+        }
+        
         const imageTitle = img.title || `image-${img.id}`;
         const downloadUrl = generateDownloadImageSDUrl(folderName, imageTitle);
         
@@ -99,7 +108,7 @@ export function MasonryToolbarContent({
       
       const imagesForDownload = selectedImagesData.map(img => {
         return {
-          url: decodeUrlIfNeeded(img.url),
+          url: decodeUrlIfNeeded(img.url || img.download_url || ""),
           title: img.title || `image_${img.id}`,
           id: img.id
         };

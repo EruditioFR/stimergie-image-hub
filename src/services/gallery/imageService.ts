@@ -1,9 +1,10 @@
 
+
 import { supabase } from "@/integrations/supabase/client";
 import { parseTagsString } from "@/utils/imageUtils";
 import { toast } from "sonner";
 import { buildGalleryQuery, applyPaginationToQuery } from "./queryBuilder";
-import { generateDisplayImageUrl, generateDownloadImageUrl } from "@/utils/image/imageUrlGenerator";
+import { generateDisplayImageUrl, generateDownloadImageSDUrl, generateDownloadImageHDUrl } from "@/utils/image/imageUrlGenerator";
 import { validateImageUrl } from "@/utils/image/urlUtils";
 
 /**
@@ -65,7 +66,7 @@ export async function fetchGalleryImages(
     
     // Générer les URLs au format demandé
     const display_url = generateDisplayImageUrl(folderName, imageTitle);
-    const download_url = generateDownloadImageUrl(folderName, imageTitle);
+    const download_url = generateDownloadImageHDUrl(folderName, imageTitle);
     
     // Assurer que les dimensions sont des nombres valides
     const width = parseInt(img.width) || 0;

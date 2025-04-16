@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Image as ImageType } from '@/utils/image/types';
-import { generateDisplayImageUrl, generateDownloadImageUrl, generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
+import { generateDisplayImageUrl, generateDownloadImageSDUrl, generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
 
 export interface Image {
   id: number;
