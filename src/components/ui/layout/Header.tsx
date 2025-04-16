@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Image, FileText, Users, Menu } from 'lucide-react';
@@ -144,7 +145,9 @@ export function Header() {
                 variant="ghost" 
                 size="icon" 
                 className="md:hidden mr-2" 
-                onClick={toggleMobileMenu}
+                onClick={() => toggleMobileMenu()}
+                type="button"
+                aria-label="Toggle menu"
               >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Menu</span>
@@ -157,7 +160,9 @@ export function Header() {
                 variant="ghost" 
                 size="icon" 
                 className="md:hidden mr-2" 
-                onClick={toggleMobileMenu}
+                onClick={() => toggleMobileMenu()}
+                type="button"
+                aria-label="Toggle menu"
               >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Menu</span>

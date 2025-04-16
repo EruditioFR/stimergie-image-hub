@@ -1,3 +1,4 @@
+
 import { Link } from 'react-router-dom';
 import { Home, Image, FileText, Users, FolderOpen, Building, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,8 @@ export function MobileMenu({
 }: MobileMenuProps) {
   if (!isOpen) return null;
 
+  console.log("MobileMenu rendered with isOpen:", isOpen);
+
   const navigationItems = [
     { name: 'Accueil', path: '/', icon: <Home className="h-5 w-5 mr-3" /> },
     { name: 'Banque d\'images', path: '/gallery', icon: <Image className="h-5 w-5 mr-3" /> },
@@ -50,7 +53,7 @@ export function MobileMenu({
   );
 
   return (
-    <div className="md:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur-lg shadow-lg animate-fade-in z-50">
+    <div className="md:hidden fixed top-[60px] left-0 right-0 bg-background/95 backdrop-blur-lg shadow-lg animate-in fade-in-0 slide-in-from-top-5 z-50">
       <nav className="flex flex-col p-6 space-y-4">
         {userProfile && (
           <div className="text-center mb-4 py-2 border-b border-gray-100">

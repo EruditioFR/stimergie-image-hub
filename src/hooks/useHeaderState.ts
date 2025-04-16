@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export function useHeaderState() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -13,6 +13,9 @@ export function useHeaderState() {
     
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
     };
     
     window.addEventListener('scroll', handleScroll);
@@ -27,13 +30,14 @@ export function useHeaderState() {
     };
   }, []);
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
+  const toggleMobileMenu = useCallback(() => {
+    console.log("Toggle mobile menu called, current state:", isMobileMenuOpen);
+    setIsMobileMenuOpen(prevState => !prevState);
+  }, [isMobileMenuOpen]);
 
-  const closeMobileMenu = () => {
+  const closeMobileMenu = useCallback(() => {
     setIsMobileMenuOpen(false);
-  };
+  }, []);
 
   return {
     isScrolled,
