@@ -171,7 +171,9 @@ async function fetchWithRetry(request, cache) {
       // Vérifier le type de contenu
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('text/html')) {
-        throw new Error(`La réponse contient du HTML et non une image: ${contentType}`);
+        console.warn(`Réponse HTML détectée au lieu d'une image: ${originalUrl}`);
+        // Au lieu de lever une erreur, on tente de récupérer une image de remplacement
+        return await fetchPlaceholderImage(cache);
       }
       
       console.log('Service Worker: Récupération réussie pour', originalUrl);
@@ -220,4 +222,47 @@ async function fetchWithRetry(request, cache) {
   }
   
   throw new Error(`Toutes les tentatives ont échoué pour ${originalUrl}`);
+}
+
+// Fonction pour récupérer une image de remplacement
+async function fetchPlaceholderImage(cache) {
+  const placeholderUrl = '/placeholder.png';
+  
+  try {
+    // Vérifier d'abord si l'image de remplacement est en cache
+    const cachedPlaceholder = await cache.match(placeholderUrl);
+    if (cachedPlaceholder) {
+      return cachedPlaceholder;
+    }
+    
+    // Sinon, la récupérer depuis le réseau
+    const response = await fetch(placeholderUrl);
+    
+    if (!response.ok) {
+      throw new Error(`Impossible de récupérer l'image de remplacement: ${response.status}`);
+    }
+    
+    // Mettre en cache l'image de remplacement pour utilisation future
+    try {
+      await cache.put(placeholderUrl, response.clone());
+    } catch (e) {
+      console.warn('Service Worker: Échec de mise en cache de l\'image de remplacement:', e);
+    }
+    
+    return response;
+  } catch (error) {
+    console.error('Service Worker: Erreur lors de la récupération de l\'image de remplacement:', error);
+    
+    // Créer une réponse d'image transparente de 1x1 pixel en base64
+    const transparentPixel = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+    const blob = await fetch(transparentPixel).then(r => r.blob());
+    
+    return new Response(blob, {
+      status: 200,
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=31536000'
+      }
+    });
+  }
 }
