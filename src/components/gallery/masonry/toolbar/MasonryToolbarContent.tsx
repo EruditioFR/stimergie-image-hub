@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Image } from '@/utils/image/types';
@@ -61,17 +62,17 @@ export function MasonryToolbarContent({
         return;
       }
       
+      // Use the direct URL from Supabase for regular downloads
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
       
       const imagesForDownload = selectedImagesData.map(img => {
         return {
-          url: decodeUrlIfNeeded(img.url),
+          url: img.url || '', // Use the direct URL from Supabase
           title: img.title || `image_${img.id}`,
           id: img.id
         };
       });
 
-      // Direct ZIP download for regular quality
       await downloadImagesAsZip(imagesForDownload, `images_${Date.now()}.zip`);
       toast.success("Images téléchargées avec succès");
       
