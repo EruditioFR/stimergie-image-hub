@@ -42,6 +42,18 @@ interface RawAlbumData {
   images: Json;
 }
 
+interface RawImageData {
+  id: string | number;
+  title?: string;
+  url?: string;
+  description?: string | null;
+  width?: number | null;
+  height?: number | null;
+  orientation?: string | null;
+  id_projet?: string;
+  [key: string]: any;
+}
+
 const SharedAlbum = () => {
   const { albumKey } = useParams<{ albumKey: string }>();
   const navigate = useNavigate();
@@ -69,16 +81,18 @@ const SharedAlbum = () => {
     
     let processedImages: AlbumImage[] = [];
     if (rawData.images && Array.isArray(rawData.images)) {
-      processedImages = rawData.images.map(img => {
+      processedImages = rawData.images.map((img: Json) => {
+        const imgData = img as unknown as RawImageData;
+        
         return {
-          id: typeof img.id === 'number' ? img.id : parseInt(String(img.id), 10),
-          title: String(img.title || ''),
-          url: String(img.url || ''),
-          description: img.description as string | null,
-          width: typeof img.width === 'number' ? img.width : null,
-          height: typeof img.height === 'number' ? img.height : null,
-          orientation: img.orientation as string | null,
-          id_projet: img.id_projet as string | undefined
+          id: typeof imgData.id === 'number' ? imgData.id : parseInt(String(imgData.id), 10),
+          title: String(imgData.title || ''),
+          url: String(imgData.url || ''),
+          description: imgData.description as string | null,
+          width: typeof imgData.width === 'number' ? imgData.width : null,
+          height: typeof imgData.height === 'number' ? imgData.height : null,
+          orientation: imgData.orientation as string | null,
+          id_projet: imgData.id_projet as string | undefined
         };
       });
     }
