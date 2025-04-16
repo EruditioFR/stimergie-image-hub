@@ -1,14 +1,15 @@
+
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Image, FileText, Users } from 'lucide-react';
+import { Home, Image, FileText, Users, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { useUserProfile, formatRole } from '@/hooks/useUserProfile';
 import { useHeaderState } from '@/hooks/useHeaderState';
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem } from '@/components/ui/navigation-menu';
-import { User } from '@/types/user';
 import { UserMenu } from './header/UserMenu';
+import { MobileMenu } from './header/MobileMenu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -17,7 +18,6 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import { toast } from "@/hooks/use-toast";
 
 // Login form schema
 const loginSchema = z.object({
@@ -36,7 +36,7 @@ export function Header() {
   const [loginError, setLoginError] = useState<string | null>(null);
   
   const userProfile = useUserProfile(user, userRole);
-  const { isScrolled, isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useHeaderState();
+  const { isScrolled, isMobile, isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useHeaderState();
 
   const isHomePage = location.pathname === "/";
   
@@ -140,14 +140,48 @@ export function Header() {
 
         <div className="flex items-center">
           {user ? (
-            <UserMenu />
+            <>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="md:hidden mr-2" 
+                onClick={toggleMobileMenu}
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Menu</span>
+              </Button>
+              <UserMenu />
+            </>
           ) : (
-            <Button variant="default" size="sm" onClick={() => setIsLoginModalOpen(true)}>
-              Connexion
-            </Button>
+            <>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="md:hidden mr-2" 
+                onClick={toggleMobileMenu}
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Menu</span>
+              </Button>
+              <Button variant="default" size="sm" onClick={() => setIsLoginModalOpen(true)}>
+                Connexion
+              </Button>
+            </>
           )}
         </div>
       </div>
+
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        userProfile={userProfile}
+        location={location}
+        user={user}
+        canAccessClientsPage={canAccessClientsPage}
+        canAccessImagesPage={canAccessImagesPage}
+        onLogout={handleLogout}
+        onNavigate={(path: string) => navigate(path)}
+        formatRole={formatRole}
+      />
 
       <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
         <DialogContent className="sm:max-w-md">
