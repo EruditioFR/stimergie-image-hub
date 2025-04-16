@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,26 @@ import { Image } from '@/utils/image/types';
 import { useToast } from '@/hooks/use-toast';
 import { generateDisplayImageUrl, generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
 
+interface AlbumImage {
+  id: number;
+  title: string;
+  description?: string | null;
+  url: string;
+  width?: number | null;
+  height?: number | null;
+  orientation?: string | null;
+  id_projet?: string;
+}
+
+interface AlbumData {
+  id: string;
+  name: string;
+  description: string | null;
+  access_from: string;
+  access_until: string;
+  images: AlbumImage[];
+}
+
 const SharedAlbum = () => {
   const { albumKey } = useParams<{ albumKey: string }>();
   const navigate = useNavigate();
@@ -20,7 +39,7 @@ const SharedAlbum = () => {
   const { toast } = useToast();
   const [folderNames, setFolderNames] = useState<Record<string, string>>({});
   
-  const fetchAlbumData = async () => {
+  const fetchAlbumData = async (): Promise<AlbumData> => {
     if (!albumKey) throw new Error('No album key provided');
     
     const { data, error } = await supabase.rpc('get_album_by_share_key', {
@@ -36,7 +55,7 @@ const SharedAlbum = () => {
       throw new Error('Album not found or expired');
     }
     
-    return data[0];
+    return data[0] as AlbumData;
   };
   
   const { data: album, isLoading, isError } = useQuery({
@@ -44,12 +63,10 @@ const SharedAlbum = () => {
     queryFn: fetchAlbumData
   });
 
-  // Fetch folder names for all project IDs in the album
   useEffect(() => {
     const fetchFolderNames = async () => {
       if (!album || !album.images || !Array.isArray(album.images)) return;
       
-      // Collect unique project IDs
       const projectIds = Array.from(
         new Set(
           album.images
@@ -64,7 +81,7 @@ const SharedAlbum = () => {
         const { data, error } = await supabase
           .from('projets')
           .select('id, nom_dossier')
-          .in('id', projectIds);
+          .in('id', projectIds as string[]);
           
         if (error) throw error;
         
@@ -94,8 +111,7 @@ const SharedAlbum = () => {
     try {
       const zip = new JSZip();
       
-      // Add each image to the zip file
-      const fetchPromises = album.images.map(async (image: any, index: number) => {
+      const fetchPromises = album.images.map(async (image: AlbumImage, index: number) => {
         try {
           const folderName = image.id_projet ? 
             folderNames[image.id_projet] || "unknown-folder" : 
@@ -120,10 +136,8 @@ const SharedAlbum = () => {
       
       await Promise.all(fetchPromises);
       
-      // Generate the zip file
       const content = await zip.generateAsync({ type: 'blob' });
       
-      // Save the zip file
       const albumName = album.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
       saveAs(content, `album-${albumName}.zip`);
       
@@ -146,7 +160,7 @@ const SharedAlbum = () => {
   const formatImagesForGrid = (): Image[] => {
     if (!album || !album.images || !Array.isArray(album.images)) return [];
     
-    return album.images.map((image: any) => {
+    return album.images.map((image: AlbumImage) => {
       const folderName = image.id_projet ? 
         folderNames[image.id_projet] || "unknown-folder" : 
         "unknown-folder";
