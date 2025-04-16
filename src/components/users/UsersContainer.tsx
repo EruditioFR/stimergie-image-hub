@@ -8,6 +8,7 @@ import { UserFilters } from "@/components/users/filters/UserFilters";
 import { ViewMode } from "@/components/ui/ViewToggle";
 import { useUsersContext } from "@/components/users/UsersContext";
 import { useUsers } from "@/hooks/useUsers";
+import { toast } from "sonner";
 
 export function UsersContainer() {
   const {
@@ -64,6 +65,13 @@ export function UsersContainer() {
       setShowAddForm(false);
       setShowEditForm(false);
       setCurrentUser(null);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    const success = await confirmDeleteUser();
+    if (success) {
+      toast.success("L'utilisateur a été supprimé avec succès");
     }
   };
 
@@ -124,7 +132,7 @@ export function UsersContainer() {
       <DeleteUserDialog 
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        onConfirm={confirmDeleteUser}
+        onConfirm={handleConfirmDelete}
       />
     </>
   );

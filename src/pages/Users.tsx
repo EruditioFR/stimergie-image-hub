@@ -1,8 +1,9 @@
 
 import { UsersHeader } from "@/components/users/UsersHeader";
 import { UsersContainer } from "@/components/users/UsersContainer";
-import { UsersProvider, useUsersContext } from "@/components/users/UsersContext";
+import { UsersProvider } from "@/components/users/UsersContext";
 import { Header } from "@/components/ui/layout/Header";
+import { Toaster } from "sonner";
 
 export default function Users() {
   return (
@@ -10,18 +11,16 @@ export default function Users() {
       <div className="min-h-screen flex flex-col">
         <Header />
         <UsersPageContent />
+        <Toaster position="top-center" />
       </div>
     </UsersProvider>
   );
 }
 
 function UsersPageContent() {
-  const { setShowAddForm } = useUsersContext();
-  
   return (
     <>
-      <UsersHeader onAddClick={() => setShowAddForm(true)} />
-      
+      <UsersHeader />
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12">
         <UsersContainer />
       </main>

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -220,12 +219,14 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
       console.log("Deleting user with ID:", userToDelete);
       
       // Use the RPC function to delete user with proper permissions using type assertion
-      const { error } = await supabase.rpc(
+      const { data, error } = await supabase.rpc(
         'admin_delete_user' as any, 
         {
           user_id: userToDelete
         }
       );
+
+      console.log("Delete user response:", { data, error });
 
       if (error) {
         console.error("Erreur lors de la suppression de l'utilisateur:", error);
@@ -234,7 +235,8 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
       }
 
       setUsers(prev => prev.filter(user => user.id !== userToDelete));
-      toast.success("L'utilisateur a été supprimé avec succès");
+      setShowDeleteDialog(false);
+      setUserToDelete(null);
       return true;
     } catch (err) {
       console.error("Erreur inattendue:", err);
