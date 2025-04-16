@@ -9,7 +9,7 @@
  */
 export function generateDisplayImageUrl(folderName: string, imageTitle: string): string {
   if (!folderName || !imageTitle) {
-    console.warn('Nom de dossier ou titre d\'image manquant pour générer l\'URL');
+    console.warn(`Nom de dossier ou titre d'image manquant pour générer l'URL d'affichage: ${folderName || 'dossier manquant'} / ${imageTitle || 'titre manquant'}`);
     return '';
   }
   
@@ -32,7 +32,7 @@ export function generateDisplayImageUrl(folderName: string, imageTitle: string):
  */
 export function generateDownloadImageSDUrl(folderName: string, imageTitle: string): string {
   if (!folderName || !imageTitle) {
-    console.warn('Nom de dossier ou titre d\'image manquant pour générer l\'URL');
+    console.warn(`Nom de dossier ou titre d'image manquant pour générer l'URL de téléchargement SD: ${folderName || 'dossier manquant'} / ${imageTitle || 'titre manquant'}`);
     return '';
   }
   
@@ -54,7 +54,7 @@ export function generateDownloadImageSDUrl(folderName: string, imageTitle: strin
  */
 export function generateDownloadImageHDUrl(folderName: string, imageTitle: string): string {
   if (!folderName || !imageTitle) {
-    console.warn('Nom de dossier ou titre d\'image manquant pour générer l\'URL');
+    console.warn(`Nom de dossier ou titre d'image manquant pour générer l'URL de téléchargement HD: ${folderName || 'dossier manquant'} / ${imageTitle || 'titre manquant'}`);
     return '';
   }
   

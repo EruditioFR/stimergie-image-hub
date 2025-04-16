@@ -1,6 +1,4 @@
 
-
-
 import { supabase } from "@/integrations/supabase/client";
 import { parseTagsString } from "@/utils/imageUtils";
 import { toast } from "sonner";
@@ -66,9 +64,34 @@ export async function fetchGalleryImages(
     }
     
     // Générer les URLs au format demandé
-    const display_url = generateDisplayImageUrl(folderName, imageTitle);
-    // Utiliser l'URL directement depuis la base de données pour la version SD
-    const download_url = generateDownloadImageHDUrl(folderName, imageTitle);
+    let display_url = '';
+    let download_url = '';
+    let download_url_sd = '';
+    
+    // Priorité 1: Utiliser l'URL stockée en base pour le téléchargement SD
+    if (img.url && img.url.includes('/PNG/')) {
+      download_url_sd = img.url;
+    }
+    // Priorité 2: Générer l'URL PNG si possible
+    else if (folderName) {
+      download_url_sd = generateDownloadImageSDUrl(folderName, imageTitle);
+    }
+    
+    // Pour l'affichage, priorité au format PNG
+    if (folderName) {
+      display_url = generateDisplayImageUrl(folderName, imageTitle);
+    } else {
+      // Fallback à l'URL miniature ou URL standard
+      display_url = img.url_miniature || img.url || '';
+    }
+    
+    // Pour le téléchargement HD, priorité au format JPG
+    if (folderName) {
+      download_url = generateDownloadImageHDUrl(folderName, imageTitle);
+    } else {
+      // Fallback à l'URL standard
+      download_url = img.url || '';
+    }
     
     // Assurer que les dimensions sont des nombres valides
     const width = parseInt(img.width) || 0;
@@ -90,14 +113,14 @@ export async function fetchGalleryImages(
     
     return {
       ...img,
-      // Utiliser directement les nouvelles URLs sans validation additionnelle
-      display_url: display_url, 
-      download_url: download_url,
-      // Utiliser l'URL de Supabase pour le téléchargement SD
-      download_url_sd: img.url || '',
+      // Priorité aux URLs générées, fallback aux URLs existantes
+      display_url: display_url || img.url_miniature || img.url || '',
+      download_url: download_url || img.url || '',
+      // URL spécifique pour le format PNG (SD)
+      download_url_sd: download_url_sd || '',
       // Pour rétrocompatibilité
-      url: download_url,
-      url_miniature: display_url,
+      url: download_url || img.url || '',
+      url_miniature: display_url || img.url_miniature || '',
       // Assurer que width et height sont des nombres
       width: width,
       height: height,

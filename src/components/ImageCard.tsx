@@ -1,3 +1,4 @@
+
 import { useState, memo, useRef, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -5,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { downloadImage } from '@/utils/image/download';
 import { toast } from 'sonner';
+import { validateImageUrl } from '@/utils/image/errorHandler';
 
 interface ImageCardProps {
   id: string;
@@ -90,9 +92,13 @@ export const ImageCard = memo(function ImageCard({
       // Prioritize using the SD download URL specifically for PNG files
       let url = download_url_sd || downloadUrl || src;
       
-      if (!url) {
-        throw new Error(`URL manquante pour l'image ${id}: ${title}`);
+      const validationResult = validateImageUrl(url, id, title);
+      if (!validationResult.isValid) {
+        throw new Error(validationResult.error || `URL manquante pour l'image ${id}: ${title}`);
       }
+      
+      // Use the validated URL (which might have been fixed)
+      url = validationResult.url || url;
       
       console.log(`Download requested for URL:`, url);
       
@@ -140,6 +146,12 @@ export const ImageCard = memo(function ImageCard({
               className="w-full h-full object-cover"
               loading="lazy"
               onLoad={handleImageLoad}
+              onError={(e) => {
+                console.warn(`Failed to load image: ${id} - ${title}`);
+                const imgElement = e.target as HTMLImageElement;
+                // Use a placeholder if the original image fails to load
+                imgElement.src = '/placeholder.png';
+              }}
             />
           </AspectRatio>
         ) : (
@@ -151,6 +163,12 @@ export const ImageCard = memo(function ImageCard({
             loading="lazy"
             style={{ maxHeight: '80vh' }}
             onLoad={handleImageLoad}
+            onError={(e) => {
+              console.warn(`Failed to load image: ${id} - ${title}`);
+              const imgElement = e.target as HTMLImageElement;
+              // Use a placeholder if the original image fails to load
+              imgElement.src = '/placeholder.png';
+            }}
           />
         )}
         
