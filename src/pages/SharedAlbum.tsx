@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MasonryGrid } from '@/components/gallery/masonry/MasonryGrid';
@@ -17,6 +18,7 @@ const SharedAlbum = () => {
   const navigate = useNavigate();
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
+  const [folderNames, setFolderNames] = useState<Record<string, string>>({});
   
   const fetchAlbumData = async () => {
     if (!albumKey) throw new Error('No album key provided');
@@ -41,6 +43,44 @@ const SharedAlbum = () => {
     queryKey: ['shared-album', albumKey],
     queryFn: fetchAlbumData
   });
+
+  // Fetch folder names for all project IDs in the album
+  useEffect(() => {
+    const fetchFolderNames = async () => {
+      if (!album || !album.images || !Array.isArray(album.images)) return;
+      
+      // Collect unique project IDs
+      const projectIds = Array.from(
+        new Set(
+          album.images
+            .filter(img => img.id_projet)
+            .map(img => img.id_projet)
+        )
+      );
+      
+      if (projectIds.length === 0) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('projets')
+          .select('id, nom_dossier')
+          .in('id', projectIds);
+          
+        if (error) throw error;
+        
+        const folderMap: Record<string, string> = {};
+        data.forEach(project => {
+          folderMap[project.id] = project.nom_dossier || '';
+        });
+        
+        setFolderNames(folderMap);
+      } catch (err) {
+        console.error('Error fetching folder names:', err);
+      }
+    };
+    
+    fetchFolderNames();
+  }, [album]);
   
   const downloadAllImages = async () => {
     if (!album || !album.images || !Array.isArray(album.images) || album.images.length === 0) return;
@@ -57,9 +97,8 @@ const SharedAlbum = () => {
       // Add each image to the zip file
       const fetchPromises = album.images.map(async (image: any, index: number) => {
         try {
-          // Create proper download URL from image data
           const folderName = image.id_projet ? 
-            await getFolderName(image.id_projet) : 
+            folderNames[image.id_projet] || "unknown-folder" : 
             "unknown-folder";
           
           const imageTitle = image.title || `image-${image.id}`;
@@ -104,28 +143,12 @@ const SharedAlbum = () => {
     }
   };
   
-  const getFolderName = async (projectId: string): Promise<string> => {
-    try {
-      const { data, error } = await supabase
-        .from('projets')
-        .select('nom_dossier')
-        .eq('id', projectId)
-        .single();
-      
-      if (error) throw error;
-      return data.nom_dossier || '';
-    } catch (err) {
-      console.error('Error getting folder name:', err);
-      return '';
-    }
-  };
-  
   const formatImagesForGrid = (): Image[] => {
     if (!album || !album.images || !Array.isArray(album.images)) return [];
     
     return album.images.map((image: any) => {
       const folderName = image.id_projet ? 
-        "unknown-folder" : // This will be replaced when we fetch folder names
+        folderNames[image.id_projet] || "unknown-folder" : 
         "unknown-folder";
     
       const imageTitle = image.title || `image-${image.id}`;
