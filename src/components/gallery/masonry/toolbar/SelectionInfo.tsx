@@ -17,7 +17,7 @@ export function SelectionInfo({ count, onClear }: SelectionInfoProps) {
         onClick={onClear}
         className="ml-2 py-4"
       >
-        Désélectionner tout
+        Tout désélectionner
       </Button>
     </div>
   );

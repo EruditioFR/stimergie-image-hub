@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useImageSelection } from '@/hooks/useImageSelection';
@@ -13,6 +12,8 @@ import { MasonryDetailModal } from './MasonryDetailModal';
 import { MasonryLoading } from './MasonryLoading';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Image } from '@/utils/image/types';
+import { Button } from '@/components/ui/button';
+import { CheckSquare, SquareCheck } from 'lucide-react';
 
 interface MasonryGridProps {
   images: Image[];
@@ -37,7 +38,13 @@ export function MasonryGrid({
   const [selectedImageDetail, setSelectedImageDetail] = useState<any>(null);
   const [isImageDetailOpen, setIsImageDetailOpen] = useState(false);
   const { user } = useAuth();
-  const { selectedImages, toggleImageSelection, isImageSelected, clearSelection } = useImageSelection();
+  const { 
+    selectedImages, 
+    toggleImageSelection, 
+    isImageSelected, 
+    clearSelection,
+    selectAllImages 
+  } = useImageSelection();
   const [searchParams] = useSearchParams();
   const viewportRef = useRef<HTMLDivElement>(null);
   
@@ -100,6 +107,11 @@ export function MasonryGrid({
     }
   }, [onPageChange, clearSelection, isLoading]);
 
+  const handleSelectAll = useCallback(() => {
+    const imageIds = images.map(img => img.id);
+    selectAllImages(imageIds);
+  }, [images, selectAllImages]);
+
   if (isLoading && images.length === 0) {
     return <MasonryLoading columnCount={columnCount} />;
   }
@@ -108,12 +120,24 @@ export function MasonryGrid({
 
   return (
     <div ref={viewportRef}>
-      <MasonryToolbar 
-        selectedImages={selectedImages}
-        clearSelection={clearSelection}
-        onShareDialogChange={setIsShareDialogOpen}
-        images={images}
-      />
+      <div className="flex items-center justify-between mb-4">
+        <MasonryToolbar 
+          selectedImages={selectedImages}
+          clearSelection={clearSelection}
+          onShareDialogChange={setIsShareDialogOpen}
+          images={images}
+        />
+        {selectedImages.length === 0 && images.length > 0 && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSelectAll}
+            className="flex items-center gap-2"
+          >
+            <SquareCheck className="h-4 w-4" /> Tout sélectionner
+          </Button>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-0.5 px-0.5">
         {columnImages.map((columnImages, columnIndex) => (

@@ -22,10 +22,15 @@ export function useImageSelection() {
     setSelectedImages([]);
   };
 
+  const selectAllImages = (imageIds: string[]) => {
+    setSelectedImages(imageIds);
+  };
+
   return {
     selectedImages,
     toggleImageSelection,
     isImageSelected,
-    clearSelection
+    clearSelection,
+    selectAllImages
   };
 }
