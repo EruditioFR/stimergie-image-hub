@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Image } from '@/utils/image/types';
@@ -29,19 +28,6 @@ export function MasonryToolbarContent({
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Helper function to decode query parameters from URLs if needed
-  const decodeUrlIfNeeded = (url: string): string => {
-    try {
-      if (url.includes('%')) {
-        return decodeURIComponent(url);
-      }
-      return url;
-    } catch (e) {
-      console.error('Error decoding URL:', e);
-      return url;
-    }
-  };
-
   const handleDownload = async () => {
     if (selectedImages.length === 0) {
       toast.error("Veuillez sélectionner au moins une image à télécharger");
@@ -62,12 +48,15 @@ export function MasonryToolbarContent({
         return;
       }
       
-      // Use the direct URL from Supabase for regular downloads
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
       
       const imagesForDownload = selectedImagesData.map(img => {
+        const folderName = img.projets?.nom_dossier || "";
+        const imageTitle = img.title || `image-${img.id}`;
+        const downloadUrl = generateDownloadImageSDUrl(folderName, imageTitle);
+        
         return {
-          url: img.url || '', // Use the direct URL from Supabase
+          url: downloadUrl,
           title: img.title || `image_${img.id}`,
           id: img.id
         };
@@ -116,13 +105,11 @@ export function MasonryToolbarContent({
         };
       });
       
-      // Show immediate toast
       toast.loading("Préparation du ZIP HD en cours", { 
         id: "zip-hd-preparation", 
         duration: 10000
       });
       
-      // Call the Edge Function to generate the HD ZIP file
       const { data, error } = await supabase.functions.invoke('generate-zip', {
         body: {
           images: imagesForDownload,
@@ -141,7 +128,6 @@ export function MasonryToolbarContent({
         description: "Le ZIP HD sera disponible dans votre page Téléchargements"
       });
       
-      // Ask if the user wants to navigate to the downloads page
       toast("Voir vos téléchargements ?", {
         action: {
           label: "Accéder",

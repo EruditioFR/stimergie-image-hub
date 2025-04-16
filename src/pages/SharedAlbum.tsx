@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { Image } from '@/utils/image/types';
 import { useToast } from '@/hooks/use-toast';
-import { generateDisplayImageUrl, generateDownloadImageUrl } from '@/utils/image/imageUrlGenerator';
+import { generateDisplayImageUrl, generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
 
 const SharedAlbum = () => {
   const { albumKey } = useParams<{ albumKey: string }>();
@@ -64,7 +63,7 @@ const SharedAlbum = () => {
             "unknown-folder";
           
           const imageTitle = image.title || `image-${image.id}`;
-          const downloadUrl = generateDownloadImageUrl(folderName, imageTitle);
+          const downloadUrl = generateDownloadImageHDUrl(folderName, imageTitle);
           
           const response = await fetch(downloadUrl);
           if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
@@ -127,14 +126,13 @@ const SharedAlbum = () => {
     if (!album || !album.images || !Array.isArray(album.images)) return [];
     
     return album.images.map((image: any) => {
-      // Generate proper URLs for the image
       const folderName = image.id_projet ? 
         "unknown-folder" : // This will be replaced when we fetch folder names
         "unknown-folder";
-      
+    
       const imageTitle = image.title || `image-${image.id}`;
       const display_url = generateDisplayImageUrl(folderName, imageTitle);
-      const download_url = generateDownloadImageUrl(folderName, imageTitle);
+      const download_url = generateDownloadImageHDUrl(folderName, imageTitle);
       
       return {
         id: image.id.toString(),

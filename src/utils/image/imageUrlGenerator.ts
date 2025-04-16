@@ -21,16 +21,31 @@ export function generateDisplayImageUrl(folderName: string, imageTitle: string):
 }
 
 /**
- * Génère l'URL de téléchargement pour une image (format original)
- * Format: https://www.stimergie.fr/photos/[nom_dossier]/[titre].jpg
+ * Génère l'URL de téléchargement pour une image en qualité normale (PNG)
+ * Format: https://www.stimergie.fr/photos/[nom_dossier]/PNG/[titre].png
  */
-export function generateDownloadImageUrl(folderName: string, imageTitle: string): string {
+export function generateDownloadImageSDUrl(folderName: string, imageTitle: string): string {
   if (!folderName || !imageTitle) {
     console.warn('Nom de dossier ou titre d\'image manquant pour générer l\'URL');
     return '';
   }
   
-  // Encoder correctement les composants de l'URL pour éviter les problèmes avec les caractères spéciaux
+  const encodedFolder = encodeURIComponent(folderName);
+  const encodedTitle = encodeURIComponent(imageTitle);
+  
+  return `https://www.stimergie.fr/photos/${encodedFolder}/PNG/${encodedTitle}.png`;
+}
+
+/**
+ * Génère l'URL de téléchargement HD pour une image (format original)
+ * Format: https://www.stimergie.fr/photos/[nom_dossier]/[titre].jpg
+ */
+export function generateDownloadImageHDUrl(folderName: string, imageTitle: string): string {
+  if (!folderName || !imageTitle) {
+    console.warn('Nom de dossier ou titre d\'image manquant pour générer l\'URL');
+    return '';
+  }
+  
   const encodedFolder = encodeURIComponent(folderName);
   const encodedTitle = encodeURIComponent(imageTitle);
   
