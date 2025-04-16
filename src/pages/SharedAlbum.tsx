@@ -10,7 +10,6 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { Image } from '@/utils/image/types';
 import { useToast } from '@/hooks/use-toast';
-import { generateDisplayImageUrl, generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
 import { Json } from '@/integrations/supabase/types';
 
 interface AlbumImage {
@@ -162,12 +161,7 @@ const SharedAlbum = () => {
       
       const fetchPromises = album.images.map(async (image: AlbumImage, index: number) => {
         try {
-          const folderName = image.id_projet ? 
-            folderNames[image.id_projet] || "unknown-folder" : 
-            "unknown-folder";
-          
-          const imageTitle = image.title || `image-${image.id}`;
-          const downloadUrl = generateDownloadImageHDUrl(folderName, imageTitle);
+          const downloadUrl = image.url;
           
           const response = await fetch(downloadUrl);
           if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
@@ -210,20 +204,15 @@ const SharedAlbum = () => {
     if (!album || !album.images || !Array.isArray(album.images)) return [];
     
     return album.images.map((image: AlbumImage) => {
-      const folderName = image.id_projet ? 
-        folderNames[image.id_projet] || "unknown-folder" : 
-        "unknown-folder";
-    
-      const imageTitle = image.title || `image-${image.id}`;
-      const display_url = generateDisplayImageUrl(folderName, imageTitle);
-      const download_url = generateDownloadImageHDUrl(folderName, imageTitle);
+      const display_url = image.url;
+      const download_url = image.url;
       
       return {
         id: image.id.toString(),
         src: display_url,
         display_url: display_url,
         download_url: download_url,
-        download_url_sd: image.url || '',
+        download_url_sd: image.url,
         alt: image.title || 'Image partagée',
         title: image.title || 'Sans titre',
         author: 'Album partagé',
@@ -312,18 +301,18 @@ const SharedAlbum = () => {
       
       <main className="flex-grow container max-w-7xl mx-auto py-8 px-4">
         <div className="mb-12">
-          <h1 className="text-3xl font-bold mb-2">{album.name}</h1>
-          {album.description && (
+          <h1 className="text-3xl font-bold mb-2">{album?.name}</h1>
+          {album?.description && (
             <p className="text-muted-foreground mb-2">{album.description}</p>
           )}
           <p className="text-sm text-muted-foreground">
-            Accessible du {accessFromFormatted} au {accessUntilFormatted}
+            Accessible du {album?.access_from ? new Date(album.access_from).toLocaleDateString('fr-FR') : ''} au {album?.access_until ? new Date(album.access_until).toLocaleDateString('fr-FR') : ''}
           </p>
         </div>
         
         <MasonryGrid
           images={formatImagesForGrid()}
-          isLoading={false}
+          isLoading={isLoading}
         />
       </main>
       
