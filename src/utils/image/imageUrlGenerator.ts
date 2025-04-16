@@ -13,9 +13,15 @@ export function generateDisplayImageUrl(folderName: string, imageTitle: string):
     return '';
   }
   
+  // Nettoyer le titre d'image pour l'URL (enlever l'extension si présente)
+  const cleanImageTitle = imageTitle.replace(/\.(jpg|jpeg|png)$/i, '');
+  
   // Encoder correctement les composants de l'URL pour éviter les problèmes avec les caractères spéciaux
-  const encodedFolder = encodeURIComponent(folderName);
-  const encodedTitle = encodeURIComponent(imageTitle);
+  const encodedFolder = encodeURIComponent(folderName.trim());
+  const encodedTitle = encodeURIComponent(cleanImageTitle.trim());
+  
+  // Ajouter un log pour le debugging
+  console.log(`Generated display URL for ${imageTitle}: https://www.stimergie.fr/photos/${encodedFolder}/PNG/${encodedTitle}.png`);
   
   return `https://www.stimergie.fr/photos/${encodedFolder}/PNG/${encodedTitle}.png`;
 }
@@ -30,8 +36,14 @@ export function generateDownloadImageSDUrl(folderName: string, imageTitle: strin
     return '';
   }
   
-  const encodedFolder = encodeURIComponent(folderName);
-  const encodedTitle = encodeURIComponent(imageTitle);
+  // Nettoyer le titre d'image pour l'URL (enlever l'extension si présente)
+  const cleanImageTitle = imageTitle.replace(/\.(jpg|jpeg|png)$/i, '');
+  
+  const encodedFolder = encodeURIComponent(folderName.trim());
+  const encodedTitle = encodeURIComponent(cleanImageTitle.trim());
+  
+  // Ajouter un log pour le debugging
+  console.log(`Generated SD download URL for ${imageTitle}: https://www.stimergie.fr/photos/${encodedFolder}/PNG/${encodedTitle}.png`);
   
   return `https://www.stimergie.fr/photos/${encodedFolder}/PNG/${encodedTitle}.png`;
 }
@@ -46,8 +58,14 @@ export function generateDownloadImageHDUrl(folderName: string, imageTitle: strin
     return '';
   }
   
-  const encodedFolder = encodeURIComponent(folderName);
-  const encodedTitle = encodeURIComponent(imageTitle);
+  // Nettoyer le titre d'image pour l'URL (enlever l'extension si présente)
+  const cleanImageTitle = imageTitle.replace(/\.(jpg|jpeg|png)$/i, '');
+  
+  const encodedFolder = encodeURIComponent(folderName.trim());
+  const encodedTitle = encodeURIComponent(cleanImageTitle.trim());
+  
+  // Ajouter un log pour le debugging
+  console.log(`Generated HD download URL for ${imageTitle}: https://www.stimergie.fr/photos/${encodedFolder}/${encodedTitle}.jpg`);
   
   return `https://www.stimergie.fr/photos/${encodedFolder}/${encodedTitle}.jpg`;
 }

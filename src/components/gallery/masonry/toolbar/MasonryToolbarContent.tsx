@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Image } from '@/utils/image/types';
@@ -51,19 +50,26 @@ export function MasonryToolbarContent({
       }
       
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
+      console.log(`Processing ${selectedImagesData.length} images for download`);
       
       const imagesForDownload = selectedImagesData.map(img => {
-        // Utiliser l'URL PNG pour le téléchargement standard
+        // Extract folder name from project data or use a fallback
         let folderName = "";
         if (img.projets?.nom_dossier) {
           folderName = img.projets.nom_dossier;
         } else if (img.id_projet) {
-          // Si nous avons l'ID du projet mais pas le dossier, on utilise un placeholder
+          // If we have the project ID but not the folder, use a placeholder
           folderName = `project-${img.id_projet}`;
         }
         
         const imageTitle = img.title || `image-${img.id}`;
-        const pngUrl = generateDownloadImageSDUrl(folderName, imageTitle);
+        
+        // Use existing download_url_sd if available, otherwise generate it
+        const pngUrl = img.download_url_sd || generateDownloadImageSDUrl(folderName, imageTitle);
+        
+        if (!pngUrl) {
+          console.warn(`No PNG URL available for image ${img.id}: ${imageTitle}`);
+        }
         
         return {
           url: pngUrl,
@@ -72,6 +78,9 @@ export function MasonryToolbarContent({
         };
       });
 
+      console.log(`Prepared ${imagesForDownload.length} images for ZIP download`);
+      console.log('First 3 image URLs:', imagesForDownload.slice(0, 3).map(img => img.url));
+      
       await downloadImagesAsZip(imagesForDownload, `images_${Date.now()}.zip`);
       toast.success("Images téléchargées avec succès");
       
@@ -184,13 +193,13 @@ export function MasonryToolbarContent({
           isLoading={isDownloading}
           onClick={handleDownload}
           label="Version web & réseaux sociaux"
-          sizeHint="(< 2 Mo)"
+          sizeHint="(PNG, < 2 Mo)"
         />
         <DownloadButton 
           isLoading={isDownloadingHD}
           onClick={handleDownloadHD}
           label="Version HD impression"
-          sizeHint="(> 20 Mo)"
+          sizeHint="(JPG, > 20 Mo)"
           mobileLabel="HD"
         />
         <ShareButton onClick={openShareDialog} />

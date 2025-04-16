@@ -42,7 +42,7 @@ const Images = () => {
     console.log("Fetching all images");
     const { data, error } = await supabase
       .from('images')
-      .select('*, projets!id_projet (nom_dossier)')
+      .select('*, projets!id_projet (nom_dossier, nom_projet)')
       .order('created_at', { ascending: false });
       
     if (error) {
@@ -60,6 +60,8 @@ const Images = () => {
     return data.map(img => {
       const folderName = img.projets?.nom_dossier || "";
       const imageTitle = img.title || `image-${img.id}`;
+      
+      console.log(`Processing image ${img.id}: title=${imageTitle}, folder=${folderName}`);
       
       const display_url = generateDisplayImageUrl(folderName, imageTitle);
       const download_sd_url = generateDownloadImageSDUrl(folderName, imageTitle);
@@ -107,21 +109,33 @@ const Images = () => {
   };
 
   const formatImagesForGrid = (images: Image[] = []) => {
-    return images.map(image => ({
-      id: image.id.toString(),
-      src: image.url_miniature || image.url,
-      display_url: image.display_url || '',
-      download_url: image.download_url || '',
-      download_url_sd: image.download_url_sd || '',
-      alt: image.title,
-      title: image.title,
-      author: 'User',
-      tags: image.tags,
-      width: image.width,
-      height: image.height,
-      orientation: image.orientation,
-      created_at: image.created_at
-    } as ImageType));
+    return images.map(image => {
+      if (!image.display_url) {
+        console.warn(`Missing display_url for image ${image.id}: ${image.title}`);
+      }
+      if (!image.download_url) {
+        console.warn(`Missing download_url for image ${image.id}: ${image.title}`);
+      }
+      if (!image.download_url_sd) {
+        console.warn(`Missing download_url_sd for image ${image.id}: ${image.title}`);
+      }
+
+      return {
+        id: image.id.toString(),
+        src: image.display_url || image.url_miniature || image.url,
+        display_url: image.display_url || '',
+        download_url: image.download_url || '',
+        download_url_sd: image.download_url_sd || '',
+        alt: image.title,
+        title: image.title,
+        author: 'User',
+        tags: image.tags,
+        width: image.width,
+        height: image.height,
+        orientation: image.orientation,
+        created_at: image.created_at
+      } as ImageType;
+    });
   };
   
   return (

@@ -1,10 +1,9 @@
-
 import { useState, memo, useRef, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { downloadImage } from '@/utils/image/imageDownloader';
+import { downloadImage } from '@/utils/image/download';
 import { toast } from 'sonner';
 
 interface ImageCardProps {
@@ -17,12 +16,13 @@ interface ImageCardProps {
   orientation?: string;
   onClick?: (e: React.MouseEvent) => void;
   downloadUrl?: string;
+  download_url_sd?: string;
   width?: number;
   height?: number;
 }
 
 export const ImageCard = memo(function ImageCard({ 
-  id, src, alt, title, author, className, orientation, onClick, downloadUrl, width, height
+  id, src, alt, title, author, className, orientation, onClick, downloadUrl, download_url_sd, width, height
 }: ImageCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -87,33 +87,24 @@ export const ImageCard = memo(function ImageCard({
     setIsDownloading(true);
     
     try {
-      // Utiliser l'URL PNG pour le téléchargement
-      // L'URL de téléchargement devrait pointer vers le dossier PNG
-      let url = downloadUrl || src;
+      // Prioritize using the SD download URL specifically for PNG files
+      let url = download_url_sd || downloadUrl || src;
       
-      // Si l'URL n'est pas déjà une URL PNG, essayons de la convertir
-      if (!url.includes('/PNG/') && url.includes('/photos/')) {
-        // Extract folder and filename
-        const urlParts = url.split('/photos/');
-        if (urlParts.length === 2) {
-          const parts = urlParts[1].split('/');
-          if (parts.length >= 2) {
-            const folder = parts[0];
-            let filename = parts[parts.length - 1];
-            // Remove file extension and replace with .png
-            filename = filename.replace(/\.[^.]+$/, '.png');
-            url = `https://www.stimergie.fr/photos/${folder}/PNG/${filename}`;
-          }
-        }
+      if (!url) {
+        throw new Error(`URL manquante pour l'image ${id}: ${title}`);
       }
       
-      console.log(`Download requested for PNG URL:`, url);
+      console.log(`Download requested for URL:`, url);
+      
+      const isPngUrl = url.toLowerCase().includes('/png/') || url.toLowerCase().endsWith('.png');
+      const fileExtension = isPngUrl ? '.png' : '.jpg';
       
       const filename = title 
-        ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png` 
-        : `image_${id}.png`;
+        ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}${fileExtension}` 
+        : `image_${id}${fileExtension}`;
       
       await downloadImage(url, filename);
+      toast.success('Image téléchargée avec succès');
     } catch (error) {
       console.error(`Erreur lors du téléchargement:`, error);
       toast.error('Échec du téléchargement', { 
