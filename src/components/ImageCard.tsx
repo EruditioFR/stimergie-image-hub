@@ -21,10 +21,11 @@ interface ImageCardProps {
   download_url_sd?: string;
   width?: number;
   height?: number;
+  url?: string; // Original URL from database
 }
 
 export const ImageCard = memo(function ImageCard({ 
-  id, src, alt, title, author, className, orientation, onClick, downloadUrl, download_url_sd, width, height
+  id, src, alt, title, author, className, orientation, onClick, downloadUrl, download_url_sd, width, height, url
 }: ImageCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -89,27 +90,27 @@ export const ImageCard = memo(function ImageCard({
     setIsDownloading(true);
     
     try {
-      // Prioritize using the SD download URL specifically for PNG files
-      let url = download_url_sd || downloadUrl || src;
+      // Prioritize the original URL from database
+      let downloadTarget = url || download_url_sd || downloadUrl || src;
       
-      const validationResult = validateImageUrl(url, id, title);
+      const validationResult = validateImageUrl(downloadTarget, id, title);
       if (!validationResult.isValid) {
         throw new Error(validationResult.error || `URL manquante pour l'image ${id}: ${title}`);
       }
       
       // Use the validated URL (which might have been fixed)
-      url = validationResult.url || url;
+      downloadTarget = validationResult.url || downloadTarget;
       
-      console.log(`Download requested for URL:`, url);
+      console.log(`Download requested for URL:`, downloadTarget);
       
-      const isPngUrl = url.toLowerCase().includes('/png/') || url.toLowerCase().endsWith('.png');
+      const isPngUrl = downloadTarget.toLowerCase().includes('/png/') || downloadTarget.toLowerCase().endsWith('.png');
       const fileExtension = isPngUrl ? '.png' : '.jpg';
       
       const filename = title 
         ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}${fileExtension}` 
         : `image_${id}${fileExtension}`;
       
-      await downloadImage(url, filename);
+      await downloadImage(downloadTarget, filename);
       toast.success('Image téléchargée avec succès');
     } catch (error) {
       console.error(`Erreur lors du téléchargement:`, error);
@@ -149,8 +150,13 @@ export const ImageCard = memo(function ImageCard({
               onError={(e) => {
                 console.warn(`Failed to load image: ${id} - ${title}`);
                 const imgElement = e.target as HTMLImageElement;
-                // Use a placeholder if the original image fails to load
-                imgElement.src = '/placeholder.png';
+                // Try to use the original URL if available when display URL fails
+                if (url && imgElement.src !== url) {
+                  imgElement.src = url;
+                } else {
+                  // Use a placeholder if the original image fails to load
+                  imgElement.src = '/placeholder.png';
+                }
               }}
             />
           </AspectRatio>
@@ -166,8 +172,13 @@ export const ImageCard = memo(function ImageCard({
             onError={(e) => {
               console.warn(`Failed to load image: ${id} - ${title}`);
               const imgElement = e.target as HTMLImageElement;
-              // Use a placeholder if the original image fails to load
-              imgElement.src = '/placeholder.png';
+              // Try to use the original URL if available when display URL fails
+              if (url && imgElement.src !== url) {
+                imgElement.src = url;
+              } else {
+                // Use a placeholder if the original image fails to load
+                imgElement.src = '/placeholder.png';
+              }
             }}
           />
         )}

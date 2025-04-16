@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Image } from '@/utils/image/types';
@@ -59,40 +58,39 @@ export function MasonryToolbarContent({
       const failedImages = [];
       
       for (const img of selectedImagesData) {
-        // Extraire le nom du dossier à partir des données du projet ou utiliser un fallback
-        let folderName = "";
-        if (img.projets?.nom_dossier) {
-          folderName = img.projets.nom_dossier;
-        } else if (img.id_projet) {
-          folderName = `project-${img.id_projet}`;
+        // Priorité à l'URL stockée en base
+        let pngUrl = img.url || '';
+        
+        // Si l'URL n'est pas une URL PNG ou est vide, essayer de générer une URL
+        if (!pngUrl || !pngUrl.includes('/PNG/')) {
+          // Extraire le nom du dossier à partir des données du projet ou utiliser un fallback
+          let folderName = "";
+          if (img.projets?.nom_dossier) {
+            folderName = img.projets.nom_dossier;
+          } else if (img.id_projet) {
+            folderName = `project-${img.id_projet}`;
+          }
+          
+          const imageTitle = img.title || `image-${img.id}`;
+          
+          // Générer l'URL PNG uniquement si nécessaire
+          if (folderName) {
+            const generatedUrl = generateDownloadImageSDUrl(folderName, imageTitle);
+            if (!pngUrl) {
+              pngUrl = generatedUrl;
+            }
+          }
         }
         
-        const imageTitle = img.title || `image-${img.id}`;
-        
-        // Utiliser download_url_sd s'il existe, sinon le générer
-        let pngUrl = '';
-        
-        // Priorité 1: URL déjà disponible dans l'objet image
-        if (img.download_url_sd) {
-          pngUrl = img.download_url_sd;
-        } 
-        // Priorité 2: Utiliser directement l'URL stockée en base si elle contient /PNG/
-        else if (img.url && img.url.includes('/PNG/')) {
-          pngUrl = img.url;
-        }
-        // Priorité 3: Générer l'URL à partir du nom de dossier et du titre
-        else if (folderName) {
-          pngUrl = generateDownloadImageSDUrl(folderName, imageTitle);
-        } 
-        // Dernier recours: utiliser n'importe quelle URL disponible
-        else if (img.url) {
-          pngUrl = img.url;
-        } else if (img.src) {
+        // En dernier recours: utiliser n'importe quelle URL disponible
+        if (!pngUrl && img.display_url) {
+          pngUrl = img.display_url;
+        } else if (!pngUrl && img.src) {
           pngUrl = img.src;
         }
         
         // Valider l'URL avant de l'ajouter
-        const validationResult = validateImageUrl(pngUrl, img.id, imageTitle);
+        const validationResult = validateImageUrl(pngUrl, img.id, img.title || `image_${img.id}`);
         if (validationResult.isValid && validationResult.url) {
           imagesForDownload.push({
             url: validationResult.url,
