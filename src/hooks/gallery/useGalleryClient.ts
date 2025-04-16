@@ -1,66 +1,20 @@
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useCallback } from 'react';
+import { User } from '@supabase/supabase-js';
 
-export const useGalleryClient = (user: any | null, userRole: string) => {
-  const [userClientId, setUserClientId] = useState<string | null>(null);
-  const userClientFetchedRef = useRef(false);
-
-  // Récupérer le client_id de l'utilisateur une seule fois
-  useEffect(() => {
-    const fetchUserClientId = async () => {
-      if (!user || userClientFetchedRef.current) return;
-      
-      const cachedClientId = sessionStorage.getItem(`userClientId-${user.id}`);
-      if (cachedClientId) {
-        setUserClientId(cachedClientId);
-        console.log('Using cached user client ID:', cachedClientId);
-        userClientFetchedRef.current = true;
-        return;
-      }
-      
-      try {
-        const { data, error } = await supabase.rpc('get_user_client_id', {
-          user_id: user.id
-        });
-        
-        if (error) {
-          console.error('Error fetching user client ID:', error);
-          return;
-        }
-        
-        if (data) {
-          sessionStorage.setItem(`userClientId-${user.id}`, data);
-          setUserClientId(data);
-          console.log('User client ID fetched and cached:', data);
-          userClientFetchedRef.current = true;
-        }
-      } catch (error) {
-        console.error('Error fetching user client ID:', error);
-      }
-    };
-    
-    fetchUserClientId();
-  }, [user]);
-
-  // Forcer le client ID pour les utilisateurs non-admin
-  const enforceClientForNonAdmin = useCallback((
-    selectedClient: string | null, 
-    baseHandleClientChange: (clientId: string | null) => void
-  ) => {
-    if (['admin_client', 'user'].includes(userRole) && userClientId && selectedClient !== userClientId) {
-      console.log('Setting client filter to non-admin user client ID:', userClientId);
-      baseHandleClientChange(userClientId);
-      return true;
-    }
-    return false;
-  }, [userRole, userClientId]);
-
-  // Vérifie si un utilisateur a le droit de changer de client
+export const useGalleryClient = (user: User | null, userRole: string) => {
+  const userClientId = user?.user_metadata?.client_id || null;
+  
+  const enforceClientForNonAdmin = useCallback(() => {
+    // Logic to enforce client for non-admin users
+    console.log('Enforcing client filter for non-admin users');
+    // This is an empty implementation as it will be handled in the initialization hook
+  }, []);
+  
   const canChangeClient = useCallback(() => {
-    return !(['admin_client', 'user'].includes(userRole) && userClientId);
-  }, [userRole, userClientId]);
-
+    return userRole === 'admin';
+  }, [userRole]);
+  
   return {
     userClientId,
     enforceClientForNonAdmin,

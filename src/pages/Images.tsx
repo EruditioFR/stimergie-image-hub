@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
@@ -21,7 +20,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { LayoutPortrait, LayoutLandscape, Square } from 'lucide-react';
+import { AlignStartVertical, AlignStartHorizontal, Square } from 'lucide-react';
 
 export interface Image {
   id: number;
@@ -189,10 +188,10 @@ const Images = () => {
                     Toutes les orientations
                   </SelectItem>
                   <SelectItem value="portrait" className="flex items-center gap-2">
-                    <LayoutPortrait className="h-4 w-4" /> Portrait
+                    <AlignStartVertical className="h-4 w-4" /> Portrait
                   </SelectItem>
                   <SelectItem value="paysage" className="flex items-center gap-2">
-                    <LayoutLandscape className="h-4 w-4" /> Paysage
+                    <AlignStartHorizontal className="h-4 w-4" /> Paysage
                   </SelectItem>
                   <SelectItem value="carré" className="flex items-center gap-2">
                     <Square className="h-4 w-4" /> Carré
