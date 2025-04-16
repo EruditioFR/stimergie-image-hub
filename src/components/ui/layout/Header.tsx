@@ -18,7 +18,6 @@ import { z } from 'zod';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
-// Login form schema
 const loginSchema = z.object({
   email: z.string().email("Adresse e-mail invalide"),
   password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
@@ -28,7 +27,8 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function Header() {
   const location = useLocation();
-  
+  const navigate = useNavigate();
+
   const { user, userRole, signOut, signIn } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
