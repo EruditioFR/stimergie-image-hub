@@ -104,7 +104,6 @@ const SharedAlbum = () => {
     }
   };
   
-  // Helper function to get folder name for an image
   const getFolderName = async (projectId: string): Promise<string> => {
     try {
       const { data, error } = await supabase
@@ -121,7 +120,6 @@ const SharedAlbum = () => {
     }
   };
   
-  // Format the images for the MasonryGrid component
   const formatImagesForGrid = (): Image[] => {
     if (!album || !album.images || !Array.isArray(album.images)) return [];
     
@@ -139,6 +137,7 @@ const SharedAlbum = () => {
         src: display_url,
         display_url: display_url,
         download_url: download_url,
+        download_url_sd: image.url || '',
         alt: image.title || 'Image partagée',
         title: image.title || 'Sans titre',
         author: 'Album partagé',
@@ -171,7 +170,6 @@ const SharedAlbum = () => {
     );
   }
   
-  // Check if the album has expired
   const now = new Date();
   const accessFrom = new Date(album.access_from);
   const accessUntil = new Date(album.access_until);
@@ -189,7 +187,6 @@ const SharedAlbum = () => {
     );
   }
   
-  // Format dates for display
   const accessFromFormatted = album?.access_from ? new Date(album.access_from).toLocaleDateString('fr-FR') : '';
   const accessUntilFormatted = album?.access_until ? new Date(album.access_until).toLocaleDateString('fr-FR') : '';
   

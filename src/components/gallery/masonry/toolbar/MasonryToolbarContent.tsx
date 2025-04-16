@@ -53,16 +53,8 @@ export function MasonryToolbarContent({
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
       
       const imagesForDownload = selectedImagesData.map(img => {
-        let folderName = "";
-        if (img.projets?.nom_dossier) {
-          folderName = img.projets.nom_dossier;
-        } else if (img.id_projet) {
-          // Si nous avons l'ID du projet mais pas le dossier, on utilise un placeholder
-          folderName = `project-${img.id_projet}`;
-        }
-        
-        const imageTitle = img.title || `image-${img.id}`;
-        const downloadUrl = generateDownloadImageSDUrl(folderName, imageTitle);
+        // Utiliser directement l'URL de l'image depuis Supabase
+        const downloadUrl = img.url || '';
         
         return {
           url: downloadUrl,
@@ -107,8 +99,19 @@ export function MasonryToolbarContent({
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
       
       const imagesForDownload = selectedImagesData.map(img => {
+        let folderName = "";
+        if (img.projets?.nom_dossier) {
+          folderName = img.projets.nom_dossier;
+        } else if (img.id_projet) {
+          // Si nous avons l'ID du projet mais pas le dossier, on utilise un placeholder
+          folderName = `project-${img.id_projet}`;
+        }
+        
+        const imageTitle = img.title || `image-${img.id}`;
+        const hdUrl = generateDownloadImageHDUrl(folderName, imageTitle);
+        
         return {
-          url: decodeUrlIfNeeded(img.url || img.download_url || ""),
+          url: decodeUrlIfNeeded(hdUrl || ""),
           title: img.title || `image_${img.id}`,
           id: img.id
         };

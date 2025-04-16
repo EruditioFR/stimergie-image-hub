@@ -1,5 +1,6 @@
 
 
+
 import { supabase } from "@/integrations/supabase/client";
 import { parseTagsString } from "@/utils/imageUtils";
 import { toast } from "sonner";
@@ -66,6 +67,7 @@ export async function fetchGalleryImages(
     
     // Générer les URLs au format demandé
     const display_url = generateDisplayImageUrl(folderName, imageTitle);
+    // Utiliser l'URL directement depuis la base de données pour la version SD
     const download_url = generateDownloadImageHDUrl(folderName, imageTitle);
     
     // Assurer que les dimensions sont des nombres valides
@@ -91,6 +93,8 @@ export async function fetchGalleryImages(
       // Utiliser directement les nouvelles URLs sans validation additionnelle
       display_url: display_url, 
       download_url: download_url,
+      // Utiliser l'URL de Supabase pour le téléchargement SD
+      download_url_sd: img.url || '',
       // Pour rétrocompatibilité
       url: download_url,
       url_miniature: display_url,

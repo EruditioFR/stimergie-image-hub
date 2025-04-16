@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
@@ -61,12 +62,14 @@ const Images = () => {
       const imageTitle = img.title || `image-${img.id}`;
       
       const display_url = generateDisplayImageUrl(folderName, imageTitle);
+      // Utiliser l'URL directement depuis la base de données pour la version SD
       const download_url = generateDownloadImageHDUrl(folderName, imageTitle);
       
       return {
         ...img,
         display_url,
         download_url,
+        download_url_sd: img.url || '',
         tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
       };
     }) as Image[];
