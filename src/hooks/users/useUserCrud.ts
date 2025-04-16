@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -17,11 +16,9 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
 
       console.log("Creating user with email:", userData.email);
 
-      // Make sure email and password are properly trimmed
       const trimmedEmail = userData.email.trim();
       const trimmedPassword = password.trim();
 
-      // Validate password and email
       if (trimmedPassword.length < 6) {
         toast.error("Le mot de passe doit contenir au moins 6 caractères");
         return false;
@@ -38,13 +35,11 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
 
       console.log("Calling admin-create-user function with email and user data");
 
-      // Fix the URL to use the correct Supabase URL and edge function path
       const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://mjhbugzaqmtfnbxaqpss.supabase.co";
       const functionUrl = `${SUPABASE_URL}/functions/v1/admin-create-user`;
       
       console.log("Calling edge function at URL:", functionUrl);
 
-      // Call our edge function to create the user
       const response = await fetch(functionUrl, {
         method: "POST",
         headers: {
@@ -67,11 +62,9 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
         
         let errorMessage = "Erreur lors de la création de l'utilisateur";
         try {
-          // Try to parse as JSON, but handle case where it's not JSON
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.error || errorMessage;
         } catch (e) {
-          // Not JSON, use text as is or a generic message
           errorMessage = errorText.includes("<") ? 
             "Erreur de serveur lors de la création de l'utilisateur" : 
             errorText || errorMessage;
@@ -83,7 +76,6 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
       
       const result = await response.json();
       
-      // Fetch the new user to get all details
       if (result.id) {
         console.log("New user created with ID:", result.id);
         const { data: newUser, error: fetchError } = await supabase
@@ -104,7 +96,6 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
           console.error("Erreur lors de la récupération du nouvel utilisateur:", fetchError);
           toast.warning("Utilisateur créé, mais erreur lors de la récupération des détails");
         } else if (newUser) {
-          // Convert DB record to User type
           const formattedUser: User = {
             id: newUser.id,
             email: newUser.email,
@@ -117,7 +108,6 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
             clientId: newUser.id_client,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            // For backward compatibility
             first_name: newUser.first_name,
             last_name: newUser.last_name,
             id_client: newUser.id_client,
@@ -141,12 +131,10 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
 
   const handleUpdateUser = async (userData: User, password?: string) => {
     try {
-      // Get first_name, last_name values from either the new or old field names
       const firstName = userData.firstName || userData.first_name;
       const lastName = userData.lastName || userData.last_name;
       const clientId = userData.clientId || userData.id_client;
       
-      // Update profile data first
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -163,11 +151,9 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
         return false;
       }
 
-      // Only attempt password update if a password was provided
       if (password && password.trim() !== '') {
         console.log("Updating password for user:", userData.id);
         
-        // Use the Supabase admin API to update password with type assertion
         const { error: passwordError } = await supabase.rpc(
           'admin_update_user_password' as any, 
           {
@@ -195,7 +181,6 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
               role: userData.role,
               clientId: clientId,
               updatedAt: new Date().toISOString(),
-              // For backward compatibility
               first_name: firstName,
               last_name: lastName,
               id_client: clientId,
@@ -219,7 +204,25 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
     try {
       console.log("Deleting user with ID:", userToDelete);
       
-      // Première étape : supprimer l'entrée de l'utilisateur dans la table profiles
+      let success = true;
+      
+      try {
+        const { error: authError } = await supabase.auth.admin.deleteUser(
+          userToDelete
+        );
+
+        if (authError) {
+          console.log("Remarque: L'utilisateur n'existe peut-être pas dans auth.users:", authError.message);
+          
+          if (authError.message !== "User not found" && authError.code !== "user_not_found") {
+            success = false;
+            toast.error("Note: " + authError.message);
+          }
+        }
+      } catch (err) {
+        console.log("Erreur lors de la suppression de l'utilisateur dans auth:", err);
+      }
+      
       const { error: profileError } = await supabase
         .from("profiles")
         .delete()
@@ -228,25 +231,17 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
       if (profileError) {
         console.error("Erreur lors de la suppression du profil:", profileError);
         toast.error("Impossible de supprimer le profil utilisateur: " + profileError.message);
-        return false;
-      }
-      
-      // Deuxième étape : supprimer l'utilisateur de auth.users via l'API Admin
-      const { error: authError } = await supabase.auth.admin.deleteUser(
-        userToDelete
-      );
-
-      if (authError) {
-        console.error("Erreur lors de la suppression de l'utilisateur:", authError);
-        toast.error("Impossible de supprimer l'utilisateur: " + authError.message);
-        return false;
+        success = false;
       }
 
-      // Mettre à jour l'état local pour refléter la suppression
-      setUsers(prev => prev.filter(user => user.id !== userToDelete));
-      setShowDeleteDialog(false);
-      setUserToDelete(null);
-      return true;
+      if (success || (!success && !profileError)) {
+        setUsers(prev => prev.filter(user => user.id !== userToDelete));
+        setShowDeleteDialog(false);
+        setUserToDelete(null);
+        return true;
+      } else {
+        return false;
+      }
     } catch (err) {
       console.error("Erreur inattendue:", err);
       toast.error("Une erreur est survenue lors de la suppression de l'utilisateur");
