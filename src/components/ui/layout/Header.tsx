@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Image, FileText, Users, Menu } from 'lucide-react';
@@ -29,7 +28,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function Header() {
   const location = useLocation();
-  const navigate = useNavigate();
+  
   const { user, userRole, signOut, signIn } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -91,8 +90,8 @@ export function Header() {
   const navigationItems = [
     { name: 'Accueil', path: '/', icon: <Home className="h-4 w-4 mr-2" /> },
     { name: 'Banque d\'images', path: '/gallery', icon: <Image className="h-4 w-4 mr-2" /> },
-    { name: 'Ressources', path: '/resources', icon: <FileText className="h-4 w-4 mr-2" /> },
-    { name: 'Ensemble', path: '/ensemble', icon: <Users className="h-4 w-4 mr-2" /> }
+    { name: 'Ensemble', path: '/ensemble', icon: <Users className="h-4 w-4 mr-2" /> },
+    { name: 'Ressources', path: '/resources', icon: <FileText className="h-4 w-4 mr-2" /> }
   ];
 
   const filteredNavItems = navigationItems;
