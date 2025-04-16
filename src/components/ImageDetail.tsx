@@ -137,6 +137,23 @@ export default function ImageDetail() {
             <p className="text-sm text-muted-foreground">
               Par {image.author || 'Photographe inconnu'}
             </p>
+            
+            {/* Affichage des tags */}
+            {image.tags && image.tags.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-medium mb-2">Tags:</p>
+                <div className="flex flex-wrap gap-2">
+                  {image.tags.map((tag: string, index: number) => (
+                    <span 
+                      key={index} 
+                      className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

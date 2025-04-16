@@ -99,9 +99,10 @@ export const ImageContent = ({
         </div>
       </div>
       
+      {/* Affichage des tags */}
       <div className="flex justify-between items-center">
         <div className="flex flex-wrap gap-2">
-          {image?.tags && image.tags.map((tag: string, index: number) => (
+          {image?.tags && Array.isArray(image.tags) && image.tags.length > 0 && image.tags.map((tag: string, index: number) => (
             <span 
               key={index}
               className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs"

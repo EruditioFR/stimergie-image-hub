@@ -35,6 +35,23 @@ export const useGalleryImageFormatting = () => {
         }
       }
       
+      // Assurer que les tags sont toujours sous forme de tableau
+      let tags = image.tags || [];
+      if (typeof tags === 'string') {
+        // Essayer de parser les tags s'ils sont au format JSON
+        try {
+          if (tags.startsWith('[')) {
+            tags = JSON.parse(tags);
+          } else {
+            // Sinon diviser par virgules
+            tags = tags.split(',').map((tag: string) => tag.trim());
+          }
+        } catch (e) {
+          console.error('Erreur de parsing des tags:', e);
+          tags = [tags]; // Fallback à un array avec la chaîne originale
+        }
+      }
+      
       return {
         id: id,
         src: srcUrl,
@@ -43,7 +60,7 @@ export const useGalleryImageFormatting = () => {
         alt: image.title || "Image sans titre",
         title: image.title || "Sans titre",
         author: image.created_by || 'Utilisateur',
-        tags: image.tags || [],
+        tags: tags,
         orientation: orientation,
         width: width,
         height: height,
