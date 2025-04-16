@@ -23,10 +23,12 @@ export const useGalleryImages = (isAdmin: boolean) => {
     activeTab,
     selectedClient,
     selectedProject,
+    selectedOrientation,
     hasActiveFilters,
     handleTabChange,
     handleClientChange: baseHandleClientChange,
     handleProjectChange: baseHandleProjectChange,
+    handleOrientationChange: baseHandleOrientationChange,
     handleResetFilters,
     updateFilterStatus
   } = useGalleryFilters();
@@ -45,6 +47,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     activeTab,
     selectedClient,
     selectedProject,
+    selectedOrientation,
     userRole,
     userClientId
   });
@@ -58,10 +61,12 @@ export const useGalleryImages = (isAdmin: boolean) => {
 
   const {
     handleClientChange,
-    handleProjectChange
+    handleProjectChange,
+    handleOrientationChange
   } = useGalleryFiltersHandlers({
     baseHandleClientChange,
     baseHandleProjectChange,
+    baseHandleOrientationChange,
     cancelPreviousRequest,
     setPreviousRequest,
     resetPagination,
@@ -71,6 +76,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     activeTab,
     selectedClient,
     selectedProject,
+    selectedOrientation,
     userRole,
     userClientId
   });
@@ -86,6 +92,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     activeTab,
     selectedClient,
     selectedProject,
+    selectedOrientation,
     currentPage,
     shouldFetchRandom,
     userRole,
@@ -106,6 +113,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     activeTab,
     selectedClient,
     selectedProject,
+    selectedOrientation,
     userRole,
     currentPage,
     baseHandleClientChange
@@ -122,6 +130,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     activeTab,
     selectedClient,
     selectedProject,
+    selectedOrientation,
     currentPage,
     totalCount,
     userRole,
@@ -138,12 +147,14 @@ export const useGalleryImages = (isAdmin: boolean) => {
     activeTab,
     selectedClient,
     selectedProject,
+    selectedOrientation,
     currentPage,
     totalCount,
     handlePageChange,
     handleTabChange,
     handleClientChange,
     handleProjectChange,
+    handleOrientationChange,
     handleResetFilters,
     refreshGallery,
     formatImagesForGrid,

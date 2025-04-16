@@ -18,9 +18,10 @@ export async function fetchGalleryImages(
   pageNum: number,
   shouldFetchRandom: boolean = true,
   userRole: string = "",
-  userClientId: string | null = null
+  userClientId: string | null = null,
+  orientation: string | null = null
 ): Promise<any[]> {
-  console.log('Fetching images with:', { search, tag, tab, client, project, pageNum, shouldFetchRandom, userRole, userClientId });
+  console.log('Fetching images with:', { search, tag, tab, client, project, pageNum, shouldFetchRandom, userRole, userClientId, orientation });
   
   // Construire la requête de base avec les filtres
   const { query, hasEmptyResult } = await buildGalleryQuery(
@@ -30,6 +31,11 @@ export async function fetchGalleryImages(
   // Si la construction de requête indique qu'aucun résultat n'est attendu
   if (hasEmptyResult) {
     return [];
+  }
+  
+  // Appliquer le filtre d'orientation s'il est spécifié
+  if (orientation) {
+    query.eq('orientation', orientation.toLowerCase());
   }
   
   // Joindre la table des projets pour obtenir le nom du dossier

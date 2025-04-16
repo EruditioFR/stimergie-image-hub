@@ -2,31 +2,8 @@
 import { useEffect } from 'react';
 
 interface GalleryDataFetchingProps {
-  fetchTotalCount: (
-    searchQuery: string,
-    tagFilter: string,
-    activeTab: string,
-    selectedClient: string | null,
-    selectedProject: string | null,
-    userRole: string,
-    userClientId: string | null,
-    totalCount: number,
-    setTotalCount: (count: number) => void
-  ) => void;
-  prefetchNextPage: (
-    isLoading: boolean,
-    isFetching: boolean,
-    shouldFetchRandom: boolean,
-    searchQuery: string,
-    tagFilter: string,
-    activeTab: string,
-    selectedClient: string | null,
-    selectedProject: string | null,
-    currentPage: number,
-    totalCount: number,
-    userRole: string,
-    userClientId: string | null
-  ) => void;
+  fetchTotalCount: (searchQuery: string, tagFilter: string, activeTab: string, client: string | null, project: string | null, orientation: string | null, userRole: string, userClientId: string | null) => void;
+  prefetchNextPage: (searchQuery: string, tagFilter: string, activeTab: string, client: string | null, project: string | null, orientation: string | null, page: number, userRole: string, userClientId: string | null) => void;
   isLoading: boolean;
   isFetching: boolean;
   searchQuery: string;
@@ -34,6 +11,7 @@ interface GalleryDataFetchingProps {
   activeTab: string;
   selectedClient: string | null;
   selectedProject: string | null;
+  selectedOrientation: string | null;
   currentPage: number;
   totalCount: number;
   userRole: string;
@@ -42,9 +20,6 @@ interface GalleryDataFetchingProps {
   setTotalCount: (count: number) => void;
 }
 
-/**
- * Hook for handling data fetching related side effects
- */
 export const useGalleryDataFetching = ({
   fetchTotalCount,
   prefetchNextPage,
@@ -55,6 +30,7 @@ export const useGalleryDataFetching = ({
   activeTab,
   selectedClient,
   selectedProject,
+  selectedOrientation,
   currentPage,
   totalCount,
   userRole,
@@ -62,41 +38,70 @@ export const useGalleryDataFetching = ({
   shouldFetchRandom,
   setTotalCount
 }: GalleryDataFetchingProps) => {
-  // Fetch total count when needed
-  useEffect(() => {
-    if (isFetching || isLoading) return;
-    fetchTotalCount(
-      searchQuery,
-      tagFilter,
-      activeTab,
-      selectedClient,
-      selectedProject,
-      userRole,
-      userClientId,
-      totalCount,
-      setTotalCount
-    );
-  }, [fetchTotalCount, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, isFetching, isLoading, totalCount, userRole, userClientId, setTotalCount]);
 
-  // Prefetch next page for smoother experience
+  // Prefetch total count for pagination
   useEffect(() => {
-    prefetchNextPage(
-      isLoading,
-      isFetching,
-      shouldFetchRandom,
-      searchQuery,
-      tagFilter,
-      activeTab,
-      selectedClient,
-      selectedProject,
-      currentPage,
-      totalCount,
-      userRole,
-      userClientId
-    );
-  }, [prefetchNextPage, isLoading, isFetching, shouldFetchRandom, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, currentPage, totalCount, userRole, userClientId]);
-  
-  return {
-    // This hook is purely for side effects, no need to return anything
-  };
+    const handleFetchTotalCount = () => {
+      fetchTotalCount(
+        searchQuery,
+        tagFilter,
+        activeTab,
+        selectedClient,
+        selectedProject,
+        selectedOrientation,
+        userRole,
+        userClientId
+      );
+    };
+
+    handleFetchTotalCount();
+  }, [
+    searchQuery,
+    tagFilter,
+    activeTab,
+    selectedClient,
+    selectedProject,
+    selectedOrientation,
+    fetchTotalCount,
+    userRole,
+    userClientId
+  ]);
+
+  // Prefetch next page data
+  useEffect(() => {
+    const shouldPrefetch = 
+      !isLoading && 
+      !isFetching && 
+      currentPage < Math.ceil(totalCount / 20);
+      
+    if (shouldPrefetch) {
+      prefetchNextPage(
+        searchQuery,
+        tagFilter,
+        activeTab,
+        selectedClient,
+        selectedProject,
+        selectedOrientation,
+        currentPage + 1,
+        userRole,
+        userClientId
+      );
+    }
+  }, [
+    isLoading,
+    isFetching,
+    currentPage,
+    totalCount,
+    prefetchNextPage,
+    searchQuery,
+    tagFilter,
+    activeTab,
+    selectedClient,
+    selectedProject,
+    selectedOrientation,
+    userRole,
+    userClientId
+  ]);
+
+  return {};
 };

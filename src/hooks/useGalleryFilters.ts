@@ -10,6 +10,7 @@ export function useGalleryFilters() {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [selectedOrientation, setSelectedOrientation] = useState<string | null>(null);
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
   const [userClientId, setUserClientId] = useState<string | null>(null);
 
@@ -65,6 +66,11 @@ export function useGalleryFilters() {
     setSelectedProject(projectId);
   }, []);
 
+  const handleOrientationChange = useCallback((orientation: string | null) => {
+    console.log('Orientation changed to:', orientation);
+    setSelectedOrientation(orientation);
+  }, []);
+
   const handleResetFilters = useCallback(() => {
     console.log('Resetting filters');
     setActiveTab('all');
@@ -75,6 +81,7 @@ export function useGalleryFilters() {
     }
     
     setSelectedProject(null);
+    setSelectedOrientation(null);
     
     // Clear URL search params
     navigate('/gallery', { replace: true });
@@ -89,20 +96,23 @@ export function useGalleryFilters() {
       tagFilter !== '' || 
       activeTab.toLowerCase() !== 'all' ||
       (selectedClient !== null && (userRole !== 'admin_client' || selectedClient !== userClientId)) ||
-      selectedProject !== null
+      selectedProject !== null ||
+      selectedOrientation !== null
     );
-  }, [activeTab, selectedClient, selectedProject, userRole, userClientId]);
+  }, [activeTab, selectedClient, selectedProject, selectedOrientation, userRole, userClientId]);
 
   return {
     activeTab,
     selectedClient,
     selectedProject,
+    selectedOrientation,
     hasActiveFilters,
     userClientId,
     userRole,
     handleTabChange,
     handleClientChange,
     handleProjectChange,
+    handleOrientationChange,
     handleResetFilters,
     updateFilterStatus
   };

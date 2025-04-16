@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/ui/layout/Header';
@@ -37,12 +38,14 @@ const Gallery = () => {
     activeTab,
     selectedClient,
     selectedProject,
+    selectedOrientation,
     currentPage,
     totalCount,
     handlePageChange,
     handleTabChange,
     handleClientChange,
     handleProjectChange,
+    handleOrientationChange,
     handleResetFilters,
     refreshGallery,
     formatImagesForGrid,
@@ -56,7 +59,7 @@ const Gallery = () => {
     if (currentPage === 1) {
       pageLoadTimeRef.current = Date.now();
     }
-  }, [searchQuery, activeTab, selectedClient, selectedProject, currentPage]);
+  }, [searchQuery, activeTab, selectedClient, selectedProject, selectedOrientation, currentPage]);
 
   // Les images à afficher sont toujours celles de la requête actuelle (pas d'accumulation)
   const displayedImages = allImages;
@@ -111,6 +114,8 @@ const Gallery = () => {
           onClientChange={handleClientChange}
           selectedProject={selectedProject}
           onProjectChange={handleProjectChange}
+          selectedOrientation={selectedOrientation}
+          onOrientationChange={handleOrientationChange}
           userName={userProfile?.firstName || ''}
           userLastName={userProfile?.lastName || ''}
           userRole={userRole}

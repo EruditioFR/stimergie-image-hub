@@ -1,17 +1,15 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Image } from '@/utils/image/types';
-import { fetchGalleryImages, generateCacheKey } from '@/services/galleryService';
+import { useQuery } from '@tanstack/react-query';
+import { fetchGalleryImages } from '@/services/gallery/imageService';
+import { useCallback } from 'react';
 
-const EXTENDED_CACHE_TIME = 30 * 60 * 1000; // 30 minutes
-
-interface GalleryQueryProps {
+interface GalleryQueryStateProps {
   searchQuery: string;
   tagFilter: string;
   activeTab: string;
   selectedClient: string | null;
   selectedProject: string | null;
+  selectedOrientation: string | null;
   currentPage: number;
   shouldFetchRandom: boolean;
   userRole: string;
@@ -24,76 +22,55 @@ export const useGalleryQueryState = ({
   activeTab,
   selectedClient,
   selectedProject,
+  selectedOrientation,
   currentPage,
   shouldFetchRandom,
   userRole,
   userClientId
-}: GalleryQueryProps) => {
-  const queryClient = useQueryClient();
-  const [allImages, setAllImages] = useState<Image[]>([]);
-
-  // Génération optimisée de la clé de cache
-  const cacheKey = useCallback(() => {
-    return generateCacheKey(
-      searchQuery, 
-      tagFilter, 
-      activeTab, 
+}: GalleryQueryStateProps) => {
+  // Fetch images query with all filters
+  const {
+    data: allImages = [],
+    isLoading,
+    isFetching,
+    refetch
+  } = useQuery({
+    queryKey: [
+      'gallery-images',
+      searchQuery,
+      tagFilter,
+      activeTab,
       selectedClient,
-      selectedProject, 
-      currentPage, 
+      selectedProject,
+      selectedOrientation,
+      currentPage,
       shouldFetchRandom,
       userRole,
       userClientId
-    );
-  }, [searchQuery, tagFilter, activeTab, selectedClient, selectedProject, currentPage, shouldFetchRandom, userRole, userClientId]);
-
-  // Requête principale optimisée avec mode pagination
-  const { data: newImages = [], isLoading, isFetching, refetch } = useQuery({
-    queryKey: cacheKey(),
+    ],
     queryFn: () => fetchGalleryImages(
-      searchQuery, 
-      tagFilter, 
-      activeTab, 
+      searchQuery,
+      tagFilter,
+      activeTab,
       selectedClient,
-      selectedProject, 
-      currentPage, 
+      selectedProject,
+      currentPage,
       shouldFetchRandom,
       userRole,
-      userClientId
+      userClientId,
+      selectedOrientation
     ),
-    staleTime: EXTENDED_CACHE_TIME,
-    gcTime: EXTENDED_CACHE_TIME * 2,
-    refetchOnWindowFocus: false,
-    enabled: true
+    staleTime: 60000, // 1 minute
   });
 
-  // Traitement des nouvelles images
-  useEffect(() => {
-    console.log('New images loaded for page', currentPage, newImages.length);
-    
-    if (newImages.length > 0) {
-      // En mode pagination stricte, on remplace complètement les images à chaque changement
-      setAllImages(newImages);
-    } else {
-      setAllImages([]);
-    }
-  }, [newImages, currentPage]);
-
-  // Rafraîchissement optimisé de la galerie
   const refreshGallery = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['gallery-images'] });
-    
-    const noFilters = !searchQuery && !tagFilter && activeTab === 'all' && !selectedProject;
-    const canUseRandom = noFilters && (userRole === 'admin' || selectedClient !== null);
-    
     refetch();
-  }, [queryClient, refetch, searchQuery, tagFilter, activeTab, selectedClient, selectedProject, userRole]);
+  }, [refetch]);
 
   return {
     allImages,
     isLoading,
     isFetching,
-    refetch,
     refreshGallery
   };
 };

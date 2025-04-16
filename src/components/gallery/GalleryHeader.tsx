@@ -3,6 +3,7 @@ import { SearchBar } from '@/components/SearchBar';
 import { useAuth } from '@/context/AuthContext';
 import { ClientsFilter } from './ClientsFilter';
 import { ProjectsFilter } from './ProjectsFilter';
+import { OrientationFilter } from './OrientationFilter';
 
 interface GalleryHeaderProps {
   title: string;
@@ -13,6 +14,8 @@ interface GalleryHeaderProps {
   onClientChange: (clientId: string | null) => void;
   selectedProject: string | null;
   onProjectChange: (projectId: string | null) => void;
+  selectedOrientation: string | null;
+  onOrientationChange: (orientation: string | null) => void;
   userName?: string;
   userLastName?: string;
   userRole?: string;
@@ -28,6 +31,8 @@ export function GalleryHeader({
   onClientChange,
   selectedProject,
   onProjectChange,
+  selectedOrientation,
+  onOrientationChange,
   userName = "",
   userLastName = "",
   userRole,
@@ -58,27 +63,35 @@ export function GalleryHeader({
           )}
         </div>
         
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
           <SearchBar className="md:max-w-sm" variant="minimal" />
           
-          {isAdmin && (
-            <div className="flex flex-col sm:flex-row gap-4 w-full md:ml-auto">
-              <ClientsFilter 
-                selectedClient={selectedClient}
-                onClientChange={onClientChange}
-                className="w-full sm:w-auto"
-                userRole={userRole}
-                userClientId={userClientId}
-              />
-              
-              <ProjectsFilter 
-                selectedProject={selectedProject}
-                onProjectChange={onProjectChange}
-                className="w-full sm:w-auto"
-                selectedClient={selectedClient}
-              />
-            </div>
-          )}
+          <div className="flex flex-col sm:flex-row gap-4 w-full md:ml-auto">
+            <OrientationFilter
+              selectedOrientation={selectedOrientation}
+              onOrientationChange={onOrientationChange}
+              className="w-full sm:w-auto"
+            />
+            
+            {isAdmin && (
+              <>
+                <ClientsFilter 
+                  selectedClient={selectedClient}
+                  onClientChange={onClientChange}
+                  className="w-full sm:w-auto"
+                  userRole={userRole}
+                  userClientId={userClientId}
+                />
+                
+                <ProjectsFilter 
+                  selectedProject={selectedProject}
+                  onProjectChange={onProjectChange}
+                  className="w-full sm:w-auto"
+                  selectedClient={selectedClient}
+                />
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

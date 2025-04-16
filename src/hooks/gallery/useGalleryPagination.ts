@@ -1,14 +1,13 @@
 
-import { useState, useCallback } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { generateCacheKey } from '@/services/galleryService';
+import { useState, useCallback, useEffect } from 'react';
 
-interface PaginationProps {
+interface GalleryPaginationProps {
   searchQuery: string;
   tagFilter: string;
   activeTab: string;
   selectedClient: string | null;
   selectedProject: string | null;
+  selectedOrientation: string | null;
   userRole: string;
   userClientId: string | null;
 }
@@ -19,38 +18,54 @@ export const useGalleryPagination = ({
   activeTab,
   selectedClient,
   selectedProject,
+  selectedOrientation,
   userRole,
   userClientId
-}: PaginationProps) => {
-  const queryClient = useQueryClient();
-  const [page, setPage] = useState(1);
-  const [shouldFetchRandom, setShouldFetchRandom] = useState(true);
+}: GalleryPaginationProps) => {
+  const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [shouldFetchRandom, setShouldFetchRandom] = useState(true);
 
-  // Gestionnaire de changement de page optimisé pour la pagination
-  const handlePageChange = useCallback((newPage: number) => {
-    if (newPage === page) return; // Éviter les appels inutiles
-    console.log('Page changed from', page, 'to', newPage);
-    setPage(newPage);
-  }, [page]);
+  // Handle page changes
+  const handlePageChange = useCallback((page: number) => {
+    console.log('Changing to page:', page);
+    setCurrentPage(page);
+  }, []);
 
-  // Réinitialiser les pages et le mode aléatoire
+  // Reset pagination when filters change
   const resetPagination = useCallback((useRandomMode: boolean = false) => {
-    setPage(1);
+    console.log('Resetting pagination, random mode:', useRandomMode);
+    setCurrentPage(1);
     setShouldFetchRandom(useRandomMode);
   }, []);
 
-  // Vérifie si on peut utiliser le mode aléatoire
-  const updateRandomFetchMode = useCallback((searchQuery: string, tagFilter: string, activeTab: string, selectedProject: string | null, userRole: string, selectedClient: string | null) => {
-    const noFilters = !searchQuery && !tagFilter && activeTab === 'all' && !selectedProject;
-    const canUseRandom = noFilters && (userRole === 'admin' || selectedClient !== null);
-    
-    console.log('Setting shouldFetchRandom to:', canUseRandom);
-    setShouldFetchRandom(canUseRandom);
+  // Update whether we should fetch random images or not
+  const updateRandomFetchMode = useCallback((randomMode: boolean) => {
+    setShouldFetchRandom(randomMode);
   }, []);
 
+  // Reset pagination when filters change
+  useEffect(() => {
+    console.log('Filters changed, resetting pagination');
+    resetPagination(
+      !selectedProject && 
+      !searchQuery && 
+      (!tagFilter || tagFilter === '') && 
+      activeTab === 'all' &&
+      !selectedOrientation
+    );
+  }, [
+    searchQuery,
+    tagFilter,
+    activeTab,
+    selectedClient,
+    selectedProject,
+    selectedOrientation,
+    resetPagination
+  ]);
+
   return {
-    currentPage: page,
+    currentPage,
     totalCount,
     shouldFetchRandom,
     setTotalCount,

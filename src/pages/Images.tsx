@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
@@ -13,6 +14,14 @@ import { useQuery } from '@tanstack/react-query';
 import { Image as ImageType } from '@/utils/image/types';
 import { generateDisplayImageUrl, generateDownloadImageSDUrl, generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
 import { parseTagsString } from '@/utils/imageUtils';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { LayoutPortrait, LayoutLandscape, Square } from 'lucide-react';
 
 export interface Image {
   id: number;
@@ -36,15 +45,21 @@ export interface Image {
 const Images = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('card');
+  const [selectedOrientation, setSelectedOrientation] = useState<string | null>(null);
   const { userRole } = useAuth();
   const { toast } = useToast();
   
   const fetchImages = async () => {
     console.log("Fetching all images");
-    const { data, error } = await supabase
+    let query = supabase
       .from('images')
       .select('*, projets!id_projet (nom_dossier, nom_projet)')
-      .order('created_at', { ascending: false });
+      
+    if (selectedOrientation) {
+      query = query.eq('orientation', selectedOrientation);
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
       
     if (error) {
       console.error('Error fetching images:', error);
@@ -83,25 +98,12 @@ const Images = () => {
     }) as Image[];
   };
   
-  const parseTagsString = (tagsString: string | null): string[] | null => {
-    if (!tagsString) return null;
-    try {
-      if (tagsString.startsWith('[')) {
-        return JSON.parse(tagsString);
-      }
-      return tagsString.split(',').map(tag => tag.trim());
-    } catch (e) {
-      console.error('Error parsing tags:', e);
-      return [tagsString];
-    }
-  };
-  
   const {
     data: images,
     isLoading,
     refetch
   } = useQuery({
-    queryKey: ['images'],
+    queryKey: ['images', selectedOrientation],
     queryFn: fetchImages
   });
   
@@ -156,6 +158,14 @@ const Images = () => {
       } as ImageType;
     });
   };
+
+  const handleOrientationChange = (value: string) => {
+    if (value === 'all') {
+      setSelectedOrientation(null);
+    } else {
+      setSelectedOrientation(value);
+    }
+  };
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -165,6 +175,33 @@ const Images = () => {
         <ImagesHeader onAddClick={() => setIsUploadOpen(true)} viewToggle={<ViewToggle currentView={viewMode} onViewChange={setViewMode} />} />
         
         <div className="max-w-7xl mx-auto px-6 py-12">
+          <div className="mb-6">
+            <div className="w-64">
+              <Select 
+                value={selectedOrientation || 'all'}
+                onValueChange={handleOrientationChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrer par orientation" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="flex items-center gap-2">
+                    Toutes les orientations
+                  </SelectItem>
+                  <SelectItem value="portrait" className="flex items-center gap-2">
+                    <LayoutPortrait className="h-4 w-4" /> Portrait
+                  </SelectItem>
+                  <SelectItem value="paysage" className="flex items-center gap-2">
+                    <LayoutLandscape className="h-4 w-4" /> Paysage
+                  </SelectItem>
+                  <SelectItem value="carré" className="flex items-center gap-2">
+                    <Square className="h-4 w-4" /> Carré
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
           {isLoading ? (
             <div className="text-center py-20">
               <p>Chargement des images...</p>
