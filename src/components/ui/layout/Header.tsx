@@ -35,7 +35,7 @@ export function Header() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   
-  const userProfile = useUserProfile(user, userRole);
+  const { userProfile, loading: isLoadingProfile } = useUserProfile(user, userRole);
   const { isScrolled, isMobile, isMobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useHeaderState();
 
   const isHomePage = location.pathname === "/";

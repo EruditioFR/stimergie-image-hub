@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,7 +31,7 @@ export function useUserProfile(user: User | null, userRole: string) {
           console.log("Fetching profile data for user:", user.id);
           
           // Initialize with data from user metadata first
-          const metadataProfile = {
+          const metadataProfile: UserProfile = {
             firstName: user.user_metadata?.first_name || '',
             lastName: user.user_metadata?.last_name || '',
             role: userRole || 'user',
