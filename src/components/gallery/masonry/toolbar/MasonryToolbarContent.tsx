@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { downloadImagesAsZip } from '@/utils/image/download';
-import { generateDownloadImageSDUrl, generateDownloadImageHDUrl, decodeUrlIfNeeded } from '@/utils/image/imageUrlGenerator';
+import { generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
 
 interface MasonryToolbarContentProps {
   selectedImages: string[];
@@ -53,7 +53,7 @@ export function MasonryToolbarContent({
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
       
       const imagesForDownload = selectedImagesData.map(img => {
-        // Utiliser directement l'URL de l'image depuis Supabase
+        // Utiliser directement l'URL de l'image depuis la base de données
         const downloadUrl = img.url || '';
         
         return {
@@ -111,7 +111,7 @@ export function MasonryToolbarContent({
         const hdUrl = generateDownloadImageHDUrl(folderName, imageTitle);
         
         return {
-          url: decodeUrlIfNeeded(hdUrl || ""),
+          url: hdUrl || "",
           title: img.title || `image_${img.id}`,
           id: img.id
         };

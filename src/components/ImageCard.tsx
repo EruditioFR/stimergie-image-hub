@@ -87,6 +87,7 @@ export const ImageCard = memo(function ImageCard({
     setIsDownloading(true);
     
     try {
+      // Utiliser le champ url directement pour le téléchargement
       const url = downloadUrl || src;
       console.log(`Download requested for URL:`, url);
       
