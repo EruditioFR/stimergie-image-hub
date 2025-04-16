@@ -80,6 +80,12 @@ export default function ImageDetail() {
       setIsDownloading(false);
     }
   };
+
+  // Traitement des tags
+  const displayTags = Array.isArray(image.tags) ? image.tags : 
+    (typeof image.tags === 'string' ? 
+      image.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '') : 
+      []);
   
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50 p-4">
@@ -138,12 +144,12 @@ export default function ImageDetail() {
               Par {image.author || 'Photographe inconnu'}
             </p>
             
-            {/* Affichage des tags */}
-            {image.tags && image.tags.length > 0 && (
+            {/* Affichage des tags avec hashtag */}
+            {displayTags.length > 0 && (
               <div className="mt-4">
                 <p className="text-sm font-medium mb-2">Tags:</p>
                 <div className="flex flex-wrap gap-2">
-                  {image.tags.map((tag: string, index: number) => (
+                  {displayTags.map((tag: string, index: number) => (
                     <span 
                       key={index} 
                       className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs"

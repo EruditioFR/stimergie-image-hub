@@ -35,20 +35,18 @@ export const useGalleryImageFormatting = () => {
         }
       }
       
-      // Assurer que les tags sont toujours sous forme de tableau
-      let tags = image.tags || [];
-      if (typeof tags === 'string') {
-        // Essayer de parser les tags s'ils sont au format JSON
-        try {
-          if (tags.startsWith('[')) {
-            tags = JSON.parse(tags);
-          } else {
-            // Sinon diviser par virgules
-            tags = tags.split(',').map((tag: string) => tag.trim());
-          }
-        } catch (e) {
-          console.error('Erreur de parsing des tags:', e);
-          tags = [tags]; // Fallback à un array avec la chaîne originale
+      // Traitement spécifique pour les tags au format texte avec séparateurs virgule
+      let tags = [];
+      if (image.tags) {
+        if (typeof image.tags === 'string') {
+          // Si c'est une chaîne, on la divise par des virgules
+          tags = image.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag !== '');
+        } else if (Array.isArray(image.tags)) {
+          // Si c'est déjà un tableau, on le garde tel quel
+          tags = image.tags;
+        } else {
+          // Fallback pour les autres cas
+          tags = [];
         }
       }
       
