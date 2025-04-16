@@ -11,6 +11,7 @@ import { saveAs } from 'file-saver';
 import { Image } from '@/utils/image/types';
 import { useToast } from '@/hooks/use-toast';
 import { generateDisplayImageUrl, generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
+import { Json } from '@/integrations/supabase/types';
 
 interface AlbumImage {
   id: number;
@@ -30,6 +31,15 @@ interface AlbumData {
   access_from: string;
   access_until: string;
   images: AlbumImage[];
+}
+
+interface RawAlbumData {
+  id: string;
+  name: string;
+  description: string | null;
+  access_from: string;
+  access_until: string;
+  images: Json;
 }
 
 const SharedAlbum = () => {
@@ -55,7 +65,32 @@ const SharedAlbum = () => {
       throw new Error('Album not found or expired');
     }
     
-    return data[0] as AlbumData;
+    const rawData = data[0] as RawAlbumData;
+    
+    let processedImages: AlbumImage[] = [];
+    if (rawData.images && Array.isArray(rawData.images)) {
+      processedImages = rawData.images.map(img => {
+        return {
+          id: typeof img.id === 'number' ? img.id : parseInt(String(img.id), 10),
+          title: String(img.title || ''),
+          url: String(img.url || ''),
+          description: img.description as string | null,
+          width: typeof img.width === 'number' ? img.width : null,
+          height: typeof img.height === 'number' ? img.height : null,
+          orientation: img.orientation as string | null,
+          id_projet: img.id_projet as string | undefined
+        };
+      });
+    }
+    
+    return {
+      id: rawData.id,
+      name: rawData.name,
+      description: rawData.description,
+      access_from: rawData.access_from,
+      access_until: rawData.access_until,
+      images: processedImages
+    };
   };
   
   const { data: album, isLoading, isError } = useQuery({
