@@ -14,9 +14,9 @@ interface ImageForZip {
   id: string | number;
 }
 
-// Constantes pour les téléchargements parallèles
-const MAX_CONCURRENT_DOWNLOADS = 5; // Nombre maximum de téléchargements simultanés
-const DOWNLOAD_CHUNK_SIZE = 10; // Nombre d'images à traiter par lot
+// Constants for parallel downloads
+const MAX_CONCURRENT_DOWNLOADS = 5; // Maximum number of concurrent downloads
+const DOWNLOAD_CHUNK_SIZE = 10; // Number of images to process per batch
 
 /**
  * Download multiple images as a ZIP file with parallel downloading
@@ -41,39 +41,39 @@ export async function downloadImagesAsZip(images: ImageForZip[], zipFilename: st
     return;
   }
   
-  // Message initial (sera immédiatement remplacé par le message de progression)
-  // Supprimé pour éviter le double message
-  
-  // Traitement des images par lots pour limiter l'utilisation de la mémoire
+  // Process images in batches to limit memory usage
   for (let i = 0; i < images.length; i += DOWNLOAD_CHUNK_SIZE) {
     const chunk = images.slice(i, i + DOWNLOAD_CHUNK_SIZE);
     
-    // Traiter plusieurs images en parallèle
+    // Process multiple images in parallel
     const downloadPromises = chunk.map(image => processImage(image));
     
-    // Attendre que tous les téléchargements du lot soient terminés
+    // Wait for all downloads in the batch to complete
     const results = await Promise.allSettled(downloadPromises);
     
-    // Traiter les résultats
+    // Process the results
     results.forEach((result, index) => {
       if (result.status === 'fulfilled' && result.value) {
         const { image, blob } = result.value;
         
-        // Créer un nom de fichier sécurisé basé sur le titre ou l'ID
+        // Create a safe filename based on title or ID
         const safeTitle = image.title 
           ? image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() 
           : `image_${image.id}`;
         
-        // Ajouter l'image au ZIP
+        // Add the image to the ZIP
         imgFolder.file(`${safeTitle}.jpg`, blob);
         successCount++;
       } else {
         failureCount++;
-        console.error(`Failed to download image:`, result.status === 'rejected' ? result.reason : 'Unknown error');
+        console.error(`Failed to download image:`, 
+          result.status === 'rejected' ? result.reason : 'Unknown error',
+          chunk[index]?.title || chunk[index]?.id || 'Unknown image'
+        );
       }
     });
     
-    // Mettre à jour le message de chargement
+    // Update the loading message
     toast.loading(`Préparation du ZIP: ${successCount}/${images.length} images`, {
       id: 'zip-download',
       duration: Infinity
@@ -89,7 +89,7 @@ export async function downloadImagesAsZip(images: ImageForZip[], zipFilename: st
     
     console.log(`Generating ZIP with ${successCount} images (${failureCount} failed)`);
     
-    // Mise à jour du message pendant la génération
+    // Update message during ZIP generation
     toast.loading(`Compression du ZIP en cours...`, {
       id: 'zip-download',
       duration: Infinity
@@ -100,7 +100,7 @@ export async function downloadImagesAsZip(images: ImageForZip[], zipFilename: st
       type: 'blob',
       compression: 'DEFLATE',
       compressionOptions: {
-        level: 3 // Niveau plus bas pour accélérer la génération (1-9, 9 étant le plus compressé mais plus lent)
+        level: 3 // Lower level for faster generation (1-9, 9 being most compressed but slower)
       }
     });
     
@@ -136,41 +136,95 @@ async function processImage(image: ImageForZip): Promise<{image: ImageForZip, bl
     return null;
   }
   
-  console.log(`Processing image: ${image.title} (${image.url})`);
+  console.log(`Processing image: ${image.title || image.id} (${image.url})`);
   
   let retries = 0;
   
   while (retries <= MAX_RETRIES) {
     try {
       if (retries > 0) {
-        console.log(`Retry ${retries}/${MAX_RETRIES} for image ${image.title}`);
+        console.log(`Retry ${retries}/${MAX_RETRIES} for image ${image.title || image.id}`);
         const delay = RETRY_DELAY * Math.pow(1.5, retries - 1); // Exponential backoff
         await sleep(delay);
       }
       
-      // Use direct URL and no-cors mode to bypass CORS restrictions
+      // Try different modes based on retry attempt
+      const mode = retries === MAX_RETRIES ? 'no-cors' : 'cors';
+      
+      // Use direct URL and appropriate mode based on retry count
       const response = await fetchWithTimeout(image.url, {
         method: 'GET',
         cache: 'no-store',
         credentials: 'omit',
         redirect: 'follow',
-        mode: 'no-cors', // Important pour éviter les problèmes CORS
-      }, FETCH_TIMEOUT); // Timeout réduit pour éviter les blocages
+        mode: mode as RequestMode, // Type casting for TypeScript
+        headers: {
+          'Accept': 'image/*, */*;q=0.8',
+          'Cache-Control': 'no-cache',
+        }
+      }, FETCH_TIMEOUT); // Reduced timeout to avoid blocking
       
       // For no-cors, we get an opaque response
       const blob = await response.blob();
       
       if (blob.size === 0) {
-        throw new Error("Empty blob received");
+        throw new Error(`Empty blob received for image: ${image.title || image.id}`);
       }
       
       return { image, blob };
       
     } catch (error) {
-      console.error(`Error downloading image ${image.title}:`, error);
+      console.error(`Error downloading image ${image.title || image.id}:`, error);
       retries++;
       
       if (retries > MAX_RETRIES) {
+        // Final attempt with a different approach - use Image() element
+        try {
+          console.log(`Last resort attempt for ${image.title || image.id} using Image element`);
+          
+          // Attempt to load the image using the Image element
+          const imgBlob = await new Promise<Blob>((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+              try {
+                // Create a canvas to draw the image
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                  return reject(new Error('Failed to get canvas context'));
+                }
+                
+                // Draw the image on the canvas
+                ctx.drawImage(img, 0, 0);
+                
+                // Convert to blob
+                canvas.toBlob(blob => {
+                  if (blob && blob.size > 0) {
+                    resolve(blob);
+                  } else {
+                    reject(new Error('Generated empty blob'));
+                  }
+                }, 'image/jpeg', 0.85);
+              } catch (e) {
+                reject(e);
+              }
+            };
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = image.url;
+            
+            // Set timeout for this attempt as well
+            setTimeout(() => reject(new Error('Image load timeout')), FETCH_TIMEOUT);
+          });
+          
+          if (imgBlob && imgBlob.size > 0) {
+            return { image, blob: imgBlob };
+          }
+        } catch (lastError) {
+          console.error(`Final attempt failed for ${image.title || image.id}:`, lastError);
+        }
         return null;
       }
     }
