@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Image as ImageType } from '@/utils/image/types';
 import { generateDisplayImageUrl, generateDownloadImageSDUrl, generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
+import { parseTagsString } from '@/utils/imageUtils';
 
 export interface Image {
   id: number;
@@ -67,12 +68,17 @@ const Images = () => {
       const download_sd_url = generateDownloadImageSDUrl(folderName, imageTitle);
       const download_hd_url = generateDownloadImageHDUrl(folderName, imageTitle);
       
+      let parsedTags = null;
+      if (img.tags) {
+        parsedTags = typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags;
+      }
+      
       return {
         ...img,
         display_url,
         download_url: download_hd_url,
         download_url_sd: download_sd_url,
-        tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
+        tags: parsedTags
       };
     }) as Image[];
   };
@@ -110,6 +116,8 @@ const Images = () => {
 
   const formatImagesForGrid = (images: Image[] = []) => {
     return images.map(image => {
+      console.log(`Image ${image.id} tags:`, image.tags);
+      
       if (!image.display_url) {
         console.warn(`Missing display_url for image ${image.id}: ${image.title}`);
       }
@@ -120,6 +128,17 @@ const Images = () => {
         console.warn(`Missing download_url_sd for image ${image.id}: ${image.title}`);
       }
 
+      let processedTags = [];
+      if (image.tags) {
+        if (typeof image.tags === 'string') {
+          processedTags = parseTagsString(image.tags);
+        } else if (Array.isArray(image.tags)) {
+          processedTags = image.tags;
+        }
+      }
+      
+      console.log(`Processed tags for image ${image.id}:`, processedTags);
+
       return {
         id: image.id.toString(),
         src: image.display_url || image.url_miniature || image.url,
@@ -129,7 +148,7 @@ const Images = () => {
         alt: image.title,
         title: image.title,
         author: 'User',
-        tags: image.tags,
+        tags: processedTags,
         width: image.width,
         height: image.height,
         orientation: image.orientation,

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { downloadImage } from '@/utils/image/imageDownloader';
 import { toast } from 'sonner';
+import { parseTagsString } from '@/utils/imageUtils';
 
 interface ImageContentProps {
   image: any;
@@ -18,6 +19,24 @@ export const ImageContent = ({
   onImageLoad 
 }: ImageContentProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // Process tags to ensure they're always in array format
+  const processTags = (tags: any): string[] => {
+    if (!tags) return [];
+    
+    if (typeof tags === 'string') {
+      return parseTagsString(tags);
+    } else if (Array.isArray(tags)) {
+      return tags;
+    }
+    
+    return [];
+  };
+  
+  const displayTags = processTags(image?.tags);
+  
+  console.log("ImageContent component - Image tags:", image?.tags);
+  console.log("ImageContent component - Processed tags:", displayTags);
 
   const handleDownload = async () => {
     if (image && !isDownloading) {
@@ -99,10 +118,10 @@ export const ImageContent = ({
         </div>
       </div>
       
-      {/* Affichage des tags */}
-      {image?.tags && Array.isArray(image.tags) && image.tags.length > 0 && (
+      {/* Affichage des tags avec hashtag */}
+      {displayTags && displayTags.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {image.tags.map((tag: string, index: number) => (
+          {displayTags.map((tag: string, index: number) => (
             <span 
               key={index}
               className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs"

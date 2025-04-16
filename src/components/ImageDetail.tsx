@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useImages } from '@/context/ImageContext';
@@ -8,6 +7,7 @@ import { downloadImage } from '@/utils/image/download';
 import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { ImageDownloadFormat } from '@/utils/image/download/singleImageDownloader';
+import { parseTagsString } from '@/utils/imageUtils';
 
 export default function ImageDetail() {
   const { id } = useParams<{ id: string }>();
@@ -17,7 +17,6 @@ export default function ImageDetail() {
   const [image, setImage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
-  // Trouver l'image correspondante
   useEffect(() => {
     console.log(`Recherche d'image avec ID: ${id} parmi ${images.length} images`);
     
@@ -64,13 +63,8 @@ export default function ImageDetail() {
     console.log(`Downloading image:`, image.src);
     
     try {
-      // URL pour téléchargement
       const downloadUrl = image.download_url || image.url || image.src;
-      
-      // Générer un nom de fichier approprié
       const filename = `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg`;
-      
-      // Utiliser l'URL exacte de l'image sans la modifier
       await downloadImage(downloadUrl, filename);
       toast.success(`Image téléchargée`);
     } catch (error) {
@@ -81,11 +75,22 @@ export default function ImageDetail() {
     }
   };
 
-  // Traitement des tags
-  const displayTags = Array.isArray(image.tags) ? image.tags : 
-    (typeof image.tags === 'string' ? 
-      image.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '') : 
-      []);
+  const processTags = (tags: any): string[] => {
+    if (!tags) return [];
+    
+    if (typeof tags === 'string') {
+      return parseTagsString(tags);
+    } else if (Array.isArray(tags)) {
+      return tags;
+    }
+    
+    return [];
+  };
+  
+  const displayTags = processTags(image?.tags);
+  
+  console.log("Image tags:", image?.tags);
+  console.log("Processed display tags:", displayTags);
   
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50 p-4">
@@ -106,7 +111,6 @@ export default function ImageDetail() {
               onError={(e) => {
                 console.error('Image load error');
                 const imgElement = e.target as HTMLImageElement;
-                // Fallback à une autre URL si disponible
                 if (image.url_miniature && imgElement.src !== image.url_miniature) {
                   imgElement.src = image.url_miniature;
                 } else if (image.url && imgElement.src !== image.url) {
@@ -144,7 +148,6 @@ export default function ImageDetail() {
               Par {image.author || 'Photographe inconnu'}
             </p>
             
-            {/* Affichage des tags avec hashtag */}
             {displayTags.length > 0 && (
               <div className="mt-4">
                 <p className="text-sm font-medium mb-2">Tags:</p>
