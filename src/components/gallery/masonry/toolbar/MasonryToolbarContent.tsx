@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { downloadImagesAsZip } from '@/utils/image/download';
-import { generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
+import { generateDownloadImageHDUrl, generateDownloadImageSDUrl } from '@/utils/image/imageUrlGenerator';
 
 interface MasonryToolbarContentProps {
   selectedImages: string[];
@@ -53,11 +53,20 @@ export function MasonryToolbarContent({
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
       
       const imagesForDownload = selectedImagesData.map(img => {
-        // Utiliser directement l'URL de l'image depuis la base de données
-        const downloadUrl = img.url || '';
+        // Utiliser l'URL PNG pour le téléchargement standard
+        let folderName = "";
+        if (img.projets?.nom_dossier) {
+          folderName = img.projets.nom_dossier;
+        } else if (img.id_projet) {
+          // Si nous avons l'ID du projet mais pas le dossier, on utilise un placeholder
+          folderName = `project-${img.id_projet}`;
+        }
+        
+        const imageTitle = img.title || `image-${img.id}`;
+        const pngUrl = generateDownloadImageSDUrl(folderName, imageTitle);
         
         return {
-          url: downloadUrl,
+          url: pngUrl,
           title: img.title || `image_${img.id}`,
           id: img.id
         };

@@ -62,14 +62,14 @@ const Images = () => {
       const imageTitle = img.title || `image-${img.id}`;
       
       const display_url = generateDisplayImageUrl(folderName, imageTitle);
-      // Utiliser l'URL directement depuis la base de données pour la version SD
-      const download_url = generateDownloadImageHDUrl(folderName, imageTitle);
+      const download_sd_url = generateDownloadImageSDUrl(folderName, imageTitle);
+      const download_hd_url = generateDownloadImageHDUrl(folderName, imageTitle);
       
       return {
         ...img,
         display_url,
-        download_url,
-        download_url_sd: img.url || '',
+        download_url: download_hd_url,
+        download_url_sd: download_sd_url,
         tags: typeof img.tags === 'string' ? parseTagsString(img.tags) : img.tags
       };
     }) as Image[];
@@ -112,6 +112,7 @@ const Images = () => {
       src: image.url_miniature || image.url,
       display_url: image.display_url || '',
       download_url: image.download_url || '',
+      download_url_sd: image.download_url_sd || '',
       alt: image.title,
       title: image.title,
       author: 'User',

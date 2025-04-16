@@ -87,13 +87,31 @@ export const ImageCard = memo(function ImageCard({
     setIsDownloading(true);
     
     try {
-      // Utiliser le champ url directement pour le téléchargement
-      const url = downloadUrl || src;
-      console.log(`Download requested for URL:`, url);
+      // Utiliser l'URL PNG pour le téléchargement
+      // L'URL de téléchargement devrait pointer vers le dossier PNG
+      let url = downloadUrl || src;
+      
+      // Si l'URL n'est pas déjà une URL PNG, essayons de la convertir
+      if (!url.includes('/PNG/') && url.includes('/photos/')) {
+        // Extract folder and filename
+        const urlParts = url.split('/photos/');
+        if (urlParts.length === 2) {
+          const parts = urlParts[1].split('/');
+          if (parts.length >= 2) {
+            const folder = parts[0];
+            let filename = parts[parts.length - 1];
+            // Remove file extension and replace with .png
+            filename = filename.replace(/\.[^.]+$/, '.png');
+            url = `https://www.stimergie.fr/photos/${folder}/PNG/${filename}`;
+          }
+        }
+      }
+      
+      console.log(`Download requested for PNG URL:`, url);
       
       const filename = title 
-        ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` 
-        : `image_${id}.jpg`;
+        ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.png` 
+        : `image_${id}.png`;
       
       await downloadImage(url, filename);
     } catch (error) {

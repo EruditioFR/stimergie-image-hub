@@ -21,17 +21,19 @@ export function generateDisplayImageUrl(folderName: string, imageTitle: string):
 }
 
 /**
- * Génère l'URL de téléchargement pour une image en qualité normale
- * Utilisée directement depuis le champ url de l'image dans Supabase
- * @param url URL stockée dans la base de données pour l'image
+ * Génère l'URL de téléchargement pour une image en qualité normale (PNG)
+ * Format: https://www.stimergie.fr/photos/[nom_dossier]/PNG/[titre].png
  */
-export function generateDownloadImageSDUrl(url: string): string {
-  if (!url) {
-    console.warn('URL d\'image manquante pour le téléchargement SD');
+export function generateDownloadImageSDUrl(folderName: string, imageTitle: string): string {
+  if (!folderName || !imageTitle) {
+    console.warn('Nom de dossier ou titre d\'image manquant pour générer l\'URL');
     return '';
   }
   
-  return url;
+  const encodedFolder = encodeURIComponent(folderName);
+  const encodedTitle = encodeURIComponent(imageTitle);
+  
+  return `https://www.stimergie.fr/photos/${encodedFolder}/PNG/${encodedTitle}.png`;
 }
 
 /**
