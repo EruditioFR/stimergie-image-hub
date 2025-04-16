@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -218,22 +219,30 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
     try {
       console.log("Deleting user with ID:", userToDelete);
       
-      // Use the RPC function to delete user with proper permissions using type assertion
-      const { data, error } = await supabase.rpc(
-        'admin_delete_user' as any, 
-        {
-          user_id: userToDelete
-        }
+      // Première étape : supprimer l'entrée de l'utilisateur dans la table profiles
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .delete()
+        .eq('id', userToDelete);
+
+      if (profileError) {
+        console.error("Erreur lors de la suppression du profil:", profileError);
+        toast.error("Impossible de supprimer le profil utilisateur: " + profileError.message);
+        return false;
+      }
+      
+      // Deuxième étape : supprimer l'utilisateur de auth.users via l'API Admin
+      const { error: authError } = await supabase.auth.admin.deleteUser(
+        userToDelete
       );
 
-      console.log("Delete user response:", { data, error });
-
-      if (error) {
-        console.error("Erreur lors de la suppression de l'utilisateur:", error);
-        toast.error("Impossible de supprimer l'utilisateur: " + error.message);
+      if (authError) {
+        console.error("Erreur lors de la suppression de l'utilisateur:", authError);
+        toast.error("Impossible de supprimer l'utilisateur: " + authError.message);
         return false;
       }
 
+      // Mettre à jour l'état local pour refléter la suppression
       setUsers(prev => prev.filter(user => user.id !== userToDelete));
       setShowDeleteDialog(false);
       setUserToDelete(null);
