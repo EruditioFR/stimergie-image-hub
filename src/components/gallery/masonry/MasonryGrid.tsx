@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useImageSelection } from '@/hooks/useImageSelection';
@@ -17,19 +18,13 @@ import { CheckSquare, SquareCheck } from 'lucide-react';
 interface MasonryGridProps {
   images: Image[];
   isLoading?: boolean;
-  totalCount?: number;
-  currentPage?: number;
-  onPageChange?: (page: number) => void;
   hasMorePages?: boolean;
   loadMoreImages?: () => void;
 }
 
 export function MasonryGrid({ 
   images, 
-  isLoading = false, 
-  totalCount = 0,
-  currentPage = 1,
-  onPageChange,
+  isLoading = false,
   hasMorePages = false,
   loadMoreImages
 }: MasonryGridProps) {
@@ -106,8 +101,6 @@ export function MasonryGrid({
     return <MasonryLoading columnCount={columnCount} />;
   }
 
-  const isPaginationMode = !loadMoreImages;
-
   return (
     <div ref={viewportRef}>
       <div className="flex items-center justify-between mb-4">
@@ -147,7 +140,7 @@ export function MasonryGrid({
         </div>
       )}
       
-      {!isPaginationMode && hasMorePages && !isLoading && loadMoreImages && (
+      {hasMorePages && !isLoading && loadMoreImages && (
         <div ref={infiniteScrollRef} className="h-1 w-full my-4" />
       )}
       

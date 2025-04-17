@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useCallback } from 'react';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
 import { ImageUploadForm } from '@/components/images/ImageUploadForm';
@@ -14,7 +15,6 @@ import { Image as ImageType } from '@/utils/image/types';
 import { generateDisplayImageUrl, generateDownloadImageSDUrl, generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
 import { parseTagsString } from '@/utils/imageUtils';
 import { OrientationFilter } from '@/components/gallery/OrientationFilter';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 
 export interface Image {
   id: number;
@@ -42,11 +42,12 @@ const Images = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('card');
   const [selectedOrientation, setSelectedOrientation] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [hasMorePages, setHasMorePages] = useState(true);
   const { userRole } = useAuth();
   const { toast } = useToast();
   
-  const fetchImages = async () => {
-    console.log("Fetching all images");
+  const fetchImages = async ({ pageParam = 1 }) => {
+    console.log(`Fetching images for page ${pageParam}`);
     let query = supabase
       .from('images')
       .select('*, projets!id_projet (nom_dossier, nom_projet)')
@@ -56,10 +57,10 @@ const Images = () => {
     }
     
     // Add pagination to the query
-    const from = (currentPage - 1) * IMAGES_PER_PAGE;
+    const from = (pageParam - 1) * IMAGES_PER_PAGE;
     const to = from + IMAGES_PER_PAGE - 1;
     
-    const { data, error, count } = await query
+    const { data, error } = await query
       .order('created_at', { ascending: false })
       .range(from, to)
       .limit(IMAGES_PER_PAGE);
@@ -76,10 +77,10 @@ const Images = () => {
     
     console.log(`Fetched ${data.length} images`);
     
-    // Get total count in a separate query
-    const { count: totalCount } = await supabase
-      .from('images')
-      .select('*', { count: 'exact', head: true });
+    // Check if there are more pages
+    if (data.length < IMAGES_PER_PAGE) {
+      setHasMorePages(false);
+    }
     
     const formattedData = data.map(img => {
       const folderName = img.projets?.nom_dossier || "";
@@ -105,21 +106,17 @@ const Images = () => {
       };
     }) as Image[];
     
-    return { images: formattedData, totalCount };
+    return formattedData;
   };
   
   const {
-    data,
+    data: images = [],
     isLoading,
     refetch
   } = useQuery({
     queryKey: ['images', selectedOrientation, currentPage],
-    queryFn: fetchImages
+    queryFn: () => fetchImages({ pageParam: currentPage }),
   });
-  
-  const images = data?.images || [];
-  const totalCount = data?.totalCount || 0;
-  const totalPages = Math.ceil(totalCount / IMAGES_PER_PAGE);
   
   const handleUploadSuccess = () => {
     setIsUploadOpen(false);
@@ -176,13 +173,15 @@ const Images = () => {
   const handleOrientationChange = (orientation: string | null) => {
     setSelectedOrientation(orientation);
     setCurrentPage(1); // Reset to first page when filter changes
+    setHasMorePages(true);
   };
   
-  const handlePageChange = (page: number) => {
-    if (page < 1 || page > totalPages) return;
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const loadMoreImages = useCallback(() => {
+    if (!isLoading && hasMorePages) {
+      console.log('Loading more images');
+      setCurrentPage(prev => prev + 1);
+    }
+  }, [isLoading, hasMorePages]);
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -201,7 +200,7 @@ const Images = () => {
             </div>
           </div>
           
-          {isLoading ? (
+          {isLoading && images.length === 0 ? (
             <div className="text-center py-20">
               <p>Chargement des images...</p>
             </div>
@@ -211,89 +210,12 @@ const Images = () => {
                 <MasonryGrid 
                   images={formatImagesForGrid(images)} 
                   isLoading={isLoading}
+                  hasMorePages={hasMorePages}
+                  loadMoreImages={loadMoreImages}
                 />
               ) : (
                 <ImagesTable images={formatImagesForGrid(images) || []} />
               )}
-              
-              {/* Pagination controls */}
-              <div className="mt-8">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious 
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
-                      />
-                    </PaginationItem>
-                    
-                    {/* First page */}
-                    {currentPage > 3 && (
-                      <PaginationItem>
-                        <PaginationLink 
-                          onClick={() => handlePageChange(1)}
-                        >
-                          1
-                        </PaginationLink>
-                      </PaginationItem>
-                    )}
-                    
-                    {/* Ellipsis for skipped pages at beginning */}
-                    {currentPage > 4 && (
-                      <PaginationItem>
-                        <span className="flex h-9 w-9 items-center justify-center">...</span>
-                      </PaginationItem>
-                    )}
-                    
-                    {/* Pages around current page */}
-                    {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
-                      const pageNumber = Math.max(
-                        1,
-                        Math.min(
-                          currentPage - 1 + i,
-                          totalPages - 2
-                        )
-                      );
-                      
-                      if (pageNumber <= 0 || pageNumber > totalPages) return null;
-                      
-                      return (
-                        <PaginationItem key={pageNumber}>
-                          <PaginationLink 
-                            isActive={pageNumber === currentPage}
-                            onClick={() => handlePageChange(pageNumber)}
-                          >
-                            {pageNumber}
-                          </PaginationLink>
-                        </PaginationItem>
-                      );
-                    })}
-                    
-                    {/* Ellipsis for skipped pages at end */}
-                    {totalPages > 5 && currentPage < totalPages - 3 && (
-                      <PaginationItem>
-                        <span className="flex h-9 w-9 items-center justify-center">...</span>
-                      </PaginationItem>
-                    )}
-                    
-                    {/* Last page */}
-                    {totalPages > 1 && currentPage < totalPages - 2 && (
-                      <PaginationItem>
-                        <PaginationLink onClick={() => handlePageChange(totalPages)}>
-                          {totalPages}
-                        </PaginationLink>
-                      </PaginationItem>
-                    )}
-                    
-                    <PaginationItem>
-                      <PaginationNext 
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
             </>
           )}
         </div>

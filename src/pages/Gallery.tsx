@@ -25,9 +25,6 @@ const Gallery = () => {
   const isAdmin = ['admin', 'admin_client'].includes(userRole);
   const { userProfile } = useUserProfile(user, userRole);
   const pageLoadTimeRef = useRef(Date.now());
-  
-  // Mode de pagination actuel (true = pagination traditionnelle, false = défilement infini)
-  const [usePaginationMode, setUsePaginationMode] = useState(true);
   const [isFlushing, setIsFlushing] = useState(false);
 
   const {
@@ -72,12 +69,11 @@ const Gallery = () => {
   
   const shouldShowEmptyState = !isLoading && displayedImages.length === 0;
 
-  // Gestionnaire de changement de page optimisé
-  const handlePageChangeWithTracking = useCallback((newPage: number) => {
-    console.log(`Changing to page ${newPage}`);
-    // Appeler le gestionnaire de page du hook
-    handlePageChange(newPage);
-  }, [handlePageChange]);
+  // Fonction pour charger plus d'images en défilement infini
+  const loadMoreImages = useCallback(() => {
+    console.log('Loading more gallery images');
+    handlePageChange(currentPage + 1);
+  }, [currentPage, handlePageChange]);
   
   // Fonction pour vider le cache d'images
   const handleFlushCache = useCallback(() => {
@@ -148,11 +144,8 @@ const Gallery = () => {
             <MasonryGrid 
               images={formattedImages} 
               isLoading={isLoading || isFetching}
-              totalCount={totalCount}
-              currentPage={currentPage}
-              onPageChange={handlePageChangeWithTracking}
-              // Ne pas passer loadMoreImages en mode pagination
-              loadMoreImages={usePaginationMode ? undefined : undefined} // Toujours undefined pour forcer le mode de pagination classique
+              hasMorePages={currentPage * 20 < totalCount}
+              loadMoreImages={loadMoreImages}
             />
           ) : (
             <EmptyResults 

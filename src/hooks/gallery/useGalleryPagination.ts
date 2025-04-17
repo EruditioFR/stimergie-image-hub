@@ -25,18 +25,29 @@ export const useGalleryPagination = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [shouldFetchRandom, setShouldFetchRandom] = useState(true);
+  const [allFetched, setAllFetched] = useState(false);
 
   // Handle page changes
   const handlePageChange = useCallback((page: number) => {
     console.log('Changing to page:', page);
-    setCurrentPage(page);
-  }, []);
+    if (!allFetched) {
+      setCurrentPage(page);
+    }
+  }, [allFetched]);
 
   // Reset pagination when filters change
   const resetPagination = useCallback((useRandomMode: boolean = false) => {
     console.log('Resetting pagination, random mode:', useRandomMode);
     setCurrentPage(1);
     setShouldFetchRandom(useRandomMode);
+    setAllFetched(false);
+  }, []);
+
+  // Update whether all images have been fetched
+  const checkIfAllFetched = useCallback((fetchedCount: number) => {
+    if (fetchedCount < 20) {
+      setAllFetched(true);
+    }
   }, []);
 
   // Update whether we should fetch random images or not
@@ -68,9 +79,11 @@ export const useGalleryPagination = ({
     currentPage,
     totalCount,
     shouldFetchRandom,
+    allFetched,
     setTotalCount,
     handlePageChange,
     resetPagination,
-    updateRandomFetchMode
+    updateRandomFetchMode,
+    checkIfAllFetched
   };
 };

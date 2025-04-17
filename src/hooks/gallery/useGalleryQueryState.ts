@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { fetchGalleryImages } from '@/services/gallery/imageService';
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 
 interface GalleryQueryStateProps {
   searchQuery: string;
@@ -28,9 +28,11 @@ export const useGalleryQueryState = ({
   userRole,
   userClientId
 }: GalleryQueryStateProps) => {
+  const [accumulatedImages, setAccumulatedImages] = useState<any[]>([]);
+
   // Fetch images query with all filters
   const {
-    data: allImages = [],
+    data: currentPageImages = [],
     isLoading,
     isFetching,
     refetch
@@ -63,12 +65,34 @@ export const useGalleryQueryState = ({
     staleTime: 60000, // 1 minute
   });
 
+  // Reset accumulated images when filters change
+  useEffect(() => {
+    if (currentPage === 1) {
+      setAccumulatedImages([]);
+    }
+  }, [searchQuery, tagFilter, activeTab, selectedClient, selectedProject, selectedOrientation, currentPage === 1]);
+
+  // Accumulate images for infinite scrolling
+  useEffect(() => {
+    if (currentPageImages.length > 0) {
+      if (currentPage === 1) {
+        setAccumulatedImages(currentPageImages);
+      } else {
+        // Add new images but prevent duplicates
+        const newImageIds = new Set(currentPageImages.map((img: any) => img.id));
+        const existingImages = accumulatedImages.filter((img: any) => !newImageIds.has(img.id));
+        setAccumulatedImages([...existingImages, ...currentPageImages]);
+      }
+    }
+  }, [currentPageImages, currentPage]);
+
   const refreshGallery = useCallback(() => {
+    setAccumulatedImages([]);
     refetch();
   }, [refetch]);
 
   return {
-    allImages,
+    allImages: accumulatedImages,
     isLoading,
     isFetching,
     refreshGallery
