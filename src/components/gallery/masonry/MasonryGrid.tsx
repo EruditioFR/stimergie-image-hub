@@ -6,7 +6,6 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { MasonryColumn } from './MasonryColumn';
-import { MasonryPagination } from './MasonryPagination';
 import { MasonryToolbar } from './MasonryToolbar';
 import { MasonryDetailModal } from './MasonryDetailModal';
 import { MasonryLoading } from './MasonryLoading';
@@ -98,15 +97,6 @@ export function MasonryGrid({
     setSelectedImageDetail(null);
   }, []);
 
-  const handlePageClick = useCallback((page: number) => {
-    if (onPageChange && !isLoading) {
-      clearSelection();
-      onPageChange(page);
-      
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [onPageChange, clearSelection, isLoading]);
-
   const handleSelectAll = useCallback(() => {
     const imageIds = images.map(img => img.id);
     selectAllImages(imageIds);
@@ -159,15 +149,6 @@ export function MasonryGrid({
       
       {!isPaginationMode && hasMorePages && !isLoading && loadMoreImages && (
         <div ref={infiniteScrollRef} className="h-1 w-full my-4" />
-      )}
-
-      {isPaginationMode && (
-        <MasonryPagination
-          totalCount={totalCount}
-          currentPage={currentPage}
-          onPageChange={handlePageClick}
-          isLoading={isLoading}
-        />
       )}
       
       <MasonryDetailModal 

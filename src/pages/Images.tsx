@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
@@ -212,9 +211,6 @@ const Images = () => {
                 <MasonryGrid 
                   images={formatImagesForGrid(images)} 
                   isLoading={isLoading}
-                  totalCount={totalCount}
-                  currentPage={currentPage}
-                  onPageChange={handlePageChange}
                 />
               ) : (
                 <ImagesTable images={formatImagesForGrid(images) || []} />
