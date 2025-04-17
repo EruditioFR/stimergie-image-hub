@@ -45,10 +45,10 @@ export function OrientationFilter({
           <SelectItem value="portrait" className="flex items-center gap-2">
             <AlignStartVertical className="h-4 w-4" /> Portrait
           </SelectItem>
-          <SelectItem value="paysage" className="flex items-center gap-2">
+          <SelectItem value="landscape" className="flex items-center gap-2">
             <AlignStartHorizontal className="h-4 w-4" /> Paysage
           </SelectItem>
-          <SelectItem value="carré" className="flex items-center gap-2">
+          <SelectItem value="square" className="flex items-center gap-2">
             <Square className="h-4 w-4" /> Carré
           </SelectItem>
         </SelectContent>

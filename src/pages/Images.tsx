@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
@@ -13,14 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Image as ImageType } from '@/utils/image/types';
 import { generateDisplayImageUrl, generateDownloadImageSDUrl, generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
 import { parseTagsString } from '@/utils/imageUtils';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { AlignStartVertical, AlignStartHorizontal, Square } from 'lucide-react';
+import { OrientationFilter } from '@/components/gallery/OrientationFilter';
 
 export interface Image {
   id: number;
@@ -158,12 +152,8 @@ const Images = () => {
     });
   };
 
-  const handleOrientationChange = (value: string) => {
-    if (value === 'all') {
-      setSelectedOrientation(null);
-    } else {
-      setSelectedOrientation(value);
-    }
+  const handleOrientationChange = (orientation: string | null) => {
+    setSelectedOrientation(orientation);
   };
   
   return (
@@ -176,28 +166,10 @@ const Images = () => {
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="mb-6">
             <div className="w-64">
-              <Select 
-                value={selectedOrientation || 'all'}
-                onValueChange={handleOrientationChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Filtrer par orientation" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all" className="flex items-center gap-2">
-                    Toutes les orientations
-                  </SelectItem>
-                  <SelectItem value="portrait" className="flex items-center gap-2">
-                    <AlignStartVertical className="h-4 w-4" /> Portrait
-                  </SelectItem>
-                  <SelectItem value="paysage" className="flex items-center gap-2">
-                    <AlignStartHorizontal className="h-4 w-4" /> Paysage
-                  </SelectItem>
-                  <SelectItem value="carré" className="flex items-center gap-2">
-                    <Square className="h-4 w-4" /> Carré
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <OrientationFilter 
+                selectedOrientation={selectedOrientation}
+                onOrientationChange={handleOrientationChange}
+              />
             </div>
           </div>
           
