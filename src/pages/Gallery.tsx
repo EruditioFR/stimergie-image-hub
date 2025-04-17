@@ -9,7 +9,6 @@ import { EmptyResults } from '@/components/gallery/EmptyResults';
 import { useAuth } from '@/context/AuthContext';
 import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { Image } from '@/utils/image/types'; 
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
@@ -48,7 +47,8 @@ const Gallery = () => {
     formatImagesForGrid,
     userRole: galleryUserRole,
     userClientId,
-    shouldFetchRandom
+    shouldFetchRandom,
+    hasMorePages
   } = useGalleryImages(isAdmin);
 
   // Réinitialiser les filtres lorsqu'ils changent
@@ -71,9 +71,11 @@ const Gallery = () => {
 
   // Fonction pour charger plus d'images en défilement infini
   const loadMoreImages = useCallback(() => {
-    console.log('Loading more gallery images');
-    handlePageChange(currentPage + 1);
-  }, [currentPage, handlePageChange]);
+    if (hasMorePages && !isLoading && !isFetching) {
+      console.log('Loading more gallery images, page:', currentPage + 1);
+      handlePageChange(currentPage + 1);
+    }
+  }, [currentPage, handlePageChange, hasMorePages, isLoading, isFetching]);
   
   // Fonction pour vider le cache d'images
   const handleFlushCache = useCallback(() => {
@@ -144,7 +146,7 @@ const Gallery = () => {
             <MasonryGrid 
               images={formattedImages} 
               isLoading={isLoading || isFetching}
-              hasMorePages={currentPage * 20 < totalCount}
+              hasMorePages={hasMorePages}
               loadMoreImages={loadMoreImages}
             />
           ) : (

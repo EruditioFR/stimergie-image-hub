@@ -15,7 +15,9 @@ export async function buildGalleryQuery(
   userRole: string,
   userClientId: string | null
 ) {
-  // Pour admin_client et utilisateurs normaux, toujours filtrer par leur client ID
+  console.log(`Building gallery query for user role: ${userRole}, client ID: ${userClientId}`);
+  
+  // For admin_client and regular users, always filter by their client ID
   if (['admin_client', 'user'].includes(userRole) && userClientId) {
     console.log('Non-admin user detected, forcing client filter:', userClientId);
     client = userClientId;
@@ -36,6 +38,10 @@ export async function buildGalleryQuery(
       // Aucun projet trouvé, retourner une requête qui ne donnera aucun résultat
       return { query, hasEmptyResult: true };
     }
+  } else if (['admin_client', 'user'].includes(userRole) && !userClientId) {
+    // If non-admin user with no client ID, don't show any images
+    console.warn('Non-admin user with no client ID, returning empty result');
+    return { query, hasEmptyResult: true };
   }
   
   // Appliquer le filtre de projet si fourni

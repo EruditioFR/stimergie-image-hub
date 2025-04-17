@@ -85,7 +85,8 @@ export const useGalleryImages = (isAdmin: boolean) => {
     allImages,
     isLoading,
     isFetching,
-    refreshGallery
+    refreshGallery,
+    hasMorePages
   } = useGalleryQueryState({
     searchQuery,
     tagFilter,
@@ -160,6 +161,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     formatImagesForGrid,
     userRole,
     userClientId,
-    shouldFetchRandom
+    shouldFetchRandom,
+    hasMorePages
   };
 };

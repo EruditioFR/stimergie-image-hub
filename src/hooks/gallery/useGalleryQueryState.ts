@@ -29,6 +29,7 @@ export const useGalleryQueryState = ({
   userClientId
 }: GalleryQueryStateProps) => {
   const [accumulatedImages, setAccumulatedImages] = useState<any[]>([]);
+  const [hasMorePages, setHasMorePages] = useState(true);
 
   // Fetch images query with all filters
   const {
@@ -69,6 +70,7 @@ export const useGalleryQueryState = ({
   useEffect(() => {
     if (currentPage === 1) {
       setAccumulatedImages([]);
+      setHasMorePages(true);
     }
   }, [searchQuery, tagFilter, activeTab, selectedClient, selectedProject, selectedOrientation, currentPage === 1]);
 
@@ -83,11 +85,18 @@ export const useGalleryQueryState = ({
         const existingImages = accumulatedImages.filter((img: any) => !newImageIds.has(img.id));
         setAccumulatedImages([...existingImages, ...currentPageImages]);
       }
+      
+      // Determine if more pages are available
+      setHasMorePages(currentPageImages.length >= 20);
+    } else if (currentPage > 1 && currentPageImages.length === 0) {
+      // If we fetched a page and got no results, we've reached the end
+      setHasMorePages(false);
     }
-  }, [currentPageImages, currentPage]);
+  }, [currentPageImages, currentPage, accumulatedImages]);
 
   const refreshGallery = useCallback(() => {
     setAccumulatedImages([]);
+    setHasMorePages(true);
     refetch();
   }, [refetch]);
 
@@ -95,6 +104,7 @@ export const useGalleryQueryState = ({
     allImages: accumulatedImages,
     isLoading,
     isFetching,
-    refreshGallery
+    refreshGallery,
+    hasMorePages
   };
 };
