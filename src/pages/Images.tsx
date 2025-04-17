@@ -15,6 +15,7 @@ import { Image as ImageType } from '@/utils/image/types';
 import { generateDisplayImageUrl, generateDownloadImageSDUrl, generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
 import { parseTagsString } from '@/utils/imageUtils';
 import { OrientationFilter } from '@/components/gallery/OrientationFilter';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 
 export interface Image {
   id: number;
@@ -35,10 +36,13 @@ export interface Image {
   download_url_sd?: string;
 }
 
+const IMAGES_PER_PAGE = 20;
+
 const Images = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('card');
   const [selectedOrientation, setSelectedOrientation] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const { userRole } = useAuth();
   const { toast } = useToast();
   
@@ -52,7 +56,14 @@ const Images = () => {
       query = query.eq('orientation', selectedOrientation);
     }
     
-    const { data, error } = await query.order('created_at', { ascending: false });
+    // Add pagination to the query
+    const from = (currentPage - 1) * IMAGES_PER_PAGE;
+    const to = from + IMAGES_PER_PAGE - 1;
+    
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(from, to)
+      .limit(IMAGES_PER_PAGE);
       
     if (error) {
       console.error('Error fetching images:', error);
@@ -66,7 +77,12 @@ const Images = () => {
     
     console.log(`Fetched ${data.length} images`);
     
-    return data.map(img => {
+    // Get total count in a separate query
+    const { count: totalCount } = await supabase
+      .from('images')
+      .select('*', { count: 'exact', head: true });
+    
+    const formattedData = data.map(img => {
       const folderName = img.projets?.nom_dossier || "";
       const imageTitle = img.title || `image-${img.id}`;
       
@@ -89,16 +105,22 @@ const Images = () => {
         tags: parsedTags
       };
     }) as Image[];
+    
+    return { images: formattedData, totalCount };
   };
   
   const {
-    data: images,
+    data,
     isLoading,
     refetch
   } = useQuery({
-    queryKey: ['images', selectedOrientation],
+    queryKey: ['images', selectedOrientation, currentPage],
     queryFn: fetchImages
   });
+  
+  const images = data?.images || [];
+  const totalCount = data?.totalCount || 0;
+  const totalPages = Math.ceil(totalCount / IMAGES_PER_PAGE);
   
   const handleUploadSuccess = () => {
     setIsUploadOpen(false);
@@ -154,6 +176,13 @@ const Images = () => {
 
   const handleOrientationChange = (orientation: string | null) => {
     setSelectedOrientation(orientation);
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
+  
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   
   return (
@@ -182,11 +211,93 @@ const Images = () => {
               {viewMode === 'card' ? (
                 <MasonryGrid 
                   images={formatImagesForGrid(images)} 
-                  isLoading={isLoading} 
+                  isLoading={isLoading}
+                  totalCount={totalCount}
+                  currentPage={currentPage}
+                  onPageChange={handlePageChange}
                 />
               ) : (
                 <ImagesTable images={formatImagesForGrid(images) || []} />
               )}
+              
+              {/* Pagination controls */}
+              <div className="mt-8">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    
+                    {/* First page */}
+                    {currentPage > 3 && (
+                      <PaginationItem>
+                        <PaginationLink 
+                          onClick={() => handlePageChange(1)}
+                        >
+                          1
+                        </PaginationLink>
+                      </PaginationItem>
+                    )}
+                    
+                    {/* Ellipsis for skipped pages at beginning */}
+                    {currentPage > 4 && (
+                      <PaginationItem>
+                        <span className="flex h-9 w-9 items-center justify-center">...</span>
+                      </PaginationItem>
+                    )}
+                    
+                    {/* Pages around current page */}
+                    {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+                      const pageNumber = Math.max(
+                        1,
+                        Math.min(
+                          currentPage - 1 + i,
+                          totalPages - 2
+                        )
+                      );
+                      
+                      if (pageNumber <= 0 || pageNumber > totalPages) return null;
+                      
+                      return (
+                        <PaginationItem key={pageNumber}>
+                          <PaginationLink 
+                            isActive={pageNumber === currentPage}
+                            onClick={() => handlePageChange(pageNumber)}
+                          >
+                            {pageNumber}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+                    
+                    {/* Ellipsis for skipped pages at end */}
+                    {totalPages > 5 && currentPage < totalPages - 3 && (
+                      <PaginationItem>
+                        <span className="flex h-9 w-9 items-center justify-center">...</span>
+                      </PaginationItem>
+                    )}
+                    
+                    {/* Last page */}
+                    {totalPages > 1 && currentPage < totalPages - 2 && (
+                      <PaginationItem>
+                        <PaginationLink onClick={() => handlePageChange(totalPages)}>
+                          {totalPages}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
             </>
           )}
         </div>

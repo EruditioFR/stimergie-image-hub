@@ -38,16 +38,16 @@ export function OrientationFilter({
           <SelectValue placeholder="Orientation" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all" className="flex items-center gap-2">
+          <SelectItem value="all">
             Toutes les orientations
           </SelectItem>
-          <SelectItem value="portrait" className="flex items-center gap-2">
+          <SelectItem value="portrait">
             Portrait
           </SelectItem>
-          <SelectItem value="landscape" className="flex items-center gap-2">
+          <SelectItem value="landscape">
             Paysage
           </SelectItem>
-          <SelectItem value="square" className="flex items-center gap-2">
+          <SelectItem value="square">
             Carré
           </SelectItem>
         </SelectContent>
