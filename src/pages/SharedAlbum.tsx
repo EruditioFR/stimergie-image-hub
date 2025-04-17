@@ -124,10 +124,7 @@ const SharedAlbum = () => {
   const { data: album, isLoading, isError, error } = useQuery({
     queryKey: ['shared-album', albumKey],
     queryFn: fetchAlbumData,
-    retry: 1,
-    onError: (err) => {
-      console.error('Error in album query:', err);
-    }
+    retry: 1
   });
 
   useEffect(() => {
