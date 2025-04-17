@@ -63,6 +63,8 @@ const SharedAlbum = () => {
   const fetchAlbumData = async (): Promise<AlbumData> => {
     if (!albumKey) throw new Error('No album key provided');
     
+    console.log('Fetching album with share key:', albumKey);
+    
     const { data, error } = await supabase.rpc('get_album_by_share_key', {
       share_key_param: albumKey
     });
@@ -73,18 +75,27 @@ const SharedAlbum = () => {
     }
     
     if (!data || !Array.isArray(data) || data.length === 0) {
+      console.error('No album found with key:', albumKey);
       throw new Error('Album not found or expired');
     }
+    
+    console.log('Album data received:', data);
     
     const rawData = data[0] as RawAlbumData;
     
     let processedImages: AlbumImage[] = [];
-    if (rawData.images && Array.isArray(rawData.images)) {
-      processedImages = rawData.images.map((img: Json) => {
+    if (rawData.images && typeof rawData.images === 'object') {
+      const imageArray = Array.isArray(rawData.images) ? rawData.images : [rawData.images];
+      
+      processedImages = imageArray.map((img: Json) => {
         const imgData = img as unknown as RawImageData;
         
+        const id = typeof imgData.id === 'number' 
+          ? imgData.id 
+          : parseInt(String(imgData.id || '0'), 10) || 0;
+        
         return {
-          id: typeof imgData.id === 'number' ? imgData.id : parseInt(String(imgData.id), 10),
+          id: id,
           title: String(imgData.title || ''),
           url: String(imgData.url || ''),
           description: imgData.description as string | null,
@@ -94,7 +105,11 @@ const SharedAlbum = () => {
           id_projet: imgData.id_projet as string | undefined
         };
       });
+    } else {
+      console.warn('Album images property is not a valid array:', rawData.images);
     }
+    
+    console.log('Processed images:', processedImages);
     
     return {
       id: rawData.id,
@@ -106,14 +121,22 @@ const SharedAlbum = () => {
     };
   };
   
-  const { data: album, isLoading, isError } = useQuery({
+  const { data: album, isLoading, isError, error } = useQuery({
     queryKey: ['shared-album', albumKey],
-    queryFn: fetchAlbumData
+    queryFn: fetchAlbumData,
+    retry: 1,
+    onError: (err) => {
+      console.error('Error in album query:', err);
+    }
   });
 
   useEffect(() => {
+    if (error) {
+      console.error('Album query error:', error);
+    }
+    
     const fetchFolderNames = async () => {
-      if (!album || !album.images || !Array.isArray(album.images)) return;
+      if (!album || !album.images || !Array.isArray(album.images) || album.images.length === 0) return;
       
       const projectIds = Array.from(
         new Set(
@@ -145,7 +168,7 @@ const SharedAlbum = () => {
     };
     
     fetchFolderNames();
-  }, [album]);
+  }, [album, error]);
   
   const downloadAllImages = async () => {
     if (!album || !album.images || !Array.isArray(album.images) || album.images.length === 0) return;
@@ -236,6 +259,8 @@ const SharedAlbum = () => {
   }
   
   if (isError || !album) {
+    console.error('Error displaying album:', error);
+    
     return (
       <div className="container max-w-7xl mx-auto py-16 px-4 text-center">
         <h1 className="text-2xl font-bold mb-4">Album non trouvé ou expiré</h1>
@@ -306,7 +331,7 @@ const SharedAlbum = () => {
             <p className="text-muted-foreground mb-2">{album.description}</p>
           )}
           <p className="text-sm text-muted-foreground">
-            Accessible du {album?.access_from ? new Date(album.access_from).toLocaleDateString('fr-FR') : ''} au {album?.access_until ? new Date(album.access_until).toLocaleDateString('fr-FR') : ''}
+            Accessible du {accessFromFormatted} au {accessUntilFormatted}
           </p>
         </div>
         
