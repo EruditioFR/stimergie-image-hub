@@ -7,7 +7,6 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { AlignStartVertical, AlignStartHorizontal, Square } from 'lucide-react';
 
 interface OrientationFilterProps {
   selectedOrientation: string | null;
@@ -43,13 +42,13 @@ export function OrientationFilter({
             Toutes les orientations
           </SelectItem>
           <SelectItem value="portrait" className="flex items-center gap-2">
-            <AlignStartVertical className="h-4 w-4" /> Portrait
+            Portrait
           </SelectItem>
           <SelectItem value="landscape" className="flex items-center gap-2">
-            <AlignStartHorizontal className="h-4 w-4" /> Paysage
+            Paysage
           </SelectItem>
           <SelectItem value="square" className="flex items-center gap-2">
-            <Square className="h-4 w-4" /> Carré
+            Carré
           </SelectItem>
         </SelectContent>
       </Select>
