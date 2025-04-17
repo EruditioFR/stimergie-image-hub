@@ -1,4 +1,3 @@
-
 import { useState, useRef, ChangeEvent, useEffect, KeyboardEvent } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -53,8 +52,8 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [newTag, setNewTag] = useState<string>('');
   const tagInputRef = useRef<HTMLInputElement>(null);
+  const [autoAnalyzeEnabled, setAutoAnalyzeEnabled] = useState<boolean>(true);
 
-  // Get Supabase URL and key from environment variables
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://mjhbugzaqmtfnbxaqpss.supabase.co";
   const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qaGJ1Z3phcW10Zm5ieGFxcHNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEzODU2MDQsImV4cCI6MjA1Njk2MTYwNH0.JLcLHyBk3G0wO6MuhJ4WMqv8ImbGxmcExEzGG2xWIsk";
 
@@ -73,9 +72,7 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
         .from('projets')
         .select('id, nom_projet');
       
-      // If user is admin_client, only show projects from their client
       if (userRole === 'admin_client') {
-        // Get the user's client ID
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('id_client')
@@ -94,7 +91,6 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
       if (error) throw error;
       
       setProjects(data || []);
-      // Auto-select the first project if there's only one
       if (data && data.length === 1) {
         setSelectedProject(data[0].id);
       }
@@ -133,15 +129,12 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
     const selectedFile = e.target.files[0];
     setFile(selectedFile);
     
-    // Extract title from filename (removing extension)
     const fileName = selectedFile.name.split('.').slice(0, -1).join('.');
     setTitle(fileName);
     
-    // Create preview URL
     const previewUrl = URL.createObjectURL(selectedFile);
     setPreview(previewUrl);
     
-    // Load image to get dimensions
     const img = new Image();
     img.onload = () => {
       setDimensions({
@@ -149,7 +142,6 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
         height: img.height
       });
       
-      // Determine orientation
       if (img.width > img.height) {
         setOrientation('landscape');
       } else if (img.height > img.width) {
@@ -158,21 +150,20 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
         setOrientation('square');
       }
       
-      // After getting dimensions, analyze the image to suggest tags
-      analyzeImage(selectedFile);
+      if (autoAnalyzeEnabled) {
+        analyzeImage(selectedFile);
+      }
     };
     
     img.src = previewUrl;
   };
 
-  // Convert file to base64
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
         if (typeof reader.result === 'string') {
-          // Extract the base64 part from the data URL
           const base64String = reader.result.split(',')[1];
           resolve(base64String);
         } else {
@@ -193,7 +184,6 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
       const base64Data = await fileToBase64(imageFile);
       console.log("Image converted to base64");
       
-      // Call the Supabase Edge Function for image analysis with OpenAI
       const response = await fetch(`${SUPABASE_URL}/functions/v1/analyze-image-ai`, {
         method: 'POST',
         headers: {
@@ -214,7 +204,6 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
       
       if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
         setSuggestedTags(data.tags);
-        // Auto-select the tags
         setTags(data.tags);
       } else {
         console.warn("No tags returned from AI function");
@@ -248,7 +237,6 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
     if (trimmedTag && !tags.includes(trimmedTag)) {
       setTags([...tags, trimmedTag]);
       setNewTag('');
-      // Focus back on the input for better UX
       if (tagInputRef.current) {
         tagInputRef.current.focus();
       }
@@ -256,7 +244,6 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
   };
 
   const handleTagInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    // Handle Enter key press
     if (e.key === 'Enter') {
       e.preventDefault();
       addNewTag();
@@ -269,22 +256,19 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
     try {
       setUploading(true);
       
-      // Create the storage bucket if it doesn't exist
       const { error: bucketError } = await supabase.storage.createBucket('images', {
         public: true,
-        fileSizeLimit: 10485760, // 10MB
+        fileSizeLimit: 10485760,
       });
       
       if (bucketError && bucketError.message !== 'Bucket already exists') {
         throw bucketError;
       }
       
-      // Get a unique filename for the upload
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
       
-      // Upload the file to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('images')
         .upload(filePath, file);
@@ -293,17 +277,14 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
         throw uploadError;
       }
       
-      // Get the public URL for the uploaded file
       const { data: urlData } = supabase.storage
         .from('images')
         .getPublicUrl(filePath);
       
       const publicUrl = urlData.publicUrl;
       
-      // Convertir le tableau de tags en chaîne JSON pour la base de données
       const tagsString = tags.length > 0 ? JSON.stringify(tags) : null;
       
-      // Save the image metadata to the database
       const { error: insertError } = await supabase
         .from('images')
         .insert({
@@ -322,7 +303,6 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
         throw insertError;
       }
       
-      // Clean up the preview URL to prevent memory leaks
       if (preview) {
         URL.revokeObjectURL(preview);
       }
@@ -351,11 +331,20 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
     await uploadImage();
   };
 
+  const handleManualAnalyze = () => {
+    if (file) {
+      analyzeImage(file);
+    }
+  };
+
+  const toggleAutoAnalyze = () => {
+    setAutoAnalyzeEnabled(!autoAnalyzeEnabled);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) {
         onClose();
-        // Don't reset form immediately to prevent UI flicker
       }
     }}>
       <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -489,7 +478,6 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
                 </div>
               </div>
 
-              {/* New manual tag input section */}
               <div>
                 <Label htmlFor="newTag">Ajouter un tag manuellement</Label>
                 <div className="flex items-center gap-2 mt-1">
@@ -517,6 +505,19 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
                 </p>
               </div>
               
+              <div className="flex items-center gap-2">
+                <input
+                  id="auto-analyze"
+                  type="checkbox"
+                  checked={autoAnalyzeEnabled} 
+                  onChange={toggleAutoAnalyze}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="auto-analyze" className="text-sm font-normal">
+                  Analyser automatiquement l'image avec IA
+                </Label>
+              </div>
+
               {analyzing ? (
                 <div className="flex items-center justify-center py-4">
                   <Loader2 className="h-5 w-5 mr-2 animate-spin" />
@@ -529,6 +530,16 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
                       <Tag className="h-4 w-4 mr-2" /> 
                       Tags suggérés par IA
                     </Label>
+                    {file && !analyzing && (
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleManualAnalyze}
+                      >
+                        Analyser l'image
+                      </Button>
+                    )}
                     {tagError && <p className="text-xs text-destructive">{tagError}</p>}
                   </div>
                   
@@ -547,7 +558,7 @@ export function ImageUploadForm({ isOpen, onClose, onSuccess, userRole = 'user' 
                         ))
                       ) : preview ? (
                         <p className="text-sm text-muted-foreground">
-                          Aucun tag suggéré disponible
+                          {autoAnalyzeEnabled ? "Analyse en attente..." : "Aucun tag suggéré disponible"}
                         </p>
                       ) : (
                         <p className="text-sm text-muted-foreground">
