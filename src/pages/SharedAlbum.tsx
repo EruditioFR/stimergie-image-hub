@@ -57,11 +57,17 @@ interface RawImageData {
 }
 
 const SharedAlbum = () => {
+  // Extract album key from URL params
   const { albumKey } = useParams<{ albumKey: string }>();
   const navigate = useNavigate();
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
   const [folderNames, setFolderNames] = useState<Record<string, string>>({});
+  
+  // Logging for debugging
+  useEffect(() => {
+    console.log('Album key from params:', albumKey);
+  }, [albumKey]);
   
   // Redirect to home if no album key is provided
   useEffect(() => {
@@ -71,10 +77,15 @@ const SharedAlbum = () => {
     }
   }, [albumKey, navigate]);
   
-  // Redirect to Stimergie website if we have a share key
+  // Redirect to Stimergie website if not on stimergie.fr
   useEffect(() => {
-    if (albumKey && !window.location.hostname.includes('stimergie.fr')) {
-      window.location.href = `https://www.stimergie.fr/shared-album/${albumKey}`;
+    const currentHostname = window.location.hostname;
+    console.log('Current hostname:', currentHostname);
+    
+    if (albumKey && !currentHostname.includes('stimergie.fr') && !currentHostname.includes('localhost')) {
+      const redirectUrl = `https://www.stimergie.fr/shared-album/${albumKey}`;
+      console.log('Redirecting to:', redirectUrl);
+      window.location.href = redirectUrl;
     }
   }, [albumKey]);
   
