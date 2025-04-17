@@ -63,6 +63,14 @@ const SharedAlbum = () => {
   const { toast } = useToast();
   const [folderNames, setFolderNames] = useState<Record<string, string>>({});
   
+  // Redirect to home if no album key is provided
+  useEffect(() => {
+    if (!albumKey) {
+      console.log('No album key provided, redirecting to home');
+      navigate('/');
+    }
+  }, [albumKey, navigate]);
+  
   // Redirect to Stimergie website if we have a share key
   useEffect(() => {
     if (albumKey && !window.location.hostname.includes('stimergie.fr')) {
@@ -71,7 +79,10 @@ const SharedAlbum = () => {
   }, [albumKey]);
   
   const fetchAlbumData = async (): Promise<AlbumData> => {
-    if (!albumKey) throw new Error('No album key provided');
+    if (!albumKey) {
+      console.error('No album key provided for fetching data');
+      throw new Error('Album key is required');
+    }
     
     console.log('Fetching album with share key:', albumKey);
     
@@ -132,10 +143,12 @@ const SharedAlbum = () => {
     };
   };
   
+  // Only run the query if we have an album key
   const { data: album, isLoading, isError, error } = useQuery({
     queryKey: ['shared-album', albumKey],
     queryFn: fetchAlbumData,
-    retry: 1
+    retry: 1,
+    enabled: !!albumKey // Only run the query if albumKey exists
   });
 
   useEffect(() => {
@@ -251,6 +264,17 @@ const SharedAlbum = () => {
       } as Image;
     });
   };
+  
+  // If there's no album key, render a "not found" page
+  if (!albumKey) {
+    return (
+      <div className="container max-w-7xl mx-auto py-16 px-4 text-center">
+        <h1 className="text-2xl font-bold mb-4">Album non trouvé</h1>
+        <p className="mb-8">Le lien que vous avez utilisé n'est pas valide.</p>
+        <Button onClick={() => navigate('/')}>Retour à l'accueil</Button>
+      </div>
+    );
+  }
   
   if (isLoading) {
     return (
