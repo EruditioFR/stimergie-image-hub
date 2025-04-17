@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,7 +25,6 @@ import BlogPost from "@/pages/BlogPost";
 import ResetPassword from "@/pages/ResetPassword";
 import Downloads from "@/pages/Downloads";
 
-// Création du client de requête avec des options optimisées
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -54,7 +52,7 @@ const App = () => {
                   <Route path="/" element={<Index />} />
                   <Route path="/gallery" element={<Gallery />} />
                   <Route path="/image/:id" element={<ImageView />} />
-                  <Route path="/shared-album/:shareKey" element={<SharedAlbum />} />
+                  <Route path="/shared-album/:albumKey" element={<SharedAlbum />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/resources" element={<Resources />} />
@@ -113,7 +111,6 @@ const App = () => {
                       </ProtectedRoute>
                     } 
                   />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>

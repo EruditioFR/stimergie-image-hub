@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -57,27 +56,16 @@ interface RawImageData {
 }
 
 const SharedAlbum = () => {
-  // Extract album key from URL params
   const { albumKey } = useParams<{ albumKey: string }>();
   const navigate = useNavigate();
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
   const [folderNames, setFolderNames] = useState<Record<string, string>>({});
   
-  // Logging for debugging
   useEffect(() => {
     console.log('Album key from params:', albumKey);
   }, [albumKey]);
   
-  // Redirect to home if no album key is provided
-  useEffect(() => {
-    if (!albumKey) {
-      console.log('No album key provided, redirecting to home');
-      navigate('/');
-    }
-  }, [albumKey, navigate]);
-  
-  // Redirect to Stimergie website if not on stimergie.fr
   useEffect(() => {
     const currentHostname = window.location.hostname;
     console.log('Current hostname:', currentHostname);
@@ -154,12 +142,11 @@ const SharedAlbum = () => {
     };
   };
   
-  // Only run the query if we have an album key
   const { data: album, isLoading, isError, error } = useQuery({
     queryKey: ['shared-album', albumKey],
     queryFn: fetchAlbumData,
     retry: 1,
-    enabled: !!albumKey // Only run the query if albumKey exists
+    enabled: !!albumKey
   });
 
   useEffect(() => {
@@ -276,7 +263,6 @@ const SharedAlbum = () => {
     });
   };
   
-  // If there's no album key, render a "not found" page
   if (!albumKey) {
     return (
       <div className="container max-w-7xl mx-auto py-16 px-4 text-center">
