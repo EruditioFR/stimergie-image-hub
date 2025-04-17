@@ -80,10 +80,14 @@ Deno.serve(async (req) => {
       }
     }
     
-    // Return album with images
+    // Add the share URL with the Stimergie domain
+    const shareUrl = `https://www.stimergie.fr/shared-album/${albumData.share_key}`;
+    
+    // Return album with images and share URL
     const result = {
       ...albumData,
-      images: images
+      images: images,
+      shareUrl: shareUrl
     };
     
     return new Response(

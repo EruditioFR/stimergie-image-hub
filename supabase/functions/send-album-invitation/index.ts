@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -100,8 +101,8 @@ const handler = async (req: Request) => {
       year: 'numeric'
     });
 
-    // Récupérer l'URL publique et s'assurer qu'elle n'a pas de slash à la fin
-    const publicUrl = (Deno.env.get("PUBLIC_URL") || "https://votre-domaine.com").replace(/\/$/, "");
+    // Utiliser le domaine de Stimergie pour les liens d'albums partagés
+    const albumUrl = `https://www.stimergie.fr/shared-album/${shareKey}`;
 
     // Construction du contenu HTML de l'email
     const htmlContent = `
@@ -110,7 +111,7 @@ const handler = async (req: Request) => {
         <h2 style="color: #555;">${albumName}</h2>
         ${message ? `<p style="color: #666; font-style: italic;">"${message}"</p>` : ''}
         <p style="margin: 20px 0;">Cliquez sur le lien ci-dessous pour accéder à l'album:</p>
-        <a href="${publicUrl}/shared-album/${shareKey}" 
+        <a href="${albumUrl}" 
            style="display: inline-block; background-color: #4a90e2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 10px 0;">
            Voir l'album photo
         </a>
@@ -129,7 +130,7 @@ const handler = async (req: Request) => {
       ${message ? `Message: "${message}"` : ''}
       
       Pour y accéder, visitez ce lien:
-      ${publicUrl}/shared-album/${shareKey}
+      ${albumUrl}
       
       Cet album est accessible du ${formattedStartDate} au ${formattedEndDate}
     `;
@@ -139,8 +140,6 @@ const handler = async (req: Request) => {
       Email: "contact@stimergie.fr",
       Name: "Galerie Photos Stimergie"
     };
-
-    console.log("Vérification de la variable d'environnement PUBLIC_URL:", Deno.env.get("PUBLIC_URL"));
 
     // Envoi des emails avec Mailjet
     try {
@@ -184,7 +183,7 @@ const handler = async (req: Request) => {
       { 
         status: 500, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
+        }
     );
   }
 };

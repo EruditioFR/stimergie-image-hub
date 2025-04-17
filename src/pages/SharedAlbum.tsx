@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ interface AlbumData {
   access_from: string;
   access_until: string;
   images: AlbumImage[];
+  share_key: string;
 }
 
 interface RawAlbumData {
@@ -39,6 +41,7 @@ interface RawAlbumData {
   access_from: string;
   access_until: string;
   images: Json;
+  share_key: string;
 }
 
 interface RawImageData {
@@ -59,6 +62,13 @@ const SharedAlbum = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
   const [folderNames, setFolderNames] = useState<Record<string, string>>({});
+  
+  // Redirect to Stimergie website if we have a share key
+  useEffect(() => {
+    if (albumKey && !window.location.hostname.includes('stimergie.fr')) {
+      window.location.href = `https://www.stimergie.fr/shared-album/${albumKey}`;
+    }
+  }, [albumKey]);
   
   const fetchAlbumData = async (): Promise<AlbumData> => {
     if (!albumKey) throw new Error('No album key provided');
@@ -117,7 +127,8 @@ const SharedAlbum = () => {
       description: rawData.description,
       access_from: rawData.access_from,
       access_until: rawData.access_until,
-      images: processedImages
+      images: processedImages,
+      share_key: rawData.share_key
     };
   };
   
@@ -268,8 +279,8 @@ const SharedAlbum = () => {
   }
   
   const now = new Date();
-  const accessFrom = new Date(album.access_from);
-  const accessUntil = new Date(album.access_until);
+  const accessFrom = new Date(album?.access_from || '');
+  const accessUntil = new Date(album?.access_until || '');
   const isAccessible = now >= accessFrom && now <= accessUntil;
   
   if (!isAccessible) {
@@ -287,6 +298,8 @@ const SharedAlbum = () => {
   const accessFromFormatted = album?.access_from ? new Date(album.access_from).toLocaleDateString('fr-FR') : '';
   const accessUntilFormatted = album?.access_until ? new Date(album.access_until).toLocaleDateString('fr-FR') : '';
   
+  const shareUrl = `https://www.stimergie.fr/shared-album/${album?.share_key}`;
+  
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b sticky top-0 bg-background z-10">
@@ -299,7 +312,7 @@ const SharedAlbum = () => {
             <Button
               variant="outline"
               onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
+                navigator.clipboard.writeText(shareUrl);
                 toast({
                   title: "Lien copié",
                   description: "Le lien de partage a été copié dans le presse-papier."
