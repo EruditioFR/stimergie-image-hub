@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
-import { prepareDownloadFile } from '@/utils/image/download';
+import { downloadImage } from '@/utils/image/download';
 import { useNavigate } from 'react-router-dom';
 
 interface DownloadRequestButtonProps {
@@ -32,28 +32,21 @@ export const DownloadRequestButton = ({
     try {
       setIsRequesting(true);
       
-      console.log('Requesting download for image:', { imageId, imageTitle, imageSrc, isHD });
+      console.log('Downloading image:', { imageId, imageTitle, imageSrc, isHD });
       
-      const success = await prepareDownloadFile({
-        imageId: imageId.toString(),
-        imageTitle,
-        imageSrc,
-        isHD
-      });
+      // Create filename with clean title
+      const filename = imageTitle
+        ? imageTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.jpg'
+        : `image_${imageId}.jpg`;
       
-      if (success) {
-        toast.success('Demande de téléchargement enregistrée', { 
-          description: 'Vous pouvez suivre votre téléchargement dans la page téléchargements.',
-          action: {
-            label: 'Voir mes téléchargements',
-            onClick: () => navigate('/downloads')
-          }
-        });
-      }
+      // Perform direct download
+      await downloadImage(imageSrc, filename);
+      
+      toast.success('Image téléchargée avec succès');
       
     } catch (error) {
-      console.error('Erreur lors de la demande de téléchargement:', error);
-      toast.error('Échec de la demande', { 
+      console.error('Erreur lors du téléchargement:', error);
+      toast.error('Échec du téléchargement', { 
         description: 'Une erreur est survenue. Veuillez réessayer plus tard.'
       });
     } finally {

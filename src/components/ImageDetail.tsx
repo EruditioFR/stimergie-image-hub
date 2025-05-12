@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useImages } from '@/context/ImageContext';
@@ -6,7 +7,6 @@ import { X, Download } from 'lucide-react';
 import { downloadImage } from '@/utils/image/download';
 import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { ImageDownloadFormat } from '@/utils/image/download/singleImageDownloader';
 import { parseTagsString } from '@/utils/imageUtils';
 
 export default function ImageDetail() {

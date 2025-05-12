@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Image } from '@/utils/image/types';
@@ -62,7 +63,7 @@ export function MasonryToolbarContent({
         let pngUrl = img.url || '';
         
         // Si l'URL n'est pas une URL PNG ou est vide, essayer de générer une URL
-        if (!pngUrl || !pngUrl.includes('/PNG/')) {
+        if (!pngUrl || !pngUrl.includes('/JPG/')) {
           // Extraire le nom du dossier à partir des données du projet ou utiliser un fallback
           let folderName = "";
           if (img.projets?.nom_dossier) {
@@ -73,7 +74,7 @@ export function MasonryToolbarContent({
           
           const imageTitle = img.title || `image-${img.id}`;
           
-          // Générer l'URL PNG uniquement si nécessaire
+          // Générer l'URL JPG uniquement si nécessaire
           if (folderName) {
             const generatedUrl = generateDownloadImageSDUrl(folderName, imageTitle);
             if (!pngUrl) {
@@ -223,41 +224,21 @@ export function MasonryToolbarContent({
         });
       }
       
-      toast.loading("Préparation du ZIP HD en cours", { 
-        id: "zip-hd-preparation", 
-        duration: 10000
+      toast.loading("Préparation du ZIP HD en cours", {
+        id: "zip-hd-preparation",
+        duration: Infinity
       });
       
-      const { data, error } = await supabase.functions.invoke('generate-zip', {
-        body: {
-          images: imagesForDownload,
-          userId: user.id,
-          isHD: true
-        }
-      });
+      // Téléchargement direct en HD, comme pour les images standard
+      await downloadImagesAsZip(imagesForDownload, `images_hd_${Date.now()}.zip`);
       
       toast.dismiss("zip-hd-preparation");
-      
-      if (error) {
-        throw new Error("Erreur lors de la génération du ZIP HD");
-      }
-      
-      toast.success("Demande de téléchargement HD envoyée", {
-        description: "Le ZIP HD sera disponible dans votre page Téléchargements"
-      });
-      
-      toast("Voir vos téléchargements ?", {
-        action: {
-          label: "Accéder",
-          onClick: () => navigate("/downloads")
-        },
-        duration: 10000
-      });
+      toast.success("Images HD téléchargées avec succès");
       
     } catch (error) {
-      console.error("Error during HD ZIP request:", error);
-      toast.error("Erreur lors de la préparation du téléchargement HD", {
-        description: "Une erreur est survenue lors du traitement de votre demande."
+      console.error("Error during HD ZIP download:", error);
+      toast.error("Erreur lors du téléchargement HD", {
+        description: "Une erreur est survenue lors du téléchargement des images HD."
       });
     } finally {
       setIsDownloadingHD(false);
@@ -281,7 +262,7 @@ export function MasonryToolbarContent({
           isLoading={isDownloading}
           onClick={handleDownload}
           label="Version web & réseaux sociaux"
-          sizeHint="(PNG, < 2 Mo)"
+          sizeHint="(JPG, < 2 Mo)"
         />
         <DownloadButton 
           isLoading={isDownloadingHD}
