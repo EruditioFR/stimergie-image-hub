@@ -45,6 +45,7 @@ export const DownloadRequestButton = ({
       let downloadUrl = imageSrc;
       if (isHD && folderName) {
         const cleanTitle = imageTitle.replace(/\.(jpg|jpeg|png)$/i, '');
+        // IMPORTANT: Format direct sans le segment "/JPG" pour les téléchargements HD
         downloadUrl = `https://www.stimergie.fr/photos/${encodeURIComponent(folderName)}/${encodeURIComponent(cleanTitle)}.jpg`;
         console.log(`Generated HD URL for direct download: ${downloadUrl}`);
       }

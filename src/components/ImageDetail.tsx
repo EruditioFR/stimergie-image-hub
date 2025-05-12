@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useImages } from '@/context/ImageContext';
@@ -96,6 +95,7 @@ export default function ImageDetail() {
       
       if (folderName && image.title) {
         // Format direct pour les téléchargements HD: https://www.stimergie.fr/photos/[nom_du_dossier]/[titre_image].jpg
+        // IMPORTANT: Pas de segment "/JPG" dans l'URL HD
         const cleanTitle = image.title.replace(/\.(jpg|jpeg|png)$/i, '');
         downloadUrl = `https://www.stimergie.fr/photos/${encodeURIComponent(folderName)}/${encodeURIComponent(cleanTitle)}.jpg`;
         console.log(`Generated direct HD URL for download: ${downloadUrl}`);

@@ -51,6 +51,7 @@ export function generateDownloadImageSDUrl(folderName: string, imageTitle: strin
 /**
  * Génère l'URL de téléchargement HD pour une image (format original)
  * Format: https://www.stimergie.fr/photos/[nom_dossier]/[titre].jpg
+ * IMPORTANT: Pas de segment "/JPG" dans l'URL HD
  */
 export function generateDownloadImageHDUrl(folderName: string, imageTitle: string): string {
   if (!folderName || !imageTitle) {

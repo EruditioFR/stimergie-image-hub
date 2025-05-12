@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Image } from '@/utils/image/types';
@@ -180,6 +181,7 @@ export function MasonryToolbarContent({
         // Si on a un nom de dossier, générer l'URL HD au format direct
         if (folderName) {
           // Format direct: https://www.stimergie.fr/photos/[nom_du_dossier]/[titre_image].jpg
+          // IMPORTANT: Supprimer "/JPG" de l'URL pour les téléchargements HD
           const cleanTitle = imageTitle.replace(/\.(jpg|jpeg|png)$/i, '');
           hdUrl = `https://www.stimergie.fr/photos/${encodeURIComponent(folderName)}/${encodeURIComponent(cleanTitle)}.jpg`;
           console.log(`Generated direct HD URL: ${hdUrl}`);
