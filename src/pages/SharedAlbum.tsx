@@ -5,7 +5,7 @@ import { MasonryGrid } from '@/components/gallery/masonry/MasonryGrid';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Download, Share, ArrowLeft } from 'lucide-react';
+import { Download, ArrowLeft } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { Image } from '@/utils/image/types';
@@ -330,20 +330,6 @@ const SharedAlbum = () => {
             Retour
           </Button>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                navigator.clipboard.writeText(shareUrl);
-                toast({
-                  title: "Lien copié",
-                  description: "Le lien de partage a été copié dans le presse-papier."
-                });
-              }}
-            >
-              <Share className="h-4 w-4 mr-2" />
-              Partager
-            </Button>
-            
             <Button
               onClick={downloadAllImages}
               disabled={isDownloading}
