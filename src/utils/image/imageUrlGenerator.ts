@@ -4,8 +4,8 @@
  */
 
 /**
- * Génère l'URL d'affichage pour une image (format PNG pour affichage)
- * Format: https://www.stimergie.fr/photos/[nom du dossier]/PNG/[titre].png
+ * Génère l'URL d'affichage pour une image (format JPG pour affichage)
+ * Format: https://www.stimergie.fr/photos/[nom du dossier]/JPG/[titre].jpg
  */
 export function generateDisplayImageUrl(folderName: string, imageTitle: string): string {
   if (!folderName || !imageTitle) {
@@ -21,14 +21,14 @@ export function generateDisplayImageUrl(folderName: string, imageTitle: string):
   const encodedTitle = encodeURIComponent(cleanImageTitle.trim());
   
   // Ajouter un log pour le debugging
-  console.log(`Generated display URL for ${imageTitle}: https://www.stimergie.fr/photos/${encodedFolder}/PNG/${encodedTitle}.png`);
+  console.log(`Generated display URL for ${imageTitle}: https://www.stimergie.fr/photos/${encodedFolder}/JPG/${encodedTitle}.jpg`);
   
-  return `https://www.stimergie.fr/photos/${encodedFolder}/PNG/${encodedTitle}.png`;
+  return `https://www.stimergie.fr/photos/${encodedFolder}/JPG/${encodedTitle}.jpg`;
 }
 
 /**
- * Génère l'URL de téléchargement pour une image en qualité normale (PNG)
- * Format: https://www.stimergie.fr/photos/[nom_dossier]/PNG/[titre].png
+ * Génère l'URL de téléchargement pour une image en qualité normale (JPG)
+ * Format: https://www.stimergie.fr/photos/[nom_dossier]/JPG/[titre].jpg
  */
 export function generateDownloadImageSDUrl(folderName: string, imageTitle: string): string {
   if (!folderName || !imageTitle) {
@@ -43,9 +43,9 @@ export function generateDownloadImageSDUrl(folderName: string, imageTitle: strin
   const encodedTitle = encodeURIComponent(cleanImageTitle.trim());
   
   // Ajouter un log pour le debugging
-  console.log(`Generated SD download URL for ${imageTitle}: https://www.stimergie.fr/photos/${encodedFolder}/PNG/${encodedTitle}.png`);
+  console.log(`Generated SD download URL for ${imageTitle}: https://www.stimergie.fr/photos/${encodedFolder}/JPG/${encodedTitle}.jpg`);
   
-  return `https://www.stimergie.fr/photos/${encodedFolder}/PNG/${encodedTitle}.png`;
+  return `https://www.stimergie.fr/photos/${encodedFolder}/JPG/${encodedTitle}.jpg`;
 }
 
 /**
