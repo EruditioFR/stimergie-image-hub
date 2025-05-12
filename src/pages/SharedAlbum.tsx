@@ -181,6 +181,7 @@ const SharedAlbum = () => {
         });
         
         setFolderNames(folderMap);
+        console.log('Folder names fetched:', folderMap);
       } catch (err) {
         console.error('Error fetching folder names:', err);
       }
@@ -201,15 +202,27 @@ const SharedAlbum = () => {
     try {
       const zip = new JSZip();
       
+      // Pour chaque image, nous allons maintenant utiliser le format HD direct
       const fetchPromises = album.images.map(async (image: AlbumImage, index: number) => {
         try {
-          const downloadUrl = image.url;
+          // Récupère le nom du dossier depuis folderNames si l'image a un id_projet
+          const folderName = image.id_projet ? folderNames[image.id_projet] || '' : '';
+          
+          // Si on a un nom de dossier, on peut construire l'URL HD directe
+          let downloadUrl = image.url; // URL par défaut
+          
+          if (folderName && image.title) {
+            // Générer l'URL HD au format https://www.stimergie.fr/photos/[nom_du_dossier]/[titre_image].jpg
+            const cleanTitle = image.title.replace(/\.(jpg|jpeg|png)$/i, '');
+            downloadUrl = `https://www.stimergie.fr/photos/${encodeURIComponent(folderName)}/${encodeURIComponent(cleanTitle)}.jpg`;
+            console.log(`Generated HD URL for download: ${downloadUrl}`);
+          }
           
           const response = await fetch(downloadUrl);
           if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
           
           const blob = await response.blob();
-          const fileName = `image-${index + 1}.jpg`;
+          const fileName = image.title ? `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` : `image-${index + 1}.jpg`;
           zip.file(fileName, blob);
           
           return true;
@@ -247,14 +260,21 @@ const SharedAlbum = () => {
     
     return album.images.map((image: AlbumImage) => {
       const display_url = image.url;
-      const download_url = image.url;
+      
+      // Pour l'URL de téléchargement HD, nous utilisons le format direct
+      let download_url = image.url;
+      // Si on a un id_projet et un nom de dossier, on peut générer l'URL HD directe
+      if (image.id_projet && folderNames[image.id_projet] && image.title) {
+        const folderName = folderNames[image.id_projet];
+        download_url = `https://www.stimergie.fr/photos/${encodeURIComponent(folderName)}/${encodeURIComponent(image.title)}.jpg`;
+      }
       
       return {
         id: image.id.toString(),
         src: display_url,
         display_url: display_url,
-        download_url: download_url,
-        download_url_sd: image.url,
+        download_url: download_url, // URL HD pour téléchargement 
+        download_url_sd: image.url, // URL SD pour affichage
         alt: image.title || 'Image partagée',
         title: image.title || 'Sans titre',
         author: 'Album partagé',

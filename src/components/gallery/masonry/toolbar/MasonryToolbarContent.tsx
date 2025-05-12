@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Image } from '@/utils/image/types';
@@ -175,16 +174,19 @@ export function MasonryToolbarContent({
         
         const imageTitle = img.title || `image-${img.id}`;
         
-        // Générer l'URL HD
+        // Générer l'URL HD selon le nouveau format direct
         let hdUrl = '';
         
-        // Priorité 1: URL déjà disponible dans l'objet image
-        if (img.download_url) {
-          hdUrl = img.download_url;
+        // Si on a un nom de dossier, générer l'URL HD au format direct
+        if (folderName) {
+          // Format direct: https://www.stimergie.fr/photos/[nom_du_dossier]/[titre_image].jpg
+          const cleanTitle = imageTitle.replace(/\.(jpg|jpeg|png)$/i, '');
+          hdUrl = `https://www.stimergie.fr/photos/${encodeURIComponent(folderName)}/${encodeURIComponent(cleanTitle)}.jpg`;
+          console.log(`Generated direct HD URL: ${hdUrl}`);
         } 
-        // Priorité 2: Générer l'URL à partir du nom de dossier et du titre
-        else if (folderName) {
-          hdUrl = generateDownloadImageHDUrl(folderName, imageTitle);
+        // Sinon priorité à l'URL déjà disponible dans l'objet image
+        else if (img.download_url) {
+          hdUrl = img.download_url;
         }
         // Dernier recours: utiliser n'importe quelle URL disponible
         else if (img.url) {
@@ -229,7 +231,7 @@ export function MasonryToolbarContent({
         duration: Infinity
       });
       
-      // Téléchargement direct en HD, comme pour les images standard
+      // Téléchargement direct en HD
       await downloadImagesAsZip(imagesForDownload, `images_hd_${Date.now()}.zip`);
       
       toast.dismiss("zip-hd-preparation");

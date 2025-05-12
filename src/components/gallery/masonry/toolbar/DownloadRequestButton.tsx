@@ -14,6 +14,7 @@ interface DownloadRequestButtonProps {
   size?: "default" | "sm" | "lg";
   className?: string;
   isHD?: boolean;
+  folderName?: string;  // Add folder name prop
 }
 
 export const DownloadRequestButton = ({
@@ -23,7 +24,8 @@ export const DownloadRequestButton = ({
   variant = "outline",
   size = "sm",
   className = "",
-  isHD = true
+  isHD = true,
+  folderName = ""  // Default to empty string
 }: DownloadRequestButtonProps) => {
   const [isRequesting, setIsRequesting] = React.useState(false);
   const navigate = useNavigate();
@@ -32,15 +34,23 @@ export const DownloadRequestButton = ({
     try {
       setIsRequesting(true);
       
-      console.log('Downloading image:', { imageId, imageTitle, imageSrc, isHD });
+      console.log('Downloading image:', { imageId, imageTitle, imageSrc, isHD, folderName });
       
       // Create filename with clean title
       const filename = imageTitle
         ? imageTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.jpg'
         : `image_${imageId}.jpg`;
       
+      // If HD and we have folder name, use the direct HD URL format
+      let downloadUrl = imageSrc;
+      if (isHD && folderName) {
+        const cleanTitle = imageTitle.replace(/\.(jpg|jpeg|png)$/i, '');
+        downloadUrl = `https://www.stimergie.fr/photos/${encodeURIComponent(folderName)}/${encodeURIComponent(cleanTitle)}.jpg`;
+        console.log(`Generated HD URL for direct download: ${downloadUrl}`);
+      }
+      
       // Perform direct download
-      await downloadImage(imageSrc, filename);
+      await downloadImage(downloadUrl, filename);
       
       toast.success('Image téléchargée avec succès');
       

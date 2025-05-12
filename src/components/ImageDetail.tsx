@@ -8,6 +8,7 @@ import { downloadImage } from '@/utils/image/download';
 import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { parseTagsString } from '@/utils/imageUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ImageDetail() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +17,7 @@ export default function ImageDetail() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [image, setImage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [folderName, setFolderName] = useState<string | null>(null);
   
   useEffect(() => {
     console.log(`Recherche d'image avec ID: ${id} parmi ${images.length} images`);
@@ -23,6 +25,32 @@ export default function ImageDetail() {
     if (id && images.length > 0) {
       const foundImage = images.find(img => img.id === id);
       setImage(foundImage || null);
+      
+      // Si on a une image avec un id_projet, chercher le nom du dossier
+      if (foundImage && foundImage.id_projet) {
+        const fetchFolderName = async () => {
+          try {
+            const { data, error } = await supabase
+              .from('projets')
+              .select('nom_dossier')
+              .eq('id', foundImage.id_projet)
+              .single();
+              
+            if (error) throw error;
+            
+            if (data && data.nom_dossier) {
+              setFolderName(data.nom_dossier);
+              console.log(`Folder name found for project ${foundImage.id_projet}: ${data.nom_dossier}`);
+            }
+          } catch (err) {
+            console.error('Error fetching folder name:', err);
+          }
+        };
+        
+        fetchFolderName();
+      } else if (foundImage && foundImage.projets?.nom_dossier) {
+        setFolderName(foundImage.projets.nom_dossier);
+      }
     } else {
       setImage(null);
     }
@@ -60,10 +88,19 @@ export default function ImageDetail() {
     
     setIsDownloading(true);
     
-    console.log(`Downloading image:`, image.src);
+    console.log(`Downloading image:`, image);
     
     try {
-      const downloadUrl = image.download_url || image.url || image.src;
+      // Si on a un nom de dossier, on utilise l'URL HD directe
+      let downloadUrl = image.download_url || image.url || image.src;
+      
+      if (folderName && image.title) {
+        // Format direct pour les téléchargements HD: https://www.stimergie.fr/photos/[nom_du_dossier]/[titre_image].jpg
+        const cleanTitle = image.title.replace(/\.(jpg|jpeg|png)$/i, '');
+        downloadUrl = `https://www.stimergie.fr/photos/${encodeURIComponent(folderName)}/${encodeURIComponent(cleanTitle)}.jpg`;
+        console.log(`Generated direct HD URL for download: ${downloadUrl}`);
+      }
+      
       const filename = `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg`;
       await downloadImage(downloadUrl, filename);
       toast.success(`Image téléchargée`);
