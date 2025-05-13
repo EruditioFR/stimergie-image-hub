@@ -18,8 +18,9 @@ export async function downloadImage(url: string, filename: string, format: Image
     throw new Error('URL is empty');
   }
 
-  console.log(`Downloading image from URL: ${url}`);
-  console.log(`Saving as filename: ${filename}`);
+  console.log(`[downloadImage] Downloading image from URL: ${url}`);
+  console.log(`[downloadImage] URL contains '/JPG/': ${url.includes('/JPG/')}`);
+  console.log(`[downloadImage] Saving as filename: ${filename}`);
   
   try {
     // Determine file extension based on format parameter or fallback to URL
@@ -43,7 +44,7 @@ export async function downloadImage(url: string, filename: string, format: Image
       ? filename 
       : filename.replace(/\.[^.]+$/, '') + fileExtension;
     
-    // Fetch the image
+    // Fetch the image - use exact URL without modification
     const response = await fetch(url, { 
       mode: 'cors',
       cache: 'no-cache',
@@ -77,7 +78,7 @@ export async function downloadImage(url: string, filename: string, format: Image
       document.body.removeChild(link);
     }, 100);
     
-    console.log('Download completed successfully');
+    console.log('[downloadImage] Download completed successfully');
     return;
   } catch (error) {
     console.error(`Error downloading image ${filename}:`, error);

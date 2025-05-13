@@ -159,6 +159,7 @@ export function MasonryToolbarContent({
       }
       
       const selectedImagesData = images.filter(img => selectedImages.includes(img.id));
+      console.log(`Processing ${selectedImagesData.length} images for HD download`);
       
       // Créer un tableau pour stocker les images valides pour le téléchargement HD
       const imagesForDownload = [];
@@ -175,31 +176,36 @@ export function MasonryToolbarContent({
         
         const imageTitle = img.title || `image-${img.id}`;
         
-        // Générer l'URL HD selon le nouveau format direct
+        // Générer l'URL HD selon le nouveau format direct sans /JPG/
         let hdUrl = '';
         
         // Si on a un nom de dossier, générer l'URL HD au format direct
         if (folderName) {
-          // Format direct: https://www.stimergie.fr/photos/[nom_du_dossier]/[titre_image].jpg
-          // IMPORTANT: Supprimer "/JPG" de l'URL pour les téléchargements HD
-          const cleanTitle = imageTitle.replace(/\.(jpg|jpeg|png)$/i, '');
-          hdUrl = `https://www.stimergie.fr/photos/${encodeURIComponent(folderName)}/${encodeURIComponent(cleanTitle)}.jpg`;
-          console.log(`Generated direct HD URL: ${hdUrl}`);
+          // Utiliser explicitement la fonction de génération d'URL HD
+          hdUrl = generateDownloadImageHDUrl(folderName, imageTitle);
+          console.log(`[handleDownloadHD] Generated explicit HD URL: ${hdUrl}`);
         } 
         // Sinon priorité à l'URL déjà disponible dans l'objet image
         else if (img.download_url) {
           hdUrl = img.download_url;
+          console.log(`[handleDownloadHD] Using existing download_url: ${hdUrl}`);
         }
         // Dernier recours: utiliser n'importe quelle URL disponible
         else if (img.url) {
           hdUrl = img.url;
+          console.log(`[handleDownloadHD] Fallback to image url: ${hdUrl}`);
         }
         
         // Valider l'URL avant de l'ajouter
         const validationResult = validateImageUrl(hdUrl, img.id, imageTitle);
         if (validationResult.isValid && validationResult.url) {
+          // S'assurer que l'URL HD ne contient pas accidentellement "/JPG/"
+          const finalUrl = validationResult.url;
+          console.log(`[handleDownloadHD] Final URL for HD download: ${finalUrl}`);
+          console.log(`[handleDownloadHD] URL contains '/JPG/': ${finalUrl.includes('/JPG/')}`);
+          
           imagesForDownload.push({
-            url: validationResult.url,
+            url: finalUrl,
             title: img.title || `image_${img.id}`,
             id: img.id
           });
@@ -216,6 +222,12 @@ export function MasonryToolbarContent({
         setIsDownloadingHD(false);
         return;
       }
+      
+      // Afficher les premières URLs pour debug
+      console.log("First 3 HD download URLs:");
+      imagesForDownload.slice(0, 3).forEach((img, i) => {
+        console.log(`[handleDownloadHD] ${i+1}. ID: ${img.id}, Title: ${img.title}, URL: ${img.url}`);
+      });
       
       // Informer l'utilisateur si certaines images ont été exclues
       if (failedImages.length > 0) {

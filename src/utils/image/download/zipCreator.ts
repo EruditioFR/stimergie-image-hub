@@ -14,7 +14,14 @@ const DOWNLOAD_CHUNK_SIZE = 10;
  * Download multiple images as a ZIP file with parallel downloading
  */
 export async function downloadImagesAsZip(images: ImageForZip[], zipFilename: string): Promise<void> {
-  console.log('Starting ZIP download for', images.length, 'images');
+  console.log('[downloadImagesAsZip] Starting ZIP download for', images.length, 'images');
+  
+  // Log the first few URLs to verify format
+  console.log('[downloadImagesAsZip] First 3 image URLs:');
+  images.slice(0, 3).forEach((img, index) => {
+    console.log(`[downloadImagesAsZip] ${index+1}. ID: ${img.id}, Title: ${img.title}, URL: ${img.url}`);
+    console.log(`[downloadImagesAsZip] URL contains '/JPG/': ${img.url?.includes('/JPG/') || false}`);
+  });
   
   if (!images || images.length === 0) {
     console.error('No images provided for ZIP download');
@@ -41,8 +48,9 @@ export async function downloadImagesAsZip(images: ImageForZip[], zipFilename: st
     const chunk = images.slice(i, i + DOWNLOAD_CHUNK_SIZE);
     const semaphore = createSemaphore(MAX_CONCURRENT_DOWNLOADS);
     
+    // Important: Make sure we pass each image object unmodified to processImage
     const downloadPromises = chunk.map(image => 
-      semaphore(() => processImage(image))
+      semaphore(() => processImage({...image}))
     );
     
     const results = await Promise.allSettled(downloadPromises);
@@ -78,7 +86,7 @@ export async function downloadImagesAsZip(images: ImageForZip[], zipFilename: st
       return;
     }
     
-    console.log(`Generating ZIP with ${successCount} images (${failureCount} failed)`);
+    console.log(`[downloadImagesAsZip] Generating ZIP with ${successCount} images (${failureCount} failed)`);
     
     toast.loading(`Compression du ZIP en cours...`, {
       id: 'zip-download',
@@ -115,4 +123,3 @@ export async function downloadImagesAsZip(images: ImageForZip[], zipFilename: st
     toast.error('Erreur lors de la création du fichier ZIP');
   }
 }
-

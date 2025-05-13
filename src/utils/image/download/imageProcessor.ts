@@ -13,6 +13,10 @@ export async function processImage(image: ImageForZip): Promise<DownloadResult |
   }
   
   const originalUrl = image.url;
+  console.log(`[processImage] Processing image ID: ${image.id}, Title: ${image.title}`);
+  console.log(`[processImage] Original URL: ${originalUrl}`);
+  console.log(`[processImage] URL contains '/JPG/': ${originalUrl.includes('/JPG/')}`);
+  
   let retries = 0;
   
   while (retries <= MAX_RETRIES) {
@@ -23,7 +27,11 @@ export async function processImage(image: ImageForZip): Promise<DownloadResult |
         await sleep(delay);
       }
       
-      const response = await fetchWithTimeout(originalUrl, {
+      // Don't modify the URL - use it exactly as received
+      const fetchUrl = originalUrl;
+      console.log(`[processImage] Attempting fetch with URL: ${fetchUrl}`);
+      
+      const response = await fetchWithTimeout(fetchUrl, {
         method: 'GET',
         mode: 'cors',
         cache: 'no-store',
@@ -40,6 +48,7 @@ export async function processImage(image: ImageForZip): Promise<DownloadResult |
         throw new Error(`Empty blob received for image: ${image.title || image.id}`);
       }
       
+      console.log(`[processImage] Successfully downloaded image: ${image.title || image.id}, Size: ${blob.size} bytes`);
       return { image, blob };
     } catch (error) {
       console.error(`Error downloading image ${image.title || image.id}:`, error);
@@ -50,4 +59,3 @@ export async function processImage(image: ImageForZip): Promise<DownloadResult |
   console.error(`All download attempts failed for image: ${image.title || image.id}`);
   return null;
 }
-
