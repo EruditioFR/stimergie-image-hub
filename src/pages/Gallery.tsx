@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/ui/layout/Header';
@@ -13,6 +12,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { clearAllCaches } from '@/utils/image/cacheManager';
+import { GalleryDownloadButtons } from '@/components/gallery/GalleryDownloadButtons';
 
 // Catégories pour les filtres
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
@@ -120,24 +120,36 @@ const Gallery = () => {
           userClientId={userClientId}
         />
         
-        {isAdmin && (
-          <div className="flex justify-end px-4 -mt-2 mb-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleFlushCache}
-              disabled={isFlushing}
-              className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-            >
-              {isFlushing ? 'Vidage en cours...' : (
-                <>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Vider le cache d'images
-                </>
-              )}
-            </Button>
+        <div className="flex justify-between items-center px-4 -mt-2 mb-2">
+          {displayedImages.length > 0 && (
+            <div className="text-sm text-muted-foreground">
+              {totalCount} image{totalCount > 1 ? 's' : ''} trouvée{totalCount > 1 ? 's' : ''}
+            </div>
+          )}
+          
+          <div className="flex items-center gap-4">
+            {displayedImages.length > 0 && (
+              <GalleryDownloadButtons images={displayedImages} />
+            )}
+            
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleFlushCache}
+                disabled={isFlushing}
+                className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+              >
+                {isFlushing ? 'Vidage en cours...' : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Vider le cache d'images
+                  </>
+                )}
+              </Button>
+            )}
           </div>
-        )}
+        </div>
         
         <div className="w-full px-1 py-6">
           {isLoading && allImages.length === 0 ? (
