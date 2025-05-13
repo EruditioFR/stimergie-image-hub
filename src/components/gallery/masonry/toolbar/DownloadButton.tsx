@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+
 interface DownloadButtonProps {
   isLoading: boolean;
   onClick: () => void;
@@ -10,6 +12,7 @@ interface DownloadButtonProps {
   mobileLabel?: string;
   disabled?: boolean;
 }
+
 export function DownloadButton({
   isLoading,
   onClick,
@@ -18,5 +21,22 @@ export function DownloadButton({
   mobileLabel = "Télécharger",
   disabled = false
 }: DownloadButtonProps) {
-  return;
+  return (
+    <Button 
+      onClick={onClick}
+      disabled={isLoading || disabled}
+      className="min-w-[140px] bg-primary text-white"
+    >
+      {isLoading ? (
+        <LoadingSpinner size="sm" />
+      ) : (
+        <Download className="h-4 w-4 mr-1" />
+      )}
+      <span className="hidden md:inline">{label}</span>
+      <span className="md:hidden">{mobileLabel}</span>
+      {sizeHint && <span className="hidden md:inline text-xs opacity-75 ml-1">
+        {sizeHint}
+      </span>}
+    </Button>
+  );
 }
