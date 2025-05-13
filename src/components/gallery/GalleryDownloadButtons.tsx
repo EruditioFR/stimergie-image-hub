@@ -91,7 +91,7 @@ export function GalleryDownloadButtons({ images }: GalleryDownloadButtonsProps) 
       
       toast.loading("Préparation du ZIP en cours", {
         id: "gallery-web-zip",
-        duration: Infinity
+        duration: Infinity // Use the actual number value instead of a string
       });
       
       await downloadImagesAsZip(imagesForDownload, `images_web_${Date.now()}.zip`);
@@ -182,7 +182,7 @@ export function GalleryDownloadButtons({ images }: GalleryDownloadButtonsProps) 
       
       toast.loading("Préparation du ZIP HD en cours", {
         id: "gallery-hd-zip",
-        duration: Infinity
+        duration: Infinity // Use the actual number value instead of a string
       });
       
       // Téléchargement en HD - marquage spécial pour traitement HD
