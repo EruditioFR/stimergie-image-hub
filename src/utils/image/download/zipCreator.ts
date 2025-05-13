@@ -12,15 +12,25 @@ const DOWNLOAD_CHUNK_SIZE = 10;
 
 /**
  * Download multiple images as a ZIP file with parallel downloading
+ * @param images Array of images to download
+ * @param zipFilename Name to use for the ZIP file
+ * @param isHDDownload Flag to indicate if this is an HD download (to preserve URLs)
  */
-export async function downloadImagesAsZip(images: ImageForZip[], zipFilename: string): Promise<void> {
-  console.log('[downloadImagesAsZip] Starting ZIP download for', images.length, 'images');
+export async function downloadImagesAsZip(
+  images: ImageForZip[], 
+  zipFilename: string, 
+  isHDDownload = false
+): Promise<void> {
+  console.log(`[downloadImagesAsZip] Starting ZIP download for ${images.length} images, HD mode: ${isHDDownload}`);
   
   // Log the first few URLs to verify format
   console.log('[downloadImagesAsZip] First 3 image URLs:');
   images.slice(0, 3).forEach((img, index) => {
     console.log(`[downloadImagesAsZip] ${index+1}. ID: ${img.id}, Title: ${img.title}, URL: ${img.url}`);
     console.log(`[downloadImagesAsZip] URL contains '/JPG/': ${img.url?.includes('/JPG/') || false}`);
+    if (isHDDownload && img.url?.includes('/JPG/')) {
+      console.warn(`[downloadImagesAsZip] WARNING: HD URL contains '/JPG/' segment: ${img.url}`);
+    }
   });
   
   if (!images || images.length === 0) {
@@ -48,9 +58,9 @@ export async function downloadImagesAsZip(images: ImageForZip[], zipFilename: st
     const chunk = images.slice(i, i + DOWNLOAD_CHUNK_SIZE);
     const semaphore = createSemaphore(MAX_CONCURRENT_DOWNLOADS);
     
-    // Important: Make sure we pass each image object unmodified to processImage
+    // Pass the isHDDownload flag to the processImage function
     const downloadPromises = chunk.map(image => 
-      semaphore(() => processImage({...image}))
+      semaphore(() => processImage({...image}, isHDDownload))
     );
     
     const results = await Promise.allSettled(downloadPromises);

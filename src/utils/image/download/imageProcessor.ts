@@ -6,16 +6,20 @@ import { fetchWithTimeout, FETCH_TIMEOUT, MAX_RETRIES, RETRY_DELAY, sleep } from
 /**
  * Process a single image with retries and multiple fetch strategies
  */
-export async function processImage(image: ImageForZip): Promise<DownloadResult | null> {
+export async function processImage(image: ImageForZip, isHDDownload = false): Promise<DownloadResult | null> {
   if (!image.url) {
     console.error('Missing URL for image', image.id);
     return null;
   }
   
   const originalUrl = image.url;
-  console.log(`[processImage] Processing image ID: ${image.id}, Title: ${image.title}`);
+  console.log(`[processImage] Processing image ID: ${image.id}, Title: ${image.title}, HD mode: ${isHDDownload}`);
   console.log(`[processImage] Original URL: ${originalUrl}`);
   console.log(`[processImage] URL contains '/JPG/': ${originalUrl.includes('/JPG/')}`);
+  
+  if (isHDDownload && originalUrl.includes('/JPG/')) {
+    console.warn(`[processImage] WARNING: HD download URL contains '/JPG/' segment: ${originalUrl}`);
+  }
   
   let retries = 0;
   
@@ -30,6 +34,7 @@ export async function processImage(image: ImageForZip): Promise<DownloadResult |
       // Don't modify the URL - use it exactly as received
       const fetchUrl = originalUrl;
       console.log(`[processImage] Attempting fetch with URL: ${fetchUrl}`);
+      console.log(`[processImage] Fetch URL contains '/JPG/': ${fetchUrl.includes('/JPG/')}`);
       
       const response = await fetchWithTimeout(fetchUrl, {
         method: 'GET',
