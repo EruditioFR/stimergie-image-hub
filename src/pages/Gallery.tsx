@@ -102,7 +102,7 @@ const Gallery = () => {
   return <div className="min-h-screen flex flex-col">
       <Header />
       
-      <main className="flex-grow">
+      <main className="flex-grow w-screen px-0">
         <GalleryHeader title="Banque d'images" activeTab={activeTab} onTabChange={handleTabChange} categories={categories} selectedClient={selectedClient} onClientChange={handleClientChange} selectedProject={selectedProject} onProjectChange={handleProjectChange} selectedOrientation={selectedOrientation} onOrientationChange={handleOrientationChange} userName={userProfile?.firstName || ''} userLastName={userProfile?.lastName || ''} userRole={userRole} userClientId={userClientId} />
         
         <div className="flex justify-between items-center px-4 -mt-2 mb-2">
