@@ -120,7 +120,7 @@ const Gallery = () => {
     userClientId={userClientId}
   />
 
-  <div className="flex justify-between items-center w-full px-6 -mt-2 mb-2">
+  <div className="flex justify-between items-center w-full px-0 -mt-2 mb-2">
     <div className="flex items-center gap-4">
       {displayedImages.length > 0 && <GalleryDownloadButtons images={displayedImages} />}
 
