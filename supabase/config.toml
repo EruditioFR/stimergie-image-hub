@@ -4,3 +4,4 @@
 
 [functions.generate-hd-zip]
 verify_jwt = true
+
