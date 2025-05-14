@@ -1,93 +1,69 @@
 
-/**
- * Vérifie si une URL pointe vers une image JPG
- * @param url URL à vérifier
- * @returns boolean
- */
-export function isJpgUrl(url: string): boolean {
-  if (!url) return false;
-  
-  try {
-    // Vérifier si l'URL contient le segment /JPG/ ou se termine par .jpg ou .jpeg
-    const lowercaseUrl = url.toLowerCase();
-    
-    return (
-      lowercaseUrl.includes('/jpg/') || 
-      lowercaseUrl.endsWith('.jpg') || 
-      lowercaseUrl.endsWith('.jpeg')
-    );
-  } catch (error) {
-    console.warn('Erreur lors de la vérification du format JPG:', error);
-    return false;
-  }
-}
+// Network utilities for download operations
+export const FETCH_TIMEOUT = 30000; // 30 seconds
+export const MAX_RETRIES = 3;
+export const RETRY_DELAY = 1000; // 1 second delay between retries
 
 /**
- * Transforme une URL JPG standard en URL HD en supprimant le segment /JPG/
- * @param url URL JPG à transformer
- * @returns URL HD
+ * Sleep function to pause execution
  */
-export function transformToHDUrl(url: string): string {
-  if (url && url.includes('/JPG/')) {
-    return url.replace('/JPG/', '/');
-  }
-  return url;
-}
-
-/**
- * Options pour les requêtes fetch
- */
-export const fetchOptions = {
-  headers: {
-    'Accept': 'image/jpeg,image/jpg,image/*',
-    'User-Agent': 'Image Downloader Client'
-  },
-  mode: 'cors' as RequestMode,
-  cache: 'no-store' as RequestCache
+export const sleep = (ms: number): Promise<void> => {
+  return new Promise(resolve => setTimeout(resolve, ms));
 };
 
 /**
- * Constants for request timeouts and retries
- */
-export const FETCH_TIMEOUT = 30000; // 30 seconds timeout
-export const MAX_RETRIES = 3; // Number of retry attempts
-export const RETRY_DELAY = 1000; // Base delay in ms between retries
-
-/**
- * Sleep utility function to pause execution
- * @param ms Milliseconds to sleep
- */
-export function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/**
- * Fetch with timeout functionality
- * @param resource The resource to fetch
- * @param options Fetch options
- * @param timeoutMs Timeout in milliseconds
+ * Fetches URL with timeout
  */
 export async function fetchWithTimeout(
-  resource: RequestInfo | URL,
-  options: RequestInit = {},
+  url: string, 
+  options: RequestInit = {}, 
   timeoutMs: number = FETCH_TIMEOUT
 ): Promise<Response> {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
+  const { signal } = controller;
   
-  try {
-    const response = await fetch(resource, {
-      ...options,
-      signal: controller.signal
-    });
-    
-    clearTimeout(id);
-    return response;
-  } catch (error) {
-    clearTimeout(id);
-    if ((error as Error).name === 'AbortError') {
-      throw new Error(`Request timed out after ${timeoutMs}ms`);
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      controller.abort();
+      reject(new Error(`Request timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+  
+  return Promise.race([
+    fetch(url, { ...options, signal }),
+    timeoutPromise
+  ]) as Promise<Response>;
+}
+
+/**
+ * Fetches with retry logic
+ */
+export async function fetchWithRetry(
+  url: string,
+  options: RequestInit = {},
+  retries: number = MAX_RETRIES,
+  delayMs: number = RETRY_DELAY
+): Promise<Response> {
+  let lastError: Error | undefined;
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      if (attempt > 0) {
+        console.log(`Retry attempt ${attempt} for ${url}`);
+        await sleep(delayMs * attempt); // Progressive delay
+      }
+      
+      const response = await fetchWithTimeout(url, options);
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error(`Fetch error (attempt ${attempt + 1}/${retries + 1}):`, error);
+      lastError = error as Error;
     }
-    throw error;
   }
+  
+  throw lastError || new Error(`Failed to fetch ${url} after ${retries} retries`);
 }

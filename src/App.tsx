@@ -1,3 +1,4 @@
+
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Auth from './pages/Auth';
@@ -38,6 +39,8 @@ function App() {
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/" element={<Index />} />
                 <Route path="/ensemble/:ensembleId" element={<Ensemble />} />
+                {/* Add the new route for gallery without parameters */}
+                <Route path="/gallery" element={<Gallery />} />
                 <Route path="/gallery/:ensembleId" element={<Gallery />} />
                 <Route path="/shared/:albumId" element={<SharedAlbum />} />
                 <Route path="/image/:imageId" element={<ImageView />} />

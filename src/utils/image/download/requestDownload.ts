@@ -1,57 +1,86 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-export interface DownloadRequestOptions {
+/**
+ * Interface for download request parameters
+ */
+export interface DownloadRequestParams {
   imageId: string;
-  imageTitle: string;
   imageSrc: string;
+  imageTitle: string;
   isHD?: boolean;
 }
 
 /**
- * Prepare a download file by requesting it from the backend
- * Returns a Promise that resolves to true if the request was successful
+ * Creates a download request in the database
  */
-export async function prepareDownloadFile(options: DownloadRequestOptions): Promise<boolean> {
-  const { imageId, imageTitle, imageSrc, isHD = false } = options;
-  
+export async function requestDownload({
+  imageId,
+  imageSrc,
+  imageTitle,
+  isHD = false
+}: DownloadRequestParams): Promise<{success: boolean, downloadId?: string}> {
   try {
-    console.log(`Requesting ${isHD ? 'HD' : 'standard'} download for image: ${imageTitle}`);
-    
-    // Call the Edge Function to generate the ZIP file with just this image
-    const { data, error } = await supabase.functions.invoke('generate-zip', {
-      body: {
-        images: [{
-          id: imageId,
-          url: imageSrc,
-          title: imageTitle
-        }],
-        userId: supabase.auth.getUser().then(res => res.data.user?.id),
-        isHD: isHD
-      }
-    });
-    
-    if (error) {
-      console.error("Error calling generate-zip function:", error);
-      throw new Error("Erreur lors de la préparation du téléchargement");
+    if (!imageId || !imageSrc) {
+      toast.error("Informations d'image manquantes");
+      return { success: false };
     }
     
-    console.log("Download request response:", data);
-    return true;
+    const { data, error } = await supabase
+      .from('download_requests')
+      .insert({
+        image_id: imageId,
+        image_src: imageSrc,
+        image_title: imageTitle || `image-${imageId}`,
+        is_hd: isHD,
+        status: 'pending'
+      })
+      .select('id')
+      .single();
+      
+    if (error) {
+      console.error('Error creating download request:', error);
+      toast.error("Erreur lors de la création de la demande de téléchargement");
+      return { success: false };
+    }
+    
+    return { 
+      success: true,
+      downloadId: data.id
+    };
   } catch (error) {
-    console.error("Error requesting download:", error);
-    toast.error("Erreur de préparation", {
-      description: "Impossible de préparer le téléchargement. Veuillez réessayer plus tard."
-    });
-    return false;
+    console.error('Error in requestDownload:', error);
+    toast.error("Erreur lors de la création de la demande de téléchargement");
+    return { success: false };
   }
 }
 
 /**
- * Legacy function for requesting image download
- * @deprecated Use prepareDownloadFile instead
+ * Check the status of a download request
  */
-export async function requestImageDownload(options: DownloadRequestOptions): Promise<boolean> {
-  return prepareDownloadFile(options);
+export async function checkDownloadStatus(downloadId: string): Promise<{
+  status: string;
+  downloadUrl?: string;
+}> {
+  try {
+    const { data, error } = await supabase
+      .from('download_requests')
+      .select('status, download_url')
+      .eq('id', downloadId)
+      .single();
+      
+    if (error) {
+      console.error('Error checking download status:', error);
+      return { status: 'error' };
+    }
+    
+    return { 
+      status: data.status,
+      downloadUrl: data.download_url
+    };
+  } catch (error) {
+    console.error('Error in checkDownloadStatus:', error);
+    return { status: 'error' };
+  }
 }
