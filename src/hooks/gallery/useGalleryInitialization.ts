@@ -5,7 +5,7 @@ interface GalleryInitializationProps {
   resetPagination: (useRandomMode?: boolean) => void;
   updateRandomFetchMode: (randomMode: boolean) => void;
   updateFilterStatus: (searchQuery: string, tagFilter: string) => void;
-  enforceClientForNonAdmin: () => void;
+  enforceClientForNonAdmin: () => string | null;
   searchQuery: string;
   tagFilter: string;
   activeTab: string;
@@ -35,8 +35,12 @@ export const useGalleryInitialization = ({
 
   // Enforce client filter for non-admin users
   useEffect(() => {
-    enforceClientForNonAdmin();
-  }, [enforceClientForNonAdmin, userRole]);
+    const forcedClientId = enforceClientForNonAdmin();
+    if (forcedClientId && selectedClient !== forcedClientId) {
+      console.log(`Forcing client filter to ${forcedClientId} for ${userRole} role`);
+      baseHandleClientChange(forcedClientId);
+    }
+  }, [enforceClientForNonAdmin, userRole, selectedClient, baseHandleClientChange]);
 
   // Initial filters setup and random mode determination
   useEffect(() => {
@@ -80,7 +84,8 @@ export const useGalleryInitialization = ({
     selectedClient, 
     selectedProject,
     selectedOrientation,
-    resetPagination
+    resetPagination,
+    currentPage
   ]);
 
   return {};

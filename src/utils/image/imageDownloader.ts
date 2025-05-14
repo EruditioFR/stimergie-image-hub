@@ -4,4 +4,4 @@
  */
 
 export * from './download';
-
+export * from './types';

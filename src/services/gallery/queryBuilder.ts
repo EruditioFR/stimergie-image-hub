@@ -17,7 +17,7 @@ export async function buildGalleryQuery(
 ) {
   console.log(`Building gallery query for user role: ${userRole}, client ID: ${userClientId}`);
   
-  // For admin_client and regular users, always filter by their client ID
+  // For non-admin users, always filter by their client ID
   if (['admin_client', 'user'].includes(userRole) && userClientId) {
     console.log('Non-admin user detected, forcing client filter:', userClientId);
     client = userClientId;

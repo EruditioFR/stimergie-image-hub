@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from '@/context/AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { fetchClients } from '@/services/clientService';
 import { Client } from '@/types/user';
 
@@ -25,6 +25,7 @@ export function ClientsFilter({ selectedClient, onClientChange, className, userR
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
+  const isRegularUser = userRole === 'user';
   const isAdminClient = userRole === 'admin_client';
   
   useEffect(() => {
@@ -35,12 +36,12 @@ export function ClientsFilter({ selectedClient, onClientChange, className, userR
         
         const clientsData = await fetchClients();
         
-        // If admin_client, filter to only show their client
-        if (isAdminClient && userClientId) {
+        // Si c'est un utilisateur régulier ou admin client, filtrer pour n'afficher que leur client
+        if ((isRegularUser || isAdminClient) && userClientId) {
           const filteredClients = clientsData.filter(client => client.id === userClientId);
           setClients(filteredClients);
           
-          // Auto-select the client
+          // Auto-sélectionner le client
           if (filteredClients.length === 1 && selectedClient !== userClientId) {
             onClientChange(userClientId);
           }
@@ -50,7 +51,6 @@ export function ClientsFilter({ selectedClient, onClientChange, className, userR
       } catch (error) {
         console.error('Error loading clients:', error);
         toast({
-          variant: "destructive",
           title: "Erreur",
           description: "Impossible de charger la liste des clients"
         });
@@ -60,21 +60,21 @@ export function ClientsFilter({ selectedClient, onClientChange, className, userR
     };
     
     loadClients();
-  }, [userRole, userClientId, user, onClientChange, isAdminClient, selectedClient]);
+  }, [userRole, userClientId, user, onClientChange, isRegularUser, isAdminClient, selectedClient]);
   
   const handleValueChange = (value: string) => {
-    // Don't allow admin_client users to change their client
-    if (isAdminClient) {
-      console.log("Admin client users cannot change their client filter");
+    // Ne pas autoriser les utilisateurs réguliers ou admin client à changer leur client
+    if (isRegularUser || isAdminClient) {
+      console.log("Users with role 'user' or 'admin_client' cannot change their client filter");
       return;
     }
     
-    // Immediately trigger client change to optimize loading
+    // Déclencher immédiatement le changement de client pour optimiser le chargement
     console.log(`Client filter changed to: ${value}`);
     onClientChange(value === 'all' ? null : value);
   };
   
-  // If no clients are available and we're not loading, don't show the filter
+  // Si aucun client n'est disponible et que nous ne sommes pas en train de charger, ne pas afficher le filtre
   if (clients.length === 0 && !isLoading) {
     return null;
   }
@@ -84,14 +84,14 @@ export function ClientsFilter({ selectedClient, onClientChange, className, userR
       <Select 
         value={selectedClient || 'all'} 
         onValueChange={handleValueChange}
-        disabled={isLoading || isAdminClient}
+        disabled={isLoading || isRegularUser || isAdminClient}
       >
         <SelectTrigger className="w-full sm:w-[200px]">
           <SelectValue placeholder="Filtrer par client" />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            {!isAdminClient && <SelectItem value="all">Tous les clients</SelectItem>}
+            {!isRegularUser && !isAdminClient && <SelectItem value="all">Tous les clients</SelectItem>}
             {clients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.nom}

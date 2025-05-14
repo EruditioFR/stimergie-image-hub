@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/ui/layout/Header';
@@ -105,13 +106,27 @@ const Gallery = () => {
       setIsFlushing(false);
     }
   }, [refreshGallery]);
+  
   return <div className="min-h-screen flex flex-col">
       <Header />
       
       <main className="flex-grow w-screen px-0">
   <GalleryHeader title="Banque d'images" activeTab={activeTab} onTabChange={handleTabChange} categories={categories} selectedClient={selectedClient} onClientChange={handleClientChange} selectedProject={selectedProject} onProjectChange={handleProjectChange} selectedOrientation={selectedOrientation} onOrientationChange={handleOrientationChange} userName={userProfile?.firstName || ''} userLastName={userProfile?.lastName || ''} userRole={userRole} userClientId={userClientId} />
 
-  
+  {isAdmin && (
+    <div className="flex justify-end px-4 mb-2">
+      <Button
+        variant="outline" 
+        size="sm"
+        disabled={isFlushing}
+        onClick={handleFlushCache}
+        className="flex items-center gap-1"
+      >
+        <Trash2 className="h-4 w-4" /> 
+        {isFlushing ? 'Vidage en cours...' : 'Vider le cache d\'images'}
+      </Button>
+    </div>
+  )}
 
   <div className="w-full px-0 py-0">
     {isLoading && allImages.length === 0 ? <MasonryGrid images={[]} isLoading={true} /> : displayedImages.length > 0 ? <MasonryGrid images={formattedImages} isLoading={isLoading || isFetching} hasMorePages={hasMorePages} loadMoreImages={loadMoreImages} selectedImages={selectedImages} onImageSelect={toggleImageSelection} onClearSelection={clearSelection} /> : <EmptyResults onReset={handleResetFilters} hasFilters={hasActiveFilters} />}
