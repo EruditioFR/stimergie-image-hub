@@ -1,11 +1,11 @@
-
-import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Index from './pages/Index';
-import Resources from './pages/Resources';
-import Gallery from './pages/Gallery';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Auth from './pages/Auth';
-import NotFound from './pages/NotFound';
+import Index from './pages/Index';
+import Ensemble from './pages/Ensemble';
+import Gallery from './pages/Gallery';
+import ImageView from './pages/ImageView';
+import Images from './pages/Images';
 import { AuthProvider } from './context/AuthContext';
 import { ImageProvider } from './context/ImageContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -13,9 +13,9 @@ import { LoadingScreen } from './components/ui/LoadingScreen';
 import Projects from './pages/Projects';
 import Clients from './pages/Clients';
 import Users from './pages/Users';
-import Images from './pages/Images';
+import NotFound from './pages/NotFound';
+import Resources from './pages/Resources';
 import Downloads from './pages/Downloads';
-import Ensemble from './pages/Ensemble';
 import BlogEditor from './pages/BlogEditor';
 import BlogPost from './pages/BlogPost';
 import ResetPassword from './pages/ResetPassword';
@@ -23,82 +23,72 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import SharedAlbum from './pages/SharedAlbum';
 import './App.css';
 
-// Initialize the query client with default options
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000,  // 10 minutes
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+// Create a client
+const queryClient = new QueryClient();
 
 function App() {
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Simulate app initialization
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ImageProvider>
           <Router>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/resources" element={<Resources />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/gallery" element={<Gallery />} />
-              <Route path="/images" element={<Images />} />
-              <Route path="/downloads" element={<Downloads />} />
-              <Route path="/album/:shareKey" element={<SharedAlbum />} />
-              <Route path="/ensemble" element={<Ensemble />} />
-              
-              <Route path="/blog/edit/:id" element={
-                <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
-                  <BlogEditor />
-                </ProtectedRoute>
-              } />
-              <Route path="/blog/new" element={
-                <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
-                  <BlogEditor />
-                </ProtectedRoute>
-              } />
-              <Route path="/blog/:slug" element={<BlogPost />} />
-              
-              <Route path="/projects" element={
-                <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
-                  <Projects />
-                </ProtectedRoute>
-              } />
-              <Route path="/clients" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <Clients />
-                </ProtectedRoute>
-              } />
-              <Route path="/users" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <Users />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/404" element={<NotFound />} />
-              <Route path="*" element={<Navigate to="/404" />} />
-            </Routes>
+            <Suspense fallback={<LoadingScreen />}>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/" element={<Index />} />
+                <Route path="/ensemble/:ensembleId" element={<Ensemble />} />
+                <Route path="/gallery/:ensembleId" element={<Gallery />} />
+                <Route path="/shared/:albumId" element={<SharedAlbum />} />
+                <Route path="/image/:imageId" element={<ImageView />} />
+
+                <Route path="/blog/:blogId" element={<BlogPost />} />
+
+                <Route path="/downloads" element={
+                  <ProtectedRoute>
+                    <Downloads />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/images" element={
+                  <ProtectedRoute>
+                    <Images />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/projects" element={
+                  <ProtectedRoute>
+                    <Projects />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/clients" element={
+                  <ProtectedRoute>
+                    <Clients />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/users" element={
+                  <ProtectedRoute>
+                    <Users />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/resources" element={
+                  <ProtectedRoute>
+                    <Resources />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/blog-editor" element={
+                  <ProtectedRoute>
+                    <BlogEditor />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
           </Router>
         </ImageProvider>
       </AuthProvider>
