@@ -7,6 +7,7 @@ import { ToolbarContainer } from './ToolbarContainer';
 import { useAuth } from '@/context/AuthContext';
 import { useImageDownloader } from '@/hooks/downloads/useImageDownloader';
 import { toast } from 'sonner';
+import { UploadProgressModal } from '../../modals/UploadProgressModal';
 
 interface MasonryToolbarContentProps {
   selectedImages: string[];
@@ -26,7 +27,10 @@ export function MasonryToolbarContent({
     isDownloadingSD, 
     isDownloadingHD, 
     downloadStandard, 
-    downloadHD 
+    downloadHD,
+    showUploadModal,
+    isUploadComplete,
+    closeUploadModal
   } = useImageDownloader({ user, images });
 
   const openShareDialog = () => {
@@ -39,17 +43,25 @@ export function MasonryToolbarContent({
   };
 
   return (
-    <ToolbarContainer>
-      <SelectionInfo count={selectedImages.length} onClear={clearSelection} />
-      
-      <ImageToolbarActions
-        isDownloadingSD={isDownloadingSD}
-        isDownloadingHD={isDownloadingHD}
-        onDownloadSD={() => downloadStandard(selectedImages)}
-        onDownloadHD={() => downloadHD(selectedImages)}
-        onShare={openShareDialog}
-        selectedCount={selectedImages.length}
+    <>
+      <ToolbarContainer>
+        <SelectionInfo count={selectedImages.length} onClear={clearSelection} />
+        
+        <ImageToolbarActions
+          isDownloadingSD={isDownloadingSD}
+          isDownloadingHD={isDownloadingHD}
+          onDownloadSD={() => downloadStandard(selectedImages)}
+          onDownloadHD={() => downloadHD(selectedImages)}
+          onShare={openShareDialog}
+          selectedCount={selectedImages.length}
+        />
+      </ToolbarContainer>
+
+      <UploadProgressModal 
+        isOpen={showUploadModal}
+        onClose={closeUploadModal}
+        isComplete={isUploadComplete}
       />
-    </ToolbarContainer>
+    </>
   );
 }

@@ -6,9 +6,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
-import { updateDownloadStatus } from "./storageUtils";
 import JSZip from "jszip";
-import { uploadZipToO2Switch, getO2SwitchFileUrl } from "./o2switchUploader";
+import { uploadZipToO2Switch } from "./o2switchUploader";
 import { ImageForZip } from "./types";
 
 /**
@@ -16,30 +15,33 @@ import { ImageForZip } from "./types";
  * @param user Utilisateur actuel
  * @param images Images à télécharger
  * @param isHD Indique si c'est un téléchargement HD
- * @param redirectToDownloads Flag pour rediriger vers la page de téléchargements après soumission
+ * @param showToasts Flag pour afficher/masquer les toasts (utile quand on utilise un modal)
  * @returns true si la demande a été traitée avec succès, false sinon
  */
 export async function requestServerDownload(
   user: User | null,
   images: ImageForZip[],
   isHD = false,
-  redirectToDownloads = false
+  showToasts = true
 ): Promise<boolean> {
   if (!user) {
-    toast.error("Vous devez être connecté pour utiliser cette fonctionnalité");
+    if (showToasts) toast.error("Vous devez être connecté pour utiliser cette fonctionnalité");
     return false;
   }
 
   if (!images || images.length === 0) {
-    toast.error("Aucune image sélectionnée pour le téléchargement");
+    if (showToasts) toast.error("Aucune image sélectionnée pour le téléchargement");
     return false;
   }
 
   // Afficher le toast pendant le traitement
-  toast.loading("Préparation de votre demande...", {
-    id: "download-request",
-    duration: Infinity
-  });
+  const toastId = "download-request";
+  if (showToasts) {
+    toast.loading("Préparation de votre demande...", {
+      id: toastId,
+      duration: Infinity
+    });
+  }
 
   try {
     // 1. Créer l'enregistrement dans la base de données
@@ -59,8 +61,10 @@ export async function requestServerDownload(
 
     if (recordError) {
       console.error("Erreur lors de la création de la demande:", recordError);
-      toast.dismiss("download-request");
-      toast.error("Échec de l'enregistrement de la demande");
+      if (showToasts) {
+        toast.dismiss(toastId);
+        toast.error("Échec de l'enregistrement de la demande");
+      }
       return false;
     }
 
@@ -110,17 +114,21 @@ export async function requestServerDownload(
         });
         
         // Mettre à jour le toast pendant le traitement
-        toast.loading(`Préparation : ${Math.min((i + BATCH_SIZE), images.length)}/${images.length}`, {
-          id: "download-request",
-          duration: Infinity
-        });
+        if (showToasts) {
+          toast.loading(`Préparation : ${Math.min((i + BATCH_SIZE), images.length)}/${images.length}`, {
+            id: toastId,
+            duration: Infinity
+          });
+        }
       }
 
       // 2.2 Générer le ZIP
-      toast.loading("Compression du ZIP...", {
-        id: "download-request",
-        duration: Infinity
-      });
+      if (showToasts) {
+        toast.loading("Compression du ZIP...", {
+          id: toastId,
+          duration: Infinity
+        });
+      }
       
       const zipBlob = await zip.generateAsync({
         type: "blob",
@@ -134,10 +142,12 @@ export async function requestServerDownload(
       const zipFileName = `${isHD ? 'hd-' : ''}images_${dateStr}_${recordData.id}.zip`;
 
       // 2.4 Uploader le ZIP vers O2Switch
-      toast.loading("Envoi vers le serveur...", {
-        id: "download-request",
-        duration: Infinity
-      });
+      if (showToasts) {
+        toast.loading("Envoi vers le serveur...", {
+          id: toastId,
+          duration: Infinity
+        });
+      }
       
       const downloadUrl = await uploadZipToO2Switch(zipBlob, zipFileName);
       
@@ -162,11 +172,13 @@ export async function requestServerDownload(
       }
       
       // 2.6 Afficher le message de succès
-      toast.dismiss("download-request");
-      toast.success("Téléchargement prêt", {
-        description: `Votre archive de ${images.length} images est prête.`,
-        duration: 5000
-      });
+      if (showToasts) {
+        toast.dismiss(toastId);
+        toast.success("Téléchargement prêt", {
+          description: `Votre archive de ${images.length} images est prête.`,
+          duration: 5000
+        });
+      }
       
       return true;
 
@@ -183,20 +195,25 @@ export async function requestServerDownload(
         })
         .eq("id", recordData.id);
       
-      toast.dismiss("download-request");
-      toast.error("Échec de la préparation du téléchargement", {
-        description: err instanceof Error ? err.message : "Une erreur inconnue est survenue"
-      });
+      if (showToasts) {
+        toast.dismiss(toastId);
+        toast.error("Échec de la préparation du téléchargement", {
+          description: err instanceof Error ? err.message : "Une erreur inconnue est survenue"
+        });
+      }
       
       return false;
     }
 
   } catch (error) {
     console.error("Erreur globale:", error);
-    toast.dismiss("download-request");
-    toast.error("Échec du téléchargement", {
-      description: "Une erreur inattendue est survenue"
-    });
+    
+    if (showToasts) {
+      toast.dismiss(toastId);
+      toast.error("Échec du téléchargement", {
+        description: "Une erreur inattendue est survenue"
+      });
+    }
     
     return false;
   }

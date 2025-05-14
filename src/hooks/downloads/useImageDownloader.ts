@@ -8,6 +8,7 @@ import { validateImageUrl } from '@/utils/image/errorHandler';
 import { isJpgUrl, transformToHDUrl } from '@/utils/image/download/networkUtils';
 import { User } from '@supabase/supabase-js';
 import { useHDDownloader } from './useHDDownloader';
+import { requestServerDownload } from '@/utils/image/download/requestDownload';
 
 type ImageDownloadType = 'standard' | 'hd';
 
@@ -19,6 +20,8 @@ interface UseImageDownloaderProps {
 export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) => {
   const [isDownloadingSD, setIsDownloadingSD] = useState(false);
   const { isDownloading: isDownloadingHD, downloadHD } = useHDDownloader();
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [isUploadComplete, setIsUploadComplete] = useState(false);
   
   const prepareImagesForDownload = (selectedImageIds: string[], isHD: boolean) => {
     // Filter images by selected IDs
@@ -131,25 +134,40 @@ export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) =>
         toast.warning("Téléchargement partiel", { description: message });
       }
       
-      // Start toast notification
-      toast.loading("Préparation du téléchargement", {
-        id: "zip-preparation",
-        duration: Infinity
-      });
-      
-      // Generate zip filename
-      const zipName = `images_${Date.now()}.zip`;
-      
-      // Download images as zip
-      await downloadImagesAsZip(imagesForDownload, zipName, false);
-      
-      toast.dismiss("zip-preparation");
+      // Determine if we should use server-side download
+      if (imagesForDownload.length >= 10) {
+        // Pour 10+ images, utiliser le téléchargement côté serveur
+        setShowUploadModal(true);
+        const result = await requestServerDownload(user, imagesForDownload, false, false);
+        
+        if (result) {
+          setIsUploadComplete(true);
+        } else {
+          setShowUploadModal(false);
+          throw new Error("Échec du traitement de la demande");
+        }
+      } else {
+        // Start toast notification
+        toast.loading("Préparation du téléchargement", {
+          id: "zip-preparation",
+          duration: Infinity
+        });
+        
+        // Generate zip filename
+        const zipName = `images_${Date.now()}.zip`;
+        
+        // Download images as zip
+        await downloadImagesAsZip(imagesForDownload, zipName, false);
+        
+        toast.dismiss("zip-preparation");
+      }
       
     } catch (error) {
       console.error(`Error during standard download:`, error);
       toast.error(`Erreur lors du téléchargement`, {
         description: "Une erreur est survenue lors du téléchargement des images."
       });
+      setShowUploadModal(false);
     } finally {
       setIsDownloadingSD(false);
     }
@@ -157,13 +175,31 @@ export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) =>
   
   // Le téléchargement HD utilise maintenant le hook useHDDownloader
   const handleHDDownload = async (selectedImageIds: string[]) => {
-    await downloadHD(user, images, selectedImageIds);
+    if (selectedImageIds.length >= 5) {
+      setShowUploadModal(true);
+      const result = await downloadHD(user, images, selectedImageIds, true);
+      if (result) {
+        setIsUploadComplete(true);
+      } else {
+        setShowUploadModal(false);
+      }
+    } else {
+      await downloadHD(user, images, selectedImageIds);
+    }
+  };
+
+  const closeUploadModal = () => {
+    setShowUploadModal(false);
+    setIsUploadComplete(false);
   };
   
   return {
     isDownloadingSD,
     isDownloadingHD,
     downloadStandard,
-    downloadHD: handleHDDownload
+    downloadHD: handleHDDownload,
+    showUploadModal,
+    isUploadComplete,
+    closeUploadModal
   };
 };

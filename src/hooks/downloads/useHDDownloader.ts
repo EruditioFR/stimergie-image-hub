@@ -1,207 +1,135 @@
+
 import { useState } from 'react';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Image } from '@/utils/image/types';
-import { validateImageUrl } from '@/utils/image/errorHandler';
-import { isJpgUrl } from '@/utils/image/download/networkUtils';
-import { transformToHDUrl } from '@/utils/image/download/networkUtils';
-import { downloadImagesAsZip } from '@/utils/image/download';
-import { requestServerDownload } from '@/utils/image/download/requestDownload';
 import { User } from '@supabase/supabase-js';
+import { toast } from 'sonner';
+import { Image } from '@/utils/image/types';
+import { requestServerDownload } from '@/utils/image/download/requestDownload';
+import { downloadImage } from '@/utils/image/download';
+import { generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
+import { transformToHDUrl } from '@/utils/image/download/networkUtils';
 
-// Seuil à partir duquel on utilise le serveur pour les téléchargements HD
-const SERVER_DOWNLOAD_THRESHOLD = 3;
-
-interface UseHDDownloaderOptions {
-  redirectOnComplete?: boolean;
-}
-
-export function useHDDownloader(options?: UseHDDownloaderOptions) {
+export function useHDDownloader() {
   const [isDownloading, setIsDownloading] = useState(false);
-  const navigate = useNavigate();
-  const redirectOnComplete = options?.redirectOnComplete !== false;
 
-  /**
-   * Prépare les données des images pour le téléchargement HD
-   */
-  const prepareImagesForHDDownload = (images: Image[], selectedIds: string[]) => {
-    // Filtrer les images par ID sélectionnés
-    const selectedImages = images.filter(img => selectedIds.includes(img.id));
-    console.log(`Préparation de ${selectedImages.length} images pour téléchargement HD`);
-    
-    // Créer un tableau pour les images valides
-    const preparedImages = [];
-    const failedImages = [];
-    
-    for (const img of selectedImages) {
-      // Extraire le nom du dossier à partir des données du projet
-      let folderName = "";
-      if (img.projets?.nom_dossier) {
-        folderName = img.projets.nom_dossier;
-      } else if (img.id_projet) {
-        folderName = `project-${img.id_projet}`;
-      }
-      
-      const imageTitle = img.title || `image-${img.id}`;
-      
-      // Commencer par l'URL stockée ou générée
-      let imageUrl = img.url || '';
-      
-      // Transformer en URL HD en supprimant /JPG/ si présent
-      if (imageUrl.includes('/JPG/')) {
-        imageUrl = transformToHDUrl(imageUrl);
-      }
-      
-      // En dernier recours: utiliser n'importe quelle URL disponible
-      if (!imageUrl && img.display_url) {
-        imageUrl = img.display_url;
-      } else if (!imageUrl && img.src) {
-        imageUrl = img.src;
-      }
-      
-      // Valider l'URL avant de l'ajouter
-      const validationResult = validateImageUrl(imageUrl, img.id, imageTitle);
-      if (validationResult.isValid && validationResult.url) {
-        preparedImages.push({
-          id: img.id,
-          url: validationResult.url,
-          title: imageTitle
-        });
-      } else {
-        console.warn(`Image exclue du téléchargement HD: ${validationResult.error}`);
-        failedImages.push(imageTitle);
-      }
+  const downloadHD = async (
+    user: User | null, 
+    allImages: Image[], 
+    selectedIds: string[],
+    showModal = false
+  ): Promise<boolean> => {
+    if (selectedIds.length === 0) {
+      toast.error('Veuillez sélectionner au moins une image');
+      return false;
     }
-    
-    return { preparedImages, failedImages };
-  };
 
-  /**
-   * Télécharge directement les images HD en local (pour les petits volumes)
-   */
-  const downloadHDLocally = async (images: Image[], selectedIds: string[]) => {
-    try {
-      // Préparer les images pour téléchargement
-      const { preparedImages, failedImages } = prepareImagesForHDDownload(images, selectedIds);
-      
-      if (preparedImages.length === 0) {
-        toast.error("Aucune image valide à télécharger en HD");
-        return;
-      }
-      
-      // Afficher un avertissement si certaines images ont échoué
-      if (failedImages.length > 0) {
-        const message = failedImages.length === 1 
-          ? "Une image a été exclue du téléchargement HD en raison d'une URL invalide." 
-          : `${failedImages.length} images ont été exclues du téléchargement HD en raison d'URLs invalides.`;
-          
-        toast.warning("Téléchargement HD partiel", { description: message });
-      }
-      
-      // Définir le nom du fichier ZIP
-      const zipName = `images_hd_${Date.now()}.zip`;
-      
-      // Afficher un toast de préparation
-      toast.loading("Préparation du ZIP HD en cours", {
-        id: "zip-hd-preparation",
-        duration: Infinity
-      });
-      
-      // Télécharger les images HD
-      await downloadImagesAsZip(preparedImages, zipName, true);
-      
-      // Fermer le toast de préparation
-      toast.dismiss("zip-hd-preparation");
-      toast.success("Images HD téléchargées avec succès");
-      
-    } catch (error) {
-      console.error("Erreur lors du téléchargement HD local:", error);
-      toast.error("Erreur lors du téléchargement HD", {
-        description: "Une erreur est survenue lors du téléchargement des images HD."
-      });
+    if (!user) {
+      toast.error('Vous devez être connecté pour télécharger des images HD');
+      return false;
     }
-  };
 
-  /**
-   * Demande au serveur de créer un zip HD (pour les gros volumes)
-   * Utilise maintenant O2Switch plutôt que supabase.functions
-   */
-  const requestServerHDZip = async (user: User, images: Image[], selectedIds: string[]) => {
+    if (isDownloading) {
+      toast.info('Un téléchargement HD est déjà en cours');
+      return false;
+    }
+
+    setIsDownloading(true);
+
     try {
-      // Préparer les images pour téléchargement
-      const { preparedImages, failedImages } = prepareImagesForHDDownload(images, selectedIds);
-      
-      if (preparedImages.length === 0) {
-        toast.error("Aucune image valide à télécharger en HD");
-        return;
-      }
-      
-      // Afficher un avertissement si certaines images ont échoué
-      if (failedImages.length > 0) {
-        const message = failedImages.length === 1 
-          ? "Une image a été exclue du téléchargement HD en raison d'une URL invalide." 
-          : `${failedImages.length} images ont été exclues du téléchargement HD en raison d'URLs invalides.`;
-          
-        toast.warning("Téléchargement HD partiel", { description: message });
-      }
-      
-      // Utiliser la nouvelle méthode pour le téléchargement serveur
-      const success = await requestServerDownload(user, preparedImages, true, redirectOnComplete);
-      
-      // Si le téléchargement a réussi et que la redirection est activée, naviguer vers la page des téléchargements
-      if (success && redirectOnComplete) {
-        toast.success('Téléchargement HD en préparation', {
-          description: `Votre archive de ${preparedImages.length} images est en cours de préparation. Vous retrouverez votre téléchargement dans la page dédiée.`,
-          action: {
-            label: 'Voir mes téléchargements',
-            onClick: () => navigate('/downloads')
-          },
-          duration: 6000
+      // Filtrer les images sélectionnées
+      const selectedImages = allImages.filter(img => selectedIds.includes(img.id));
+      console.log(`Processing ${selectedImages.length} images for HD download`);
+
+      // Si une seule image est sélectionnée, téléchargement direct
+      if (selectedImages.length === 1) {
+        const image = selectedImages[0];
+        const title = image.title || `image_${image.id}`;
+        
+        // Déterminer l'URL HD
+        let hdUrl = image.download_url || '';
+        
+        // Si on a un dossier projet, générer l'URL HD explicite
+        if (image.projets?.nom_dossier) {
+          hdUrl = generateDownloadImageHDUrl(image.projets.nom_dossier, title);
+        } 
+        // Sinon, essayer de transformer l'URL existante
+        else if (image.url && image.url.includes('/JPG/')) {
+          hdUrl = transformToHDUrl(image.url);
+        }
+        
+        if (!hdUrl) {
+          throw new Error('URL HD indisponible pour cette image');
+        }
+
+        const filename = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg`;
+        
+        toast.loading('Préparation du téléchargement HD', {
+          id: 'hd-download',
+          duration: Infinity
         });
         
-        setTimeout(() => {
-          navigate('/downloads');
-        }, 1500);
-      }
-      
-    } catch (error) {
-      console.error("Erreur lors de la demande de ZIP HD serveur:", error);
-      toast.error("Erreur lors de la préparation du téléchargement HD", {
-        description: error instanceof Error ? error.message : "Une erreur technique est survenue"
-      });
-    }
-  };
+        await downloadImage(hdUrl, filename, 'jpg', true);
+        
+        toast.dismiss('hd-download');
+        toast.success('Image HD téléchargée');
+        
+        return true;
+      } 
+      // Sinon, préparation d'une archive ZIP
+      else {
+        const imagesForZip = selectedImages.map(img => {
+          const title = img.title || `image_${img.id}`;
+          let url = img.url || img.display_url || '';
+          
+          // Générer URL HD explicite si possible
+          if (img.projets?.nom_dossier) {
+            url = generateDownloadImageHDUrl(img.projets.nom_dossier, title);
+          } 
+          // Sinon, transformer l'URL si possible
+          else if (url && url.includes('/JPG/')) {
+            url = transformToHDUrl(url);
+          }
+          
+          return {
+            id: img.id,
+            url,
+            title
+          };
+        })
+        .filter(img => img.url); // Filtrer les URLs vides
+        
+        if (imagesForZip.length === 0) {
+          throw new Error('Aucune image valide pour téléchargement HD');
+        }
 
-  /**
-   * Gère le téléchargement HD en fonction du nombre d'images
-   */
-  const downloadHD = async (user: User | null, images: Image[], selectedIds: string[]) => {
-    if (selectedIds.length === 0) {
-      toast.error("Veuillez sélectionner au moins une image à télécharger");
-      return;
-    }
-    
-    if (isDownloading) {
-      toast.info("Téléchargement déjà en cours, veuillez patienter");
-      return;
-    }
-    
-    if (!user) {
-      toast.error("Vous devez être connecté pour télécharger des images HD");
-      return;
-    }
-    
-    setIsDownloading(true);
-    
-    try {
-      // Si moins de 3 images, téléchargement direct
-      // Sinon, utiliser le serveur
-      if (selectedIds.length < SERVER_DOWNLOAD_THRESHOLD) {
-        await downloadHDLocally(images, selectedIds);
-      } else {
-        await requestServerHDZip(user, images, selectedIds);
+        // Utiliser la logique de téléchargement côté serveur
+        if (!showModal) {
+          toast.loading('Préparation des images HD pour téléchargement', {
+            id: 'hd-zip-prep',
+            duration: Infinity
+          });
+        }
+        
+        const result = await requestServerDownload(user, imagesForZip, true);
+        
+        if (!showModal) {
+          toast.dismiss('hd-zip-prep');
+          
+          if (result) {
+            toast.success('Images HD prêtes au téléchargement', {
+              description: 'Consultez la page "Téléchargements" pour accéder à votre archive.'
+            });
+          }
+        }
+        
+        return result;
       }
+
+    } catch (error) {
+      console.error('HD download error:', error);
+      toast.error('Échec du téléchargement HD', {
+        description: error instanceof Error ? error.message : 'Une erreur est survenue'
+      });
+      return false;
     } finally {
       setIsDownloading(false);
     }
