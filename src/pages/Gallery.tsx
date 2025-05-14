@@ -103,27 +103,64 @@ const Gallery = () => {
       <Header />
       
       <main className="flex-grow w-screen px-0">
-        <GalleryHeader title="Banque d'images" activeTab={activeTab} onTabChange={handleTabChange} categories={categories} selectedClient={selectedClient} onClientChange={handleClientChange} selectedProject={selectedProject} onProjectChange={handleProjectChange} selectedOrientation={selectedOrientation} onOrientationChange={handleOrientationChange} userName={userProfile?.firstName || ''} userLastName={userProfile?.lastName || ''} userRole={userRole} userClientId={userClientId} />
-        
-        <div className="flex justify-between items-center px-4 -mt-2 mb-2">
-          {displayedImages.length > 0}
-          
-          <div className="flex items-center gap-4">
-            {displayedImages.length > 0 && <GalleryDownloadButtons images={displayedImages} />}
-            
-            {isAdmin && <Button variant="outline" size="sm" onClick={handleFlushCache} disabled={isFlushing} className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600">
-                {isFlushing ? 'Vidage en cours...' : <>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Vider le cache d'images
-                  </>}
-              </Button>}
-          </div>
-        </div>
-        
-        <div className="w-full px-0 py-6">
-          {isLoading && allImages.length === 0 ? <MasonryGrid images={[]} isLoading={true} /> : displayedImages.length > 0 ? <MasonryGrid images={formattedImages} isLoading={isLoading || isFetching} hasMorePages={hasMorePages} loadMoreImages={loadMoreImages} /> : <EmptyResults onReset={handleResetFilters} hasFilters={hasActiveFilters} />}
-        </div>
-      </main>
+  <GalleryHeader
+    title="Banque d'images"
+    activeTab={activeTab}
+    onTabChange={handleTabChange}
+    categories={categories}
+    selectedClient={selectedClient}
+    onClientChange={handleClientChange}
+    selectedProject={selectedProject}
+    onProjectChange={handleProjectChange}
+    selectedOrientation={selectedOrientation}
+    onOrientationChange={handleOrientationChange}
+    userName={userProfile?.firstName || ''}
+    userLastName={userProfile?.lastName || ''}
+    userRole={userRole}
+    userClientId={userClientId}
+  />
+
+  <div className="flex justify-between items-center w-full px-6 -mt-2 mb-2">
+    <div className="flex items-center gap-4">
+      {displayedImages.length > 0 && <GalleryDownloadButtons images={displayedImages} />}
+
+      {isAdmin && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleFlushCache}
+          disabled={isFlushing}
+          className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+        >
+          {isFlushing ? (
+            'Vidage en cours...'
+          ) : (
+            <>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Vider le cache d'images
+            </>
+          )}
+        </Button>
+      )}
+    </div>
+  </div>
+
+  <div className="w-full px-0 py-6">
+    {isLoading && allImages.length === 0 ? (
+      <MasonryGrid images={[]} isLoading={true} />
+    ) : displayedImages.length > 0 ? (
+      <MasonryGrid
+        images={formattedImages}
+        isLoading={isLoading || isFetching}
+        hasMorePages={hasMorePages}
+        loadMoreImages={loadMoreImages}
+      />
+    ) : (
+      <EmptyResults onReset={handleResetFilters} hasFilters={hasActiveFilters} />
+    )}
+  </div>
+</main>
+
       
       <Footer />
     </div>;
