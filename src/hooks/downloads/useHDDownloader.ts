@@ -8,6 +8,9 @@ import { downloadImage } from '@/utils/image/download';
 import { generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
 import { transformToHDUrl } from '@/utils/image/download/networkUtils';
 
+// HD download threshold - use server for 3+ images
+const HD_SERVER_THRESHOLD = 3;
+
 export function useHDDownloader() {
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -74,8 +77,55 @@ export function useHDDownloader() {
         
         return true;
       } 
-      // Sinon, préparation d'une archive ZIP
+      // Pour 2 images, téléchargement direct en ZIP côté client
+      else if (selectedImages.length < HD_SERVER_THRESHOLD) {
+        console.log(`HD download: Using client-side ZIP for ${selectedImages.length} images (below threshold: ${HD_SERVER_THRESHOLD})`);
+        
+        const imagesForZip = selectedImages.map(img => {
+          const title = img.title || `image_${img.id}`;
+          let url = img.url || img.display_url || '';
+          
+          // Générer URL HD explicite si possible
+          if (img.projets?.nom_dossier) {
+            url = generateDownloadImageHDUrl(img.projets.nom_dossier, title);
+          } 
+          // Sinon, transformer l'URL si possible
+          else if (url && url.includes('/JPG/')) {
+            url = transformToHDUrl(url);
+          }
+          
+          return {
+            id: img.id,
+            url,
+            title
+          };
+        })
+        .filter(img => img.url); // Filtrer les URLs vides
+        
+        if (imagesForZip.length === 0) {
+          throw new Error('Aucune image valide pour téléchargement HD');
+        }
+        
+        // Import dynamique pour éviter des dépendances circulaires
+        const { downloadImagesAsZip } = await import('@/utils/image/download');
+        
+        toast.loading('Préparation des images HD', {
+          id: 'hd-zip-prep',
+          duration: Infinity
+        });
+        
+        const zipName = `images_hd_${Date.now()}.zip`;
+        await downloadImagesAsZip(imagesForZip, zipName, true);
+        
+        toast.dismiss('hd-zip-prep');
+        toast.success('Images HD téléchargées');
+        
+        return true;
+      }
+      // Pour 3+ images, utiliser le serveur
       else {
+        console.log(`HD download: Using server-side download for ${selectedImages.length} images (threshold: ${HD_SERVER_THRESHOLD})`);
+        
         const imagesForZip = selectedImages.map(img => {
           const title = img.title || `image_${img.id}`;
           let url = img.url || img.display_url || '';

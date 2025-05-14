@@ -158,6 +158,7 @@ export async function requestServerDownload(
 
       // Construire l'URL de téléchargement avec le format correct
       const downloadUrl = `https://www.stimergie.fr/zip-downloads/${zipFileName}`;
+      console.log("Téléchargement URL généré:", downloadUrl);
       
       // 2.5 Mettre à jour le statut de la demande avec l'URL de téléchargement
       const { error: updateError } = await supabase
@@ -172,7 +173,14 @@ export async function requestServerDownload(
       
       if (updateError) {
         console.error("Erreur lors de la mise à jour du statut:", updateError);
+        console.log("Tentative de mise à jour a échoué pour:", {
+          downloadUrl,
+          status: "ready",
+          id: recordData.id
+        });
         throw new Error(`Échec de la mise à jour du statut: ${updateError.message}`);
+      } else {
+        console.log("Mise à jour réussie dans la base de données avec l'URL:", downloadUrl);
       }
       
       // 2.6 Afficher le message de succès

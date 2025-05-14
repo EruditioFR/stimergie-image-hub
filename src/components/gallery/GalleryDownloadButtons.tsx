@@ -9,6 +9,10 @@ import { validateImageUrl } from '@/utils/image/errorHandler';
 import { generateDownloadImageHDUrl, generateDownloadImageSDUrl } from '@/utils/image/imageUrlGenerator';
 import { isJpgUrl } from '@/utils/image/download/networkUtils';
 
+// Constants for download thresholds
+const SD_SERVER_THRESHOLD = 10;  // Use server-side for 10+ images in SD mode
+const HD_SERVER_THRESHOLD = 3;   // Use server-side for 3+ images in HD mode
+
 interface GalleryDownloadButtonsProps {
   images: Image[];
 }
@@ -125,6 +129,31 @@ export function GalleryDownloadButtons({
     }
   };
 
+  // Adjust button labels based on count of images
+  const getHDButtonLabel = () => {
+    if (images.length >= HD_SERVER_THRESHOLD) {
+      return "Ajouter à mes téléchargements HD";
+    } else {
+      return "Version HD impression";
+    }
+  };
+
+  const getHDButtonHint = () => {
+    if (images.length >= HD_SERVER_THRESHOLD) {
+      return "(Accessibles via la page Téléchargements)";
+    } else {
+      return "(JPG, > 20 Mo)";
+    }
+  };
+
+  const getHDMobileLabel = () => {
+    if (images.length >= HD_SERVER_THRESHOLD) {
+      return "Téléchargements HD";
+    } else {
+      return "HD";
+    }
+  };
+
   return (
     <div className="flex gap-2">
       <Button 
@@ -147,16 +176,16 @@ export function GalleryDownloadButtons({
       <Button 
         onClick={() => handleDownload(true)}
         disabled={isDownloadingHD}
-        className="bg-primary text-white"
+        className={`bg-primary text-white ${images.length >= HD_SERVER_THRESHOLD ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200' : ''}`}
       >
         {isDownloadingHD ? (
           <span>Téléchargement HD...</span>
         ) : (
           <>
             <Download className="h-4 w-4 mr-1" />
-            <span className="hidden md:inline">Version HD impression</span>
-            <span className="md:hidden">HD</span>
-            <span className="hidden md:inline text-xs opacity-75 ml-1">(JPG, &gt; 20 Mo)</span>
+            <span className="hidden md:inline">{getHDButtonLabel()}</span>
+            <span className="md:hidden">{getHDMobileLabel()}</span>
+            <span className="hidden md:inline text-xs opacity-75 ml-1">{getHDButtonHint()}</span>
           </>
         )}
       </Button>

@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { clearAllCaches } from '@/utils/image/cacheManager';
+import { GalleryDownloadButtons } from '@/components/gallery/GalleryDownloadButtons';
 
 // Catégories pour les filtres
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
@@ -105,11 +106,25 @@ const Gallery = () => {
       <main className="flex-grow w-screen px-0">
   <GalleryHeader title="Banque d'images" activeTab={activeTab} onTabChange={handleTabChange} categories={categories} selectedClient={selectedClient} onClientChange={handleClientChange} selectedProject={selectedProject} onProjectChange={handleProjectChange} selectedOrientation={selectedOrientation} onOrientationChange={handleOrientationChange} userName={userProfile?.firstName || ''} userLastName={userProfile?.lastName || ''} userRole={userRole} userClientId={userClientId} />
 
-  <div className="flex justify-between items-center w-full px-0 -mt-2 mb-2">
+  <div className="flex justify-between items-center w-full px-4 -mt-2 mb-2">
     <div className="flex items-center gap-4">
-      {/* GalleryDownloadButtons component removed from here */}
+      {/* Afficher les boutons de téléchargement uniquement si on a des images */}
+      {displayedImages.length > 0 && (
+        <GalleryDownloadButtons images={displayedImages} />
+      )}
 
-      {isAdmin}
+      {isAdmin && (
+        <Button
+          onClick={handleFlushCache}
+          variant="outline"
+          size="sm"
+          disabled={isFlushing}
+          className="ml-auto"
+        >
+          <Trash2 className="h-4 w-4 mr-1" />
+          {isFlushing ? "Vidage en cours..." : "Vider le cache"}
+        </Button>
+      )}
     </div>
   </div>
 

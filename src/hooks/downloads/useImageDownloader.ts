@@ -17,6 +17,10 @@ interface UseImageDownloaderProps {
   images: Image[];
 }
 
+// Constants for download thresholds
+const SD_SERVER_THRESHOLD = 10;  // Use server-side for 10+ images in SD mode
+const HD_SERVER_THRESHOLD = 3;   // Use server-side for 3+ images in HD mode
+
 export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) => {
   const [isDownloadingSD, setIsDownloadingSD] = useState(false);
   const { isDownloading: isDownloadingHD, downloadHD } = useHDDownloader();
@@ -134,9 +138,9 @@ export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) =>
         toast.warning("Téléchargement partiel", { description: message });
       }
       
-      // Determine if we should use server-side download
-      if (imagesForDownload.length >= 10) {
-        // Pour 10+ images, utiliser le téléchargement côté serveur
+      // Determine if we should use server-side download based on threshold
+      if (imagesForDownload.length >= SD_SERVER_THRESHOLD) {
+        console.log(`SD download: Using server-side download for ${imagesForDownload.length} images (threshold: ${SD_SERVER_THRESHOLD})`);
         setShowUploadModal(true);
         const result = await requestServerDownload(user, imagesForDownload, false, false);
         
@@ -147,6 +151,9 @@ export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) =>
           throw new Error("Échec du traitement de la demande");
         }
       } else {
+        // For fewer images, use direct client-side download
+        console.log(`SD download: Using client-side download for ${imagesForDownload.length} images (below threshold: ${SD_SERVER_THRESHOLD})`);
+        
         // Start toast notification
         toast.loading("Préparation du téléchargement", {
           id: "zip-preparation",
@@ -173,9 +180,10 @@ export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) =>
     }
   };
   
-  // Le téléchargement HD utilise maintenant le hook useHDDownloader
+  // The HD download with correct thresholds
   const handleHDDownload = async (selectedImageIds: string[]) => {
-    if (selectedImageIds.length >= 5) {
+    if (selectedImageIds.length >= HD_SERVER_THRESHOLD) {
+      console.log(`HD download: Using server-side download for ${selectedImageIds.length} images (threshold: ${HD_SERVER_THRESHOLD})`);
       setShowUploadModal(true);
       const result = await downloadHD(user, images, selectedImageIds, true);
       if (result) {
@@ -184,6 +192,7 @@ export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) =>
         setShowUploadModal(false);
       }
     } else {
+      console.log(`HD download: Using client-side download for ${selectedImageIds.length} images (below threshold: ${HD_SERVER_THRESHOLD})`);
       await downloadHD(user, images, selectedImageIds);
     }
   };
