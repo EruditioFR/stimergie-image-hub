@@ -1,33 +1,48 @@
 
-import * as z from "zod";
+import { z } from "zod";
 
-// Define the role type to match the zod schema
-export type UserRole = "admin" | "admin_client" | "user";
+// Définition des rôles utilisateur
+export type UserRole = "user" | "admin" | "admin_client";
 
-// Create a base schema without password
-const baseSchema = {
-  email: z.string().email("L'adresse email est invalide"),
-  first_name: z.string().min(1, "Le prénom est requis"),
-  last_name: z.string().min(1, "Le nom est requis"),
-  role: z.enum(["admin", "admin_client", "user"] as const, {
-    required_error: "Le rôle est requis",
-  }),
-};
-
-// Schema for creating a new user (password required)
+// Schéma de validation pour la création d'un utilisateur
 export const createUserSchema = z.object({
-  ...baseSchema,
-  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+  email: z
+    .string()
+    .email("Adresse email invalide")
+    .min(1, "L'email est requis"),
+  first_name: z
+    .string()
+    .min(1, "Le prénom est requis"),
+  last_name: z
+    .string()
+    .min(1, "Le nom est requis"),
+  password: z
+    .string()
+    .min(6, "Le mot de passe doit contenir au moins 6 caractères")
+    .max(100),
+  role: z.enum(["user", "admin", "admin_client"] as const).default("user"),
+  clientId: z.string().nullable().optional(),
 });
 
-// Schema for updating an existing user (password optional)
+// Schéma de validation pour la mise à jour d'un utilisateur
 export const updateUserSchema = z.object({
-  ...baseSchema,
-  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères").optional()
-    .or(z.literal('')),
+  email: z
+    .string()
+    .email("Adresse email invalide")
+    .min(1, "L'email est requis"),
+  first_name: z
+    .string()
+    .min(1, "Le prénom est requis"),
+  last_name: z
+    .string()
+    .min(1, "Le nom est requis"),
+  password: z
+    .string()
+    .max(100)
+    .optional(),
+  role: z.enum(["user", "admin", "admin_client"] as const),
+  clientId: z.string().nullable().optional(),
 });
 
-// Default schema for backward compatibility
-export const formSchema = updateUserSchema;
-
-export type FormValues = z.infer<typeof formSchema>;
+// Type pour les valeurs du formulaire
+export type FormValues = z.infer<typeof createUserSchema>;

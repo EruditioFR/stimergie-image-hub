@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { User } from "@/types/user";
@@ -20,6 +21,7 @@ import { PasswordField } from "./form/fields/PasswordField";
 import { UserFormActions } from "./form/UserFormActions";
 import { UserFormHeader } from "./form/UserFormHeader";
 import { RoleField } from "./form/fields/RoleField";
+import { ClientField } from "./form/fields/ClientField";
 
 export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing = false, isAdmin = false }: UserFormProps) {
   // Use the appropriate schema based on whether we're editing or creating
@@ -32,12 +34,14 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
       first_name: initialData.firstName || initialData.first_name || "",
       last_name: initialData.lastName || initialData.last_name || "",
       role: initialData.role as UserRole,
+      clientId: initialData.clientId || initialData.id_client || null,
       password: "",
     } : {
       email: "",
       first_name: "",
       last_name: "",
       role: "user" as UserRole,
+      clientId: null,
       password: "",
     },
   });
@@ -78,13 +82,13 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
         fullName: `${values.first_name} ${values.last_name}`.trim(),
         avatarUrl: initialData.avatarUrl,
         role: values.role,
-        clientId: initialData.clientId || initialData.id_client,
+        clientId: values.clientId,
         createdAt: initialData.createdAt || "",
         updatedAt: new Date().toISOString(),
         // For backward compatibility
         first_name: values.first_name,
         last_name: values.last_name,
-        id_client: initialData.clientId || initialData.id_client,
+        id_client: values.clientId,
       }, values.password); // Pass password even when editing
     } else {
       // For new user, pass without ID and include password
@@ -95,13 +99,13 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
         fullName: `${values.first_name} ${values.last_name}`.trim(),
         avatarUrl: null,
         role: values.role,
-        clientId: null,
+        clientId: values.clientId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         // For backward compatibility
         first_name: values.first_name,
         last_name: values.last_name,
-        id_client: null,
+        id_client: values.clientId,
       }, values.password || generatedPassword); // Use generated password if field is empty
     }
   };
@@ -116,6 +120,7 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
             <EmailField form={form} isEditing={isEditing} />
             <RoleField form={form} availableRoles={availableRoles} />
             <NameFields form={form} />
+            <ClientField form={form} clients={clients} />
             <PasswordField form={form} isEditing={isEditing} />
             
             {!isEditing && (

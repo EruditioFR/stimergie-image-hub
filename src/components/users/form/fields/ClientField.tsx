@@ -1,55 +1,48 @@
 
-import { useEffect } from "react";
-import { 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
+import React from "react";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { fetchClients } from "@/services/clientService";
-import { useQuery } from "@tanstack/react-query";
+import { Client } from "@/types/user";
 import { UserFormFieldProps } from "../UserFormTypes";
 
-export const ClientField = ({ form, disabled = false }: UserFormFieldProps) => {
-  const { data: clients = [], isLoading } = useQuery({
-    queryKey: ['clients'],
-    queryFn: fetchClients,
-  });
+export interface ClientFieldProps extends UserFormFieldProps {
+  clients: Client[];
+}
 
-  // When the user selects "none", set the actual value to null
-  const handleValueChange = (value: string) => {
-    form.setValue("id_client", value === "none" ? "" : value);
-  };
-
+export function ClientField({ form, clients, isEditing = false, disabled = false }: ClientFieldProps) {
   return (
     <FormField
       control={form.control}
-      name="id_client"
+      name="clientId"
       render={({ field }) => (
-        <FormItem>
+        <FormItem className="col-span-1">
           <FormLabel>Client</FormLabel>
-          <Select 
-            disabled={disabled || isLoading} 
-            onValueChange={handleValueChange} 
-            value={field.value === "" ? "none" : field.value}
+          <Select
+            disabled={disabled}
+            onValueChange={field.onChange}
+            defaultValue={field.value}
+            value={field.value || ""}
           >
             <FormControl>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Sélectionner un client" />
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              <SelectItem value="none">Aucun client</SelectItem>
               {clients.map((client) => (
-                <SelectItem key={client.id} value={client.id}>
+                <SelectItem key={client.id} value={client.id || ""}>
                   {client.nom}
                 </SelectItem>
               ))}
@@ -60,4 +53,4 @@ export const ClientField = ({ form, disabled = false }: UserFormFieldProps) => {
       )}
     />
   );
-};
+}
