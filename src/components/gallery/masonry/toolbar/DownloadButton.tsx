@@ -28,7 +28,7 @@ export function DownloadButton({
       className="min-w-[140px] bg-primary text-white"
     >
       {isLoading ? (
-        <LoadingSpinner size="sm" />
+        <LoadingSpinner size={24} />
       ) : (
         <Download className="h-4 w-4 mr-1" />
       )}
