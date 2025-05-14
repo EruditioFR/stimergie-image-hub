@@ -56,6 +56,7 @@ export async function uploadZipToO2Switch(
     
     console.log(`[O2Switch] Upload successful. File available at: ${result.url}`);
     
+    // Retourner directement l'URL fournie par le serveur
     return result.url;
   } catch (error) {
     console.error('[O2Switch] Error uploading file:', error);
