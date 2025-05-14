@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
@@ -7,30 +8,38 @@ import { downloadImagesAsZip } from '@/utils/image/download';
 import { validateImageUrl } from '@/utils/image/errorHandler';
 import { generateDownloadImageHDUrl, generateDownloadImageSDUrl } from '@/utils/image/imageUrlGenerator';
 import { isJpgUrl } from '@/utils/image/download/networkUtils';
+
 interface GalleryDownloadButtonsProps {
   images: Image[];
 }
+
 export function GalleryDownloadButtons({
   images
 }: GalleryDownloadButtonsProps) {
   const [isDownloadingSD, setIsDownloadingSD] = useState(false);
   const [isDownloadingHD, setIsDownloadingHD] = useState(false);
+
   const handleDownload = async (isHD: boolean) => {
     if (images.length === 0) {
       toast.error("Aucune image disponible pour le téléchargement");
       return;
     }
+    
     const setIsDownloading = isHD ? setIsDownloadingHD : setIsDownloadingSD;
     const isDownloading = isHD ? isDownloadingHD : isDownloadingSD;
+    
     if (isDownloading) {
       toast.info("Téléchargement déjà en cours, veuillez patienter");
       return;
     }
+    
     setIsDownloading(true);
+    
     try {
       // Préparer les images pour le téléchargement
       const imagesForDownload = [];
       const failedImages = [];
+      
       for (const img of images) {
         // Priorité à l'URL stockée en base
         let imageUrl = img.url || '';
@@ -77,6 +86,7 @@ export function GalleryDownloadButtons({
           failedImages.push(img.title || `image_${img.id}`);
         }
       }
+      
       if (imagesForDownload.length === 0) {
         toast.error("Aucune image valide à télécharger");
         return;
@@ -89,20 +99,22 @@ export function GalleryDownloadButtons({
           description: message
         });
       }
+      
       const zipName = isHD ? `images_hd_${Date.now()}.zip` : `images_${Date.now()}.zip`;
       const toastId = isHD ? "zip-hd-preparation" : "zip-preparation";
       const loadingMessage = isHD ? "Préparation du ZIP HD en cours" : "Préparation du téléchargement";
 
-      // Utiliser Infinity (nombre) et non "Infinity" (chaîne)
       toast.loading(loadingMessage, {
         id: toastId,
-        duration: Infinity // Valeur numérique, pas une chaîne
+        duration: Infinity
       });
 
       // Passer le flag isHD pour le traitement approprié
       await downloadImagesAsZip(imagesForDownload, zipName, isHD);
+      
       toast.dismiss(toastId);
       toast.success(isHD ? "Images HD téléchargées avec succès" : "Images téléchargées avec succès");
+      
     } catch (error) {
       console.error(`Error during ${isHD ? 'HD' : 'SD'} ZIP download:`, error);
       toast.error(`Erreur lors du téléchargement ${isHD ? 'HD' : ''}`, {
@@ -112,8 +124,42 @@ export function GalleryDownloadButtons({
       setIsDownloading(false);
     }
   };
-  return <div className="flex gap-2">
+
+  return (
+    <div className="flex gap-2">
+      <Button 
+        onClick={() => handleDownload(false)}
+        disabled={isDownloadingSD}
+        className="bg-primary text-white"
+      >
+        {isDownloadingSD ? (
+          <span>Téléchargement...</span>
+        ) : (
+          <>
+            <Download className="h-4 w-4 mr-1" />
+            <span className="hidden md:inline">Version web & réseaux sociaux</span>
+            <span className="md:hidden">Télécharger</span>
+            <span className="hidden md:inline text-xs opacity-75 ml-1">(JPG, &lt; 2 Mo)</span>
+          </>
+        )}
+      </Button>
       
-      
-    </div>;
+      <Button 
+        onClick={() => handleDownload(true)}
+        disabled={isDownloadingHD}
+        className="bg-primary text-white"
+      >
+        {isDownloadingHD ? (
+          <span>Téléchargement HD...</span>
+        ) : (
+          <>
+            <Download className="h-4 w-4 mr-1" />
+            <span className="hidden md:inline">Version HD impression</span>
+            <span className="md:hidden">HD</span>
+            <span className="hidden md:inline text-xs opacity-75 ml-1">(JPG, &gt; 20 Mo)</span>
+          </>
+        )}
+      </Button>
+    </div>
+  );
 }
