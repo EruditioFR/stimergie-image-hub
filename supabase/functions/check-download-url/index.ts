@@ -14,36 +14,18 @@ interface RequestBody {
   searchPattern: string;
 }
 
-// Helper function to ensure the bucket exists with proper policies
-async function ensureZipBucketExists(supabase: any): Promise<void> {
+// Configuration O2Switch
+const O2SWITCH_PUBLIC_URL_BASE = 'https://www.stimergie.fr/zip-downloads/';
+
+// Helper function to check if file exists on O2Switch
+async function checkFileExistsOnO2Switch(fileName: string): Promise<boolean> {
   try {
-    // Check if bucket exists
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    
-    if (bucketsError) {
-      console.error('Error checking buckets:', bucketsError.message);
-      return;
-    }
-    
-    const zipBucket = buckets?.find((b: any) => b.name === "zip_downloads" || b.name === "ZIP Downloads");
-    
-    if (!zipBucket) {
-      // Create the bucket if it doesn't exist
-      console.log('Creating zip_downloads bucket');
-      const { error: createError } = await supabase.storage.createBucket('zip_downloads', { 
-        public: true,
-        fileSizeLimit: 50 * 1024 * 1024 // 50MB
-      });
-      
-      if (createError) {
-        console.error('Failed to create bucket:', createError.message);
-        return;
-      }
-    }
-    
-    console.log('zip_downloads bucket verified');
+    const fileUrl = `${O2SWITCH_PUBLIC_URL_BASE}${fileName}`;
+    const response = await fetch(fileUrl, { method: 'HEAD' });
+    return response.ok;
   } catch (error) {
-    console.error('Error in ensureZipBucketExists:', error.message);
+    console.error('Error checking file on O2Switch:', error.message);
+    return false;
   }
 }
 
@@ -81,58 +63,83 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Ensure bucket exists and has proper policies
-    await ensureZipBucketExists(supabase);
-    
-    // List files in the bucket that match the pattern
-    const { data: fileList, error: fileListError } = await supabase.storage
-      .from('zip_downloads')
-      .list();
+    // Check if we have a download with this ID
+    const { data: downloadData, error: downloadError } = await supabase
+      .from('download_requests')
+      .select('*')
+      .eq('id', downloadId)
+      .single();
       
-    if (fileListError) {
+    if (downloadError) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          details: `Error listing files: ${fileListError.message}` 
+          details: `Error fetching download: ${downloadError.message}` 
         }),
         { status: 500, headers: corsHeaders }
       );
     }
     
-    console.log(`Found ${fileList?.length || 0} files in zip_downloads bucket`);
-    
-    // Find files that match the pattern
-    const matchingFiles = fileList?.filter(file => 
-      file.name.toLowerCase().includes(searchPattern.toLowerCase())
-    ) || [];
-    
-    console.log(`Found ${matchingFiles.length} files matching pattern "${searchPattern}"`);
-    
-    if (matchingFiles.length === 0) {
+    if (!downloadData) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          details: `No files found matching pattern "${searchPattern}"` 
+          details: `No download found with ID: ${downloadId}` 
         }),
         { headers: corsHeaders }
       );
     }
     
-    // Get the most recently modified file
-    const latestFile = matchingFiles[0]; // Assuming files are sorted by date
-    
-    // Generate a public URL for the file
-    const { data: urlData, error: urlError } = await supabase.storage
-      .from('zip_downloads')
-      .getPublicUrl(latestFile.name);
+    // If the download already has a URL and is ready, return it
+    if (downloadData.download_url && downloadData.status === 'ready') {
+      console.log(`Download already has URL: ${downloadData.download_url}`);
       
-    if (urlError) {
+      // Double-check that the file actually exists
+      const fileExists = await checkFileExistsOnO2Switch(
+        downloadData.download_url.replace(O2SWITCH_PUBLIC_URL_BASE, '')
+      );
+      
+      if (fileExists) {
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            url: downloadData.download_url,
+            message: `Download is already ready: ${downloadData.download_url}`
+          }),
+          { headers: corsHeaders }
+        );
+      }
+    }
+    
+    // Search for files on O2Switch that match the pattern
+    // For O2Switch, we use naming pattern: images_YYYYMMDD_{downloadId}.zip or hd-images_YYYYMMDD_{downloadId}.zip
+    const isHD = downloadData.is_hd;
+    const prefix = isHD ? 'hd-' : '';
+    const fileName = `${prefix}images_*_${downloadId}.zip`;
+    
+    // Since we can't list files on O2Switch directly from here, 
+    // we'll construct the most likely filename and check if it exists
+    
+    // Extract date from the record's creation timestamp (YYYYMMDD format)
+    const createdAt = new Date(downloadData.created_at);
+    const dateStr = createdAt.toISOString().split('T')[0].replace(/-/g, '');
+    
+    // Construct the expected filename
+    const expectedFileName = `${prefix}images_${dateStr}_${downloadId}.zip`;
+    const fileUrl = `${O2SWITCH_PUBLIC_URL_BASE}${expectedFileName}`;
+    
+    console.log(`Checking for file: ${fileUrl}`);
+    
+    // Check if the file exists
+    const fileExists = await checkFileExistsOnO2Switch(expectedFileName);
+    
+    if (!fileExists) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          details: `Error generating URL: ${urlError.message}` 
+          details: `No file found matching pattern "${fileName}"` 
         }),
-        { status: 500, headers: corsHeaders }
+        { headers: corsHeaders }
       );
     }
     
@@ -140,7 +147,7 @@ serve(async (req) => {
     const { error: updateError } = await supabase
       .from('download_requests')
       .update({ 
-        download_url: urlData.publicUrl,
+        download_url: fileUrl,
         status: 'ready',
         processed_at: new Date().toISOString()
       })
@@ -160,8 +167,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        url: urlData.publicUrl,
-        message: `Found file and updated record: ${latestFile.name}`
+        url: fileUrl,
+        message: `Found file and updated record: ${expectedFileName}`
       }),
       { headers: corsHeaders }
     );

@@ -1,68 +1,33 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getO2SwitchFileUrl, checkFileExistsOnO2Switch } from "./o2switchUploader";
 
 /**
- * Vérifie si le bucket zip_downloads existe et est correctement configuré
+ * Vérifie si le bucket zip_downloads existe et est correctement configuré (obsolète avec O2Switch)
+ * Gardée pour compatibilité mais n'a plus d'utilité réelle
  */
 export async function ensureZipBucketExists(): Promise<boolean> {
-  try {
-    // Vérifier si le bucket existe
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    
-    if (bucketsError) {
-      console.error('Erreur lors de la vérification des buckets:', bucketsError.message);
-      return false;
-    }
-    
-    const zipBucket = buckets?.find(b => b.name === "zip_downloads" || b.name === "ZIP Downloads");
-    
-    if (!zipBucket) {
-      // Créer le bucket s'il n'existe pas
-      console.log('Création du bucket zip_downloads');
-      const { error: createError } = await supabase.storage.createBucket('zip_downloads', { 
-        public: true,
-        fileSizeLimit: 52428800 // 50MB
-      });
-      
-      if (createError) {
-        console.error('Échec de la création du bucket:', createError.message);
-        return false;
-      }
-      
-      console.log('Bucket zip_downloads créé avec succès');
-      return true;
-    }
-    
-    console.log('Le bucket zip_downloads existe déjà');
-    return true;
-  } catch (error) {
-    console.error('Erreur dans ensureZipBucketExists:', error);
-    return false;
-  }
+  console.log('[Storage] O2Switch est maintenant utilisé au lieu des buckets Supabase');
+  return true;
 }
 
 /**
- * Génère une URL publique pour un fichier ZIP dans le bucket
+ * Génère une URL publique pour un fichier ZIP sur O2Switch
  * @param fileName Nom du fichier ZIP
  * @returns URL publique ou null en cas d'erreur
  */
 export async function getZipFileUrl(fileName: string): Promise<string | null> {
   try {
-    await ensureZipBucketExists();
-    
-    // Updated to handle the new API response structure
-    // The getPublicUrl method now returns { data: { publicUrl: string } } without an error property
-    const { data } = supabase.storage
-      .from('zip_downloads')
-      .getPublicUrl(fileName);
-    
-    if (!data || !data.publicUrl) {
-      console.error('Erreur: URL publique non disponible');
-      return null;
+    // Vérifier si le fichier existe sur O2Switch
+    const fileExists = await checkFileExistsOnO2Switch(fileName);
+    if (fileExists) {
+      return fileExists;
     }
     
-    return data.publicUrl;
+    // Si le fichier n'existe pas, générer quand même l'URL
+    // car elle pourrait être valide mais pas encore accessible via HTTP
+    return getO2SwitchFileUrl(fileName);
   } catch (error) {
     console.error('Erreur dans getZipFileUrl:', error);
     return null;
@@ -70,43 +35,12 @@ export async function getZipFileUrl(fileName: string): Promise<string | null> {
 }
 
 /**
- * Télécharge un fichier depuis une URL et le stocke dans le bucket zip_downloads
- * @param url URL du fichier à télécharger
- * @param fileName Nom du fichier dans le bucket
- * @returns URL publique du fichier stocké ou null en cas d'erreur
+ * Télécharge un fichier depuis une URL et le stocke sur O2Switch (obsolète)
+ * Gardée pour compatibilité mais n'est plus appelée directement
  */
 export async function storeDownloadedFile(url: string, fileName: string): Promise<string | null> {
-  try {
-    // S'assurer que le bucket existe
-    await ensureZipBucketExists();
-    
-    // Télécharger le fichier
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Échec du téléchargement: ${response.status} ${response.statusText}`);
-    }
-    
-    const blob = await response.blob();
-    
-    // Stocker le fichier dans le bucket
-    const { error: uploadError } = await supabase.storage
-      .from('zip_downloads')
-      .upload(fileName, blob, {
-        contentType: 'application/zip',
-        upsert: true
-      });
-    
-    if (uploadError) {
-      console.error('Erreur lors du stockage du fichier:', uploadError.message);
-      return null;
-    }
-    
-    // Générer l'URL publique
-    return await getZipFileUrl(fileName);
-  } catch (error) {
-    console.error('Erreur dans storeDownloadedFile:', error);
-    return null;
-  }
+  console.warn('storeDownloadedFile est obsolète avec O2Switch. Utilisez uploadZipToO2Switch à la place.');
+  return null;
 }
 
 /**

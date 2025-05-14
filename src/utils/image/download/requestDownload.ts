@@ -1,96 +1,182 @@
 
+/**
+ * Module pour gérer les demandes de téléchargement par lot avec upload sur O2Switch
+ */
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { User } from "@supabase/supabase-js";
+import { updateDownloadStatus } from "./storageUtils";
+import JSZip from "jszip";
+import { uploadZipToO2Switch, getO2SwitchFileUrl } from "./o2switchUploader";
+import { ImageForZip } from "./types";
 
 /**
- * Interface for download request parameters
+ * Traite une demande de téléchargement en masse sur le serveur
+ * @param user Utilisateur actuel
+ * @param images Images à télécharger
+ * @param isHD Indique si c'est un téléchargement HD
+ * @param redirectToDownloads Flag pour rediriger vers la page de téléchargements après soumission
+ * @returns true si la demande a été traitée avec succès, false sinon
  */
-export interface DownloadRequestParams {
-  imageId: string;
-  imageSrc: string;
-  imageTitle: string;
-  isHD?: boolean;
-}
-
-/**
- * Creates a download request in the database
- */
-export async function requestDownload({
-  imageId,
-  imageSrc,
-  imageTitle,
-  isHD = false
-}: DownloadRequestParams): Promise<{success: boolean, downloadId?: string}> {
-  try {
-    if (!imageId || !imageSrc) {
-      toast.error("Informations d'image manquantes");
-      return { success: false };
-    }
-    
-    // Get the current user
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      toast.error("Vous devez être connecté pour télécharger des images");
-      return { success: false };
-    }
-    
-    const { data, error } = await supabase
-      .from('download_requests')
-      .insert({
-        image_id: imageId,
-        image_src: imageSrc,
-        image_title: imageTitle || `image-${imageId}`,
-        is_hd: isHD,
-        status: 'pending',
-        user_id: user.id,
-        download_url: '' // Provide a default empty value
-      })
-      .select('id')
-      .single();
-      
-    if (error) {
-      console.error('Error creating download request:', error);
-      toast.error("Erreur lors de la création de la demande de téléchargement");
-      return { success: false };
-    }
-    
-    return { 
-      success: true,
-      downloadId: data.id
-    };
-  } catch (error) {
-    console.error('Error in requestDownload:', error);
-    toast.error("Erreur lors de la création de la demande de téléchargement");
-    return { success: false };
+export async function requestServerDownload(
+  user: User | null,
+  images: ImageForZip[],
+  isHD = false,
+  redirectToDownloads = false
+): Promise<boolean> {
+  if (!user) {
+    toast.error("Vous devez être connecté pour utiliser cette fonctionnalité");
+    return false;
   }
-}
 
-/**
- * Check the status of a download request
- */
-export async function checkDownloadStatus(downloadId: string): Promise<{
-  status: string;
-  downloadUrl?: string;
-}> {
+  if (!images || images.length === 0) {
+    toast.error("Aucune image sélectionnée pour le téléchargement");
+    return false;
+  }
+
+  // Afficher le toast pendant le traitement
+  toast.loading("Préparation de votre demande...", {
+    id: "download-request",
+    duration: Infinity
+  });
+
   try {
-    const { data, error } = await supabase
-      .from('download_requests')
-      .select('status, download_url')
-      .eq('id', downloadId)
+    // 1. Créer l'enregistrement dans la base de données
+    const { data: recordData, error: recordError } = await supabase
+      .from("download_requests")
+      .insert({
+        user_id: user.id,
+        image_id: images[0].id,  // On enregistre la première image
+        image_title: `${images.length} images (${isHD ? "HD" : "Web"}) - En préparation`,
+        image_src: images[0].url,
+        status: "pending",
+        is_hd: isHD
+      })
+      .select("id")
       .single();
-      
-    if (error) {
-      console.error('Error checking download status:', error);
-      return { status: 'error' };
+
+    if (recordError) {
+      console.error("Erreur lors de la création de la demande:", recordError);
+      toast.dismiss("download-request");
+      toast.error("Échec de l'enregistrement de la demande");
+      return false;
     }
-    
-    return { 
-      status: data.status,
-      downloadUrl: data.download_url
-    };
+
+    console.log(`Demande créée avec l'ID: ${recordData.id}`);
+
+    // 2. Créer directement le ZIP en local et l'uploader vers O2Switch
+    try {
+      // 2.1 Créer le ZIP
+      const zip = new JSZip();
+      const imgFolder = zip.folder("images");
+      
+      if (!imgFolder) {
+        throw new Error("Échec de la création du dossier dans le ZIP");
+      }
+      
+      // Limiter à un maximum de 10 images simultanées pour éviter de surcharger la mémoire
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < images.length; i += BATCH_SIZE) {
+        const batch = images.slice(i, i + BATCH_SIZE);
+        
+        // Télécharger les images par lot
+        const downloadPromises = batch.map(async (image) => {
+          try {
+            const response = await fetch(image.url);
+            if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+            
+            const blob = await response.blob();
+            const safeTitle = image.title 
+              ? image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() 
+              : `image_${image.id}`;
+              
+            return { name: `${safeTitle}.jpg`, blob };
+          } catch (err) {
+            console.error(`Échec du téléchargement de l'image ${image.id}:`, err);
+            return null;
+          }
+        });
+        
+        // Attendre que toutes les images du lot soient traitées
+        const results = await Promise.all(downloadPromises);
+        
+        // Ajouter les images réussies au ZIP
+        results.forEach(result => {
+          if (result) {
+            imgFolder.file(result.name, result.blob);
+          }
+        });
+        
+        // Mettre à jour le toast pendant le traitement
+        toast.loading(`Préparation : ${Math.min((i + BATCH_SIZE), images.length)}/${images.length}`, {
+          id: "download-request",
+          duration: Infinity
+        });
+      }
+
+      // 2.2 Générer le ZIP
+      toast.loading("Compression du ZIP...", {
+        id: "download-request",
+        duration: Infinity
+      });
+      
+      const zipBlob = await zip.generateAsync({
+        type: "blob",
+        compression: "DEFLATE",
+        compressionOptions: { level: 3 }
+      });
+      
+      // 2.3 Générer un nom de fichier unique
+      const date = new Date();
+      const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
+      const zipFileName = `${isHD ? 'hd-' : ''}images_${dateStr}_${recordData.id}.zip`;
+
+      // 2.4 Uploader le ZIP vers O2Switch
+      toast.loading("Envoi vers le serveur...", {
+        id: "download-request",
+        duration: Infinity
+      });
+      
+      const downloadUrl = await uploadZipToO2Switch(zipBlob, zipFileName);
+      
+      if (!downloadUrl) {
+        throw new Error("Échec de l'upload du ZIP");
+      }
+
+      // 2.5 Mettre à jour le statut de la demande avec l'URL de téléchargement
+      await updateDownloadStatus(recordData.id, "ready", downloadUrl);
+      
+      // 2.6 Afficher le message de succès
+      toast.dismiss("download-request");
+      toast.success("Téléchargement prêt", {
+        description: `Votre archive de ${images.length} images est prête.`,
+        duration: 5000
+      });
+      
+      return true;
+
+    } catch (err) {
+      console.error("Erreur lors de la création du ZIP:", err);
+      
+      // Mettre à jour le statut de la demande en échec
+      await updateDownloadStatus(recordData.id, "expired");
+      
+      toast.dismiss("download-request");
+      toast.error("Échec de la préparation du téléchargement", {
+        description: err instanceof Error ? err.message : "Une erreur inconnue est survenue"
+      });
+      
+      return false;
+    }
+
   } catch (error) {
-    console.error('Error in checkDownloadStatus:', error);
-    return { status: 'error' };
+    console.error("Erreur globale:", error);
+    toast.dismiss("download-request");
+    toast.error("Échec du téléchargement", {
+      description: "Une erreur inattendue est survenue"
+    });
+    
+    return false;
   }
 }

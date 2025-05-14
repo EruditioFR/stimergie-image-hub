@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +7,7 @@ import { validateImageUrl } from '@/utils/image/errorHandler';
 import { isJpgUrl } from '@/utils/image/download/networkUtils';
 import { transformToHDUrl } from '@/utils/image/download/networkUtils';
 import { downloadImagesAsZip } from '@/utils/image/download';
+import { requestServerDownload } from '@/utils/image/download/requestDownload';
 import { User } from '@supabase/supabase-js';
 
 // Seuil à partir duquel on utilise le serveur pour les téléchargements HD
@@ -125,6 +125,7 @@ export function useHDDownloader(options?: UseHDDownloaderOptions) {
 
   /**
    * Demande au serveur de créer un zip HD (pour les gros volumes)
+   * Utilise maintenant O2Switch plutôt que supabase.functions
    */
   const requestServerHDZip = async (user: User, images: Image[], selectedIds: string[]) => {
     try {
@@ -145,65 +146,20 @@ export function useHDDownloader(options?: UseHDDownloaderOptions) {
         toast.warning("Téléchargement HD partiel", { description: message });
       }
       
-      // Afficher un toast de préparation
-      toast.loading("Préparation du téléchargement HD sur le serveur...", {
-        id: "server-zip",
-        duration: Infinity
-      });
+      // Utiliser la nouvelle méthode pour le téléchargement serveur
+      const success = await requestServerDownload(user, preparedImages, true, redirectOnComplete);
       
-      // Appeler l'Edge Function pour générer le ZIP sur le serveur
-      const { data, error } = await supabase.functions.invoke('generate-hd-zip', {
-        body: {
-          userId: user.id,
-          images: preparedImages
-        }
-      });
-      
-      // Fermer le toast de préparation
-      toast.dismiss("server-zip");
-      
-      if (error) {
-        console.error('Erreur lors de la génération du ZIP HD:', error);
-        toast.error("Échec de la préparation du téléchargement HD", {
-          description: error.message || "Une erreur technique est survenue"
+      // Si le téléchargement a réussi et que la redirection est activée, naviguer vers la page des téléchargements
+      if (success && redirectOnComplete) {
+        toast.success('Téléchargement HD en préparation', {
+          description: `Votre archive de ${preparedImages.length} images est en cours de préparation. Vous retrouverez votre téléchargement dans la page dédiée.`,
+          action: {
+            label: 'Voir mes téléchargements',
+            onClick: () => navigate('/downloads')
+          },
+          duration: 6000
         });
-        return;
-      }
-      
-      console.log('Réponse de la fonction generate-hd-zip:', data);
-      
-      // Vérifier si la création du ZIP a réussi
-      if (!data.success) {
-        toast.error("Échec de la préparation du téléchargement HD", {
-          description: data.error || "Une erreur est survenue lors de la création de l'archive"
-        });
-        return;
-      }
-      
-      // Afficher un message de succès avec le nombre d'images incluses
-      const successMessage = data.imageCount === 1 
-        ? "1 image HD préparée avec succès"
-        : `${data.imageCount} images HD préparées avec succès`;
         
-      const hasFailures = data.failedCount > 0;
-      const failureMessage = data.failedCount === 1
-        ? "1 image n'a pas pu être incluse"
-        : `${data.failedCount} images n'ont pas pu être incluses`;
-      
-      // Afficher le message de succès et proposer la redirection
-      toast.success('Téléchargement HD en préparation', {
-        description: hasFailures 
-          ? `${successMessage}. ${failureMessage}. Vous retrouverez votre téléchargement dans la page dédiée.`
-          : `${successMessage}. Vous retrouverez votre téléchargement dans la page dédiée.`,
-        action: redirectOnComplete ? {
-          label: 'Voir mes téléchargements',
-          onClick: () => navigate('/downloads')
-        } : undefined,
-        duration: 6000
-      });
-      
-      // Rediriger automatiquement vers la page des téléchargements si demandé
-      if (redirectOnComplete) {
         setTimeout(() => {
           navigate('/downloads');
         }, 1500);
@@ -211,9 +167,8 @@ export function useHDDownloader(options?: UseHDDownloaderOptions) {
       
     } catch (error) {
       console.error("Erreur lors de la demande de ZIP HD serveur:", error);
-      toast.dismiss("server-zip");
       toast.error("Erreur lors de la préparation du téléchargement HD", {
-        description: error.message || "Une erreur technique est survenue"
+        description: error instanceof Error ? error.message : "Une erreur technique est survenue"
       });
     }
   };
