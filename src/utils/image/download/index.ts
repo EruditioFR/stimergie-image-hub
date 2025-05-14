@@ -1,6 +1,4 @@
 
-export * from './networkUtils';
-export * from './types';
+// Export all download functionality
 export { downloadImagesAsZip } from './zipCreator';
 export { downloadImage } from './singleImageDownloader';
-export { prepareDownloadFile, requestImageDownload } from './requestDownload';
