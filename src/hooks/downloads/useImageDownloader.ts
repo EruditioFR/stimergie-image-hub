@@ -3,10 +3,11 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Image } from '@/utils/image/types';
 import { downloadImagesAsZip } from '@/utils/image/download';
-import { generateDownloadImageSDUrl } from '@/utils/image/imageUrlGenerator';
+import { generateDownloadImageHDUrl, generateDownloadImageSDUrl } from '@/utils/image/imageUrlGenerator';
 import { validateImageUrl } from '@/utils/image/errorHandler';
-import { isJpgUrl } from '@/utils/image/download/networkUtils';
+import { isJpgUrl, transformToHDUrl } from '@/utils/image/download/networkUtils';
 import { User } from '@supabase/supabase-js';
+import { useHDDownloader } from './useHDDownloader';
 
 type ImageDownloadType = 'standard' | 'hd';
 
@@ -17,7 +18,7 @@ interface UseImageDownloaderProps {
 
 export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) => {
   const [isDownloadingSD, setIsDownloadingSD] = useState(false);
-  const [isDownloadingHD, setIsDownloadingHD] = useState(false);
+  const { isDownloading: isDownloadingHD, downloadHD } = useHDDownloader();
   
   const prepareImagesForDownload = (selectedImageIds: string[], isHD: boolean) => {
     // Filter images by selected IDs
@@ -63,11 +64,10 @@ export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) =>
       // For HD downloads
       if (folderName) {
         // If we have folder name, generate explicit HD URL
-        const { generateDownloadImageHDUrl } = require('@/utils/image/imageUrlGenerator');
         imageUrl = generateDownloadImageHDUrl(folderName, imageTitle);
       } else if (img.url && img.url.includes('/JPG/')) {
         // Transform existing URL to HD by removing /JPG/ segment
-        imageUrl = img.url.replace('/JPG/', '/');
+        imageUrl = transformToHDUrl(img.url);
       }
     } else {
       // For standard downloads
@@ -93,17 +93,13 @@ export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) =>
     return { url: '', title: imageTitle };
   };
   
-  const downloadImages = async (selectedImageIds: string[], downloadType: ImageDownloadType) => {
-    const isHD = downloadType === 'hd';
-    const setIsDownloading = isHD ? setIsDownloadingHD : setIsDownloadingSD;
-    const isDownloading = isHD ? isDownloadingHD : isDownloadingSD;
-    
+  const downloadStandard = async (selectedImageIds: string[]) => {
     if (selectedImageIds.length === 0) {
       toast.error("Veuillez sélectionner au moins une image à télécharger");
       return;
     }
     
-    if (isDownloading) {
+    if (isDownloadingSD) {
       toast.info("Téléchargement déjà en cours, veuillez patienter");
       return;
     }
@@ -113,11 +109,11 @@ export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) =>
       return;
     }
     
-    setIsDownloading(true);
+    setIsDownloadingSD(true);
     
     try {
       // Prepare images for download
-      const { imagesForDownload, failedImages } = prepareImagesForDownload(selectedImageIds, isHD);
+      const { imagesForDownload, failedImages } = prepareImagesForDownload(selectedImageIds, false);
       
       if (imagesForDownload.length === 0) {
         toast.error("Aucune image valide à télécharger", {
@@ -136,36 +132,38 @@ export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) =>
       }
       
       // Start toast notification
-      const toastId = isHD ? "zip-hd-preparation" : "zip-preparation";
-      const loadingMessage = isHD ? "Préparation du ZIP HD en cours" : "Préparation du téléchargement";
-      
-      toast.loading(loadingMessage, {
-        id: toastId,
+      toast.loading("Préparation du téléchargement", {
+        id: "zip-preparation",
         duration: Infinity
       });
       
       // Generate zip filename
-      const zipName = isHD ? `images_hd_${Date.now()}.zip` : `images_${Date.now()}.zip`;
+      const zipName = `images_${Date.now()}.zip`;
       
       // Download images as zip
-      await downloadImagesAsZip(imagesForDownload, zipName, isHD);
+      await downloadImagesAsZip(imagesForDownload, zipName, false);
       
-      toast.dismiss(toastId);
+      toast.dismiss("zip-preparation");
       
     } catch (error) {
-      console.error(`Error during ${isHD ? 'HD' : 'standard'} download:`, error);
-      toast.error(`Erreur lors du téléchargement ${isHD ? 'HD' : ''}`, {
+      console.error(`Error during standard download:`, error);
+      toast.error(`Erreur lors du téléchargement`, {
         description: "Une erreur est survenue lors du téléchargement des images."
       });
     } finally {
-      setIsDownloading(false);
+      setIsDownloadingSD(false);
     }
+  };
+  
+  // Le téléchargement HD utilise maintenant le hook useHDDownloader
+  const handleHDDownload = async (selectedImageIds: string[]) => {
+    await downloadHD(user, images, selectedImageIds);
   };
   
   return {
     isDownloadingSD,
     isDownloadingHD,
-    downloadStandard: (selectedImageIds: string[]) => downloadImages(selectedImageIds, 'standard'),
-    downloadHD: (selectedImageIds: string[]) => downloadImages(selectedImageIds, 'hd')
+    downloadStandard,
+    downloadHD: handleHDDownload
   };
 };

@@ -11,6 +11,7 @@ interface DownloadButtonProps {
   sizeHint?: string;
   mobileLabel?: string;
   disabled?: boolean;
+  className?: string;
 }
 
 export function DownloadButton({
@@ -19,13 +20,14 @@ export function DownloadButton({
   label,
   sizeHint,
   mobileLabel = "Télécharger",
-  disabled = false
+  disabled = false,
+  className = ""
 }: DownloadButtonProps) {
   return (
     <Button 
       onClick={onClick}
       disabled={isLoading || disabled}
-      className="min-w-[140px] bg-primary text-white"
+      className={`min-w-[140px] bg-primary text-white ${className}`}
     >
       {isLoading ? (
         <LoadingSpinner size={24} />

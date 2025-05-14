@@ -48,6 +48,7 @@ export function MasonryToolbarContent({
         onDownloadSD={() => downloadStandard(selectedImages)}
         onDownloadHD={() => downloadHD(selectedImages)}
         onShare={openShareDialog}
+        selectedCount={selectedImages.length}
       />
     </ToolbarContainer>
   );
