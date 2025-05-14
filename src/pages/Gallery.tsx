@@ -120,7 +120,7 @@ const Gallery = () => {
           </div>
         </div>
         
-        <div className="w-full px-1 py-6">
+        <div className="w-full px-0 py-6">
           {isLoading && allImages.length === 0 ? <MasonryGrid images={[]} isLoading={true} /> : displayedImages.length > 0 ? <MasonryGrid images={formattedImages} isLoading={isLoading || isFetching} hasMorePages={hasMorePages} loadMoreImages={loadMoreImages} /> : <EmptyResults onReset={handleResetFilters} hasFilters={hasActiveFilters} />}
         </div>
       </main>
