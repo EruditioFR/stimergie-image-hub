@@ -3,9 +3,10 @@
 // CONFIGURATION
 // ===========================
 
-$API_KEY = 'votre-cle-api-ultra-secrete'; // 🔒 À personnaliser
+$API_KEY = 'D5850UGNHB3RY6Z16SIGQCDDQGFQ398F'; // 🔒 À personnaliser
 $UPLOAD_DIR = __DIR__ . '/zip-downloads/'; // Dossier cible (doit être accessible en écriture)
-$PUBLIC_URL_BASE = 'https://votredomaine.com/zip-downloads/'; // URL publique de base
+$PUBLIC_URL_BASE = 'https://www.stimergie.fr/zip-downloads/'; // URL publique de base
+
 
 // ===========================
 // 1. Authentification
