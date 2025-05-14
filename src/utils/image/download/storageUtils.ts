@@ -51,12 +51,14 @@ export async function getZipFileUrl(fileName: string): Promise<string | null> {
   try {
     await ensureZipBucketExists();
     
-    const { data, error } = await supabase.storage
+    // Updated to handle the new API response structure
+    // The getPublicUrl method now returns { data: { publicUrl: string } } without an error property
+    const { data } = supabase.storage
       .from('zip_downloads')
       .getPublicUrl(fileName);
     
-    if (error) {
-      console.error('Erreur lors de la génération de l\'URL publique:', error.message);
+    if (!data || !data.publicUrl) {
+      console.error('Erreur: URL publique non disponible');
       return null;
     }
     
