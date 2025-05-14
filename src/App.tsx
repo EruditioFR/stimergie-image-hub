@@ -9,7 +9,7 @@ import NotFound from './pages/NotFound';
 import { AuthProvider } from './context/AuthContext';
 import { ImageProvider } from './context/ImageContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import LoadingScreen from './components/ui/LoadingScreen';
+import { LoadingScreen } from './components/ui/LoadingScreen';
 import Projects from './pages/Projects';
 import Clients from './pages/Clients';
 import Users from './pages/Users';
@@ -19,7 +19,7 @@ import Ensemble from './pages/Ensemble';
 import BlogEditor from './pages/BlogEditor';
 import BlogPost from './pages/BlogPost';
 import ResetPassword from './pages/ResetPassword';
-import ProtectedRoute from './components/auth/ProtectedRoute';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import SharedAlbum from './pages/SharedAlbum';
 import './App.css';
 

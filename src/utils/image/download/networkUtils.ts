@@ -45,3 +45,49 @@ export const fetchOptions = {
   mode: 'cors' as RequestMode,
   cache: 'no-store' as RequestCache
 };
+
+/**
+ * Constants for request timeouts and retries
+ */
+export const FETCH_TIMEOUT = 30000; // 30 seconds timeout
+export const MAX_RETRIES = 3; // Number of retry attempts
+export const RETRY_DELAY = 1000; // Base delay in ms between retries
+
+/**
+ * Sleep utility function to pause execution
+ * @param ms Milliseconds to sleep
+ */
+export function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Fetch with timeout functionality
+ * @param resource The resource to fetch
+ * @param options Fetch options
+ * @param timeoutMs Timeout in milliseconds
+ */
+export async function fetchWithTimeout(
+  resource: RequestInfo | URL,
+  options: RequestInit = {},
+  timeoutMs: number = FETCH_TIMEOUT
+): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(resource, {
+      ...options,
+      signal: controller.signal
+    });
+    
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    if ((error as Error).name === 'AbortError') {
+      throw new Error(`Request timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  }
+}
