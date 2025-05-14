@@ -55,7 +55,9 @@ export async function processImage(image: ImageForZip, isHDDownload = false): Pr
         credentials: 'omit',
         headers: {
           'Accept': 'image/*, */*;q=0.8',
-          'Cache-Control': 'no-cache'
+          'Cache-Control': 'no-cache',
+          'User-Agent': 'Mozilla/5.0 Image Downloader/2.0',
+          'Referer': 'https://www.stimergie.fr/'
         }
       }, FETCH_TIMEOUT);
       
@@ -66,7 +68,14 @@ export async function processImage(image: ImageForZip, isHDDownload = false): Pr
         throw new Error(`Empty blob received for image: ${image.title || image.id}`);
       }
       
-      console.log(`[processImage] Successfully downloaded image: ${image.title || image.id}, Size: ${Math.round(blob.size / 1024)}KB`);
+      // Verify that the downloaded blob is actually an image
+      if (!blob.type.startsWith('image/')) {
+        console.warn(`[processImage] Downloaded blob may not be an image. Type: ${blob.type}`);
+        
+        // We'll continue anyway since some servers might not set the correct Content-Type
+      }
+      
+      console.log(`[processImage] Successfully downloaded image: ${image.title || image.id}, Size: ${Math.round(blob.size / 1024)}KB, Type: ${blob.type}`);
       return { image, blob };
     } catch (error) {
       console.error(`[processImage] Error downloading image ${image.title || image.id}:`, error);
@@ -83,7 +92,9 @@ export async function processImage(image: ImageForZip, isHDDownload = false): Pr
             credentials: 'omit',
             headers: {
               'Accept': 'image/*, */*;q=0.8',
-              'Cache-Control': 'no-cache'
+              'Cache-Control': 'no-cache',
+              'User-Agent': 'Mozilla/5.0 Image Downloader/2.0',
+              'Referer': 'https://www.stimergie.fr/'
             }
           }, FETCH_TIMEOUT);
           
@@ -93,7 +104,7 @@ export async function processImage(image: ImageForZip, isHDDownload = false): Pr
             throw new Error(`Empty blob received for fallback image: ${image.title || image.id}`);
           }
           
-          console.log(`[processImage] Successfully downloaded fallback image: ${image.title || image.id}, Size: ${Math.round(blob.size / 1024)}KB`);
+          console.log(`[processImage] Successfully downloaded fallback image: ${image.title || image.id}, Size: ${Math.round(blob.size / 1024)}KB, Type: ${blob.type}`);
           return { image, blob };
         } catch (fallbackError) {
           console.error(`[processImage] Fallback download also failed:`, fallbackError);

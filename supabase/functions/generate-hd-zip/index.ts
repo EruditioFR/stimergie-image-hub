@@ -63,12 +63,14 @@ async function downloadImage(url: string, retries = 3): Promise<ArrayBuffer | nu
       
       console.log(`Downloading image (attempt ${attempt + 1}): ${url}`);
       
+      // Use a more robust fetch with proper headers
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'User-Agent': 'Supabase Edge Function Image Downloader/1.0',
-          'Accept': 'image/*, */*;q=0.8',
+          'User-Agent': 'Mozilla/5.0 Supabase Edge Function Image Downloader/2.0',
+          'Accept': 'image/jpeg, image/png, image/*',
           'Cache-Control': 'no-cache',
+          'Referer': 'https://www.stimergie.fr/'
         },
         redirect: 'follow',
       });
@@ -85,6 +87,13 @@ async function downloadImage(url: string, retries = 3): Promise<ArrayBuffer | nu
       }
       
       console.log(`Successfully downloaded ${sizeKB}KB from ${url}`);
+      
+      // Verify that we have a valid image file by checking the first few bytes for JPEG signature
+      const imageHeader = new Uint8Array(data.slice(0, 3));
+      if (!(imageHeader[0] === 0xFF && imageHeader[1] === 0xD8)) { // JPEG signature check
+        console.log(`Warning: Downloaded data may not be a valid JPEG image (bytes: ${imageHeader[0].toString(16)}${imageHeader[1].toString(16)}${imageHeader[2].toString(16)})`);
+      }
+      
       return data;
       
     } catch (error) {
@@ -189,10 +198,10 @@ serve(async (req) => {
         console.log(`URL originale: ${originalUrl}`);
         console.log(`URL HD: ${imageUrl}`);
         
-        // Télécharger l'image
+        // Télécharger l'image avec la fonction améliorée
         const imageData = await downloadImage(imageUrl);
         
-        if (!imageData) {
+        if (!imageData || imageData.byteLength === 0) {
           console.warn(`Échec du téléchargement pour l'image ${image.id || index}`);
           
           // Tentative avec l'URL originale si la transformation a été faite
@@ -200,7 +209,7 @@ serve(async (req) => {
             console.log(`Tentative avec l'URL originale: ${originalUrl}`);
             const fallbackData = await downloadImage(originalUrl);
             
-            if (!fallbackData) {
+            if (!fallbackData || fallbackData.byteLength === 0) {
               console.error(`Échec également avec l'URL originale pour l'image ${image.id || index}`);
               downloadsFailures++;
               continue;
@@ -266,13 +275,19 @@ serve(async (req) => {
     const zipContent = await zip.generateAsync({ 
       type: "uint8array",
       compression: "DEFLATE",
-      compressionOptions: { level: 6 }
+      compressionOptions: {
+        level: 5 // Balanced compression level
+      }
     });
     
     console.log(`Taille du ZIP généré: ${Math.round(zipContent.byteLength / 1024)}KB`);
     
     if (zipContent.byteLength === 0) {
       throw new Error("ZIP généré vide");
+    }
+    
+    if (zipContent.byteLength < 100) { // Arbitrary small size check
+      console.warn("ATTENTION: Le ZIP généré est très petit, possible problème avec le contenu");
     }
     
     // Créer un nom de fichier unique pour le ZIP

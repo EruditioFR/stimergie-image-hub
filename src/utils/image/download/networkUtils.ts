@@ -52,6 +52,19 @@ export async function fetchWithTimeout(
   
   console.log(`[fetchWithTimeout] Fetching: ${url} with timeout: ${timeoutMs}ms`);
   
+  // Add standard headers for better compatibility with image servers
+  const enhancedOptions = {
+    ...options,
+    signal,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 Image Downloader/2.0',
+      'Accept': 'image/jpeg, image/png, image/*',
+      'Cache-Control': 'no-cache',
+      'Referer': 'https://www.stimergie.fr/',
+      ...(options.headers || {})
+    }
+  };
+  
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(() => {
       controller.abort();
@@ -61,7 +74,7 @@ export async function fetchWithTimeout(
   
   try {
     const response = await Promise.race([
-      fetch(url, { ...options, signal }),
+      fetch(url, enhancedOptions),
       timeoutPromise
     ]) as Response;
     
