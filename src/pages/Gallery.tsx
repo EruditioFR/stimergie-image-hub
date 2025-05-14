@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/ui/layout/Header';
@@ -31,9 +30,11 @@ const Gallery = () => {
   } = useUserProfile(user, userRole);
   const pageLoadTimeRef = useRef(Date.now());
   const [isFlushing, setIsFlushing] = useState(false);
-  
-  const { selectedImages, toggleImageSelection, clearSelection } = useImageSelection();
-  
+  const {
+    selectedImages,
+    toggleImageSelection,
+    clearSelection
+  } = useImageSelection();
   const {
     allImages,
     isLoading,
@@ -113,41 +114,14 @@ const Gallery = () => {
   <div className="flex justify-between items-center w-full px-4 -mt-2 mb-2">
     <div className="flex items-center gap-4">
       {/* Afficher les boutons de téléchargement uniquement si des images sont sélectionnées */}
-      {selectedImages.length > 0 && displayedImages.length > 0 && (
-        <GalleryDownloadButtons images={displayedImages.filter(img => selectedImages.includes(img.id))} />
-      )}
+      {selectedImages.length > 0 && displayedImages.length > 0 && <GalleryDownloadButtons images={displayedImages.filter(img => selectedImages.includes(img.id))} />}
 
-      {isAdmin && (
-        <Button
-          onClick={handleFlushCache}
-          variant="outline"
-          size="sm"
-          disabled={isFlushing}
-          className="ml-auto"
-        >
-          <Trash2 className="h-4 w-4 mr-1" />
-          {isFlushing ? "Vidage en cours..." : "Vider le cache"}
-        </Button>
-      )}
+      {isAdmin}
     </div>
   </div>
 
   <div className="w-full px-0 py-0">
-    {isLoading && allImages.length === 0 ? (
-      <MasonryGrid images={[]} isLoading={true} />
-    ) : displayedImages.length > 0 ? (
-      <MasonryGrid 
-        images={formattedImages} 
-        isLoading={isLoading || isFetching} 
-        hasMorePages={hasMorePages} 
-        loadMoreImages={loadMoreImages}
-        selectedImages={selectedImages}
-        onImageSelect={toggleImageSelection}
-        onClearSelection={clearSelection}
-      />
-    ) : (
-      <EmptyResults onReset={handleResetFilters} hasFilters={hasActiveFilters} />
-    )}
+    {isLoading && allImages.length === 0 ? <MasonryGrid images={[]} isLoading={true} /> : displayedImages.length > 0 ? <MasonryGrid images={formattedImages} isLoading={isLoading || isFetching} hasMorePages={hasMorePages} loadMoreImages={loadMoreImages} selectedImages={selectedImages} onImageSelect={toggleImageSelection} onClearSelection={clearSelection} /> : <EmptyResults onReset={handleResetFilters} hasFilters={hasActiveFilters} />}
   </div>
     </main>
 
@@ -156,4 +130,3 @@ const Gallery = () => {
     </div>;
 };
 export default Gallery;
-
