@@ -125,7 +125,15 @@ export function MasonryToolbarContent({
         });
       }
       
+      // Correction de la valeur Infinity (nombre et non chaîne)
+      toast.loading("Préparation du téléchargement", {
+        id: "zip-preparation",
+        duration: Infinity
+      });
+      
       await downloadImagesAsZip(imagesForDownload, `images_${Date.now()}.zip`);
+      
+      toast.dismiss("zip-preparation");
       toast.success("Images téléchargées avec succès");
       
     } catch (error) {
@@ -226,13 +234,6 @@ export function MasonryToolbarContent({
         return;
       }
       
-      // Afficher les premières URLs pour debug
-      console.log("[handleDownloadHD] First 3 HD download URLs:");
-      imagesForDownload.slice(0, 3).forEach((img, i) => {
-        console.log(`[handleDownloadHD] ${i+1}. ID: ${img.id}, Title: ${img.title}, URL: ${img.url}`);
-        console.log(`[handleDownloadHD] URL contains '/JPG/': ${img.url.includes('/JPG/')}`);
-      });
-      
       // Informer l'utilisateur si certaines images ont été exclues
       if (failedImages.length > 0) {
         const message = failedImages.length === 1 
@@ -244,6 +245,7 @@ export function MasonryToolbarContent({
         });
       }
       
+      // Correction de la valeur Infinity (nombre et non chaîne)
       toast.loading("Préparation du ZIP HD en cours", {
         id: "zip-hd-preparation",
         duration: Infinity
