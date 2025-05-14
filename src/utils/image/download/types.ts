@@ -1,8 +1,10 @@
-
 export interface ImageForZip {
+  /** URL de l'image */
   url: string;
+  /** Titre de l'image */
   title: string;
-  id: string | number;  // Accepte désormais les deux types pour plus de flexibilité
+  /** ID de l'image (peut être un string ou un number selon la source) */
+  id: string | number;
 }
 
 export interface DownloadResult {

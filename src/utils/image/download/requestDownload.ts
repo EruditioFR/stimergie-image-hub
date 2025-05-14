@@ -146,7 +146,20 @@ export async function requestServerDownload(
       }
 
       // 2.5 Mettre à jour le statut de la demande avec l'URL de téléchargement
-      await updateDownloadStatus(recordData.id, "ready", downloadUrl);
+      const { error: updateError } = await supabase
+        .from("download_requests")
+        .update({
+          download_url: downloadUrl,
+          status: "ready",
+          processed_at: new Date().toISOString(),
+          image_title: `${images.length} images (${isHD ? "HD" : "Web"})`
+        })
+        .eq("id", recordData.id);
+      
+      if (updateError) {
+        console.error("Erreur lors de la mise à jour du statut:", updateError);
+        throw new Error(`Échec de la mise à jour du statut: ${updateError.message}`);
+      }
       
       // 2.6 Afficher le message de succès
       toast.dismiss("download-request");
@@ -161,7 +174,14 @@ export async function requestServerDownload(
       console.error("Erreur lors de la création du ZIP:", err);
       
       // Mettre à jour le statut de la demande en échec
-      await updateDownloadStatus(recordData.id, "expired");
+      await supabase
+        .from("download_requests")
+        .update({
+          status: "expired",
+          processed_at: new Date().toISOString(),
+          image_title: `Échec - ${images.length} images (${isHD ? "HD" : "Web"})`
+        })
+        .eq("id", recordData.id);
       
       toast.dismiss("download-request");
       toast.error("Échec de la préparation du téléchargement", {
