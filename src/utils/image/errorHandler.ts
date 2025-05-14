@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for handling image URL errors
  */
@@ -20,55 +19,34 @@ export function validateImageUrl(
   url: string,
   imageId: string | number,
   imageTitle: string
-): ValidationResult {
-  // Check if URL exists
-  if (!url || url.trim() === '') {
-    console.error(`Missing URL for image ${imageId}: ${imageTitle}`);
+): { isValid: boolean; url: string | null; error: string | null } {
+  // URL vide
+  if (!url) {
     return {
       isValid: false,
       url: null,
-      error: `URL manquante pour l'image ${imageTitle}`
+      error: `URL vide pour image ${imageTitle} (ID: ${imageId})`
     };
   }
-
-  // Log the URL being validated
-  console.log(`Validating URL for image ${imageId}: ${url.substring(0, 100)}${url.length > 100 ? '...' : ''}`);
-
-  try {
-    // Check if URL is from stimergie.fr
-    if (url.includes('stimergie.fr')) {
-      // Make sure URL is properly encoded
-      const urlParts = url.split('/');
-      const lastPart = urlParts[urlParts.length - 1];
-      
-      // If URL has spaces or special chars that should be encoded
-      if (lastPart.includes(' ') || /[^\w\-\.\/]/.test(lastPart)) {
-        // Replace the last part with properly encoded version
-        urlParts[urlParts.length - 1] = encodeURIComponent(lastPart);
-        const encodedUrl = urlParts.join('/');
-        
-        console.log(`URL reencoded: ${encodedUrl}`);
-        
-        return {
-          isValid: true,
-          url: encodedUrl,
-          error: null
-        };
-      }
-    }
-    
-    // If URL passed all checks
+  
+  // URL non sécurisée (http)
+  if (url.startsWith('http:')) {
+    // Essayer de convertir en https
+    const httpsUrl = url.replace('http:', 'https:');
     return {
       isValid: true,
-      url: url,
+      url: httpsUrl,
       error: null
     };
-  } catch (error) {
-    console.error(`Error validating URL for image ${imageId}:`, error);
-    return {
-      isValid: false,
-      url: null,
-      error: `Erreur de validation d'URL: ${error}`
-    };
   }
+  
+  // Vérifier que l'URL est au format JPG (plutôt que de vérifier la présence de /JPG/)
+  // Cette logique est désormais séparée et gérée par les fonctions spécifiques
+  
+  // Si tout est OK
+  return {
+    isValid: true,
+    url,
+    error: null
+  };
 }

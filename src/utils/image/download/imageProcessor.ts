@@ -1,7 +1,7 @@
 
 import { toast } from 'sonner';
 import { ImageForZip, DownloadResult } from './types';
-import { fetchWithTimeout, FETCH_TIMEOUT, MAX_RETRIES, RETRY_DELAY, sleep } from './networkUtils';
+import { fetchWithTimeout, FETCH_TIMEOUT, MAX_RETRIES, RETRY_DELAY, sleep, transformToHDUrl } from './networkUtils';
 
 /**
  * Process a single image with retries and multiple fetch strategies
@@ -17,9 +17,11 @@ export async function processImage(image: ImageForZip, isHDDownload = false): Pr
   console.log(`[processImage] Original URL: ${originalUrl}`);
   console.log(`[processImage] URL contains '/JPG/': ${originalUrl.includes('/JPG/')}`);
   
-  if (isHDDownload && originalUrl.includes('/JPG/')) {
-    console.warn(`[processImage] WARNING: HD download URL contains '/JPG/' segment: ${originalUrl}`);
-  }
+  // Transformer l'URL pour le téléchargement HD en supprimant /JPG/ si nécessaire
+  const processUrl = isHDDownload ? transformToHDUrl(originalUrl) : originalUrl;
+  
+  console.log(`[processImage] Process URL after HD transformation: ${processUrl}`);
+  console.log(`[processImage] Processed URL contains '/JPG/': ${processUrl.includes('/JPG/')}`);
   
   let retries = 0;
   
@@ -31,10 +33,9 @@ export async function processImage(image: ImageForZip, isHDDownload = false): Pr
         await sleep(delay);
       }
       
-      // Don't modify the URL - use it exactly as received
-      const fetchUrl = originalUrl;
+      // Utiliser l'URL transformée pour le téléchargement
+      const fetchUrl = processUrl;
       console.log(`[processImage] Attempting fetch with URL: ${fetchUrl}`);
-      console.log(`[processImage] Fetch URL contains '/JPG/': ${fetchUrl.includes('/JPG/')}`);
       
       const response = await fetchWithTimeout(fetchUrl, {
         method: 'GET',

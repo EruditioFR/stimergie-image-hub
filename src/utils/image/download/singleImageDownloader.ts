@@ -1,5 +1,6 @@
 
 import { toast } from 'sonner';
+import { transformToHDUrl, isJpgUrl } from './networkUtils';
 
 export type ImageDownloadFormat = 'jpg' | 'png' | 'auto';
 
@@ -8,8 +9,14 @@ export type ImageDownloadFormat = 'jpg' | 'png' | 'auto';
  * @param url URL of the image to download
  * @param filename Filename to use for the saved file
  * @param format Optional format to enforce for the downloaded file
+ * @param isHD Whether to download the HD version (without /JPG/ segment)
  */
-export async function downloadImage(url: string, filename: string, format: ImageDownloadFormat = 'auto'): Promise<void> {
+export async function downloadImage(
+  url: string, 
+  filename: string, 
+  format: ImageDownloadFormat = 'auto',
+  isHD: boolean = false
+): Promise<void> {
   if (!url) {
     console.error('Download failed: URL is empty');
     toast.error('Échec du téléchargement', {
@@ -20,6 +27,13 @@ export async function downloadImage(url: string, filename: string, format: Image
 
   console.log(`[downloadImage] Downloading image from URL: ${url}`);
   console.log(`[downloadImage] URL contains '/JPG/': ${url.includes('/JPG/')}`);
+  console.log(`[downloadImage] HD mode: ${isHD}`);
+  
+  // Si c'est un téléchargement HD, transformer l'URL en supprimant /JPG/
+  const downloadUrl = isHD ? transformToHDUrl(url) : url;
+  
+  console.log(`[downloadImage] Final download URL: ${downloadUrl}`);
+  console.log(`[downloadImage] Final URL contains '/JPG/': ${downloadUrl.includes('/JPG/')}`);
   console.log(`[downloadImage] Saving as filename: ${filename}`);
   
   try {
@@ -31,11 +45,11 @@ export async function downloadImage(url: string, filename: string, format: Image
     } else if (format === 'png') {
       fileExtension = '.png';
     } else {
-      // Auto-determine from URL or default to png
-      if (url.toLowerCase().includes('.jpg') || url.toLowerCase().includes('.jpeg')) {
+      // Auto-determine from URL or default to jpg (car ce sont majoritairement des JPG)
+      if (url.toLowerCase().includes('.jpg') || url.toLowerCase().includes('.jpeg') || url.includes('/JPG/')) {
         fileExtension = '.jpg';
       } else {
-        fileExtension = '.png'; // Default to PNG
+        fileExtension = '.jpg'; // Par défaut on privilégie JPG
       }
     }
     
@@ -45,7 +59,7 @@ export async function downloadImage(url: string, filename: string, format: Image
       : filename.replace(/\.[^.]+$/, '') + fileExtension;
     
     // Fetch the image - use exact URL without modification
-    const response = await fetch(url, { 
+    const response = await fetch(downloadUrl, { 
       mode: 'cors',
       cache: 'no-cache',
       headers: {

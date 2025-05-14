@@ -5,6 +5,7 @@ import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { downloadImage } from '@/utils/image/download';
 import { useNavigate } from 'react-router-dom';
+import { transformToHDUrl } from '@/utils/image/download/networkUtils';
 
 interface DownloadRequestButtonProps {
   imageId: string;
@@ -45,13 +46,19 @@ export const DownloadRequestButton = ({
       let downloadUrl = imageSrc;
       if (folderName) {
         const cleanTitle = imageTitle.replace(/\.(jpg|jpeg|png)$/i, '');
-        // Use the format with /JPG/ segment as requested
+        // Toujours générer avec le format JPG pour assurer la cohérence
         downloadUrl = `https://www.stimergie.fr/photos/${encodeURIComponent(folderName)}/JPG/${encodeURIComponent(cleanTitle)}.jpg`;
         console.log(`Generated URL for download: ${downloadUrl}`);
       }
       
-      // Perform direct download
-      await downloadImage(downloadUrl, filename);
+      // Si c'est un téléchargement HD, transformer l'URL
+      if (isHD) {
+        downloadUrl = transformToHDUrl(downloadUrl);
+        console.log(`Transformed to HD URL: ${downloadUrl}`);
+      }
+      
+      // Perform direct download with HD flag
+      await downloadImage(downloadUrl, filename, 'jpg', isHD);
       
       toast.success('Image téléchargée avec succès');
       

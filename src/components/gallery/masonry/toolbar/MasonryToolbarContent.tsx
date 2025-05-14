@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Image } from '@/utils/image/types';
@@ -12,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { downloadImagesAsZip } from '@/utils/image/download';
 import { generateDownloadImageHDUrl, generateDownloadImageSDUrl } from '@/utils/image/imageUrlGenerator';
 import { validateImageUrl } from '@/utils/image/errorHandler';
+import { isJpgUrl } from '@/utils/image/download/networkUtils';
 
 interface MasonryToolbarContentProps {
   selectedImages: string[];
@@ -60,10 +60,10 @@ export function MasonryToolbarContent({
       
       for (const img of selectedImagesData) {
         // Priorité à l'URL stockée en base
-        let pngUrl = img.url || '';
+        let imageUrl = img.url || '';
         
-        // Si l'URL n'est pas une URL PNG ou est vide, essayer de générer une URL
-        if (!pngUrl || !pngUrl.includes('/JPG/')) {
+        // Si l'URL n'est pas au format JPG ou est vide, essayer de générer une URL
+        if (!imageUrl || !isJpgUrl(imageUrl)) {
           // Extraire le nom du dossier à partir des données du projet ou utiliser un fallback
           let folderName = "";
           if (img.projets?.nom_dossier) {
@@ -77,21 +77,20 @@ export function MasonryToolbarContent({
           // Générer l'URL JPG uniquement si nécessaire
           if (folderName) {
             const generatedUrl = generateDownloadImageSDUrl(folderName, imageTitle);
-            if (!pngUrl) {
-              pngUrl = generatedUrl;
-            }
+            imageUrl = generatedUrl;
+            console.log(`Generated JPG URL: ${imageUrl}`);
           }
         }
         
         // En dernier recours: utiliser n'importe quelle URL disponible
-        if (!pngUrl && img.display_url) {
-          pngUrl = img.display_url;
-        } else if (!pngUrl && img.src) {
-          pngUrl = img.src;
+        if (!imageUrl && img.display_url) {
+          imageUrl = img.display_url;
+        } else if (!imageUrl && img.src) {
+          imageUrl = img.src;
         }
         
         // Valider l'URL avant de l'ajouter
-        const validationResult = validateImageUrl(pngUrl, img.id, img.title || `image_${img.id}`);
+        const validationResult = validateImageUrl(imageUrl, img.id, img.title || `image_${img.id}`);
         if (validationResult.isValid && validationResult.url) {
           imagesForDownload.push({
             url: validationResult.url,
@@ -185,38 +184,36 @@ export function MasonryToolbarContent({
         const imageTitle = img.title || `image-${img.id}`;
         
         // Générer l'URL HD selon le nouveau format direct sans /JPG/
-        let hdUrl = '';
+        let imageUrl = '';
         
-        // Si on a un nom de dossier, générer l'URL HD au format direct
+        // Si on a un nom de dossier, générer l'URL dans tous les cas
         if (folderName) {
-          // Utiliser explicitement la fonction de génération d'URL HD
-          hdUrl = generateDownloadImageHDUrl(folderName, imageTitle);
-          console.log(`[handleDownloadHD] Generated explicit HD URL: ${hdUrl}`);
-          console.log(`[handleDownloadHD] HD URL contains '/JPG/': ${hdUrl.includes('/JPG/')}`);
+          // Pour HD, utiliser directement la génération d'URL HD
+          imageUrl = generateDownloadImageHDUrl(folderName, imageTitle);
+          console.log(`[handleDownloadHD] Generated explicit HD URL: ${imageUrl}`);
         } 
         // Sinon priorité à l'URL déjà disponible dans l'objet image
-        else if (img.download_url) {
-          hdUrl = img.download_url;
-          console.log(`[handleDownloadHD] Using existing download_url: ${hdUrl}`);
-          console.log(`[handleDownloadHD] download_url contains '/JPG/': ${hdUrl.includes('/JPG/')}`);
+        else if (img.url) {
+          // Pour HD, supprimer le segment /JPG/ s'il est présent
+          if (img.url.includes('/JPG/')) {
+            imageUrl = img.url.replace('/JPG/', '/');
+          } else {
+            imageUrl = img.url;
+          }
+          console.log(`[handleDownloadHD] Using modified url: ${imageUrl}`);
         }
         // Dernier recours: utiliser n'importe quelle URL disponible
-        else if (img.url) {
-          hdUrl = img.url;
-          console.log(`[handleDownloadHD] Fallback to image url: ${hdUrl}`);
-          console.log(`[handleDownloadHD] url contains '/JPG/': ${hdUrl.includes('/JPG/')}`);
+        else if (img.display_url) {
+          imageUrl = img.display_url;
+        } else if (img.src) {
+          imageUrl = img.src;
         }
         
         // Valider l'URL avant de l'ajouter
-        const validationResult = validateImageUrl(hdUrl, img.id, imageTitle);
+        const validationResult = validateImageUrl(imageUrl, img.id, imageTitle);
         if (validationResult.isValid && validationResult.url) {
-          // S'assurer que l'URL HD ne contient pas accidentellement "/JPG/"
-          const finalUrl = validationResult.url;
-          console.log(`[handleDownloadHD] Final URL for HD download: ${finalUrl}`);
-          console.log(`[handleDownloadHD] Final URL contains '/JPG/': ${finalUrl.includes('/JPG/')}`);
-          
           imagesForDownload.push({
-            url: finalUrl,
+            url: validationResult.url,
             title: img.title || `image_${img.id}`,
             id: img.id
           });
