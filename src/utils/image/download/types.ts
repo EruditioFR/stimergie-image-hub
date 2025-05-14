@@ -4,3 +4,8 @@ export interface ImageForZip {
   url: string;
   title: string;
 }
+
+export interface DownloadResult {
+  image: ImageForZip;
+  blob: Blob;
+}
