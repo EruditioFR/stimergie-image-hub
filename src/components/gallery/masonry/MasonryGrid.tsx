@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useImageSelection } from '@/hooks/useImageSelection';
@@ -20,25 +19,44 @@ interface MasonryGridProps {
   isLoading?: boolean;
   hasMorePages?: boolean;
   loadMoreImages?: () => void;
+  selectedImages?: string[];
+  onImageSelect?: (id: string) => void;
+  onClearSelection?: () => void;
 }
 
 export function MasonryGrid({ 
   images, 
   isLoading = false,
   hasMorePages = false,
-  loadMoreImages
+  loadMoreImages,
+  selectedImages = [],
+  onImageSelect,
+  onClearSelection
 }: MasonryGridProps) {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [selectedImageDetail, setSelectedImageDetail] = useState<any>(null);
   const [isImageDetailOpen, setIsImageDetailOpen] = useState(false);
   const { user } = useAuth();
+  
+  // Use the provided selection props if available, otherwise use the hook internally
   const { 
-    selectedImages, 
-    toggleImageSelection, 
-    isImageSelected, 
-    clearSelection,
-    selectAllImages 
+    selectedImages: internalSelectedImages, 
+    toggleImageSelection: internalToggleImageSelection, 
+    isImageSelected: internalIsImageSelected, 
+    clearSelection: internalClearSelection,
+    selectAllImages: internalSelectAllImages 
   } = useImageSelection();
+  
+  // Use either the props or the internal state
+  const effectiveSelectedImages = selectedImages || internalSelectedImages;
+  const toggleImageSelection = onImageSelect || internalToggleImageSelection;
+  const clearSelection = onClearSelection || internalClearSelection;
+  const selectAllImages = internalSelectAllImages;
+  
+  const isImageSelected = useCallback((id: string) => {
+    return effectiveSelectedImages.includes(id);
+  }, [effectiveSelectedImages]);
+  
   const [searchParams] = useSearchParams();
   const viewportRef = useRef<HTMLDivElement>(null);
   
@@ -105,12 +123,12 @@ export function MasonryGrid({
     <div ref={viewportRef}>
       <div className="flex items-center justify-between mb-4">
         <MasonryToolbar 
-          selectedImages={selectedImages}
+          selectedImages={effectiveSelectedImages}
           clearSelection={clearSelection}
           onShareDialogChange={setIsShareDialogOpen}
           images={images}
         />
-        {selectedImages.length === 0 && images.length > 0 && (
+        {effectiveSelectedImages.length === 0 && images.length > 0 && (
           <Button 
             variant="outline" 
             size="sm" 
@@ -150,8 +168,8 @@ export function MasonryGrid({
         onClose={handleCloseImageDetail}
         isShareDialogOpen={isShareDialogOpen}
         setIsShareDialogOpen={setIsShareDialogOpen}
-        selectedImages={selectedImages}
-        images={images.filter(img => selectedImages.includes(img.id))}
+        selectedImages={effectiveSelectedImages}
+        images={images.filter(img => effectiveSelectedImages.includes(img.id))}
       />
     </div>
   );
