@@ -1,7 +1,14 @@
 
 import { toast } from 'sonner';
 import { ImageForZip, DownloadResult } from './types';
-import { fetchWithTimeout, FETCH_TIMEOUT, MAX_RETRIES, RETRY_DELAY, sleep, transformToHDUrl } from './networkUtils';
+import { 
+  fetchWithTimeout, 
+  FETCH_TIMEOUT, 
+  MAX_RETRIES, 
+  RETRY_DELAY, 
+  sleep, 
+  transformToHDUrl 
+} from './networkUtils';
 
 /**
  * Process a single image with retries and multiple fetch strategies

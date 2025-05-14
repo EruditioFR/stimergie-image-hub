@@ -12,6 +12,31 @@ export const sleep = (ms: number): Promise<void> => {
 };
 
 /**
+ * Transforms a standard URL to an HD URL by removing the /JPG/ segment
+ */
+export const transformToHDUrl = (url: string): string => {
+  if (!url) return url;
+  
+  // If URL contains /JPG/ segment, remove it to get the HD version
+  if (url.includes('/JPG/')) {
+    return url.replace('/JPG/', '/');
+  }
+  
+  return url;
+};
+
+/**
+ * Checks if a URL is for a JPG image
+ */
+export const isJpgUrl = (url: string): boolean => {
+  if (!url) return false;
+  
+  return url.toLowerCase().includes('.jpg') || 
+         url.toLowerCase().includes('.jpeg') || 
+         url.includes('/JPG/');
+};
+
+/**
  * Fetches URL with timeout
  */
 export async function fetchWithTimeout(

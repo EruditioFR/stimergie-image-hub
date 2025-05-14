@@ -27,6 +27,14 @@ export async function requestDownload({
       return { success: false };
     }
     
+    // Get the current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast.error("Vous devez être connecté pour télécharger des images");
+      return { success: false };
+    }
+    
     const { data, error } = await supabase
       .from('download_requests')
       .insert({
@@ -34,7 +42,9 @@ export async function requestDownload({
         image_src: imageSrc,
         image_title: imageTitle || `image-${imageId}`,
         is_hd: isHD,
-        status: 'pending'
+        status: 'pending',
+        user_id: user.id,
+        download_url: '' // Provide a default empty value
       })
       .select('id')
       .single();

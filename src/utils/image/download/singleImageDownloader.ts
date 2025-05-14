@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 import { transformToHDUrl, isJpgUrl } from './networkUtils';
 
@@ -6,10 +5,6 @@ export type ImageDownloadFormat = 'jpg' | 'png' | 'auto';
 
 /**
  * Downloads an image from a given URL and saves it to the user's device
- * @param url URL of the image to download
- * @param filename Filename to use for the saved file
- * @param format Optional format to enforce for the downloaded file
- * @param isHD Whether to download the HD version (without /JPG/ segment)
  */
 export async function downloadImage(
   url: string, 
