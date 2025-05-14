@@ -149,12 +149,16 @@ export async function requestServerDownload(
         });
       }
       
-      const downloadUrl = await uploadZipToO2Switch(zipBlob, zipFileName);
+      const uploadResult = await uploadZipToO2Switch(zipBlob, zipFileName);
       
-      if (!downloadUrl) {
+      // Si l'upload a échoué mais n'a pas généré d'erreur
+      if (!uploadResult) {
         throw new Error("Échec de l'upload du ZIP");
       }
 
+      // Construire l'URL de téléchargement avec le format correct
+      const downloadUrl = `https://www.stimergie.fr/zip-downloads/${zipFileName}`;
+      
       // 2.5 Mettre à jour le statut de la demande avec l'URL de téléchargement
       const { error: updateError } = await supabase
         .from("download_requests")
