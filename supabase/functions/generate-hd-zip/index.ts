@@ -1,5 +1,5 @@
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.3";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { JSZip } from "https://deno.land/x/jszip@0.11.0/mod.ts";
@@ -262,4 +262,3 @@ serve(async (req) => {
     });
   }
 });
-
