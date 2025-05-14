@@ -50,9 +50,8 @@ export function ClientsFilter({ selectedClient, onClientChange, className, userR
         }
       } catch (error) {
         console.error('Error loading clients:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger la liste des clients"
+        toast("Impossible de charger la liste des clients", {
+          description: "Une erreur est survenue lors du chargement des clients"
         });
       } finally {
         setIsLoading(false);
