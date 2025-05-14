@@ -111,14 +111,7 @@ const Gallery = () => {
       <main className="flex-grow w-screen px-0">
   <GalleryHeader title="Banque d'images" activeTab={activeTab} onTabChange={handleTabChange} categories={categories} selectedClient={selectedClient} onClientChange={handleClientChange} selectedProject={selectedProject} onProjectChange={handleProjectChange} selectedOrientation={selectedOrientation} onOrientationChange={handleOrientationChange} userName={userProfile?.firstName || ''} userLastName={userProfile?.lastName || ''} userRole={userRole} userClientId={userClientId} />
 
-  <div className="flex justify-between items-center w-full px-4 -mt-2 mb-2">
-    <div className="flex items-center gap-4">
-      {/* Afficher les boutons de téléchargement uniquement si des images sont sélectionnées */}
-      {selectedImages.length > 0 && displayedImages.length > 0 && <GalleryDownloadButtons images={displayedImages.filter(img => selectedImages.includes(img.id))} />}
-
-      {isAdmin}
-    </div>
-  </div>
+  
 
   <div className="w-full px-0 py-0">
     {isLoading && allImages.length === 0 ? <MasonryGrid images={[]} isLoading={true} /> : displayedImages.length > 0 ? <MasonryGrid images={formattedImages} isLoading={isLoading || isFetching} hasMorePages={hasMorePages} loadMoreImages={loadMoreImages} selectedImages={selectedImages} onImageSelect={toggleImageSelection} onClearSelection={clearSelection} /> : <EmptyResults onReset={handleResetFilters} hasFilters={hasActiveFilters} />}
