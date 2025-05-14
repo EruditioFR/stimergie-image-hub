@@ -29,7 +29,7 @@ export async function downloadImagesAsZip(
     console.log(`[downloadImagesAsZip] ${index+1}. ID: ${img.id}, Title: ${img.title}, URL: ${img.url}`);
     console.log(`[downloadImagesAsZip] URL contains '/JPG/': ${img.url?.includes('/JPG/') || false}`);
     if (isHDDownload && img.url?.includes('/JPG/')) {
-      console.warn(`[downloadImagesAsZip] WARNING: HD URL contains '/JPG/' segment: ${img.url}`);
+      console.log(`[downloadImagesAsZip] HD URL contains '/JPG/' segment, will be transformed during processing`);
     }
   });
   
@@ -42,6 +42,7 @@ export async function downloadImagesAsZip(
   const zip = new JSZip();
   let successCount = 0;
   let failureCount = 0;
+  let totalSize = 0;
   
   const imgFolder = zip.folder('images');
   if (!imgFolder) {
@@ -72,7 +73,11 @@ export async function downloadImagesAsZip(
           ? image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() 
           : `image_${image.id}`;
         
+        // Log the size of each image being added to the ZIP
+        console.log(`[downloadImagesAsZip] Adding to ZIP: ${safeTitle}.jpg, size: ${Math.round(blob.size / 1024)}KB`);
+        
         imgFolder.file(`${safeTitle}.jpg`, blob);
+        totalSize += blob.size;
         successCount++;
       } else {
         failureCount++;
@@ -97,6 +102,7 @@ export async function downloadImagesAsZip(
     }
     
     console.log(`[downloadImagesAsZip] Generating ZIP with ${successCount} images (${failureCount} failed)`);
+    console.log(`[downloadImagesAsZip] Total size of images: ${Math.round(totalSize / 1024 / 1024)}MB`);
     
     toast.loading(`Compression du ZIP en cours...`, {
       id: 'zip-download',
@@ -110,6 +116,15 @@ export async function downloadImagesAsZip(
         level: 3
       }
     });
+    
+    console.log(`[downloadImagesAsZip] Final ZIP size: ${Math.round(zipBlob.size / 1024 / 1024)}MB`);
+    
+    // Verify that the ZIP is not empty
+    if (zipBlob.size === 0) {
+      toast.dismiss('zip-download');
+      toast.error('Erreur: Le ZIP généré est vide');
+      return;
+    }
     
     toast.loading(`Téléchargement du ZIP en cours...`, {
       id: 'zip-download',

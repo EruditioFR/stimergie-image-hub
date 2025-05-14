@@ -31,9 +31,16 @@ function isValidImageUrl(url: string): boolean {
 
 // Fonction pour transformer une URL JPG standard en URL HD
 function transformToHDUrl(url: string): string {
+  if (!url) return url;
+  
+  // If URL contains /JPG/ segment, remove it to get the HD version
   if (url.includes('/JPG/')) {
-    return url.replace('/JPG/', '/');
+    const transformedUrl = url.replace('/JPG/', '/');
+    console.log(`Transformed URL from ${url} to ${transformedUrl}`);
+    return transformedUrl;
   }
+  
+  console.log(`URL doesn't contain /JPG/, keeping original: ${url}`);
   return url; 
 }
 
@@ -42,28 +49,52 @@ function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Fonction pour télécharger une image
-async function downloadImage(url: string): Promise<ArrayBuffer | null> {
-  try {
-    console.log(`Téléchargement de l'image: ${url}`);
-    
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Supabase Edge Function Image Downloader',
-      },
-    });
-    
-    if (!response.ok) {
-      console.error(`Échec du téléchargement: ${response.status} ${response.statusText}`);
-      return null;
+// Fonction pour télécharger une image avec retry logic intégré
+async function downloadImage(url: string, retries = 3): Promise<ArrayBuffer | null> {
+  let lastError: Error | null = null;
+  
+  // Try to download the image with retries
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      if (attempt > 0) {
+        console.log(`Retry attempt ${attempt}/${retries} for ${url}`);
+        await delay(1000 * attempt); // Progressive delay
+      }
+      
+      console.log(`Downloading image (attempt ${attempt + 1}): ${url}`);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Supabase Edge Function Image Downloader/1.0',
+          'Accept': 'image/*, */*;q=0.8',
+          'Cache-Control': 'no-cache',
+        },
+        redirect: 'follow',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.arrayBuffer();
+      const sizeKB = Math.round(data.byteLength / 1024);
+      
+      if (data.byteLength === 0) {
+        throw new Error("Empty image data received");
+      }
+      
+      console.log(`Successfully downloaded ${sizeKB}KB from ${url}`);
+      return data;
+      
+    } catch (error) {
+      console.error(`Download error (attempt ${attempt + 1}/${retries + 1}):`, error);
+      lastError = error instanceof Error ? error : new Error(String(error));
     }
-    
-    return await response.arrayBuffer();
-    
-  } catch (error) {
-    console.error(`Erreur lors du téléchargement: ${error.message}`);
-    return null;
   }
+  
+  console.error(`All ${retries + 1} download attempts failed for ${url}: ${lastError?.message}`);
+  return null;
 }
 
 // Fonction principale
@@ -114,6 +145,9 @@ serve(async (req) => {
       });
     }
 
+    // Log the raw image data for debugging
+    console.log(`Request contains ${images.length} images. First image:`, JSON.stringify(images[0]));
+
     // Préparer le fichier ZIP
     console.log(`Préparation du ZIP pour ${images.length} images`);
     const zip = new JSZip();
@@ -129,26 +163,70 @@ serve(async (req) => {
     
     let downloadsSuccessful = 0;
     let downloadsFailures = 0;
+    let totalFileSize = 0;
     
     // Télécharger et ajouter chaque image au ZIP
     for (const [index, image] of images.entries()) {
       try {
         // Vérifier que l'URL est valide
+        if (!image.url) {
+          console.warn(`URL manquante pour l'image ${image.id}`);
+          downloadsFailures++;
+          continue;
+        }
+        
         if (!isValidImageUrl(image.url)) {
           console.warn(`URL invalide pour l'image ${image.id}: ${image.url}`);
           downloadsFailures++;
           continue;
         }
         
-        // Transformer l'URL en HD si nécessaire
-        const imageUrl = transformToHDUrl(image.url);
+        // Transformer l'URL en HD en supprimant le segment /JPG/
+        const originalUrl = image.url;
+        const imageUrl = transformToHDUrl(originalUrl);
+        
         console.log(`Téléchargement de l'image ${index + 1}/${images.length}: ${imageUrl}`);
+        console.log(`URL originale: ${originalUrl}`);
+        console.log(`URL HD: ${imageUrl}`);
         
         // Télécharger l'image
         const imageData = await downloadImage(imageUrl);
         
         if (!imageData) {
-          console.warn(`Échec du téléchargement pour l'image ${image.id}`);
+          console.warn(`Échec du téléchargement pour l'image ${image.id || index}`);
+          
+          // Tentative avec l'URL originale si la transformation a été faite
+          if (imageUrl !== originalUrl) {
+            console.log(`Tentative avec l'URL originale: ${originalUrl}`);
+            const fallbackData = await downloadImage(originalUrl);
+            
+            if (!fallbackData) {
+              console.error(`Échec également avec l'URL originale pour l'image ${image.id || index}`);
+              downloadsFailures++;
+              continue;
+            }
+            
+            console.log(`Succès avec l'URL originale, taille: ${Math.round(fallbackData.byteLength / 1024)}KB`);
+            
+            // Générer un nom de fichier sécurisé pour l'image
+            const safeTitle = image.title 
+              ? image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() 
+              : `image_${image.id || index}`;
+              
+            // Ajouter l'image au ZIP
+            imgFolder.file(`${safeTitle}.jpg`, fallbackData);
+            totalFileSize += fallbackData.byteLength;
+            downloadsSuccessful++;
+            continue;
+          }
+          
+          downloadsFailures++;
+          continue;
+        }
+        
+        // Vérifier que l'image téléchargée n'est pas vide
+        if (imageData.byteLength === 0) {
+          console.warn(`Image vide reçue pour ${image.id || index}`);
           downloadsFailures++;
           continue;
         }
@@ -156,10 +234,13 @@ serve(async (req) => {
         // Générer un nom de fichier sécurisé pour l'image
         const safeTitle = image.title 
           ? image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() 
-          : `image_${image.id}`;
+          : `image_${image.id || index}`;
+          
+        console.log(`Ajout de l'image au ZIP: ${safeTitle}.jpg, taille: ${Math.round(imageData.byteLength / 1024)}KB`);
           
         // Ajouter l'image au ZIP
         imgFolder.file(`${safeTitle}.jpg`, imageData);
+        totalFileSize += imageData.byteLength;
         downloadsSuccessful++;
         
         // Pause courte entre les téléchargements pour éviter de surcharger
@@ -168,7 +249,8 @@ serve(async (req) => {
         }
         
       } catch (error) {
-        console.error(`Erreur lors du traitement de l'image ${image.id}: ${error.message}`);
+        console.error(`Erreur lors du traitement de l'image ${image.id || index}: ${error instanceof Error ? error.message : String(error)}`);
+        console.error(`Stack trace: ${error instanceof Error ? error.stack : 'No stack available'}`);
         downloadsFailures++;
       }
     }
@@ -178,9 +260,20 @@ serve(async (req) => {
     }
     
     console.log(`Génération du ZIP avec ${downloadsSuccessful} images (${downloadsFailures} échecs)`);
+    console.log(`Taille totale de fichiers: ${Math.round(totalFileSize / 1024)}KB`);
 
     // Générer le fichier ZIP
-    const zipContent = await zip.generateAsync({ type: "uint8array" });
+    const zipContent = await zip.generateAsync({ 
+      type: "uint8array",
+      compression: "DEFLATE",
+      compressionOptions: { level: 6 }
+    });
+    
+    console.log(`Taille du ZIP généré: ${Math.round(zipContent.byteLength / 1024)}KB`);
+    
+    if (zipContent.byteLength === 0) {
+      throw new Error("ZIP généré vide");
+    }
     
     // Créer un nom de fichier unique pour le ZIP
     const timestamp = new Date().toISOString().replace(/[-T:\.Z]/g, '').substring(0, 14);
@@ -244,18 +337,20 @@ serve(async (req) => {
       filename: zipFilename,
       url: signedUrlData.signedUrl,
       imageCount: downloadsSuccessful,
-      failedCount: downloadsFailures
+      failedCount: downloadsFailures,
+      zipSizeKB: Math.round(zipContent.byteLength / 1024)
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
     
   } catch (error) {
-    console.error(`Erreur générale: ${error.message}`);
+    console.error(`Erreur générale: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(`Stack trace: ${error instanceof Error ? error.stack : 'No stack available'}`);
     
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || 'Une erreur est survenue lors du traitement'
+      error: error instanceof Error ? error.message : 'Une erreur est survenue lors du traitement'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

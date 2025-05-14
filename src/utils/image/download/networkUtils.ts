@@ -19,10 +19,13 @@ export const transformToHDUrl = (url: string): string => {
   
   // If URL contains /JPG/ segment, remove it to get the HD version
   if (url.includes('/JPG/')) {
-    return url.replace('/JPG/', '/');
+    const transformedUrl = url.replace('/JPG/', '/');
+    console.log(`[transformToHDUrl] Transformed URL from ${url} to ${transformedUrl}`);
+    return transformedUrl;
   }
   
-  return url;
+  console.log(`[transformToHDUrl] URL doesn't contain /JPG/, keeping original: ${url}`);
+  return url; 
 };
 
 /**
@@ -47,6 +50,8 @@ export async function fetchWithTimeout(
   const controller = new AbortController();
   const { signal } = controller;
   
+  console.log(`[fetchWithTimeout] Fetching: ${url} with timeout: ${timeoutMs}ms`);
+  
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(() => {
       controller.abort();
@@ -54,10 +59,22 @@ export async function fetchWithTimeout(
     }, timeoutMs);
   });
   
-  return Promise.race([
-    fetch(url, { ...options, signal }),
-    timeoutPromise
-  ]) as Promise<Response>;
+  try {
+    const response = await Promise.race([
+      fetch(url, { ...options, signal }),
+      timeoutPromise
+    ]) as Response;
+    
+    if (!response.ok) {
+      console.error(`[fetchWithTimeout] HTTP error: ${response.status} ${response.statusText}`);
+      throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+    }
+    
+    return response;
+  } catch (error) {
+    console.error(`[fetchWithTimeout] Error: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
+  }
 }
 
 /**
@@ -74,18 +91,14 @@ export async function fetchWithRetry(
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       if (attempt > 0) {
-        console.log(`Retry attempt ${attempt} for ${url}`);
+        console.log(`[fetchWithRetry] Retry attempt ${attempt} for ${url}`);
         await sleep(delayMs * attempt); // Progressive delay
       }
       
       const response = await fetchWithTimeout(url, options);
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
-      }
-      
       return response;
     } catch (error) {
-      console.error(`Fetch error (attempt ${attempt + 1}/${retries + 1}):`, error);
+      console.error(`[fetchWithRetry] Fetch error (attempt ${attempt + 1}/${retries + 1}):`, error);
       lastError = error as Error;
     }
   }
