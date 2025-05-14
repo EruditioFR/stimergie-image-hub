@@ -41,37 +41,7 @@ async function ensureZipBucketExists(supabase: any): Promise<void> {
       }
     }
     
-    // Create the necessary policies via RPC function
-    const { error: policyError } = await supabase.rpc('ensure_zip_bucket_exists');
-    
-    if (policyError) {
-      console.error('Warning: Could not update storage policies via RPC:', policyError.message);
-      
-      // Try direct policy creation as fallback
-      try {
-        // Create policies directly
-        const { error: policy1Error } = await supabase.storage.from('zip_downloads')
-          .createPolicy('Public can download ZIPs', {
-            definition: { bucket_id: 'zip_downloads' },
-            type: 'select'
-          });
-        
-        if (policy1Error) console.error('Error creating download policy:', policy1Error.message);
-        
-        const { error: policy2Error } = await supabase.storage.from('zip_downloads')
-          .createPolicy('Service can upload ZIPs', {
-            definition: { bucket_id: 'zip_downloads' },
-            type: 'insert'
-          });
-        
-        if (policy2Error) console.error('Error creating upload policy:', policy2Error.message);
-        
-      } catch (err) {
-        console.error('Error in direct policy creation:', err.message);
-      }
-    } else {
-      console.log('zip_downloads bucket policies have been verified');
-    }
+    console.log('zip_downloads bucket verified');
   } catch (error) {
     console.error('Error in ensureZipBucketExists:', error.message);
   }

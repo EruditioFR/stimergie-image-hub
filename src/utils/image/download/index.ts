@@ -5,3 +5,4 @@ export { downloadImage } from './singleImageDownloader';
 export { transformToHDUrl, isJpgUrl } from './networkUtils';
 export * from './types';
 export * from './requestDownload';
+export * from './storageUtils';
