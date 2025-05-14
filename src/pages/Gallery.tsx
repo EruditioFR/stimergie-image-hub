@@ -16,16 +16,19 @@ import { GalleryDownloadButtons } from '@/components/gallery/GalleryDownloadButt
 
 // Catégories pour les filtres
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
-
 const Gallery = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
-  const { userRole, user } = useAuth();
+  const {
+    userRole,
+    user
+  } = useAuth();
   const isAdmin = ['admin', 'admin_client'].includes(userRole);
-  const { userProfile } = useUserProfile(user, userRole);
+  const {
+    userProfile
+  } = useUserProfile(user, userRole);
   const pageLoadTimeRef = useRef(Date.now());
   const [isFlushing, setIsFlushing] = useState(false);
-
   const {
     allImages,
     isLoading,
@@ -60,13 +63,12 @@ const Gallery = () => {
 
   // Les images à afficher sont toujours celles de la requête actuelle (pas d'accumulation)
   const displayedImages = allImages;
-  
+
   // Formater les images pour la grille masonry en prenant en compte les dimensions et proportions
   const formattedImages = useMemo(() => {
     console.log(`Formatting ${displayedImages.length} images for grid display...`);
     return formatImagesForGrid(displayedImages);
   }, [displayedImages, formatImagesForGrid]);
-  
   const shouldShowEmptyState = !isLoading && displayedImages.length === 0;
 
   // Fonction pour charger plus d'images en défilement infini
@@ -76,7 +78,7 @@ const Gallery = () => {
       handlePageChange(currentPage + 1);
     }
   }, [currentPage, handlePageChange, hasMorePages, isLoading, isFetching]);
-  
+
   // Fonction pour vider le cache d'images
   const handleFlushCache = useCallback(() => {
     setIsFlushing(true);
@@ -85,7 +87,7 @@ const Gallery = () => {
       toast.success('Cache d\'images vidé', {
         description: 'Toutes les images seront rechargées depuis le serveur.'
       });
-      
+
       // Rafraîchir la galerie après avoir vidé le cache
       setTimeout(() => {
         refreshGallery();
@@ -97,82 +99,33 @@ const Gallery = () => {
       setIsFlushing(false);
     }
   }, [refreshGallery]);
-
-  return (
-    <div className="min-h-screen flex flex-col">
+  return <div className="min-h-screen flex flex-col">
       <Header />
       
       <main className="flex-grow">
-        <GalleryHeader 
-          title="Banque d'images"
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          categories={categories}
-          selectedClient={selectedClient}
-          onClientChange={handleClientChange}
-          selectedProject={selectedProject}
-          onProjectChange={handleProjectChange}
-          selectedOrientation={selectedOrientation}
-          onOrientationChange={handleOrientationChange}
-          userName={userProfile?.firstName || ''}
-          userLastName={userProfile?.lastName || ''}
-          userRole={userRole}
-          userClientId={userClientId}
-        />
+        <GalleryHeader title="Banque d'images" activeTab={activeTab} onTabChange={handleTabChange} categories={categories} selectedClient={selectedClient} onClientChange={handleClientChange} selectedProject={selectedProject} onProjectChange={handleProjectChange} selectedOrientation={selectedOrientation} onOrientationChange={handleOrientationChange} userName={userProfile?.firstName || ''} userLastName={userProfile?.lastName || ''} userRole={userRole} userClientId={userClientId} />
         
         <div className="flex justify-between items-center px-4 -mt-2 mb-2">
-          {displayedImages.length > 0 && (
-            <div className="text-sm text-muted-foreground">
-              {totalCount} image{totalCount > 1 ? 's' : ''} trouvée{totalCount > 1 ? 's' : ''}
-            </div>
-          )}
+          {displayedImages.length > 0}
           
           <div className="flex items-center gap-4">
-            {displayedImages.length > 0 && (
-              <GalleryDownloadButtons images={displayedImages} />
-            )}
+            {displayedImages.length > 0 && <GalleryDownloadButtons images={displayedImages} />}
             
-            {isAdmin && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleFlushCache}
-                disabled={isFlushing}
-                className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-              >
-                {isFlushing ? 'Vidage en cours...' : (
-                  <>
+            {isAdmin && <Button variant="outline" size="sm" onClick={handleFlushCache} disabled={isFlushing} className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600">
+                {isFlushing ? 'Vidage en cours...' : <>
                     <Trash2 className="h-4 w-4 mr-2" />
                     Vider le cache d'images
-                  </>
-                )}
-              </Button>
-            )}
+                  </>}
+              </Button>}
           </div>
         </div>
         
         <div className="w-full px-1 py-6">
-          {isLoading && allImages.length === 0 ? (
-            <MasonryGrid images={[]} isLoading={true} />
-          ) : displayedImages.length > 0 ? (
-            <MasonryGrid 
-              images={formattedImages} 
-              isLoading={isLoading || isFetching}
-              hasMorePages={hasMorePages}
-              loadMoreImages={loadMoreImages}
-            />
-          ) : (
-            <EmptyResults 
-              onReset={handleResetFilters} 
-              hasFilters={hasActiveFilters}
-            />
-          )}
+          {isLoading && allImages.length === 0 ? <MasonryGrid images={[]} isLoading={true} /> : displayedImages.length > 0 ? <MasonryGrid images={formattedImages} isLoading={isLoading || isFetching} hasMorePages={hasMorePages} loadMoreImages={loadMoreImages} /> : <EmptyResults onReset={handleResetFilters} hasFilters={hasActiveFilters} />}
         </div>
       </main>
       
       <Footer />
-    </div>
-  );
-}
-
+    </div>;
+};
 export default Gallery;
