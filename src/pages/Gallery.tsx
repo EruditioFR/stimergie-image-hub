@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/ui/layout/Header';
@@ -12,7 +13,6 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { clearAllCaches } from '@/utils/image/cacheManager';
-import { GalleryDownloadButtons } from '@/components/gallery/GalleryDownloadButtons';
 
 // Catégories pour les filtres
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
@@ -107,7 +107,7 @@ const Gallery = () => {
 
   <div className="flex justify-between items-center w-full px-0 -mt-2 mb-2">
     <div className="flex items-center gap-4">
-      {displayedImages.length > 0 && <GalleryDownloadButtons images={displayedImages} />}
+      {/* GalleryDownloadButtons component removed from here */}
 
       {isAdmin}
     </div>
