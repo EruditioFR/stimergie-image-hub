@@ -180,36 +180,42 @@ export type Database = {
         Row: {
           created_at: string
           download_url: string
+          error_details: string | null
           expires_at: string
           id: string
           image_id: string
           image_src: string
           image_title: string
           is_hd: boolean
+          processed_at: string | null
           status: string
           user_id: string
         }
         Insert: {
           created_at?: string
           download_url: string
+          error_details?: string | null
           expires_at?: string
           id?: string
           image_id: string
           image_src: string
           image_title: string
           is_hd?: boolean
+          processed_at?: string | null
           status?: string
           user_id: string
         }
         Update: {
           created_at?: string
           download_url?: string
+          error_details?: string | null
           expires_at?: string
           id?: string
           image_id?: string
           image_src?: string
           image_title?: string
           is_hd?: boolean
+          processed_at?: string | null
           status?: string
           user_id?: string
         }

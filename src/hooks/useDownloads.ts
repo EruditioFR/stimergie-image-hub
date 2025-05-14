@@ -15,8 +15,10 @@ interface DownloadRequestData {
   created_at: string;
   expires_at: string;
   download_url: string;
-  status: 'pending' | 'ready' | 'expired';
+  status: 'pending' | 'processing' | 'ready' | 'failed' | 'expired';
   is_hd: boolean;
+  processed_at?: string;
+  error_details?: string;
 }
 
 export function useDownloads() {
@@ -41,8 +43,10 @@ export function useDownloads() {
       imageTitle: item.image_title,
       requestDate: item.created_at,
       downloadUrl: item.download_url || '', // Ensure we have at least an empty string
-      status: item.status as 'pending' | 'ready' | 'expired',
-      isHD: item.is_hd // Map the is_hd field from the database to isHD in our interface
+      status: item.status as 'pending' | 'ready' | 'expired' | 'processing' | 'failed',
+      isHD: item.is_hd, // Map the is_hd field from the database to isHD in our interface
+      processedAt: item.processed_at, // Add the processed_at field
+      errorDetails: item.error_details // Add the error_details field
     };
   }, []);
 

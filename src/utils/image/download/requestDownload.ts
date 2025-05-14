@@ -160,26 +160,42 @@ export async function requestServerDownload(
       console.log("Téléchargement URL générée par le serveur:", downloadUrl);
       
       // 2.5 Mettre à jour le statut de la demande avec l'URL de téléchargement
-      const { error: updateError } = await supabase
-        .from("download_requests")
-        .update({
-          download_url: downloadUrl,
-          status: "ready",
-          processed_at: new Date().toISOString(),
-          image_title: `${images.length} images (${isHD ? "HD" : "Web"})`
-        })
-        .eq("id", recordData.id);
-      
-      if (updateError) {
-        console.error("Erreur lors de la mise à jour du statut:", updateError);
-        console.log("Tentative de mise à jour a échoué pour:", {
-          downloadUrl,
-          status: "ready",
-          id: recordData.id
-        });
-        throw new Error(`Échec de la mise à jour du statut: ${updateError.message}`);
-      } else {
+      const updateData = {
+        download_url: downloadUrl,
+        status: "ready" as const,
+        image_title: `${images.length} images (${isHD ? "HD" : "Web"})`
+      };
+
+      // Si processed_at est disponible dans le schéma, l'ajouter aux données
+      try {
+        const { error: updateError } = await supabase
+          .from("download_requests")
+          .update({
+            ...updateData,
+            processed_at: new Date().toISOString()
+          })
+          .eq("id", recordData.id);
+        
+        if (updateError) {
+          console.error("Erreur lors de la mise à jour du statut:", updateError);
+          console.log("Tentative avec les champs de base");
+          
+          // Retenter sans processed_at au cas où la colonne n'existerait pas encore
+          const { error: fallbackUpdateError } = await supabase
+            .from("download_requests")
+            .update(updateData)
+            .eq("id", recordData.id);
+            
+          if (fallbackUpdateError) {
+            console.error("Échec de la mise à jour du statut (tentative alternative):", fallbackUpdateError);
+            throw new Error(`Échec de la mise à jour du statut: ${fallbackUpdateError.message}`);
+          }
+        }
+        
         console.log("Mise à jour réussie dans la base de données avec l'URL:", downloadUrl);
+      } catch (error) {
+        console.error("Erreur lors de la mise à jour:", error);
+        throw error;
       }
       
       // 2.6 Afficher le message de succès
@@ -197,14 +213,28 @@ export async function requestServerDownload(
       console.error("Erreur lors de la création du ZIP:", err);
       
       // Mettre à jour le statut de la demande en échec
-      await supabase
-        .from("download_requests")
-        .update({
-          status: "expired",
-          processed_at: new Date().toISOString(),
-          image_title: `Échec - ${images.length} images (${isHD ? "HD" : "Web"})`
-        })
-        .eq("id", recordData.id);
+      try {
+        await supabase
+          .from("download_requests")
+          .update({
+            status: "failed",
+            processed_at: new Date().toISOString(),
+            error_details: err instanceof Error ? err.message : String(err),
+            image_title: `Échec - ${images.length} images (${isHD ? "HD" : "Web"})`
+          })
+          .eq("id", recordData.id);
+      } catch (updateError) {
+        // En cas d'échec de la mise à jour, tenter sans processed_at et error_details
+        console.error("Erreur lors de la mise à jour du statut d'erreur:", updateError);
+        
+        await supabase
+          .from("download_requests")
+          .update({
+            status: "expired",
+            image_title: `Échec - ${images.length} images (${isHD ? "HD" : "Web"})`
+          })
+          .eq("id", recordData.id);
+      }
       
       if (showToasts) {
         toast.dismiss(toastId);

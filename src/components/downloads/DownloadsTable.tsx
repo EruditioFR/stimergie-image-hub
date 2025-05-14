@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import {
   Table,
@@ -24,8 +23,9 @@ export interface DownloadRequest {
   imageTitle: string;
   requestDate: string;
   downloadUrl: string;
-  status: 'pending' | 'ready' | 'expired';
-  isHD?: boolean;
+  status: 'pending' | 'ready' | 'expired' | 'processing' | 'failed';
+  isHD: boolean;
+  processedAt?: string;
   errorDetails?: string;
 }
 
@@ -277,6 +277,18 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
                   {download.status === 'expired' && (
                     <Badge variant="secondary" className="bg-gray-100 text-gray-800 hover:bg-gray-100">
                       Expiré
+                    </Badge>
+                  )}
+                  {download.status === 'processing' && (
+                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 flex items-center gap-1 w-fit">
+                      <Clock className="h-3 w-3" />
+                      En cours de traitement
+                    </Badge>
+                  )}
+                  {download.status === 'failed' && (
+                    <Badge variant="secondary" className="bg-red-100 text-red-800 hover:bg-red-100 flex items-center gap-1 w-fit">
+                      <AlertCircle className="h-3 w-3" />
+                      Échec
                     </Badge>
                   )}
                   

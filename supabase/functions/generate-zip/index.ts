@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import JSZip from "https://esm.sh/jszip@3.10.1";
@@ -175,7 +174,7 @@ serve(async (req) => {
         try {
           const downloadUrl = await uploadToO2Switch(zipData, zipFileName);
           
-          // Update record with the URL
+          // Update record with the URL and processed_at timestamp
           const { error: updateError } = await supabase
             .from('download_requests')
             .update({
@@ -195,12 +194,13 @@ serve(async (req) => {
         } catch (uploadErr) {
           console.error(`[ZIP] Upload failed:`, uploadErr);
           
-          // Update record with error status
+          // Update record with error status and processed_at timestamp
           await supabase
             .from('download_requests')
             .update({
-              status: 'expired',
+              status: 'failed',
               processed_at: new Date().toISOString(),
+              error_details: String(uploadErr),
               image_title: `Échec - ${images.length} images (${isHD ? 'HD' : 'Web'})`
             })
             .eq('id', recordId);
@@ -209,6 +209,20 @@ serve(async (req) => {
         }
       } catch (err) {
         console.error('[ZIP] Background task error:', err);
+        
+        // Ensure we always update the record with the error
+        try {
+          await supabase
+            .from('download_requests')
+            .update({
+              status: 'failed',
+              processed_at: new Date().toISOString(),
+              error_details: String(err)
+            })
+            .eq('id', recordId);
+        } catch (updateErr) {
+          console.error('[ZIP] Failed to update record with error status:', updateErr);
+        }
       }
     }
 
