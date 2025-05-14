@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { clearAllCaches } from '@/utils/image/cacheManager';
 import { GalleryDownloadButtons } from '@/components/gallery/GalleryDownloadButtons';
+import { useImageSelection } from '@/hooks/useImageSelection';
 
 // Catégories pour les filtres
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
@@ -30,6 +31,9 @@ const Gallery = () => {
   } = useUserProfile(user, userRole);
   const pageLoadTimeRef = useRef(Date.now());
   const [isFlushing, setIsFlushing] = useState(false);
+  
+  const { selectedImages, toggleImageSelection, clearSelection } = useImageSelection();
+  
   const {
     allImages,
     isLoading,
@@ -108,9 +112,9 @@ const Gallery = () => {
 
   <div className="flex justify-between items-center w-full px-4 -mt-2 mb-2">
     <div className="flex items-center gap-4">
-      {/* Afficher les boutons de téléchargement uniquement si on a des images */}
-      {displayedImages.length > 0 && (
-        <GalleryDownloadButtons images={displayedImages} />
+      {/* Afficher les boutons de téléchargement uniquement si des images sont sélectionnées */}
+      {selectedImages.length > 0 && displayedImages.length > 0 && (
+        <GalleryDownloadButtons images={displayedImages.filter(img => selectedImages.includes(img.id))} />
       )}
 
       {isAdmin && (
@@ -129,7 +133,21 @@ const Gallery = () => {
   </div>
 
   <div className="w-full px-0 py-0">
-    {isLoading && allImages.length === 0 ? <MasonryGrid images={[]} isLoading={true} /> : displayedImages.length > 0 ? <MasonryGrid images={formattedImages} isLoading={isLoading || isFetching} hasMorePages={hasMorePages} loadMoreImages={loadMoreImages} /> : <EmptyResults onReset={handleResetFilters} hasFilters={hasActiveFilters} />}
+    {isLoading && allImages.length === 0 ? (
+      <MasonryGrid images={[]} isLoading={true} />
+    ) : displayedImages.length > 0 ? (
+      <MasonryGrid 
+        images={formattedImages} 
+        isLoading={isLoading || isFetching} 
+        hasMorePages={hasMorePages} 
+        loadMoreImages={loadMoreImages}
+        selectedImages={selectedImages}
+        onImageSelect={toggleImageSelection}
+        onClearSelection={clearSelection}
+      />
+    ) : (
+      <EmptyResults onReset={handleResetFilters} hasFilters={hasActiveFilters} />
+    )}
   </div>
     </main>
 

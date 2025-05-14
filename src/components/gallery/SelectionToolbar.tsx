@@ -31,24 +31,26 @@ export function SelectionToolbar({
           Désélectionner tout
         </Button>
       </div>
-      <div className="flex space-x-2">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={onDownload}
-          className="flex items-center gap-2 py-4"
-        >
-          <Download className="h-4 w-4" /> Télécharger ({selectedCount})
-        </Button>
-        <Button 
-          variant="default" 
-          size="sm" 
-          onClick={onShare}
-          className="flex items-center gap-2 py-4"
-        >
-          <Share className="h-4 w-4" /> Partager
-        </Button>
-      </div>
+      {selectedCount > 0 && (
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onDownload}
+            className="flex items-center gap-2 py-4"
+          >
+            <Download className="h-4 w-4" /> Télécharger ({selectedCount})
+          </Button>
+          <Button 
+            variant="default" 
+            size="sm" 
+            onClick={onShare}
+            className="flex items-center gap-2 py-4"
+          >
+            <Share className="h-4 w-4" /> Partager
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

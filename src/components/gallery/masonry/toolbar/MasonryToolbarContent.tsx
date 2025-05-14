@@ -47,14 +47,16 @@ export function MasonryToolbarContent({
       <ToolbarContainer>
         <SelectionInfo count={selectedImages.length} onClear={clearSelection} />
         
-        <ImageToolbarActions
-          isDownloadingSD={isDownloadingSD}
-          isDownloadingHD={isDownloadingHD}
-          onDownloadSD={() => downloadStandard(selectedImages)}
-          onDownloadHD={() => downloadHD(selectedImages)}
-          onShare={openShareDialog}
-          selectedCount={selectedImages.length}
-        />
+        {selectedImages.length > 0 && (
+          <ImageToolbarActions
+            isDownloadingSD={isDownloadingSD}
+            isDownloadingHD={isDownloadingHD}
+            onDownloadSD={() => downloadStandard(selectedImages)}
+            onDownloadHD={() => downloadHD(selectedImages)}
+            onShare={openShareDialog}
+            selectedCount={selectedImages.length}
+          />
+        )}
       </ToolbarContainer>
 
       <UploadProgressModal 
