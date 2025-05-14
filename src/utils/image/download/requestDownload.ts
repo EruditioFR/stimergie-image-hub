@@ -47,11 +47,12 @@ export async function requestServerDownload(
       .from("download_requests")
       .insert({
         user_id: user.id,
-        image_id: images[0].id,  // On enregistre la première image
+        image_id: String(images[0].id),  // Convertir explicitement en string
         image_title: `${images.length} images (${isHD ? "HD" : "Web"}) - En préparation`,
         image_src: images[0].url,
         status: "pending",
-        is_hd: isHD
+        is_hd: isHD,
+        download_url: ""  // Initialisé vide, sera mis à jour après l'upload
       })
       .select("id")
       .single();
