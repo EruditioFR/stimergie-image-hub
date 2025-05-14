@@ -145,7 +145,7 @@ const Gallery = () => {
     </div>
   </div>
 
-  <div className="w-full px-0 py-6">
+  <div className="w-full px-0 py-0">
     {isLoading && allImages.length === 0 ? (
       <MasonryGrid images={[]} isLoading={true} />
     ) : displayedImages.length > 0 ? (
