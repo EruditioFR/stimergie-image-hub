@@ -57,7 +57,7 @@ export const DownloadRequestButton = ({
         console.log(`Transformed to HD URL: ${downloadUrl}`);
       }
       
-      // Perform direct download with HD flag and format
+      // Perform direct download with HD flag
       await downloadImage(downloadUrl, filename, 'jpg', isHD);
       
       toast.success('Image téléchargée avec succès');

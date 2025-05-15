@@ -157,25 +157,19 @@ export const ImageCard = memo(function ImageCard({
               loading="lazy"
               onLoad={handleImageLoad}
               onError={handleImageError}
-              style={imageError ? { objectFit: 'contain' } : undefined}
             />
           </AspectRatio>
         ) : (
-          <div className="relative" style={{ 
-            width: '100%', 
-            height: width && height ? `${(height / width) * 100}%` : 'auto',
-            minHeight: '150px'
-          }}>
-            <img 
-              ref={imageRef}
-              src={imageSrc}
-              alt={alt} 
-              className="w-full h-full object-contain"
-              loading="lazy"
-              onLoad={handleImageLoad}
-              onError={handleImageError}
-            />
-          </div>
+          <img 
+            ref={imageRef}
+            src={imageSrc}
+            alt={alt} 
+            className="w-full object-contain"
+            loading="lazy"
+            style={{ maxHeight: '80vh' }}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
         )}
         
         <div className={cn(

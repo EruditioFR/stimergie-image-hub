@@ -90,34 +90,6 @@ export const ImageContent = ({
   const imageSrc = imageError 
     ? '/image-not-available.png' 
     : (image?.display_url || image?.url_miniature || image?.src || image?.url || '');
-    
-  // Calculate image container style to maintain aspect ratio
-  const imageContainerStyle = () => {
-    // Use original dimensions if available
-    if (image?.width && image?.height) {
-      return { 
-        width: '100%',
-        maxWidth: `${image.width}px`,
-        aspectRatio: `${image.width} / ${image.height}`
-      };
-    }
-    
-    // Use imageDimensions if available
-    if (imageDimensions.width && imageDimensions.height) {
-      return {
-        width: '100%',
-        maxWidth: `${imageDimensions.width}px`,
-        aspectRatio: `${imageDimensions.width} / ${imageDimensions.height}`
-      };
-    }
-    
-    // Default style if no dimensions are available
-    return {
-      width: '100%',
-      height: 'auto',
-      maxHeight: isFullPage ? '80vh' : '70vh'
-    };
-  };
 
   return (
     <div className="space-y-4">
@@ -131,12 +103,15 @@ export const ImageContent = ({
       <div className="relative rounded-md overflow-hidden flex justify-center">
         <div 
           className="relative"
-          style={imageContainerStyle()}
+          style={{ 
+            overflow: 'hidden', 
+            height: 'auto'
+          }}
         >
           <img 
             src={imageSrc}
             alt={image?.title || 'Image'} 
-            className={`w-full h-full object-contain`}
+            className={`max-w-full ${isFullPage ? 'max-h-[80vh]' : 'max-h-[70vh]'} object-contain`}
             onLoad={onImageLoad}
             onError={handleImageError}
           />

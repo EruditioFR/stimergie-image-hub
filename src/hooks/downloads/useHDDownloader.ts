@@ -7,7 +7,6 @@ import { requestServerDownload } from '@/utils/image/download/requestDownload';
 import { downloadImage } from '@/utils/image/download';
 import { generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
 import { transformToHDUrl } from '@/utils/image/download/networkUtils';
-import { downloadImagesAsZip } from '@/utils/image/download/zipCreator'; // Import directly from source
 
 // HD download threshold - use server for 3+ images
 const HD_SERVER_THRESHOLD = 3;
@@ -106,6 +105,9 @@ export function useHDDownloader() {
         if (imagesForZip.length === 0) {
           throw new Error('Aucune image valide pour téléchargement HD');
         }
+        
+        // Import dynamique pour éviter des dépendances circulaires
+        const { downloadImagesAsZip } = await import('@/utils/image/download');
         
         toast.loading('Préparation des images HD', {
           id: 'hd-zip-prep',
