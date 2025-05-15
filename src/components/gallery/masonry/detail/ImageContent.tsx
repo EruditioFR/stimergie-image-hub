@@ -17,7 +17,7 @@ export const ImageContent = ({
   imageDimensions, 
   isFullPage,
   onImageLoad 
-}: ImageContentProps) {
+}: ImageContentProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [imageError, setImageError] = useState(false);
 
