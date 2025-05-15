@@ -5,6 +5,7 @@
 
 import { downloadImage as singleImageDownloader } from './singleImageDownloader';
 import { downloadImagesAsZip } from './zipCreator';
+import { ImageDownloadFormat } from './types';
 
 /**
  * Downloads an image from a URL and saves it with the specified filename
@@ -21,7 +22,9 @@ export const downloadImage = async (
   format: string = 'jpg', 
   isHD: boolean = false
 ): Promise<void> => {
-  return singleImageDownloader(url, filename, format, isHD);
+  // Convert the string format to ImageDownloadFormat
+  const downloadFormat = format as ImageDownloadFormat;
+  return singleImageDownloader(url, filename, downloadFormat, isHD);
 };
 
 // Export other download-related functions

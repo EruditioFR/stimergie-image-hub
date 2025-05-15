@@ -9,3 +9,5 @@ export interface DownloadResult {
   image: ImageForZip;
   blob: Blob;
 }
+
+export type ImageDownloadFormat = 'jpg' | 'png' | 'webp';
