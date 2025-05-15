@@ -30,6 +30,7 @@ export const ImageCard = memo(function ImageCard({
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const [naturalRatio, setNaturalRatio] = useState<number | undefined>(undefined);
   const imageRef = useRef<HTMLImageElement>(null);
   const mountedRef = useRef(true);
@@ -124,8 +125,14 @@ export const ImageCard = memo(function ImageCard({
     }
   };
 
+  const handleImageError = () => {
+    setImageError(true);
+    console.warn(`Failed to load image: ${id} - ${title}`);
+  };
+
   const aspectRatio = getAspectRatio();
   const shouldUseAspectRatio = aspectRatio !== undefined;
+  const imageSrc = imageError ? '/image-not-available.png' : src;
 
   return (
     <div 
@@ -144,44 +151,24 @@ export const ImageCard = memo(function ImageCard({
           <AspectRatio ratio={aspectRatio}>
             <img 
               ref={imageRef}
-              src={src}
+              src={imageSrc}
               alt={alt} 
               className="w-full h-full object-cover"
               loading="lazy"
               onLoad={handleImageLoad}
-              onError={(e) => {
-                console.warn(`Failed to load image: ${id} - ${title}`);
-                const imgElement = e.target as HTMLImageElement;
-                // Try to use the original URL if available when display URL fails
-                if (url && imgElement.src !== url) {
-                  imgElement.src = url;
-                } else {
-                  // Use a placeholder if the original image fails to load
-                  imgElement.src = '/placeholder.png';
-                }
-              }}
+              onError={handleImageError}
             />
           </AspectRatio>
         ) : (
           <img 
             ref={imageRef}
-            src={src}
+            src={imageSrc}
             alt={alt} 
             className="w-full object-contain"
             loading="lazy"
             style={{ maxHeight: '80vh' }}
             onLoad={handleImageLoad}
-            onError={(e) => {
-              console.warn(`Failed to load image: ${id} - ${title}`);
-              const imgElement = e.target as HTMLImageElement;
-              // Try to use the original URL if available when display URL fails
-              if (url && imgElement.src !== url) {
-                imgElement.src = url;
-              } else {
-                // Use a placeholder if the original image fails to load
-                imgElement.src = '/placeholder.png';
-              }
-            }}
+            onError={handleImageError}
           />
         )}
         

@@ -17,8 +17,9 @@ export const ImageContent = ({
   imageDimensions, 
   isFullPage,
   onImageLoad 
-}: ImageContentProps) => {
+}: ImageContentProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   // Process tags to ensure they're always in array format
   const processTags = (tags: any): string[] => {
@@ -82,6 +83,14 @@ export const ImageContent = ({
     }
   };
 
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  const imageSrc = imageError 
+    ? '/image-not-available.png' 
+    : (image?.display_url || image?.url_miniature || image?.src || image?.url || '');
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -100,20 +109,11 @@ export const ImageContent = ({
           }}
         >
           <img 
-            src={image?.display_url || image?.url_miniature || image?.src || image?.url || ''} 
+            src={imageSrc}
             alt={image?.title || 'Image'} 
             className={`max-w-full ${isFullPage ? 'max-h-[80vh]' : 'max-h-[70vh]'} object-contain`}
             onLoad={onImageLoad}
-            onError={(e) => {
-              console.error('Erreur de chargement d\'image:', e, image);
-              const imgElement = e.target as HTMLImageElement;
-              const currentSrc = imgElement.src;
-              if (currentSrc === image?.display_url && image?.url_miniature) {
-                imgElement.src = image.url_miniature;
-              } else if (currentSrc === image?.url_miniature && image?.url) {
-                imgElement.src = image.url;
-              }
-            }}
+            onError={handleImageError}
           />
         </div>
       </div>
