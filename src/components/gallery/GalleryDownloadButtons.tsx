@@ -1,13 +1,12 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { Image } from '@/utils/image/types';
-import { downloadImagesAsZip } from '@/utils/image/download';
 import { validateImageUrl } from '@/utils/image/errorHandler';
 import { generateDownloadImageHDUrl, generateDownloadImageSDUrl } from '@/utils/image/imageUrlGenerator';
 import { isJpgUrl } from '@/utils/image/download/networkUtils';
+import { downloadImagesAsZip } from '@/utils/image/download/zipCreator';
 
 // Constants for download thresholds
 const SD_SERVER_THRESHOLD = 10;  // Use server-side for 10+ images in SD mode

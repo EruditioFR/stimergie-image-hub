@@ -2,13 +2,13 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Image } from '@/utils/image/types';
-import { downloadImagesAsZip } from '@/utils/image/download';
 import { generateDownloadImageHDUrl, generateDownloadImageSDUrl } from '@/utils/image/imageUrlGenerator';
 import { validateImageUrl } from '@/utils/image/errorHandler';
 import { isJpgUrl, transformToHDUrl } from '@/utils/image/download/networkUtils';
 import { User } from '@supabase/supabase-js';
 import { useHDDownloader } from './useHDDownloader';
 import { requestServerDownload } from '@/utils/image/download/requestDownload';
+import { downloadImagesAsZip } from '@/utils/image/download/zipCreator'; // Import directly from source
 
 type ImageDownloadType = 'standard' | 'hd';
 
