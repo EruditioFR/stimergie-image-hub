@@ -107,7 +107,7 @@ const ImageItem = memo(function ImageItem({
         }}
       />
       
-      <div onClick={handleClick}>
+      <div onClick={handleClick} className="w-full">
         <ImageCard 
           {...image} 
           className={`w-full transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-1' : ''}`}
