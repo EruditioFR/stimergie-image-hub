@@ -12,7 +12,7 @@ import { ImageDownloadFormat as SingleImageDownloaderFormat } from './singleImag
 export { 
   downloadImage, 
   // Re-export the type with the same name (will take precedence over the one in types.ts)
-  SingleImageDownloaderFormat as ImageDownloadFormat 
+  ImageDownloadFormat as ImageDownloadFormat 
 } from './singleImageDownloader';
 export * from './zipCreator';
 export * from './o2switchUploader';
