@@ -14,7 +14,8 @@ export * from './types';
 export * from './semaphore';
 
 // Re-implement downloadImagesAsZip if it's missing from exports
-import { downloadImage, ImageDownloadFormat } from './singleImageDownloader';
+import { downloadImage } from './singleImageDownloader';
+// Don't re-import ImageDownloadFormat to avoid the ambiguity
 import { ImageForZip } from './types';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -33,37 +34,38 @@ export async function downloadImagesAsZip(
   const promises: Promise<void>[] = [];
 
   for (const image of images) {
-    const promise = semaphore.acquire().then(async () => {
-      try {
-        // Create clean filename from image title
-        const filename = image.title
-          ? `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg`
-          : `image_${image.id}.jpg`;
+    const promise = (async () => {
+      // Use the semaphore properly with the function pattern
+      return await semaphore(async () => {
+        try {
+          // Create clean filename from image title
+          const filename = image.title
+            ? `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg`
+            : `image_${image.id}.jpg`;
 
-        // Fetch image as blob
-        const response = await fetch(image.url, {
-          mode: 'cors',
-          cache: 'no-cache',
-          headers: {
-            'pragma': 'no-cache',
-            'cache-control': 'no-cache'
+          // Fetch image as blob
+          const response = await fetch(image.url, {
+            mode: 'cors',
+            cache: 'no-cache',
+            headers: {
+              'pragma': 'no-cache',
+              'cache-control': 'no-cache'
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch ${image.url}: ${response.status} ${response.statusText}`);
           }
-        });
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch ${image.url}: ${response.status} ${response.statusText}`);
+          const blob = await response.blob();
+          
+          // Add to zip
+          zip.file(filename, blob);
+        } catch (error) {
+          console.error(`Error downloading image ${image.id}:`, error);
         }
-
-        const blob = await response.blob();
-        
-        // Add to zip
-        zip.file(filename, blob);
-      } catch (error) {
-        console.error(`Error downloading image ${image.id}:`, error);
-      } finally {
-        semaphore.release();
-      }
-    });
+      });
+    })();
     
     promises.push(promise);
   }
