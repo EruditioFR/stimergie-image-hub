@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,12 +46,10 @@ export function AdminDashboard() {
           toast.error("Erreur lors du chargement des statistiques des projets");
         }
 
-        // Fetch images count
-        const { data: imagesData, error: imagesError } = await supabase
+        // Fetch images count - Utiliser count: exact pour obtenir le nombre total sans limite
+        const { count: imagesCount, error: imagesError } = await supabase
           .from("images")
-          .select("id");
-          
-        const imagesCount = imagesData ? imagesData.length : 0;
+          .select("*", { count: "exact", head: true });
 
         if (imagesError) {
           console.error("Error fetching images count:", imagesError);
@@ -62,7 +59,7 @@ export function AdminDashboard() {
         setStats({
           clientsCount,
           projectsCount,
-          imagesCount
+          imagesCount: imagesCount || 0
         });
         
         console.log("Stats loaded:", { clientsCount, projectsCount, imagesCount });
