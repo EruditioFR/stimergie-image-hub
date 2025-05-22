@@ -6,7 +6,14 @@
 export * from './imageProcessor';
 export * from './networkUtils';
 export * from './requestDownload';
-export * from './singleImageDownloader';
+// Import the type directly to avoid name conflicts
+import { ImageDownloadFormat as SingleImageDownloaderFormat } from './singleImageDownloader';
+// Re-export with an alias to avoid conflicts
+export { 
+  downloadImage, 
+  // Re-export the type with the same name (will take precedence over the one in types.ts)
+  SingleImageDownloaderFormat as ImageDownloadFormat 
+} from './singleImageDownloader';
 export * from './zipCreator';
 export * from './o2switchUploader';
 export * from './storageUtils';

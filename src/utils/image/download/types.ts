@@ -10,5 +10,5 @@ export interface DownloadResult {
   blob: Blob;
 }
 
-// Add the ImageDownloadFormat type definition here to match the one in singleImageDownloader.ts
+// Define the ImageDownloadFormat type to match the one in singleImageDownloader.ts
 export type ImageDownloadFormat = 'jpg' | 'png' | 'auto';
