@@ -9,3 +9,6 @@ export interface DownloadResult {
   image: ImageForZip;
   blob: Blob;
 }
+
+// Add the ImageDownloadFormat type definition here to match the one in singleImageDownloader.ts
+export type ImageDownloadFormat = 'jpg' | 'png' | 'auto';

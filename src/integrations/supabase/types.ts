@@ -289,18 +289,21 @@ export type Database = {
           date: string | null
           erreur: string | null
           id: number
+          image_url: string | null
           source: string | null
         }
         Insert: {
           date?: string | null
           erreur?: string | null
           id?: number
+          image_url?: string | null
           source?: string | null
         }
         Update: {
           date?: string | null
           erreur?: string | null
           id?: number
+          image_url?: string | null
           source?: string | null
         }
         Relationships: []
