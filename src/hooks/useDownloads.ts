@@ -16,23 +16,30 @@ export interface DownloadRequest {
   expires_at: string;
   processed_at?: string;
   error_details?: string;
+  // Add mapped properties for compatibility
+  imageId: string;
+  imageSrc: string;
+  imageTitle: string;
+  requestDate: string;
+  downloadUrl: string;
+  isHD: boolean;
 }
 
 export const useDownloads = () => {
   const [downloads, setDownloads] = useState<DownloadRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
 
-  const fetchDownloads = async () => {
+  const refreshDownloads = async () => {
     if (!user) {
       setDownloads([]);
-      setLoading(false);
+      setIsLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
+      setIsLoading(true);
       setError(null);
 
       const { data, error: fetchError } = await supabase
@@ -43,20 +50,30 @@ export const useDownloads = () => {
 
       if (fetchError) {
         console.error('Error fetching downloads:', fetchError);
-        setError(fetchError.message);
+        setError(new Error(fetchError.message));
       } else {
-        setDownloads(data || []);
+        // Map the data to include both original and expected properties
+        const mappedDownloads = (data || []).map(item => ({
+          ...item,
+          imageId: item.image_id,
+          imageSrc: item.image_src,
+          imageTitle: item.image_title,
+          requestDate: item.created_at,
+          downloadUrl: item.download_url,
+          isHD: item.is_hd
+        }));
+        setDownloads(mappedDownloads);
       }
     } catch (err) {
       console.error('Unexpected error:', err);
-      setError('Une erreur inattendue s\'est produite');
+      setError(new Error('Une erreur inattendue s\'est produite'));
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDownloads();
+    refreshDownloads();
   }, [user]);
 
   // Set up real-time subscription for download updates
@@ -74,7 +91,7 @@ export const useDownloads = () => {
           filter: `user_id=eq.${user.id}`
         },
         () => {
-          fetchDownloads();
+          refreshDownloads();
         }
       )
       .subscribe();
@@ -86,8 +103,8 @@ export const useDownloads = () => {
 
   return {
     downloads,
-    loading,
+    isLoading,
     error,
-    refetch: fetchDownloads
+    refreshDownloads
   };
 };
