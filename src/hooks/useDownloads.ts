@@ -3,30 +3,11 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
-export interface DownloadRequest {
-  id: string;
-  user_id: string;
-  image_id: string;
-  image_title: string;
-  image_src: string;
-  download_url: string;
-  is_hd: boolean;
-  status: string;
-  created_at: string;
-  expires_at: string;
-  processed_at?: string;
-  error_details?: string;
-  // Add mapped properties for compatibility
-  imageId: string;
-  imageSrc: string;
-  imageTitle: string;
-  requestDate: string;
-  downloadUrl: string;
-  isHD: boolean;
-}
+// Import the shared type from DownloadsTable instead of defining our own
+export type { DownloadRequest } from '@/components/downloads/DownloadsTable';
 
 export const useDownloads = () => {
-  const [downloads, setDownloads] = useState<DownloadRequest[]>([]);
+  const [downloads, setDownloads] = useState<import('@/components/downloads/DownloadsTable').DownloadRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
@@ -54,13 +35,16 @@ export const useDownloads = () => {
       } else {
         // Map the data to include both original and expected properties
         const mappedDownloads = (data || []).map(item => ({
-          ...item,
+          id: item.id,
           imageId: item.image_id,
           imageSrc: item.image_src,
           imageTitle: item.image_title,
           requestDate: item.created_at,
           downloadUrl: item.download_url,
-          isHD: item.is_hd
+          status: item.status as 'pending' | 'ready' | 'expired' | 'processing' | 'failed',
+          isHD: item.is_hd,
+          processedAt: item.processed_at,
+          errorDetails: item.error_details
         }));
         setDownloads(mappedDownloads);
       }
