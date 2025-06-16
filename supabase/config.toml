@@ -1,7 +1,1 @@
-
-# This is your supabase config file.
-# https://supabase.com/docs/guides/functions/quickstart#project-configuration
-
-[functions.generate-hd-zip]
-verify_jwt = true
-
+project_id = "mjhbugzaqmtfnbxaqpss"
