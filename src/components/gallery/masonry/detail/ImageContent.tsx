@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { downloadImage } from '@/utils/image/imageDownloader';
 import { toast } from 'sonner';
 import { parseTagsString } from '@/utils/imageUtils';
+import { TagsEditor } from './TagsEditor';
 
 interface ImageContentProps {
   image: any;
@@ -20,6 +21,7 @@ export const ImageContent = ({
 }: ImageContentProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [currentTags, setCurrentTags] = useState(image?.tags);
 
   // Process tags to ensure they're always in array format
   const processTags = (tags: any): string[] => {
@@ -34,9 +36,10 @@ export const ImageContent = ({
     return [];
   };
   
-  const displayTags = processTags(image?.tags);
+  const displayTags = processTags(currentTags);
   
   console.log("ImageContent component - Image tags:", image?.tags);
+  console.log("ImageContent component - Current tags:", currentTags);
   console.log("ImageContent component - Processed tags:", displayTags);
 
   const handleDownload = async () => {
@@ -87,6 +90,10 @@ export const ImageContent = ({
     setImageError(true);
   };
 
+  const handleTagsUpdated = (newTags: string[]) => {
+    setCurrentTags(newTags);
+  };
+
   const imageSrc = imageError 
     ? '/image-not-available.png' 
     : (image?.display_url || image?.url_miniature || image?.src || image?.url || '');
@@ -118,19 +125,12 @@ export const ImageContent = ({
         </div>
       </div>
       
-      {/* Affichage des tags avec hashtag */}
-      {displayTags && displayTags.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {displayTags.map((tag: string, index: number) => (
-            <span 
-              key={index}
-              className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs"
-            >
-              #{tag}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* Éditeur de tags */}
+      <TagsEditor 
+        imageId={image?.id?.toString() || ''}
+        initialTags={displayTags}
+        onTagsUpdated={handleTagsUpdated}
+      />
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
