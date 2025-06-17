@@ -389,6 +389,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_update_user_password: {
+        Args: { user_id: string; new_password: string }
+        Returns: boolean
+      }
       bytea_to_text: {
         Args: { data: string }
         Returns: string

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -35,7 +36,7 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
 
       console.log("Calling admin-create-user function with email and user data");
 
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://mjhbugzaqmtfnbxaqpss.supabase.co";
+      const SUPABASE_URL = "https://mjhbugzaqmtfnbxaqpss.supabase.co";
       const functionUrl = `${SUPABASE_URL}/functions/v1/admin-create-user`;
       
       console.log("Calling edge function at URL:", functionUrl);
@@ -154,21 +155,24 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
       if (password && password.trim() !== '') {
         console.log("Updating password for user:", userData.id);
         
-        const { error: passwordError } = await supabase.rpc(
-          'admin_update_user_password' as any, 
-          {
-            user_id: userData.id,
-            new_password: password
-          }
-        );
+        try {
+          const { error: passwordError } = await supabase.auth.admin.updateUserById(
+            userData.id,
+            { password: password }
+          );
 
-        if (passwordError) {
-          console.error("Erreur lors de la mise à jour du mot de passe:", passwordError);
+          if (passwordError) {
+            console.error("Erreur lors de la mise à jour du mot de passe:", passwordError);
+            toast.error("Impossible de mettre à jour le mot de passe: " + passwordError.message);
+            return false;
+          }
+          
+          console.log("Password updated successfully");
+        } catch (passwordUpdateError) {
+          console.error("Erreur lors de la mise à jour du mot de passe:", passwordUpdateError);
           toast.error("Impossible de mettre à jour le mot de passe");
           return false;
         }
-        
-        console.log("Password updated successfully");
       }
 
       setUsers(prev => prev.map(user => 
