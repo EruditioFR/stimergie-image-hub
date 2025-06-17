@@ -1,18 +1,37 @@
 
 import { useState, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useGalleryFilters() {
   const navigate = useNavigate();
   const { userRole, user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const tagFilter = searchParams.get('tag') || '';
+  
   const [activeTab, setActiveTab] = useState('all');
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedOrientation, setSelectedOrientation] = useState<string | null>(null);
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
   const [userClientId, setUserClientId] = useState<string | null>(null);
+
+  // Reset client and orientation filters when tag filter is active
+  useEffect(() => {
+    const hasTagFilter = tagFilter && tagFilter.toLowerCase() !== 'toutes';
+    if (hasTagFilter) {
+      console.log('Tag filter detected, resetting client and orientation filters');
+      // Reset orientation filter when tag filter is active
+      if (selectedOrientation !== null) {
+        setSelectedOrientation(null);
+      }
+      // Reset client filter for admin users when tag filter is active
+      if (userRole === 'admin' && selectedClient !== null) {
+        setSelectedClient(null);
+      }
+    }
+  }, [tagFilter, selectedOrientation, selectedClient, userRole]);
 
   // Fetch user's client_id if they are admin_client
   useEffect(() => {
