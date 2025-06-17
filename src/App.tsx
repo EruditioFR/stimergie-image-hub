@@ -42,7 +42,7 @@ function App() {
                 {/* Add the new route for gallery without parameters */}
                 <Route path="/gallery" element={<Gallery />} />
                 <Route path="/gallery/:ensembleId" element={<Gallery />} />
-                <Route path="/shared/:albumId" element={<SharedAlbum />} />
+                <Route path="/shared-album/:albumKey" element={<SharedAlbum />} />
                 <Route path="/image/:imageId" element={<ImageView />} />
 
                 <Route path="/blog/:blogId" element={<BlogPost />} />
