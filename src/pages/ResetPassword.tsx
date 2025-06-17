@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Header } from "@/components/ui/layout/Header";
 import { Footer } from "@/components/ui/layout/Footer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Check } from "lucide-react";
@@ -108,7 +109,8 @@ export default function ResetPassword() {
       setIsLoading(true);
       setError(null);
       
-      const redirectUrl = `${window.location.origin}/reset-password`;
+      // Utiliser l'URL stimergie.fr pour la redirection
+      const redirectUrl = `https://www.stimergie.fr/reset-password`;
       
       console.log("Sending reset email to:", data.email);
       console.log("Redirect URL:", redirectUrl);
@@ -181,6 +183,7 @@ export default function ResetPassword() {
   if (isCheckingLink) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
+        <Header />
         <div className="flex-grow flex items-center justify-center px-4 py-12">
           <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
             <div className="text-center">
@@ -198,6 +201,7 @@ export default function ResetPassword() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Header />
       <div className="flex-grow flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
           <div className="text-center">

@@ -13,8 +13,6 @@ import { Footer } from "@/components/ui/layout/Footer";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 // Login form schema
 const loginSchema = z.object({
@@ -28,7 +26,6 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [isResetPasswordLoading, setIsResetPasswordLoading] = useState(false);
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
 
@@ -78,56 +75,8 @@ export default function Auth() {
     navigate("/");
   };
 
-  const handleForgotPassword = async () => {
-    const email = loginForm.getValues().email;
-
-    if (!email || !z.string().email().safeParse(email).success) {
-      toast({
-        variant: "destructive",
-        title: "Email invalide",
-        description: "Veuillez entrer une adresse email valide"
-      });
-      return;
-    }
-
-    try {
-      setIsResetPasswordLoading(true);
-      
-      // Utiliser une URL de redirection plus robuste
-      const currentOrigin = window.location.origin;
-      const redirectUrl = `${currentOrigin}/reset-password`;
-      
-      console.log("Sending password reset email to:", email);
-      console.log("Redirect URL:", redirectUrl);
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl,
-      });
-      
-      if (error) {
-        console.error("Reset password error:", error);
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: error.message
-        });
-        return;
-      }
-      
-      toast({
-        title: "Email envoyé",
-        description: "Si cette adresse existe dans notre système, vous recevrez un email avec les instructions pour réinitialiser votre mot de passe. Vérifiez aussi vos spams."
-      });
-    } catch (error) {
-      console.error("Reset password error:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible d'envoyer l'email de réinitialisation"
-      });
-    } finally {
-      setIsResetPasswordLoading(false);
-    }
+  const handleForgotPassword = () => {
+    navigate("/reset-password");
   };
 
   return (
@@ -182,9 +131,8 @@ export default function Auth() {
                     variant="link" 
                     className="px-0 h-auto text-sm text-muted-foreground"
                     onClick={handleForgotPassword}
-                    disabled={isResetPasswordLoading}
                   >
-                    {isResetPasswordLoading ? "Envoi en cours..." : "Mot de passe oublié ?"}
+                    Mot de passe oublié ?
                   </Button>
                 </div>
                 <div className="pt-2">
