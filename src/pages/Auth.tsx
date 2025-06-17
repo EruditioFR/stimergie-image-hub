@@ -93,11 +93,19 @@ export default function Auth() {
     try {
       setIsResetPasswordLoading(true);
       
+      // Utiliser une URL de redirection plus robuste
+      const currentOrigin = window.location.origin;
+      const redirectUrl = `${currentOrigin}/reset-password`;
+      
+      console.log("Sending password reset email to:", email);
+      console.log("Redirect URL:", redirectUrl);
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + "/reset-password",
+        redirectTo: redirectUrl,
       });
       
       if (error) {
+        console.error("Reset password error:", error);
         toast({
           variant: "destructive",
           title: "Erreur",
@@ -108,7 +116,7 @@ export default function Auth() {
       
       toast({
         title: "Email envoyé",
-        description: "Vérifiez votre boîte de réception pour le lien de réinitialisation"
+        description: "Si cette adresse existe dans notre système, vous recevrez un email avec les instructions pour réinitialiser votre mot de passe. Vérifiez aussi vos spams."
       });
     } catch (error) {
       console.error("Reset password error:", error);

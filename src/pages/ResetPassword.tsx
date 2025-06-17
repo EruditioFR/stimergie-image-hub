@@ -36,7 +36,6 @@ export default function ResetPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const navigate = useNavigate();
 
   // Get the access token from URL
@@ -87,7 +86,6 @@ export default function ResetPassword() {
     try {
       setIsLoading(true);
       setError(null);
-      setDebugInfo(null);
       
       // Get the full current URL to use for redirect
       const currentOrigin = window.location.origin;
@@ -103,7 +101,6 @@ export default function ResetPassword() {
       if (error) {
         console.error("Error sending reset email:", error);
         setError(`Erreur lors de l'envoi de l'email: ${error.message}`);
-        setDebugInfo(`Tentative d'envoi à ${data.email} avec redirection vers ${redirectUrl}`);
         return;
       }
       
@@ -180,12 +177,6 @@ export default function ResetPassword() {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {debugInfo && (
-            <Alert className="bg-blue-50 border-blue-200 text-blue-800">
-              <AlertDescription className="text-xs">{debugInfo}</AlertDescription>
             </Alert>
           )}
 
