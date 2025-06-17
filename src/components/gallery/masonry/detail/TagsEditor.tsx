@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Edit2, Save, X, Plus } from 'lucide-react';
 import { parseTagsString } from '@/utils/imageUtils';
 import { useImageTags } from '@/hooks/useImageTags';
+import { useNavigate } from 'react-router-dom';
 
 interface TagsEditorProps {
   imageId: string;
@@ -18,6 +19,7 @@ export const TagsEditor = ({ imageId, initialTags, onTagsUpdated }: TagsEditorPr
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const { updateImageTags, isUpdating } = useImageTags();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (initialTags) {
@@ -66,6 +68,11 @@ export const TagsEditor = ({ imageId, initialTags, onTagsUpdated }: TagsEditorPr
     }
   };
 
+  const handleTagClick = (tag: string) => {
+    // Rediriger vers la galerie avec le filtre de tag
+    navigate(`/gallery?tag=${encodeURIComponent(tag)}`);
+  };
+
   if (!isEditing) {
     return (
       <div className="space-y-2">
@@ -83,7 +90,12 @@ export const TagsEditor = ({ imageId, initialTags, onTagsUpdated }: TagsEditorPr
         <div className="flex flex-wrap gap-2">
           {tags.length > 0 ? (
             tags.map((tag: string, index: number) => (
-              <Badge key={index} variant="secondary" className="text-xs">
+              <Badge 
+                key={index} 
+                variant="secondary" 
+                className="text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                onClick={() => handleTagClick(tag)}
+              >
                 #{tag}
               </Badge>
             ))

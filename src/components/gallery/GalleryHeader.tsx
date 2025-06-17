@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { ClientsFilter } from './ClientsFilter';
 import { ProjectsFilter } from './ProjectsFilter';
 import { OrientationFilter } from './OrientationFilter';
+import { useSearchParams } from 'react-router-dom';
 
 interface GalleryHeaderProps {
   title: string;
@@ -40,6 +41,8 @@ export function GalleryHeader({
 }: GalleryHeaderProps) {
   const { userRole: contextUserRole } = useAuth();
   const isAdmin = ['admin', 'admin_client'].includes(userRole || contextUserRole);
+  const [searchParams] = useSearchParams();
+  const tagFilter = searchParams.get('tag') || '';
   
   const handleTabChange = (value: string) => {
     // Convert category name to lowercase or 'all' for consistent filtering
@@ -52,6 +55,12 @@ export function GalleryHeader({
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold mb-6">{title}</h1>
+          
+          {tagFilter && (
+            <p className="text-lg text-primary font-medium mb-4">
+              Filtré sur le mot-clé : "{tagFilter}"
+            </p>
+          )}
           
           {title === "Banque d'images" && (
             <p className="text-muted-foreground max-w-3xl mx-auto">
