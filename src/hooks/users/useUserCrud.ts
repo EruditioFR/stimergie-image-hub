@@ -156,18 +156,42 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
         console.log("Updating password for user:", userData.id);
         
         try {
-          const { error: passwordError } = await supabase.auth.admin.updateUserById(
-            userData.id,
-            { password: password }
-          );
+          const SUPABASE_URL = "https://mjhbugzaqmtfnbxaqpss.supabase.co";
+          const functionUrl = `${SUPABASE_URL}/functions/v1/admin-update-password`;
+          
+          const response = await fetch(functionUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            },
+            body: JSON.stringify({
+              userId: userData.id,
+              newPassword: password
+            })
+          });
 
-          if (passwordError) {
-            console.error("Erreur lors de la mise à jour du mot de passe:", passwordError);
-            toast.error("Impossible de mettre à jour le mot de passe: " + passwordError.message);
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Error response from password update:", errorText);
+            
+            let errorMessage = "Erreur lors de la mise à jour du mot de passe";
+            try {
+              const errorData = JSON.parse(errorText);
+              errorMessage = errorData.error || errorMessage;
+            } catch (e) {
+              errorMessage = errorText.includes("<") ? 
+                "Erreur de serveur lors de la mise à jour du mot de passe" : 
+                errorText || errorMessage;
+            }
+            
+            toast.error(errorMessage);
             return false;
           }
           
-          console.log("Password updated successfully");
+          const result = await response.json();
+          console.log("Password updated successfully:", result);
+          
         } catch (passwordUpdateError) {
           console.error("Erreur lors de la mise à jour du mot de passe:", passwordUpdateError);
           toast.error("Impossible de mettre à jour le mot de passe");
