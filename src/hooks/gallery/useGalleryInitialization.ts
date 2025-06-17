@@ -33,14 +33,19 @@ export const useGalleryInitialization = ({
   baseHandleClientChange
 }: GalleryInitializationProps) => {
 
-  // Enforce client filter for non-admin users
+  // Enforce client filter for non-admin users SAUF si on a un filtre de tag
   useEffect(() => {
-    const forcedClientId = enforceClientForNonAdmin();
-    if (forcedClientId && selectedClient !== forcedClientId) {
-      console.log(`Forcing client filter to ${forcedClientId} for ${userRole} role`);
-      baseHandleClientChange(forcedClientId);
+    const hasTagFilter = tagFilter && tagFilter.toLowerCase() !== 'toutes';
+    
+    // Si on a un filtre de tag, on n'applique pas le filtre client forcé
+    if (!hasTagFilter) {
+      const forcedClientId = enforceClientForNonAdmin();
+      if (forcedClientId && selectedClient !== forcedClientId) {
+        console.log(`Forcing client filter to ${forcedClientId} for ${userRole} role`);
+        baseHandleClientChange(forcedClientId);
+      }
     }
-  }, [enforceClientForNonAdmin, userRole, selectedClient, baseHandleClientChange]);
+  }, [enforceClientForNonAdmin, userRole, selectedClient, baseHandleClientChange, tagFilter]);
 
   // Initial filters setup and random mode determination
   useEffect(() => {

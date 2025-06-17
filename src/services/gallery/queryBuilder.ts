@@ -17,8 +17,11 @@ export async function buildGalleryQuery(
 ) {
   console.log(`Building gallery query for user role: ${userRole}, client ID: ${userClientId}`);
   
-  // For non-admin users, always filter by their client ID
-  if (['admin_client', 'user'].includes(userRole) && userClientId) {
+  // Si on a un filtre de tag, on ignore les filtres client/projet pour chercher partout
+  const hasTagFilter = tag && tag.toLowerCase() !== 'toutes';
+  
+  // For non-admin users, always filter by their client ID SAUF si on a un filtre de tag
+  if (['admin_client', 'user'].includes(userRole) && userClientId && !hasTagFilter) {
     console.log('Non-admin user detected, forcing client filter:', userClientId);
     client = userClientId;
   }
@@ -28,8 +31,8 @@ export async function buildGalleryQuery(
     .from('images')
     .select('*');
   
-  // Obtenir et appliquer les IDs de projets si un client est sélectionné
-  if (client) {
+  // Obtenir et appliquer les IDs de projets si un client est sélectionné ET qu'on n'a pas de filtre de tag
+  if (client && !hasTagFilter) {
     const projetIds = await fetchProjectIdsForClient(client);
     
     if (projetIds && projetIds.length > 0) {
@@ -38,14 +41,14 @@ export async function buildGalleryQuery(
       // Aucun projet trouvé, retourner une requête qui ne donnera aucun résultat
       return { query, hasEmptyResult: true };
     }
-  } else if (['admin_client', 'user'].includes(userRole) && !userClientId) {
-    // If non-admin user with no client ID, don't show any images
+  } else if (['admin_client', 'user'].includes(userRole) && !userClientId && !hasTagFilter) {
+    // If non-admin user with no client ID and no tag filter, don't show any images
     console.warn('Non-admin user with no client ID, returning empty result');
     return { query, hasEmptyResult: true };
   }
   
-  // Appliquer le filtre de projet si fourni
-  if (project) {
+  // Appliquer le filtre de projet si fourni ET qu'on n'a pas de filtre de tag
+  if (project && !hasTagFilter) {
     query = query.eq('id_projet', project);
   }
   
@@ -54,13 +57,14 @@ export async function buildGalleryQuery(
     query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%`);
   }
 
-  // Appliquer le filtre de tag
-  if (tag && tag.toLowerCase() !== 'toutes') {
+  // Appliquer le filtre de tag - priorité absolue, ignore les autres filtres
+  if (hasTagFilter) {
+    console.log('Tag filter detected, searching across all clients and projects for tag:', tag);
     query = query.ilike('tags', `%${tag.toLowerCase()}%`);
   }
   
-  // Appliquer le filtre d'onglet
-  if (tab.toLowerCase() !== 'all') {
+  // Appliquer le filtre d'onglet seulement si on n'a pas de filtre de tag
+  if (tab.toLowerCase() !== 'all' && !hasTagFilter) {
     query = query.ilike('tags', `%${tab.toLowerCase()}%`);
   }
   
