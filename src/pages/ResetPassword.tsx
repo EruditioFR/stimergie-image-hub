@@ -20,7 +20,6 @@ const requestResetSchema = z.object({
 
 // Password reset form schema with new passwords
 const resetPasswordSchema = z.object({
-  email: z.string().email("L'adresse email est invalide"),
   password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
   confirmPassword: z.string().min(6, "Veuillez confirmer votre mot de passe"),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -36,33 +35,56 @@ export default function ResetPassword() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [isValidResetLink, setIsValidResetLink] = useState(false);
+  const [isCheckingLink, setIsCheckingLink] = useState(true);
   const navigate = useNavigate();
 
-  // Get the access token from URL
+  // Get the parameters from URL
   const accessToken = searchParams.get("access_token");
   const refreshToken = searchParams.get("refresh_token");
   const type = searchParams.get("type");
 
-  // Check if we have a valid reset token in the URL
-  const hasValidResetParams = type === "recovery" && (accessToken || refreshToken);
-
   useEffect(() => {
-    // If valid token exists, set the session with the token
-    if (hasValidResetParams && accessToken) {
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken || '',
-      }).then(({ error }) => {
-        if (error) {
-          console.error("Error setting session:", error);
-          setError("Lien de réinitialisation invalide ou expiré. Veuillez demander un nouveau lien.");
+    const checkResetLink = async () => {
+      setIsCheckingLink(true);
+      
+      // Check if we have valid reset parameters
+      if (type === "recovery" && accessToken) {
+        try {
+          console.log("Setting session with recovery token");
+          
+          // Set the session with the recovery token
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || '',
+          });
+          
+          if (error) {
+            console.error("Error setting session:", error);
+            setError("Lien de réinitialisation invalide ou expiré. Veuillez demander un nouveau lien.");
+            setIsValidResetLink(false);
+          } else if (data.session) {
+            console.log("Session set successfully for password reset");
+            setIsValidResetLink(true);
+          } else {
+            setError("Lien de réinitialisation invalide. Veuillez demander un nouveau lien.");
+            setIsValidResetLink(false);
+          }
+        } catch (err) {
+          console.error("Error processing reset link:", err);
+          setError("Erreur lors du traitement du lien de réinitialisation.");
+          setIsValidResetLink(false);
         }
-      });
-    } else if (!hasValidResetParams) {
-      // No token in URL, user likely came here to request a reset
-      console.log("No valid reset parameters found in URL");
-    }
-  }, [accessToken, refreshToken, hasValidResetParams]);
+      } else {
+        // No recovery token, user came here to request a reset
+        setIsValidResetLink(false);
+      }
+      
+      setIsCheckingLink(false);
+    };
+
+    checkResetLink();
+  }, [accessToken, refreshToken, type]);
 
   // Request reset form (when no token is present)
   const requestForm = useForm<RequestResetFormValues>({
@@ -76,7 +98,6 @@ export default function ResetPassword() {
   const resetForm = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
-      email: "",
       password: "",
       confirmPassword: "",
     },
@@ -87,9 +108,7 @@ export default function ResetPassword() {
       setIsLoading(true);
       setError(null);
       
-      // Get the full current URL to use for redirect
-      const currentOrigin = window.location.origin;
-      const redirectUrl = `${currentOrigin}/reset-password`;
+      const redirectUrl = `${window.location.origin}/reset-password`;
       
       console.log("Sending reset email to:", data.email);
       console.log("Redirect URL:", redirectUrl);
@@ -104,7 +123,6 @@ export default function ResetPassword() {
         return;
       }
       
-      // Success, show a message
       setSuccess(true);
       toast({
         title: "Email envoyé",
@@ -120,7 +138,7 @@ export default function ResetPassword() {
   };
 
   const onResetPassword = async (data: ResetPasswordFormValues) => {
-    if (!hasValidResetParams) {
+    if (!isValidResetLink) {
       setError("Lien de réinitialisation invalide ou expiré. Veuillez demander un nouveau lien.");
       return;
     }
@@ -129,9 +147,9 @@ export default function ResetPassword() {
       setIsLoading(true);
       setError(null);
 
-      // Use the updated auth API to change password
+      console.log("Updating user password");
+      
       const { error } = await supabase.auth.updateUser({ 
-        email: data.email,
         password: data.password
       });
 
@@ -160,6 +178,24 @@ export default function ResetPassword() {
     }
   };
 
+  if (isCheckingLink) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <div className="flex-grow flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold">Vérification du lien...</h1>
+              <div className="mt-4 flex justify-center">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <div className="flex-grow flex items-center justify-center px-4 py-12">
@@ -167,7 +203,7 @@ export default function ResetPassword() {
           <div className="text-center">
             <h1 className="text-2xl font-bold">Réinitialisation du mot de passe</h1>
             <p className="mt-2 text-gray-600">
-              {hasValidResetParams
+              {isValidResetLink
                 ? "Créez un nouveau mot de passe pour votre compte"
                 : "Entrez votre adresse email pour recevoir un lien de réinitialisation"}
             </p>
@@ -180,7 +216,7 @@ export default function ResetPassword() {
             </Alert>
           )}
 
-          {success && !hasValidResetParams ? (
+          {success && !isValidResetLink ? (
             <div className="p-4 bg-green-50 rounded-md">
               <div className="flex">
                 <div className="flex-shrink-0">
@@ -206,23 +242,9 @@ export default function ResetPassword() {
                 </div>
               </div>
             </div>
-          ) : hasValidResetParams ? (
+          ) : isValidResetLink ? (
             <Form {...resetForm}>
               <form onSubmit={resetForm.handleSubmit(onResetPassword)} className="space-y-6">
-                <FormField
-                  control={resetForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Adresse email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="exemple@email.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
                 <FormField
                   control={resetForm.control}
                   name="password"
