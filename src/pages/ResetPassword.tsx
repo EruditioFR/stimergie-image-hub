@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -32,7 +31,6 @@ type RequestResetFormValues = z.infer<typeof requestResetSchema>;
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 export default function ResetPassword() {
-  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -40,15 +38,22 @@ export default function ResetPassword() {
   const [isCheckingLink, setIsCheckingLink] = useState(true);
   const navigate = useNavigate();
 
-  // Get the parameters from URL
-  const accessToken = searchParams.get("access_token");
-  const refreshToken = searchParams.get("refresh_token");
-  const type = searchParams.get("type");
-
   useEffect(() => {
     const checkResetLink = async () => {
       setIsCheckingLink(true);
-      console.log("Checking reset link parameters:", { type, accessToken: !!accessToken, refreshToken: !!refreshToken });
+      
+      // Parse URL parameters from hash fragment (Supabase format)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
+      const type = hashParams.get("type");
+      
+      console.log("Checking reset link parameters:", { 
+        type, 
+        accessToken: !!accessToken, 
+        refreshToken: !!refreshToken,
+        fullHash: window.location.hash 
+      });
       
       // Check if we have valid reset parameters
       if (type === "recovery" && accessToken) {
@@ -87,7 +92,7 @@ export default function ResetPassword() {
     };
 
     checkResetLink();
-  }, [accessToken, refreshToken, type]);
+  }, []);
 
   // Request reset form (when no token is present)
   const requestForm = useForm<RequestResetFormValues>({
