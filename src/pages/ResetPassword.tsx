@@ -48,6 +48,7 @@ export default function ResetPassword() {
   useEffect(() => {
     const checkResetLink = async () => {
       setIsCheckingLink(true);
+      console.log("Checking reset link parameters:", { type, accessToken: !!accessToken, refreshToken: !!refreshToken });
       
       // Check if we have valid reset parameters
       if (type === "recovery" && accessToken) {
@@ -78,6 +79,7 @@ export default function ResetPassword() {
         }
       } else {
         // No recovery token, user came here to request a reset
+        console.log("No recovery parameters found, showing request form");
         setIsValidResetLink(false);
       }
       
@@ -109,7 +111,6 @@ export default function ResetPassword() {
       setIsLoading(true);
       setError(null);
       
-      // Utiliser l'URL stimergie.fr pour la redirection
       const redirectUrl = `https://www.stimergie.fr/reset-password`;
       
       console.log("Sending reset email to:", data.email);
