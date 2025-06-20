@@ -18,7 +18,7 @@ export async function fetchTotalImagesCount(
   try {
     // Pour admin_client et utilisateurs normaux, toujours filtrer par leur client ID
     if (['admin_client', 'user'].includes(userRole) && userClientId) {
-      console.log('Non-admin user detected, forcing client filter in count:', userClientId);
+      console.log('Non-admin user detected, forcing client filter in count even with tag filter:', userClientId);
       client = userClientId;
     }
     

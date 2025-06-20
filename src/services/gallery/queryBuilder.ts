@@ -17,12 +17,12 @@ export async function buildGalleryQuery(
 ) {
   console.log(`Building gallery query for user role: ${userRole}, client ID: ${userClientId}`);
   
-  // Si on a un filtre de tag, on ignore les filtres client/projet pour chercher partout
+  // Si on a un filtre de tag, on ignore les filtres client/projet SEULEMENT pour les admins
   const hasTagFilter = tag && tag.toLowerCase() !== 'toutes';
   
-  // For non-admin users, always filter by their client ID SAUF si on a un filtre de tag
-  if (['admin_client', 'user'].includes(userRole) && userClientId && !hasTagFilter) {
-    console.log('Non-admin user detected, forcing client filter:', userClientId);
+  // For non-admin users, ALWAYS filter by their client ID (même avec un filtre de tag)
+  if (['admin_client', 'user'].includes(userRole) && userClientId) {
+    console.log('Non-admin user detected, forcing client filter even with tag filter:', userClientId);
     client = userClientId;
   }
   
@@ -31,8 +31,8 @@ export async function buildGalleryQuery(
     .from('images')
     .select('*');
   
-  // Obtenir et appliquer les IDs de projets si un client est sélectionné ET qu'on n'a pas de filtre de tag
-  if (client && !hasTagFilter) {
+  // Obtenir et appliquer les IDs de projets si un client est sélectionné
+  if (client) {
     const projetIds = await fetchProjectIdsForClient(client);
     
     if (projetIds && projetIds.length > 0) {
@@ -41,14 +41,14 @@ export async function buildGalleryQuery(
       // Aucun projet trouvé, retourner une requête qui ne donnera aucun résultat
       return { query, hasEmptyResult: true };
     }
-  } else if (['admin_client', 'user'].includes(userRole) && !userClientId && !hasTagFilter) {
-    // If non-admin user with no client ID and no tag filter, don't show any images
+  } else if (['admin_client', 'user'].includes(userRole) && !userClientId) {
+    // If non-admin user with no client ID, don't show any images
     console.warn('Non-admin user with no client ID, returning empty result');
     return { query, hasEmptyResult: true };
   }
   
-  // Appliquer le filtre de projet si fourni ET qu'on n'a pas de filtre de tag
-  if (project && !hasTagFilter) {
+  // Appliquer le filtre de projet si fourni ET qu'on n'a pas de filtre de tag OU qu'on n'est pas admin
+  if (project && (!hasTagFilter || ['admin_client', 'user'].includes(userRole))) {
     query = query.eq('id_projet', project);
   }
   
@@ -57,9 +57,14 @@ export async function buildGalleryQuery(
     query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%`);
   }
 
-  // Appliquer le filtre de tag - priorité absolue, ignore les autres filtres
+  // Appliquer le filtre de tag
   if (hasTagFilter) {
-    console.log('Tag filter detected, searching across all clients and projects for tag:', tag);
+    console.log('Tag filter detected, searching for tag:', tag);
+    if (userRole === 'admin') {
+      console.log('Admin user: searching across all clients and projects for tag');
+    } else {
+      console.log('Non-admin user: searching within client scope for tag');
+    }
     query = query.ilike('tags', `%${tag.toLowerCase()}%`);
   }
   

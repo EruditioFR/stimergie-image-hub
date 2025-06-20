@@ -17,22 +17,6 @@ export function useGalleryFilters() {
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
   const [userClientId, setUserClientId] = useState<string | null>(null);
 
-  // Reset client and orientation filters when tag filter is active
-  useEffect(() => {
-    const hasTagFilter = tagFilter && tagFilter.toLowerCase() !== 'toutes';
-    if (hasTagFilter) {
-      console.log('Tag filter detected, resetting client and orientation filters');
-      // Reset orientation filter when tag filter is active
-      if (selectedOrientation !== null) {
-        setSelectedOrientation(null);
-      }
-      // Reset client filter for admin users when tag filter is active
-      if (userRole === 'admin' && selectedClient !== null) {
-        setSelectedClient(null);
-      }
-    }
-  }, [tagFilter, selectedOrientation, selectedClient, userRole]);
-
   // Fetch user's client_id if they are admin_client
   useEffect(() => {
     const getUserClientId = async () => {
