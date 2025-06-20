@@ -1,6 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useImages } from '@/context/ImageContext';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { X, Download } from 'lucide-react';
 import { downloadImage } from '@/utils/image/download';
@@ -8,11 +10,13 @@ import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { parseTagsString } from '@/utils/imageUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 export default function ImageDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { images } = useImages();
+  const { userRole } = useAuth();
   const [isDownloading, setIsDownloading] = useState(false);
   const [image, setImage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -123,6 +127,18 @@ export default function ImageDetail() {
     
     return [];
   };
+
+  // Generate tag link based on user role
+  const generateTagLink = (tag: string) => {
+    // For admin users, search across all images
+    if (userRole === 'admin') {
+      return `/gallery?tag=${encodeURIComponent(tag)}`;
+    }
+    
+    // For non-admin users (admin_client and user), the gallery will automatically 
+    // filter by their client due to the logic in useGalleryFilters and buildGalleryQuery
+    return `/gallery?tag=${encodeURIComponent(tag)}`;
+  };
   
   const displayTags = processTags(image?.tags);
   
@@ -190,12 +206,14 @@ export default function ImageDetail() {
                 <p className="text-sm font-medium mb-2">Tags:</p>
                 <div className="flex flex-wrap gap-2">
                   {displayTags.map((tag: string, index: number) => (
-                    <span 
-                      key={index} 
-                      className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs"
+                    <Link 
+                      key={index}
+                      to={generateTagLink(tag)}
+                      className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs hover:bg-secondary/80 transition-colors"
+                      onClick={handleClose}
                     >
                       #{tag}
-                    </span>
+                    </Link>
                   ))}
                 </div>
               </div>
