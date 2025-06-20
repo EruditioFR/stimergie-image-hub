@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { parseTagsString } from '@/utils/imageUtils';
 import { supabase } from '@/integrations/supabase/client';
-import { Link } from 'react-router-dom';
 
 export default function ImageDetail() {
   const { id } = useParams<{ id: string }>();
@@ -127,18 +126,6 @@ export default function ImageDetail() {
     
     return [];
   };
-
-  // Generate tag link based on user role
-  const generateTagLink = (tag: string) => {
-    // For admin users, search across all images
-    if (userRole === 'admin') {
-      return `/gallery?tag=${encodeURIComponent(tag)}`;
-    }
-    
-    // For non-admin users (admin_client and user), the gallery will automatically 
-    // filter by their client due to the logic in useGalleryFilters and buildGalleryQuery
-    return `/gallery?tag=${encodeURIComponent(tag)}`;
-  };
   
   const displayTags = processTags(image?.tags);
   
@@ -200,24 +187,6 @@ export default function ImageDetail() {
             <p className="text-sm text-muted-foreground">
               Par {image.author || 'Photographe inconnu'}
             </p>
-            
-            {displayTags.length > 0 && (
-              <div className="mt-4">
-                <p className="text-sm font-medium mb-2">Tags:</p>
-                <div className="flex flex-wrap gap-2">
-                  {displayTags.map((tag: string, index: number) => (
-                    <Link 
-                      key={index}
-                      to={generateTagLink(tag)}
-                      className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs hover:bg-secondary/80 transition-colors"
-                      onClick={handleClose}
-                    >
-                      #{tag}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

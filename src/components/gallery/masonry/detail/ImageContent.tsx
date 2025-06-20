@@ -5,7 +5,6 @@ import { downloadImage } from '@/utils/image/imageDownloader';
 import { toast } from 'sonner';
 import { parseTagsString } from '@/utils/imageUtils';
 import { TagsEditor } from './TagsEditor';
-import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 
 interface ImageContentProps {
@@ -97,18 +96,6 @@ export const ImageContent = ({
     setCurrentTags(newTags);
   };
 
-  // Generate tag link based on user role
-  const generateTagLink = (tag: string) => {
-    // For admin users, search across all images
-    if (userRole === 'admin') {
-      return `/gallery?tag=${encodeURIComponent(tag)}`;
-    }
-    
-    // For non-admin users (admin_client and user), the gallery will automatically 
-    // filter by their client due to the logic in useGalleryFilters and buildGalleryQuery
-    return `/gallery?tag=${encodeURIComponent(tag)}`;
-  };
-
   const imageSrc = imageError 
     ? '/image-not-available.png' 
     : (image?.display_url || image?.url_miniature || image?.src || image?.url || '');
@@ -146,24 +133,6 @@ export const ImageContent = ({
         initialTags={displayTags}
         onTagsUpdated={handleTagsUpdated}
       />
-      
-      {/* Tags cliquables avec filtrage selon le rôle */}
-      {displayTags.length > 0 && (
-        <div className="mt-4">
-          <p className="text-sm font-medium mb-2">Tags:</p>
-          <div className="flex flex-wrap gap-2">
-            {displayTags.map((tag: string, index: number) => (
-              <Link 
-                key={index}
-                to={generateTagLink(tag)}
-                className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs hover:bg-secondary/80 transition-colors"
-              >
-                #{tag}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
