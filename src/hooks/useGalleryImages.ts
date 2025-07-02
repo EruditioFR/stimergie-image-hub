@@ -56,7 +56,9 @@ export const useGalleryImages = (isAdmin: boolean) => {
     cancelPreviousRequest,
     setPreviousRequest,
     fetchTotalCount,
-    prefetchNextPage
+    prefetchNextPage,
+    invalidateGalleryData,
+    invalidateClientData
   } = useGalleryCache();
 
   const {
@@ -140,6 +142,17 @@ export const useGalleryImages = (isAdmin: boolean) => {
     setTotalCount
   });
 
+  // Fonction pour rafraîchir la galerie avec invalidation de cache
+  const refreshGalleryWithCacheInvalidation = async () => {
+    console.log('Refreshing gallery with cache invalidation...');
+    
+    // Invalider les caches
+    await invalidateGalleryData();
+    
+    // Rafraîchir la galerie
+    refreshGallery();
+  };
+
   return {
     allImages,
     isLoading,
@@ -157,11 +170,14 @@ export const useGalleryImages = (isAdmin: boolean) => {
     handleProjectChange,
     handleOrientationChange,
     handleResetFilters,
-    refreshGallery,
+    refreshGallery: refreshGalleryWithCacheInvalidation,
     formatImagesForGrid,
     userRole,
     userClientId,
     shouldFetchRandom,
-    hasMorePages
+    hasMorePages,
+    // Exposer les méthodes de cache pour usage externe
+    invalidateGalleryData,
+    invalidateClientData
   };
 };

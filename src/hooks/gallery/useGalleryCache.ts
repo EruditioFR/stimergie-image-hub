@@ -1,7 +1,9 @@
+
 import { useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { fetchTotalImagesCount } from '@/services/gallery/countService';
 import { fetchGalleryImages } from '@/services/gallery/imageService';
+import { clearAllCaches } from '@/utils/image/cacheManager';
 
 export const useGalleryCache = () => {
   const queryClient = useQueryClient();
@@ -129,10 +131,61 @@ export const useGalleryCache = () => {
     }
   }, [queryClient]);
   
+  // Nouvelle méthode pour invalider les caches de galerie
+  const invalidateGalleryData = useCallback(async () => {
+    console.log('Invalidating all gallery data caches...');
+    
+    try {
+      // Invalider toutes les requêtes de galerie
+      await queryClient.invalidateQueries({
+        queryKey: ['gallery-images'],
+        exact: false
+      });
+      
+      await queryClient.invalidateQueries({
+        queryKey: ['gallery-images-count'],
+        exact: false
+      });
+      
+      // Vider les caches d'images
+      clearAllCaches();
+      
+      console.log('Gallery data cache invalidation completed');
+    } catch (error) {
+      console.error('Error invalidating gallery data:', error);
+    }
+  }, [queryClient]);
+  
+  // Nouvelle méthode pour invalider les caches spécifiques à un client
+  const invalidateClientData = useCallback(async (clientId: string) => {
+    console.log(`Invalidating client-specific data for: ${clientId}`);
+    
+    try {
+      // Invalider toutes les requêtes qui pourraient contenir des données de ce client
+      await queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes(clientId)
+          ) || queryKey.includes('gallery-images') || queryKey.includes('gallery-images-count');
+        }
+      });
+      
+      // Vider le cache d'images
+      clearAllCaches();
+      
+      console.log(`Client-specific cache invalidation completed for ${clientId}`);
+    } catch (error) {
+      console.error(`Error invalidating client data for ${clientId}:`, error);
+    }
+  }, [queryClient]);
+  
   return {
     cancelPreviousRequest,
     setPreviousRequest,
     fetchTotalCount,
-    prefetchNextPage
+    prefetchNextPage,
+    invalidateGalleryData,
+    invalidateClientData
   };
 };
