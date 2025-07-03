@@ -11,13 +11,16 @@ import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
-import { clearAllCaches } from '@/utils/image/cacheManager';
+import { Trash2, Bug } from 'lucide-react';
+import { clearImageCachesOnly } from '@/utils/image/smartCacheManager';
 import { GalleryDownloadButtons } from '@/components/gallery/GalleryDownloadButtons';
 import { useImageSelection } from '@/hooks/useImageSelection';
+import { CacheDebugPanel } from '@/components/admin/CacheDebugPanel';
+import { useSmartCacheInvalidation } from '@/hooks/useSmartCacheInvalidation';
 
 // Catégories pour les filtres
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
+
 const Gallery = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
@@ -31,11 +34,14 @@ const Gallery = () => {
   } = useUserProfile(user, userRole);
   const pageLoadTimeRef = useRef(Date.now());
   const [isFlushing, setIsFlushing] = useState(false);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
   const {
     selectedImages,
     toggleImageSelection,
     clearSelection
   } = useImageSelection();
+  const { invalidateImageCaches, forceRefreshProject } = useSmartCacheInvalidation();
+
   const {
     allImages,
     isLoading,
@@ -61,6 +67,26 @@ const Gallery = () => {
     hasMorePages
   } = useGalleryImages(isAdmin);
 
+  // Log détaillé pour le projet problématique
+  useEffect(() => {
+    const PROBLEMATIC_PROJECT_ID = '4949c2d4-90f4-44e8-b346-443cd82d9792';
+    if (selectedProject === PROBLEMATIC_PROJECT_ID) {
+      console.log('🔍 PROBLEMATIC PROJECT DETECTED:', {
+        projectId: selectedProject,
+        imagesCount: allImages.length,
+        isLoading,
+        isFetching,
+        currentPage,
+        totalCount,
+        hasMorePages
+      });
+      
+      if (allImages.length === 0 && !isLoading) {
+        console.warn('⚠️ No images found for problematic project - potential cache issue');
+      }
+    }
+  }, [selectedProject, allImages.length, isLoading, isFetching, currentPage]);
+
   // Réinitialiser les filtres lorsqu'ils changent
   useEffect(() => {
     if (currentPage === 1) {
@@ -76,6 +102,7 @@ const Gallery = () => {
     console.log(`Formatting ${displayedImages.length} images for grid display...`);
     return formatImagesForGrid(displayedImages);
   }, [displayedImages, formatImagesForGrid]);
+
   const shouldShowEmptyState = !isLoading && displayedImages.length === 0;
 
   // Fonction pour charger plus d'images en défilement infini
@@ -86,55 +113,157 @@ const Gallery = () => {
     }
   }, [currentPage, handlePageChange, hasMorePages, isLoading, isFetching]);
 
-  // Fonction pour vider le cache d'images
-  const handleFlushCache = useCallback(() => {
+  // Fonction intelligente pour vider le cache d'images (préserve l'auth)
+  const handleSmartFlushCache = useCallback(async () => {
     setIsFlushing(true);
     try {
-      clearAllCaches();
-      toast.success('Cache d\'images vidé', {
-        description: 'Toutes les images seront rechargées depuis le serveur.'
+      console.log('🧹 Smart cache flush starting...');
+      
+      // Utiliser le nouveau système de cache intelligent
+      clearImageCachesOnly();
+      
+      // Invalider les caches React Query des images
+      await invalidateImageCaches(selectedProject, selectedClient);
+      
+      toast.success('Cache d\'images vidé intelligemment', {
+        description: 'Session utilisateur préservée. Images rechargées depuis le serveur.'
       });
 
       // Rafraîchir la galerie après avoir vidé le cache
       setTimeout(() => {
         refreshGallery();
       }, 500);
+      
     } catch (error) {
-      console.error('Error flushing cache:', error);
-      toast.error('Erreur lors du vidage du cache');
+      console.error('Error during smart cache flush:', error);
+      toast.error('Erreur lors du vidage intelligent du cache');
     } finally {
       setIsFlushing(false);
     }
-  }, [refreshGallery]);
+  }, [refreshGallery, invalidateImageCaches, selectedProject, selectedClient]);
+
+  // Fonction pour forcer le refresh du projet problématique
+  const handleForceRefreshProject = useCallback(async () => {
+    if (!selectedProject) {
+      toast.error('Aucun projet sélectionné');
+      return;
+    }
+    
+    setIsFlushing(true);
+    try {
+      console.log(`🔄 Force refreshing project: ${selectedProject}`);
+      
+      await forceRefreshProject(selectedProject);
+      
+      toast.success('Projet actualisé avec succès', {
+        description: 'Toutes les données ont été rechargées depuis la base.'
+      });
+      
+      // Rafraîchir la galerie
+      setTimeout(() => {
+        refreshGallery();
+      }, 300);
+      
+    } catch (error) {
+      console.error('Error force refreshing project:', error);
+      toast.error('Erreur lors de l\'actualisation du projet');
+    } finally {
+      setIsFlushing(false);
+    }
+  }, [selectedProject, forceRefreshProject, refreshGallery]);
   
-  return <div className="min-h-screen flex flex-col">
+  return (
+    <div className="min-h-screen flex flex-col">
       <Header />
       
       <main className="flex-grow w-screen px-0">
-  <GalleryHeader title="Banque d'images" activeTab={activeTab} onTabChange={handleTabChange} categories={categories} selectedClient={selectedClient} onClientChange={handleClientChange} selectedProject={selectedProject} onProjectChange={handleProjectChange} selectedOrientation={selectedOrientation} onOrientationChange={handleOrientationChange} userName={userProfile?.firstName || ''} userLastName={userProfile?.lastName || ''} userRole={userRole} userClientId={userClientId} />
+        <GalleryHeader 
+          title="Banque d'images" 
+          activeTab={activeTab} 
+          onTabChange={handleTabChange} 
+          categories={categories} 
+          selectedClient={selectedClient} 
+          onClientChange={handleClientChange} 
+          selectedProject={selectedProject} 
+          onProjectChange={handleProjectChange} 
+          selectedOrientation={selectedOrientation} 
+          onOrientationChange={handleOrientationChange} 
+          userName={userProfile?.firstName || ''} 
+          userLastName={userProfile?.lastName || ''} 
+          userRole={userRole} 
+          userClientId={userClientId} 
+        />
 
-  {isAdmin && (
-    <div className="flex justify-end px-4 mb-2">
-      <Button
-        variant="outline" 
-        size="sm"
-        disabled={isFlushing}
-        onClick={handleFlushCache}
-        className="flex items-center gap-1"
-      >
-        <Trash2 className="h-4 w-4" /> 
-        {isFlushing ? 'Vidage en cours...' : 'Vider le cache d\'images'}
-      </Button>
-    </div>
-  )}
+        {isAdmin && (
+          <div className="flex justify-end px-4 mb-2 gap-2">
+            <Button
+              variant="outline" 
+              size="sm"
+              disabled={isFlushing}
+              onClick={handleSmartFlushCache}
+              className="flex items-center gap-1"
+            >
+              <Trash2 className="h-4 w-4" /> 
+              {isFlushing ? 'Vidage...' : 'Vider Cache Images'}
+            </Button>
+            
+            {selectedProject && (
+              <Button
+                variant="outline" 
+                size="sm"
+                disabled={isFlushing}
+                onClick={handleForceRefreshProject}
+                className="flex items-center gap-1"
+              >
+                <Trash2 className="h-4 w-4" /> 
+                {isFlushing ? 'Actualisation...' : 'Actualiser Projet'}
+              </Button>
+            )}
+            
+            <Button
+              variant="ghost" 
+              size="sm"
+              onClick={() => setShowDebugPanel(!showDebugPanel)}
+              className="flex items-center gap-1"
+            >
+              <Bug className="h-4 w-4" /> 
+              Debug Cache
+            </Button>
+          </div>
+        )}
 
-  <div className="w-full px-0 py-0">
-    {isLoading && allImages.length === 0 ? <MasonryGrid images={[]} isLoading={true} /> : displayedImages.length > 0 ? <MasonryGrid images={formattedImages} isLoading={isLoading || isFetching} hasMorePages={hasMorePages} loadMoreImages={loadMoreImages} selectedImages={selectedImages} onImageSelect={toggleImageSelection} onClearSelection={clearSelection} /> : <EmptyResults onReset={handleResetFilters} hasFilters={hasActiveFilters} />}
-  </div>
-    </main>
+        {/* Panel de debug admin */}
+        {isAdmin && showDebugPanel && (
+          <div className="px-4 mb-6">
+            <CacheDebugPanel />
+          </div>
+        )}
 
+        <div className="w-full px-0 py-0">
+          {isLoading && allImages.length === 0 ? (
+            <MasonryGrid images={[]} isLoading={true} />
+          ) : displayedImages.length > 0 ? (
+            <MasonryGrid 
+              images={formattedImages} 
+              isLoading={isLoading || isFetching} 
+              hasMorePages={hasMorePages} 
+              loadMoreImages={loadMoreImages} 
+              selectedImages={selectedImages} 
+              onImageSelect={toggleImageSelection} 
+              onClearSelection={clearSelection} 
+            />
+          ) : (
+            <EmptyResults 
+              onReset={handleResetFilters} 
+              hasFilters={hasActiveFilters} 
+            />
+          )}
+        </div>
+      </main>
       
       <Footer />
-    </div>;
+    </div>
+  );
 };
+
 export default Gallery;

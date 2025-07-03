@@ -1,28 +1,28 @@
 
 import { useEffect } from 'react';
-import { useGalleryCacheSync } from './gallery/useGalleryCacheSync';
+import { useSmartCacheInvalidation } from './useSmartCacheInvalidation';
 
 export const useProjectCacheSync = () => {
-  const { invalidateGalleryCaches } = useGalleryCacheSync();
+  const { invalidateImageCaches } = useSmartCacheInvalidation();
 
-  // Fonction pour invalider les caches après des changements de projets
-  const syncAfterProjectChange = async (clientId?: string) => {
-    console.log('Syncing caches after project change...');
+  // Fonction pour invalider intelligemment les caches après des changements de projets
+  const syncAfterProjectChange = async (clientId?: string, projectId?: string) => {
+    console.log('🔄 Smart sync after project change...', { clientId, projectId });
     
     // Attendre un peu pour laisser les données se propager
     await new Promise(resolve => setTimeout(resolve, 100));
     
-    // Invalider tous les caches de galerie
-    await invalidateGalleryCaches(clientId);
+    // Invalider intelligemment les caches (préserve l'auth)
+    await invalidateImageCaches(projectId, clientId);
     
-    console.log('Cache sync completed after project change');
+    console.log('✅ Smart cache sync completed after project change');
   };
 
   // Écouter les événements de changement de projets (custom events)
   useEffect(() => {
     const handleProjectChange = (event: CustomEvent) => {
-      const { clientId } = event.detail || {};
-      syncAfterProjectChange(clientId);
+      const { clientId, projectId } = event.detail || {};
+      syncAfterProjectChange(clientId, projectId);
     };
 
     window.addEventListener('projectAdded', handleProjectChange as EventListener);
