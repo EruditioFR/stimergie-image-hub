@@ -36,8 +36,16 @@ export function ClientsFilter({ selectedClient, onClientChange, className, userR
         
         const clientsData = await fetchClients();
         
-        // Si c'est un utilisateur régulier ou admin client, filtrer pour n'afficher que leur client
-        if ((isRegularUser || isAdminClient) && userClientId) {
+        // Si c'est un utilisateur régulier, filtrer pour n'afficher que leur client
+        if (isRegularUser && userClientId) {
+          const filteredClients = clientsData.filter(client => client.id === userClientId);
+          setClients(filteredClients);
+          
+          // Auto-sélectionner le client
+          if (filteredClients.length === 1 && selectedClient !== userClientId) {
+            onClientChange(userClientId);
+          }
+        } else if (isAdminClient && userClientId) {
           const filteredClients = clientsData.filter(client => client.id === userClientId);
           setClients(filteredClients);
           
@@ -62,9 +70,9 @@ export function ClientsFilter({ selectedClient, onClientChange, className, userR
   }, [userRole, userClientId, user, onClientChange, isRegularUser, isAdminClient, selectedClient]);
   
   const handleValueChange = (value: string) => {
-    // Ne pas autoriser les utilisateurs réguliers ou admin client à changer leur client
-    if (isRegularUser || isAdminClient) {
-      console.log("Users with role 'user' or 'admin_client' cannot change their client filter");
+    // Ne pas autoriser les utilisateurs réguliers à changer leur client
+    if (isRegularUser) {
+      console.log("Users with role 'user' cannot change their client filter");
       return;
     }
     
@@ -83,14 +91,14 @@ export function ClientsFilter({ selectedClient, onClientChange, className, userR
       <Select 
         value={selectedClient || 'all'} 
         onValueChange={handleValueChange}
-        disabled={isLoading || isRegularUser || isAdminClient}
+        disabled={isLoading || isRegularUser}
       >
         <SelectTrigger className="w-full sm:w-[200px]">
           <SelectValue placeholder="Filtrer par client" />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            {!isRegularUser && !isAdminClient && <SelectItem value="all">Tous les clients</SelectItem>}
+            {!isRegularUser && <SelectItem value="all">Tous les clients</SelectItem>}
             {clients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.nom}

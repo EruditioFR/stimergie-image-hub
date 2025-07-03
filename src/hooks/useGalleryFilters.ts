@@ -17,10 +17,10 @@ export function useGalleryFilters() {
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
   const [userClientId, setUserClientId] = useState<string | null>(null);
 
-  // Fetch user's client_id if they are admin_client
+  // Fetch user's client_id for regular users
   useEffect(() => {
     const getUserClientId = async () => {
-      if (userRole === 'admin_client' && user) {
+      if ((userRole === 'user' || userRole === 'admin_client') && user) {
         try {
           const { data, error } = await supabase.rpc('get_user_client_id', {
             user_id: user.id
@@ -33,7 +33,10 @@ export function useGalleryFilters() {
           
           if (data) {
             setUserClientId(data);
-            setSelectedClient(data);
+            // Auto-sélectionner le client pour les utilisateurs réguliers
+            if (userRole === 'user') {
+              setSelectedClient(data);
+            }
           }
         } catch (error) {
           console.error('Error fetching user client ID:', error);
@@ -51,8 +54,8 @@ export function useGalleryFilters() {
 
   const handleClientChange = useCallback((clientId: string | null) => {
     // Only allow client change for admin users
-    if (userRole === 'admin_client') {
-      console.log('Admin client users cannot change their client filter');
+    if (userRole === 'user') {
+      console.log('Regular users cannot change their client filter');
       return;
     }
     
@@ -78,8 +81,8 @@ export function useGalleryFilters() {
     console.log('Resetting filters');
     setActiveTab('all');
     
-    // For admin_client users, don't reset the client filter
-    if (userRole !== 'admin_client') {
+    // For regular users, don't reset the client filter
+    if (userRole !== 'user') {
       setSelectedClient(null);
     }
     
@@ -98,7 +101,7 @@ export function useGalleryFilters() {
       searchQuery !== '' || 
       tagFilter !== '' || 
       activeTab.toLowerCase() !== 'all' ||
-      (selectedClient !== null && (userRole !== 'admin_client' || selectedClient !== userClientId)) ||
+      (selectedClient !== null && (userRole !== 'user' || selectedClient !== userClientId)) ||
       selectedProject !== null ||
       selectedOrientation !== null
     );

@@ -60,12 +60,6 @@ export function ProjectsFilter({ selectedProject, onProjectChange, className, se
         if (data) {
           console.log(`Retrieved ${data.length} projects for client ${selectedClient}`);
           setProjects(data);
-          
-          // Auto-select first project when client changes and projects are loaded
-          if (data.length > 0 && !selectedProject) {
-            console.log('Auto-selecting first project:', data[0].id);
-            onProjectChange(data[0].id);
-          }
         }
       } catch (error) {
         console.error('Error:', error);
