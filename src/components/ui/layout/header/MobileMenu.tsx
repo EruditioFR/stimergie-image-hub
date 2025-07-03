@@ -40,8 +40,6 @@ export function MobileMenu({
   const navigationItems = [
     { name: 'Accueil', path: '/', icon: <Home className="h-5 w-5 mr-3" /> },
     { name: 'Banque d\'images', path: '/gallery', icon: <Image className="h-5 w-5 mr-3" /> },
-    { name: 'Ressources', path: '/resources', icon: <FileText className="h-5 w-5 mr-3" /> },
-    { name: 'Ensemble', path: '/ensemble', icon: <Users className="h-5 w-5 mr-3" /> },
     { name: 'Albums partagés', path: '/shared-albums', icon: <FolderOpen className="h-5 w-5 mr-3" /> },
     { name: 'Clients', path: '/clients', icon: <Users className="h-5 w-5 mr-3" />, access: canAccessClientsPage },
     { name: 'Agence', path: '/agency', icon: <Building className="h-5 w-5 mr-3" /> },
