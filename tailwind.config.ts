@@ -105,8 +105,51 @@ export default {
 				'fade-up': 'fade-up 0.5s ease-out',
 				'image-zoom': 'image-zoom 0.3s ease-out forwards',
 				'blur-in': 'blur-in 0.6s ease-out'
+			},
+			typography: {
+				DEFAULT: {
+					css: {
+						maxWidth: 'none',
+						color: 'hsl(var(--foreground))',
+						h1: {
+							color: 'hsl(var(--foreground))',
+						},
+						h2: {
+							color: 'hsl(var(--foreground))',
+						},
+						h3: {
+							color: 'hsl(var(--foreground))',
+						},
+						h4: {
+							color: 'hsl(var(--foreground))',
+						},
+						p: {
+							color: 'hsl(var(--foreground))',
+						},
+						strong: {
+							color: 'hsl(var(--foreground))',
+						},
+						li: {
+							color: 'hsl(var(--foreground))',
+						},
+						blockquote: {
+							color: 'hsl(var(--foreground))',
+							borderLeftColor: 'hsl(var(--primary))',
+						},
+						code: {
+							color: 'hsl(var(--foreground))',
+							backgroundColor: 'hsl(var(--muted))',
+						},
+						pre: {
+							backgroundColor: 'hsl(var(--muted))',
+						},
+						'th, td': {
+							borderColor: 'hsl(var(--border))',
+						},
+					},
+				},
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config;
