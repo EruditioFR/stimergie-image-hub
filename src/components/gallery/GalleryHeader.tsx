@@ -100,6 +100,15 @@ export function GalleryHeader({
                 />
               </>
             )}
+            
+            {userRole === 'user' && (
+              <ProjectsFilter 
+                selectedProject={selectedProject}
+                onProjectChange={onProjectChange}
+                className="w-full sm:w-auto"
+                selectedClient={userClientId}
+              />
+            )}
           </div>
         </div>
       </div>

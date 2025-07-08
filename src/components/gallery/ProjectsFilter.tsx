@@ -45,7 +45,7 @@ export function ProjectsFilter({ selectedProject, onProjectChange, className, se
           .from('projets')
           .select('id, nom_projet')
           .eq('id_client', selectedClient)
-          .order('nom_projet');
+          .order('nom_projet', { ascending: true });
         
         if (error) {
           console.error('Error loading projects:', error);
