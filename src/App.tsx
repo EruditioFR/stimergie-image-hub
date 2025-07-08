@@ -22,6 +22,7 @@ import BlogPost from './pages/BlogPost';
 import ResetPassword from './pages/ResetPassword';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
+import Licenses from './pages/Licenses';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import SharedAlbum from './pages/SharedAlbum';
 import './App.css';
@@ -48,6 +49,7 @@ function App() {
                 <Route path="/image/:imageId" element={<ImageView />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
+                <Route path="/licenses" element={<Licenses />} />
 
                 <Route path="/blog/:blogId" element={<BlogPost />} />
 
