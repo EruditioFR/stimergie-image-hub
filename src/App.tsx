@@ -20,6 +20,8 @@ import Downloads from './pages/Downloads';
 import BlogEditor from './pages/BlogEditor';
 import BlogPost from './pages/BlogPost';
 import ResetPassword from './pages/ResetPassword';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import SharedAlbum from './pages/SharedAlbum';
 import './App.css';
@@ -44,6 +46,8 @@ function App() {
                 <Route path="/gallery/:ensembleId" element={<Gallery />} />
                 <Route path="/shared-album/:albumKey" element={<SharedAlbum />} />
                 <Route path="/image/:imageId" element={<ImageView />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/terms-of-service" element={<TermsOfService />} />
 
                 <Route path="/blog/:blogId" element={<BlogPost />} />
 

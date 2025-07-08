@@ -53,18 +53,13 @@ export function Footer() {
             </h3>
             <ul className="space-y-3">
               <li>
-                <Link to="/terms" className="text-foreground/80 hover:text-primary transition-colors">
+                <Link to="/terms-of-service" className="text-foreground/80 hover:text-primary transition-colors">
                   Conditions d'utilisation
                 </Link>
               </li>
               <li>
-                <Link to="/privacy" className="text-foreground/80 hover:text-primary transition-colors">
+                <Link to="/privacy-policy" className="text-foreground/80 hover:text-primary transition-colors">
                   Politique de confidentialité
-                </Link>
-              </li>
-              <li>
-                <Link to="/licenses" className="text-foreground/80 hover:text-primary transition-colors">
-                  Licences
                 </Link>
               </li>
               <li>
