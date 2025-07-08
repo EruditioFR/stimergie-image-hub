@@ -52,8 +52,9 @@ export async function buildGalleryQuery(
     query = query.eq('id_projet', project);
   }
   
-  // Appliquer le filtre de recherche
+  // Appliquer le filtre de recherche - maintenant inclut le titre des images
   if (search && search.trim() !== '') {
+    console.log('Applying search filter for:', search);
     query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%`);
   }
 
