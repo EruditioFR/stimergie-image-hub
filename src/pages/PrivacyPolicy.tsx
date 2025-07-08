@@ -194,7 +194,7 @@ const PrivacyPolicy = () => {
           </div>
 
           {/* Content */}
-          <div className="prose prose-lg max-w-none text-left">
+          <div className="prose prose-lg max-w-none text-left prose-h2:py-4 prose-h3:py-3 prose-h4:py-2 prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h2:font-semibold prose-h3:font-medium prose-h4:font-medium">
             {isEditing ? (
               <Textarea
                 value={editContent}
