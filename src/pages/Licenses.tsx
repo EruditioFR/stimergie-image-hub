@@ -33,24 +33,89 @@ const Licenses = () => {
 
   const fetchPage = async () => {
     try {
+      console.log('Fetching licenses page...');
       const { data, error } = await supabase
         .from('legal_pages')
         .select('*')
         .eq('page_type', 'licenses')
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching licenses page:', error);
+        // Si la page n'existe pas, on la crée
+        if (error.code === 'PGRST116') {
+          await createDefaultPage();
+          return;
+        }
         toast.error('Erreur lors du chargement de la page');
         return;
       }
 
+      if (!data) {
+        console.log('No licenses page found, creating default...');
+        await createDefaultPage();
+        return;
+      }
+
+      console.log('Licenses page found:', data);
       setPage(data);
     } catch (error) {
       console.error('Error:', error);
       toast.error('Erreur lors du chargement de la page');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const createDefaultPage = async () => {
+    try {
+      console.log('Creating default licenses page...');
+      const { data, error } = await supabase
+        .from('legal_pages')
+        .insert({
+          page_type: 'licenses',
+          title: 'Licences',
+          content: `<h2>Licences</h2>
+<p>Cette page présente les différentes licences utilisées dans notre application et service.</p>
+
+<h3>Licences des images</h3>
+<p>Les images disponibles sur notre plateforme sont soumises aux licences suivantes :</p>
+<ul>
+<li>Images libres de droits : Utilisation commerciale et non commerciale autorisée</li>
+<li>Images sous licence Creative Commons : Voir les conditions spécifiques de chaque licence</li>
+<li>Images sous licence propriétaire : Utilisation selon les termes du contrat client</li>
+</ul>
+
+<h3>Licences des logiciels</h3>
+<p>Notre application utilise des composants logiciels sous différentes licences :</p>
+<ul>
+<li>React : Licence MIT</li>
+<li>Tailwind CSS : Licence MIT</li>
+<li>Supabase : Licence Apache 2.0</li>
+<li>Autres dépendances : Voir le fichier package.json pour les détails</li>
+</ul>
+
+<h3>Attribution</h3>
+<p>Nous remercions les créateurs et contributeurs des projets open source que nous utilisons.</p>
+
+<h3>Contact</h3>
+<p>Pour toute question concernant les licences, contactez-nous à : legal@votre-entreprise.com</p>`
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating default page:', error);
+        toast.error('Erreur lors de la création de la page par défaut');
+        return;
+      }
+
+      console.log('Default page created:', data);
+      setPage(data);
+      toast.success('Page par défaut créée avec succès');
+    } catch (error) {
+      console.error('Error creating default page:', error);
+      toast.error('Erreur lors de la création de la page par défaut');
     }
   };
 
@@ -124,8 +189,11 @@ const Licenses = () => {
         <Header />
         <main className="flex-grow container mx-auto px-6 py-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Page non trouvée</h1>
-            <p className="text-muted-foreground">La page des licences n'a pas pu être chargée.</p>
+            <h1 className="text-2xl font-bold mb-4">Page en cours de création</h1>
+            <p className="text-muted-foreground">La page des licences est en cours de création...</p>
+            <Button onClick={fetchPage} className="mt-4">
+              Actualiser
+            </Button>
           </div>
         </main>
         <Footer />
