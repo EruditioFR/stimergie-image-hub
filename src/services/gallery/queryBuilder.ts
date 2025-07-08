@@ -26,6 +26,32 @@ export async function buildGalleryQuery(
     client = userClientId;
   }
   
+  // Si on recherche par nom de client et qu'on est admin, chercher les projets de ce client
+  let clientProjectIds: string[] = [];
+  if (search && search.trim() !== '' && userRole === 'admin') {
+    console.log('Admin search detected, checking for client names:', search);
+    
+    // Chercher les clients qui correspondent à la recherche
+    const { data: matchingClients } = await supabase
+      .from('clients')
+      .select('id')
+      .ilike('nom', `%${search}%`);
+    
+    if (matchingClients && matchingClients.length > 0) {
+      // Récupérer tous les projets de ces clients
+      const clientIds = matchingClients.map(c => c.id);
+      const { data: clientProjects } = await supabase
+        .from('projets')
+        .select('id')
+        .in('id_client', clientIds);
+      
+      if (clientProjects) {
+        clientProjectIds = clientProjects.map(p => p.id);
+        console.log(`Found ${clientProjectIds.length} projects for matching clients`);
+      }
+    }
+  }
+  
   // Construction de la requête de base
   let query = supabase
     .from('images')
@@ -52,10 +78,17 @@ export async function buildGalleryQuery(
     query = query.eq('id_projet', project);
   }
   
-  // Appliquer le filtre de recherche - maintenant inclut le titre des images
+  // Appliquer le filtre de recherche - maintenant inclut le titre des images ET les projets des clients correspondants
   if (search && search.trim() !== '') {
     console.log('Applying search filter for:', search);
-    query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%`);
+    
+    if (clientProjectIds.length > 0 && userRole === 'admin') {
+      // Pour les admins : chercher dans les titres/tags OU dans les projets des clients correspondants
+      query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%,id_projet.in.(${clientProjectIds.join(',')})`);
+    } else {
+      // Recherche normale dans les titres et tags
+      query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%`);
+    }
   }
 
   // Appliquer le filtre de tag

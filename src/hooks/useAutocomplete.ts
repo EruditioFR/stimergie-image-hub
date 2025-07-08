@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -16,11 +15,30 @@ export function useAutocomplete(query: string, userRole: string, userClientId: s
       setIsLoading(true);
       
       try {
+        const allSuggestions = new Set<string>();
+
+        // Fetch client names
+        if (userRole === 'admin') {
+          // Admin can see all clients
+          const { data: clients, error: clientsError } = await supabase
+            .from('clients')
+            .select('nom')
+            .ilike('nom', `%${query}%`)
+            .limit(10);
+
+          if (!clientsError && clients) {
+            clients.forEach(client => {
+              allSuggestions.add(client.nom);
+            });
+          }
+        }
+
+        // Fetch image titles and tags
         let baseQuery = supabase
           .from('images')
           .select('title, tags');
 
-        // Apply user role restrictions
+        // Apply user role restrictions for images
         if (['admin_client', 'user'].includes(userRole) && userClientId) {
           // Get projects for this client first
           const { data: projects } = await supabase
@@ -32,8 +50,8 @@ export function useAutocomplete(query: string, userRole: string, userClientId: s
             const projectIds = projects.map(p => p.id);
             baseQuery = baseQuery.in('id_projet', projectIds);
           } else {
-            // No projects found, return empty suggestions
-            setSuggestions([]);
+            // No projects found, skip image suggestions but keep client suggestions
+            setSuggestions(Array.from(allSuggestions));
             setIsLoading(false);
             return;
           }
@@ -43,15 +61,13 @@ export function useAutocomplete(query: string, userRole: string, userClientId: s
 
         if (error) {
           console.error('Error fetching autocomplete suggestions:', error);
-          setSuggestions([]);
+          setSuggestions(Array.from(allSuggestions));
           return;
         }
 
-        const allSuggestions = new Set<string>();
-        
         if (images) {
           images.forEach((image) => {
-            // Add title suggestions (if title contains the query)
+            // Add title suggestions (image file names)
             if (image.title && image.title.toLowerCase().includes(query.toLowerCase())) {
               allSuggestions.add(image.title);
             }
