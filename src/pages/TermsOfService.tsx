@@ -194,7 +194,7 @@ const TermsOfService = () => {
           </div>
 
           {/* Content */}
-          <div className="prose prose-lg max-w-none">
+          <div className="prose prose-lg max-w-none text-left">
             {isEditing ? (
               <Textarea
                 value={editContent}
