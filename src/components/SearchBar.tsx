@@ -5,6 +5,8 @@ import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAutocomplete } from '@/hooks/useAutocomplete';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SearchBarProps {
   className?: string;
@@ -18,9 +20,37 @@ export function SearchBar({ className, variant = 'default' }: SearchBarProps) {
   const navigate = useNavigate();
   const suggestionRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { userRole, user } = useAuth();
+  const [userClientId, setUserClientId] = useState<string | null>(null);
+  
+  // Récupérer l'ID client pour les utilisateurs avec le rôle "user"
+  useEffect(() => {
+    const getUserClientId = async () => {
+      if (userRole === 'user' && user) {
+        try {
+          const { data, error } = await supabase.rpc('get_user_client_id', {
+            user_id: user.id
+          });
+          
+          if (error) {
+            console.error('Error fetching user client ID:', error);
+            return;
+          }
+          
+          if (data) {
+            setUserClientId(data);
+          }
+        } catch (error) {
+          console.error('Error fetching user client ID:', error);
+        }
+      }
+    };
+    
+    getUserClientId();
+  }, [userRole, user]);
 
   // Get search suggestions based on input
-  const { suggestions, isLoading } = useAutocomplete(searchQuery);
+  const { suggestions, isLoading } = useAutocomplete(searchQuery, userRole, userClientId);
 
   // Synchronize with URL parameters when component mounts
   useEffect(() => {

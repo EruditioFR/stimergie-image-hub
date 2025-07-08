@@ -2,8 +2,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { debounce } from '@/lib/utils';
+import { fetchProjectIdsForClient } from '@/services/gallery/projectUtils';
 
-export function useAutocomplete(query: string) {
+export function useAutocomplete(query: string, userRole?: string, userClientId?: string | null) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -17,24 +18,45 @@ export function useAutocomplete(query: string) {
       setIsLoading(true);
 
       try {
-        // Fetch unique titles containing the search query
-        const { data: titleData, error: titleError } = await supabase
+        // Pour les utilisateurs avec le rôle "user", filtrer par leur client
+        const isUserRole = userRole === 'user' && userClientId;
+        let projectIds: string[] | null = null;
+        
+        if (isUserRole) {
+          projectIds = await fetchProjectIdsForClient(userClientId);
+          if (!projectIds || projectIds.length === 0) {
+            setSuggestions([]);
+            return;
+          }
+        }
+
+        // Construction des requêtes avec filtres par projet si nécessaire
+        let titleQuery = supabase
           .from('images')
           .select('title')
           .ilike('title', `%${searchQuery}%`)
           .limit(5);
+          
+        let tagQuery = supabase
+          .from('images')
+          .select('tags')
+          .ilike('tags', `%${searchQuery}%`)
+          .limit(10);
+
+        // Appliquer le filtre par projet pour les users
+        if (isUserRole && projectIds) {
+          titleQuery = titleQuery.in('id_projet', projectIds);
+          tagQuery = tagQuery.in('id_projet', projectIds);
+        }
+
+        // Exécuter les requêtes
+        const { data: titleData, error: titleError } = await titleQuery;
+        const { data: tagData, error: tagError } = await tagQuery;
 
         if (titleError) {
           console.error('Error fetching title suggestions:', titleError);
           return;
         }
-
-        // Fetch unique tags containing the search query
-        const { data: tagData, error: tagError } = await supabase
-          .from('images')
-          .select('tags')
-          .ilike('tags', `%${searchQuery}%`)
-          .limit(10);
 
         if (tagError) {
           console.error('Error fetching tag suggestions:', tagError);
@@ -42,7 +64,7 @@ export function useAutocomplete(query: string) {
         }
 
         // Process title suggestions
-        const titleSuggestions = titleData.map(item => item.title);
+        const titleSuggestions = titleData?.map(item => item.title) || [];
 
         // Process tag suggestions
         const tagSuggestions: string[] = [];
@@ -106,7 +128,7 @@ export function useAutocomplete(query: string) {
     return () => {
       // Clean up
     };
-  }, [query]);
+  }, [query, userRole, userClientId]);
 
   return { suggestions, isLoading };
 }
