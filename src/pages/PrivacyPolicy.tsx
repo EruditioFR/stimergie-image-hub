@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
@@ -192,7 +193,7 @@ const PrivacyPolicy = () => {
           </div>
 
           {/* Content */}
-          <div className="prose prose-lg w-full max-w-none text-left prose-h2:py-6 prose-h3:py-4 prose-h4:py-2 prose-h2:text-3xl prose-h3:text-2xl prose-h4:text-lg prose-h2:font-bold prose-h3:font-bold prose-h4:font-medium">
+          <div className="w-full">
             {isEditing ? (
               <RichTextEditor
                 value={editContent}
@@ -201,7 +202,21 @@ const PrivacyPolicy = () => {
                 className="w-full"
               />
             ) : (
-              <div dangerouslySetInnerHTML={{ __html: page.content }} />
+              <div 
+                className="prose prose-lg max-w-none w-full
+                  prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground
+                  prose-h1:text-3xl prose-h1:font-bold prose-h1:mb-6 prose-h1:mt-8
+                  prose-h2:text-2xl prose-h2:font-bold prose-h2:mb-4 prose-h2:mt-6
+                  prose-h3:text-xl prose-h3:font-bold prose-h3:mb-3 prose-h3:mt-5
+                  prose-h4:text-lg prose-h4:font-semibold prose-h4:mb-2 prose-h4:mt-4
+                  prose-p:mb-4 prose-p:leading-relaxed
+                  prose-ul:mb-4 prose-ol:mb-4 prose-li:mb-1
+                  prose-table:w-full prose-table:border-collapse prose-th:border prose-th:p-2 prose-td:border prose-td:p-2
+                  prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:pl-4 prose-blockquote:italic
+                  prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+                  prose-pre:bg-muted prose-pre:p-4 prose-pre:rounded-md prose-pre:overflow-x-auto"
+                dangerouslySetInnerHTML={{ __html: page.content }} 
+              />
             )}
           </div>
 
