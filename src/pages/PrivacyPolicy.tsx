@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
@@ -8,8 +6,8 @@ import { Edit, Save, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { RichTextEditor } from '@/components/ui/rich-text-editor/RichTextEditor';
 
 interface LegalPage {
   id: string;
@@ -196,11 +194,11 @@ const PrivacyPolicy = () => {
           {/* Content */}
           <div className="prose prose-lg w-full max-w-none text-left prose-h2:py-6 prose-h3:py-4 prose-h4:py-2 prose-h2:text-3xl prose-h3:text-2xl prose-h4:text-lg prose-h2:font-bold prose-h3:font-bold prose-h4:font-medium">
             {isEditing ? (
-              <Textarea
+              <RichTextEditor
                 value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                className="min-h-96 font-mono text-sm w-full"
-                placeholder="Contenu HTML de la page..."
+                onChange={setEditContent}
+                placeholder="Contenu de la page..."
+                className="w-full"
               />
             ) : (
               <div dangerouslySetInnerHTML={{ __html: page.content }} />
@@ -222,4 +220,3 @@ const PrivacyPolicy = () => {
 };
 
 export default PrivacyPolicy;
-
