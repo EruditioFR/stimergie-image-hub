@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -21,7 +20,7 @@ interface ClientImage {
 }
 
 export function UserDashboard() {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const { userProfile } = useUserProfile(user, "user");
   const [clientImages, setClientImages] = useState<ClientImage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -238,23 +237,26 @@ export function UserDashboard() {
         <p className="text-muted-foreground">Aucune image disponible pour le moment.</p>
       )}
 
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold mb-4">Fonctionnalités</h3>
-        <div className="flex flex-wrap gap-4">
-          <Link 
-            to="/gallery" 
-            className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary/90"
-          >
-            Galerie d'images
-          </Link>
-          <Link 
-            to="/resources" 
-            className="inline-flex items-center rounded-md bg-muted px-4 py-2 text-sm font-medium shadow-sm hover:bg-muted/90"
-          >
-            Ressources
-          </Link>
+      {/* Afficher la section Fonctionnalités seulement pour les administrateurs */}
+      {userRole === 'admin' && (
+        <div className="mt-8">
+          <h3 className="text-xl font-semibold mb-4">Fonctionnalités</h3>
+          <div className="flex flex-wrap gap-4">
+            <Link 
+              to="/gallery" 
+              className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary/90"
+            >
+              Galerie d'images
+            </Link>
+            <Link 
+              to="/resources" 
+              className="inline-flex items-center rounded-md bg-muted px-4 py-2 text-sm font-medium shadow-sm hover:bg-muted/90"
+            >
+              Ressources
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
