@@ -26,9 +26,9 @@ export function useProjectsData() {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      console.log("Fetching projects");
+      console.log("Fetching projects with RLS policies");
       
-      // Build the query
+      // Build the query - RLS policies will automatically filter access
       let query = supabase
         .from('projets')
         .select(`
@@ -60,7 +60,7 @@ export function useProjectsData() {
       }
       
       if (data) {
-        console.log(`Retrieved ${data.length} projects from database`);
+        console.log(`Retrieved ${data.length} projects from database (filtered by RLS)`);
         const mappedProjects: Project[] = data.map(project => ({
           id: project.id,
           nom_projet: project.nom_projet,

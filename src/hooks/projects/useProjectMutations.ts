@@ -32,7 +32,7 @@ export function useProjectMutations(reloadProjects: () => Promise<void>) {
       }
       
       if (data && data.length > 0) {
-        console.log('Project added successfully, invalidating caches...');
+        console.log('Project added successfully with automatic access period creation');
         
         // Invalider les caches de galerie pour ce client spécifique
         await invalidateClientSpecificCaches(project.id_client);
@@ -40,7 +40,7 @@ export function useProjectMutations(reloadProjects: () => Promise<void>) {
         // Recharger la liste des projets
         await reloadProjects();
         
-        toast.success(`${project.nom_projet} a été ajouté avec succès.`);
+        toast.success(`${project.nom_projet} a été ajouté avec succès. Une période d'accès par défaut a été créée automatiquement.`);
         
         console.log('Cache invalidation completed after project addition');
         return true;
