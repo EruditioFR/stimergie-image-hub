@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -37,6 +36,7 @@ export function ProjectAccessPeriods() {
   // Filter states
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedActiveStatus, setSelectedActiveStatus] = useState<boolean | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
   const { userRole, isAdmin } = useAuth();
@@ -57,7 +57,7 @@ export function ProjectAccessPeriods() {
 
   useEffect(() => {
     applyFilters();
-  }, [accessPeriods, selectedClientId, selectedProjectId, searchQuery]);
+  }, [accessPeriods, selectedClientId, selectedProjectId, selectedActiveStatus, searchQuery]);
 
   const fetchAccessPeriods = async () => {
     try {
@@ -120,6 +120,11 @@ export function ProjectAccessPeriods() {
     // Filter by project
     if (selectedProjectId) {
       filtered = filtered.filter(period => period.project_id === selectedProjectId);
+    }
+
+    // Filter by active status
+    if (selectedActiveStatus !== null) {
+      filtered = filtered.filter(period => period.is_active === selectedActiveStatus);
     }
 
     // Search in client name, project name, and dates
@@ -210,6 +215,7 @@ export function ProjectAccessPeriods() {
   const handleClearFilters = () => {
     setSelectedClientId(null);
     setSelectedProjectId(null);
+    setSelectedActiveStatus(null);
     setSearchQuery('');
   };
 
@@ -278,9 +284,11 @@ export function ProjectAccessPeriods() {
       <AccessPeriodsFilters
         selectedClientId={selectedClientId}
         selectedProjectId={selectedProjectId}
+        selectedActiveStatus={selectedActiveStatus}
         searchQuery={searchQuery}
         onClientChange={setSelectedClientId}
         onProjectChange={setSelectedProjectId}
+        onActiveStatusChange={setSelectedActiveStatus}
         onSearchChange={setSearchQuery}
         onClearFilters={handleClearFilters}
       />

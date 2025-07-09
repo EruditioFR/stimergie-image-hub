@@ -21,9 +21,11 @@ interface Project {
 interface AccessPeriodsFiltersProps {
   selectedClientId: string | null;
   selectedProjectId: string | null;
+  selectedActiveStatus: boolean | null;
   searchQuery: string;
   onClientChange: (clientId: string | null) => void;
   onProjectChange: (projectId: string | null) => void;
+  onActiveStatusChange: (isActive: boolean | null) => void;
   onSearchChange: (query: string) => void;
   onClearFilters: () => void;
 }
@@ -31,9 +33,11 @@ interface AccessPeriodsFiltersProps {
 export function AccessPeriodsFilters({
   selectedClientId,
   selectedProjectId,
+  selectedActiveStatus,
   searchQuery,
   onClientChange,
   onProjectChange,
+  onActiveStatusChange,
   onSearchChange,
   onClearFilters
 }: AccessPeriodsFiltersProps) {
@@ -113,12 +117,20 @@ export function AccessPeriodsFilters({
     }
   };
 
-  const hasActiveFilters = selectedClientId || selectedProjectId || searchQuery;
+  const handleActiveStatusChange = (value: string) => {
+    if (value === "all") {
+      onActiveStatusChange(null);
+    } else {
+      onActiveStatusChange(value === "active");
+    }
+  };
+
+  const hasActiveFilters = selectedClientId || selectedProjectId || selectedActiveStatus !== null || searchQuery;
 
   return (
     <Card className="mb-6">
       <CardContent className="pt-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -168,6 +180,21 @@ export function AccessPeriodsFilters({
             </SelectContent>
           </Select>
 
+          {/* Active status filter */}
+          <Select
+            value={selectedActiveStatus === null ? "all" : selectedActiveStatus ? "active" : "inactive"}
+            onValueChange={handleActiveStatusChange}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Tous les statuts" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les statuts</SelectItem>
+              <SelectItem value="active">Actives</SelectItem>
+              <SelectItem value="inactive">Inactives</SelectItem>
+            </SelectContent>
+          </Select>
+
           {/* Clear filters button */}
           <Button
             variant="outline"
@@ -198,6 +225,17 @@ export function AccessPeriodsFilters({
                 Projet: {allProjects.find(p => p.id === selectedProjectId)?.nom_projet}
                 <button
                   onClick={() => onProjectChange(null)}
+                  className="hover:bg-primary/20 rounded-full p-1"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+            {selectedActiveStatus !== null && (
+              <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                Statut: {selectedActiveStatus ? 'Actives' : 'Inactives'}
+                <button
+                  onClick={() => onActiveStatusChange(null)}
                   className="hover:bg-primary/20 rounded-full p-1"
                 >
                   <X className="h-3 w-3" />
