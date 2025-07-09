@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -67,7 +66,24 @@ export function ProjectAccessPeriods() {
         client_name: period.clients?.nom
       })) || [];
 
-      setAccessPeriods(formattedData);
+      // Trier par nom du client puis par nom du projet (alphabétique)
+      const sortedData = formattedData.sort((a, b) => {
+        // Tri principal par nom du client
+        const clientComparison = (a.client_name || '').localeCompare(b.client_name || '', 'fr', { 
+          sensitivity: 'base' 
+        });
+        
+        if (clientComparison !== 0) {
+          return clientComparison;
+        }
+        
+        // Tri secondaire par nom du projet
+        return (a.project_name || '').localeCompare(b.project_name || '', 'fr', { 
+          sensitivity: 'base' 
+        });
+      });
+
+      setAccessPeriods(sortedData);
     } catch (error) {
       console.error('Error fetching access periods:', error);
       toast({
