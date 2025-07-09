@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -8,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Calendar, Clock, Users } from 'lucide-react';
 import { AccessPeriodForm } from './AccessPeriodForm';
 import { AccessPeriodsList } from './AccessPeriodsList';
+import { AccessPeriodsFilters } from './AccessPeriodsFilters';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -27,9 +29,16 @@ export interface AccessPeriod {
 
 export function ProjectAccessPeriods() {
   const [accessPeriods, setAccessPeriods] = useState<AccessPeriod[]>([]);
+  const [filteredAccessPeriods, setFilteredAccessPeriods] = useState<AccessPeriod[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<AccessPeriod | null>(null);
+  
+  // Filter states
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  
   const { userRole, isAdmin } = useAuth();
   const { toast } = useToast();
 
@@ -45,6 +54,10 @@ export function ProjectAccessPeriods() {
   useEffect(() => {
     fetchAccessPeriods();
   }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [accessPeriods, selectedClientId, selectedProjectId, searchQuery]);
 
   const fetchAccessPeriods = async () => {
     try {
@@ -94,6 +107,38 @@ export function ProjectAccessPeriods() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...accessPeriods];
+
+    // Filter by client
+    if (selectedClientId) {
+      filtered = filtered.filter(period => period.client_id === selectedClientId);
+    }
+
+    // Filter by project
+    if (selectedProjectId) {
+      filtered = filtered.filter(period => period.project_id === selectedProjectId);
+    }
+
+    // Search in client name, project name, and dates
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(period => {
+        const clientName = (period.client_name || '').toLowerCase();
+        const projectName = (period.project_name || '').toLowerCase();
+        const startDate = new Date(period.access_start).toLocaleDateString('fr-FR');
+        const endDate = new Date(period.access_end).toLocaleDateString('fr-FR');
+        
+        return clientName.includes(query) || 
+               projectName.includes(query) || 
+               startDate.includes(query) || 
+               endDate.includes(query);
+      });
+    }
+
+    setFilteredAccessPeriods(filtered);
   };
 
   const handleCreatePeriod = () => {
@@ -162,6 +207,12 @@ export function ProjectAccessPeriods() {
     }
   };
 
+  const handleClearFilters = () => {
+    setSelectedClientId(null);
+    setSelectedProjectId(null);
+    setSearchQuery('');
+  };
+
   if (loading) {
     return <div className="text-center py-8">Chargement...</div>;
   }
@@ -189,7 +240,12 @@ export function ProjectAccessPeriods() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{accessPeriods.length}</div>
+            <div className="text-2xl font-bold">{filteredAccessPeriods.length}</div>
+            {filteredAccessPeriods.length !== accessPeriods.length && (
+              <p className="text-xs text-muted-foreground">
+                sur {accessPeriods.length} au total
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -200,7 +256,7 @@ export function ProjectAccessPeriods() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {accessPeriods.filter(p => p.is_active).length}
+              {filteredAccessPeriods.filter(p => p.is_active).length}
             </div>
           </CardContent>
         </Card>
@@ -212,11 +268,22 @@ export function ProjectAccessPeriods() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {new Set(accessPeriods.map(p => p.client_id)).size}
+              {new Set(filteredAccessPeriods.map(p => p.client_id)).size}
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Filters */}
+      <AccessPeriodsFilters
+        selectedClientId={selectedClientId}
+        selectedProjectId={selectedProjectId}
+        searchQuery={searchQuery}
+        onClientChange={setSelectedClientId}
+        onProjectChange={setSelectedProjectId}
+        onSearchChange={setSearchQuery}
+        onClearFilters={handleClearFilters}
+      />
 
       {showForm && (
         <AccessPeriodForm
@@ -228,7 +295,7 @@ export function ProjectAccessPeriods() {
       )}
 
       <AccessPeriodsList
-        accessPeriods={accessPeriods}
+        accessPeriods={filteredAccessPeriods}
         onEdit={handleEditPeriod}
         onToggleActive={handleToggleActive}
         onDelete={handleDeletePeriod}
