@@ -1,8 +1,6 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
-import { useUserProfile } from '@/hooks/useUserProfile';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -16,9 +14,20 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Download, User, Users, Image, Settings, LogOut } from 'lucide-react';
 
-export function UserMenu() {
-  const { user, userRole, signOut } = useAuth();
-  const { userProfile, loading: isLoadingProfile } = useUserProfile(user, userRole);
+interface UserProfile {
+  firstName: string;
+  lastName: string;
+  role: string;
+}
+
+interface UserMenuProps {
+  user: any;
+  userProfile: UserProfile | null;
+  onLogout: () => Promise<void>;
+  formatRole: (role: string) => string;
+}
+
+export function UserMenu({ user, userProfile, onLogout, formatRole }: UserMenuProps) {
   const [initials, setInitials] = useState('');
   const navigate = useNavigate();
 
@@ -31,12 +40,12 @@ export function UserMenu() {
   }, [userProfile, user]);
 
   const handleLogout = async () => {
-    await signOut();
+    await onLogout();
     navigate('/');
   };
 
-  const isAdmin = userRole === 'admin';
-  const isAdminClient = userRole === 'admin_client';
+  const isAdmin = userProfile?.role === 'admin';
+  const isAdminClient = userProfile?.role === 'admin_client';
 
   return (
     <DropdownMenu>
@@ -56,11 +65,9 @@ export function UserMenu() {
             <p className="text-xs leading-none text-muted-foreground">
               {user?.email}
             </p>
-            {!isLoadingProfile && userRole && (
+            {userProfile?.role && (
               <span className="mt-1 inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                {userRole === 'admin' && 'Administrateur'}
-                {userRole === 'admin_client' && 'Admin client'}
-                {userRole === 'user' && 'Utilisateur'}
+                {formatRole(userProfile.role)}
               </span>
             )}
           </div>

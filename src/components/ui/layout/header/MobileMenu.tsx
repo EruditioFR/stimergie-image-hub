@@ -1,8 +1,14 @@
 
 import { Link } from 'react-router-dom';
-import { Home, Image, FileText, Users, FolderOpen, Building, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+interface NavigationItem {
+  path: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  show: boolean;
+}
 
 interface UserProfile {
   firstName: string;
@@ -11,82 +17,60 @@ interface UserProfile {
 }
 
 interface MobileMenuProps {
-  isOpen: boolean;
-  userProfile: UserProfile | null;
   location: { pathname: string };
+  navigationItems: NavigationItem[];
   user: any;
-  canAccessClientsPage: boolean;
-  canAccessImagesPage: boolean;
+  userProfile: UserProfile | null;
   onLogout: () => Promise<void>;
   onNavigate: (path: string) => void;
   formatRole: (role: string) => string;
 }
 
 export function MobileMenu({
-  isOpen,
-  userProfile,
   location,
+  navigationItems,
   user,
-  canAccessClientsPage,
-  canAccessImagesPage,
+  userProfile,
   onLogout,
   onNavigate,
   formatRole
 }: MobileMenuProps) {
-  if (!isOpen) return null;
-
-  console.log("MobileMenu rendered with isOpen:", isOpen);
-
-  const navigationItems = [
-    { name: 'Accueil', path: '/', icon: <Home className="h-5 w-5 mr-3" /> },
-    { name: 'Banque d\'images', path: '/gallery', icon: <Image className="h-5 w-5 mr-3" /> },
-    { name: 'Albums partagés', path: '/shared-albums', icon: <FolderOpen className="h-5 w-5 mr-3" /> },
-    { name: 'Clients', path: '/clients', icon: <Users className="h-5 w-5 mr-3" />, access: canAccessClientsPage },
-    { name: 'Agence', path: '/agency', icon: <Building className="h-5 w-5 mr-3" /> },
-    { name: 'Administration', path: '/admin', icon: <Settings className="h-5 w-5 mr-3" />, access: canAccessImagesPage }
-  ];
-
-  const filteredNavItems = navigationItems.filter(item => 
-    !item.hasOwnProperty('access') || item.access === true
-  );
+  const filteredNavItems = navigationItems.filter(item => item.show);
 
   return (
-    <div className="md:hidden fixed top-[60px] left-0 right-0 bg-background/95 backdrop-blur-lg shadow-lg animate-in fade-in-0 slide-in-from-top-5 z-50">
-      <nav className="flex flex-col p-6 space-y-4">
-        {userProfile && (
-          <div className="text-center mb-4 py-2 border-b border-gray-100">
-            <div className="font-medium">{userProfile.firstName} {userProfile.lastName}</div>
-            <div className="text-sm text-muted-foreground">{formatRole(userProfile.role)}</div>
-          </div>
-        )}
-        
-        {filteredNavItems.map((item) => (
+    <div className="flex flex-col space-y-2">
+      {userProfile && (
+        <div className="text-center mb-4 py-2 border-b border-gray-100">
+          <div className="font-medium">{userProfile.firstName} {userProfile.lastName}</div>
+          <div className="text-sm text-muted-foreground">{formatRole(userProfile.role)}</div>
+        </div>
+      )}
+      
+      {filteredNavItems.map((item) => {
+        const Icon = item.icon;
+        return (
           <Link 
-            key={item.name}
+            key={item.path}
             to={item.path} 
             className={cn(
-              "flex items-center text-base font-medium py-2 transition-colors",
-              location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path))
-                ? "text-primary"
-                : "text-foreground hover:text-primary"
+              "flex items-center space-x-2 text-base font-medium py-2 px-2 rounded transition-colors",
+              location.pathname === item.path
+                ? "text-primary bg-primary/10"
+                : "text-foreground hover:text-primary hover:bg-primary/5"
             )}
+            onClick={() => onNavigate(item.path)}
           >
-            {item.icon}
-            {item.name}
+            <Icon className="h-4 w-4" />
+            <span>{item.label}</span>
           </Link>
-        ))}
-        
-        {user ? (
-          <Button variant="destructive" onClick={onLogout} className="mt-4">
-            <LogOut className="h-4 w-4 mr-2" />
-            Déconnexion
-          </Button>
-        ) : (
-          <Button variant="default" onClick={() => onNavigate('/auth')} className="mt-4">
-            Connexion
-          </Button>
-        )}
-      </nav>
+        );
+      })}
+      
+      {user && (
+        <Button variant="destructive" onClick={onLogout} className="mt-4">
+          Déconnexion
+        </Button>
+      )}
     </div>
   );
 }

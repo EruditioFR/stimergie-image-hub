@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import Header from '@/components/ui/layout/Header';
+import { Header } from '@/components/ui/layout/Header';
 import { useDownloads } from '@/hooks/useDownloads';
 import { Footer } from '@/components/ui/layout/Footer';
 import { Toaster } from '@/components/ui/sonner';
