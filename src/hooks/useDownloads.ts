@@ -3,67 +3,89 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
-// Import the shared type from DownloadsTable instead of defining our own
-export type { DownloadRequest } from '@/components/downloads/DownloadsTable';
+export interface DownloadRequest {
+  id: string;
+  imageId: string;
+  imageSrc: string;
+  imageTitle: string;
+  requestDate: string;
+  downloadUrl: string;
+  status: 'pending' | 'ready' | 'expired' | 'processing' | 'failed';
+  isHD: boolean;
+  processedAt?: string;
+  errorDetails?: string;
+}
 
-export const useDownloads = () => {
-  const [downloads, setDownloads] = useState<import('@/components/downloads/DownloadsTable').DownloadRequest[]>([]);
+export function useDownloads() {
+  const [downloads, setDownloads] = useState<DownloadRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const { user } = useAuth();
 
-  const refreshDownloads = async () => {
+  const fetchDownloads = async () => {
     if (!user) {
+      console.log('No user found, skipping downloads fetch');
       setDownloads([]);
       setIsLoading(false);
       return;
     }
 
     try {
-      setIsLoading(true);
+      console.log('Fetching downloads for user:', user.id);
       setError(null);
-
+      
       const { data, error: fetchError } = await supabase
         .from('download_requests')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (fetchError) {
         console.error('Error fetching downloads:', fetchError);
-        setError(new Error(fetchError.message));
-      } else {
-        // Map the data to include both original and expected properties
-        const mappedDownloads = (data || []).map(item => ({
+        throw fetchError;
+      }
+
+      console.log('Raw downloads data:', data);
+
+      if (data) {
+        const formattedDownloads: DownloadRequest[] = data.map(item => ({
           id: item.id,
           imageId: item.image_id,
           imageSrc: item.image_src,
           imageTitle: item.image_title,
           requestDate: item.created_at,
-          downloadUrl: item.download_url,
-          status: item.status as 'pending' | 'ready' | 'expired' | 'processing' | 'failed',
+          downloadUrl: item.download_url || '',
+          status: item.status as DownloadRequest['status'],
           isHD: item.is_hd,
-          processedAt: item.processed_at,
-          errorDetails: item.error_details
+          processedAt: item.processed_at || undefined,
+          errorDetails: item.error_details || undefined
         }));
-        setDownloads(mappedDownloads);
+
+        console.log('Formatted downloads:', formattedDownloads);
+        setDownloads(formattedDownloads);
+      } else {
+        console.log('No downloads data returned');
+        setDownloads([]);
       }
     } catch (err) {
-      console.error('Unexpected error:', err);
-      setError(new Error('Une erreur inattendue s\'est produite'));
+      console.error('Error in fetchDownloads:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
+      setDownloads([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    refreshDownloads();
+    console.log('useDownloads effect triggered, user:', user?.id);
+    fetchDownloads();
   }, [user]);
 
-  // Set up real-time subscription for download updates
+  // Set up real-time subscription
   useEffect(() => {
     if (!user) return;
 
+    console.log('Setting up real-time subscription for downloads');
+    
     const channel = supabase
       .channel('download_requests_changes')
       .on(
@@ -74,16 +96,23 @@ export const useDownloads = () => {
           table: 'download_requests',
           filter: `user_id=eq.${user.id}`
         },
-        () => {
-          refreshDownloads();
+        (payload) => {
+          console.log('Real-time update received:', payload);
+          fetchDownloads(); // Refresh the data
         }
       )
       .subscribe();
 
     return () => {
+      console.log('Cleaning up real-time subscription');
       supabase.removeChannel(channel);
     };
   }, [user]);
+
+  const refreshDownloads = async () => {
+    console.log('Manual refresh triggered');
+    await fetchDownloads();
+  };
 
   return {
     downloads,
@@ -91,4 +120,4 @@ export const useDownloads = () => {
     error,
     refreshDownloads
   };
-};
+}
