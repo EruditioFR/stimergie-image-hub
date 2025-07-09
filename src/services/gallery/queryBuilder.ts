@@ -1,10 +1,11 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { fetchProjectIdsForClient } from "./projectUtils";
+import { getAccessibleProjects } from "./accessControl";
 import { IMAGES_PER_PAGE } from "./constants";
 
 /**
- * Build a base query for fetching gallery images with filters
+ * Build a base query for fetching gallery images with filters and access control
  */
 export async function buildGalleryQuery(
   search: string, 
@@ -13,7 +14,8 @@ export async function buildGalleryQuery(
   client: string | null,
   project: string | null,
   userRole: string,
-  userClientId: string | null
+  userClientId: string | null,
+  userId: string | null
 ) {
   console.log(`Building gallery query for user role: ${userRole}, client ID: ${userClientId}`);
   
@@ -62,7 +64,19 @@ export async function buildGalleryQuery(
     const projetIds = await fetchProjectIdsForClient(client);
     
     if (projetIds && projetIds.length > 0) {
-      query = query.in('id_projet', projetIds);
+      // Filtrer les projets selon les droits d'accès pour les non-admins
+      let accessibleProjectIds = projetIds;
+      if (userRole !== 'admin' && userId) {
+        const userAccessibleProjects = await getAccessibleProjects(userId);
+        accessibleProjectIds = projetIds.filter(id => userAccessibleProjects.includes(id));
+        
+        if (accessibleProjectIds.length === 0) {
+          console.log('User has no access to any projects for this client');
+          return { query, hasEmptyResult: true };
+        }
+      }
+      
+      query = query.in('id_projet', accessibleProjectIds);
     } else {
       // Aucun projet trouvé, retourner une requête qui ne donnera aucun résultat
       return { query, hasEmptyResult: true };
@@ -71,10 +85,29 @@ export async function buildGalleryQuery(
     // If non-admin user with no client ID, don't show any images
     console.warn('Non-admin user with no client ID, returning empty result');
     return { query, hasEmptyResult: true };
+  } else if (['admin_client', 'user'].includes(userRole) && userId) {
+    // Pour les utilisateurs non-admin sans client spécifique, limiter aux projets accessibles
+    const userAccessibleProjects = await getAccessibleProjects(userId);
+    
+    if (userAccessibleProjects.length === 0) {
+      console.log('User has no accessible projects');
+      return { query, hasEmptyResult: true };
+    }
+    
+    query = query.in('id_projet', userAccessibleProjects);
   }
   
   // Appliquer le filtre de projet si fourni ET qu'on n'a pas de filtre de tag OU qu'on n'est pas admin
   if (project && (!hasTagFilter || ['admin_client', 'user'].includes(userRole))) {
+    // Vérifier si l'utilisateur a accès à ce projet spécifique
+    if (userRole !== 'admin' && userId) {
+      const userAccessibleProjects = await getAccessibleProjects(userId);
+      if (!userAccessibleProjects.includes(project)) {
+        console.log(`User does not have access to project: ${project}`);
+        return { query, hasEmptyResult: true };
+      }
+    }
+    
     query = query.eq('id_projet', project);
   }
   
@@ -97,7 +130,7 @@ export async function buildGalleryQuery(
     if (userRole === 'admin') {
       console.log('Admin user: searching across all clients and projects for tag');
     } else {
-      console.log('Non-admin user: searching within client scope for tag');
+      console.log('Non-admin user: searching within accessible projects for tag');
     }
     query = query.ilike('tags', `%${tag.toLowerCase()}%`);
   }

@@ -384,6 +384,57 @@ export type Database = {
           },
         ]
       }
+      project_access_periods: {
+        Row: {
+          access_end: string
+          access_start: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_end: string
+          access_start: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_end?: string
+          access_start?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_access_periods_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_access_periods_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projets: {
         Row: {
           created_at: string
@@ -444,9 +495,19 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      check_project_access: {
+        Args: { user_id: string; project_id: string; check_time?: string }
+        Returns: boolean
+      }
       generate_unique_slug: {
         Args: { title: string; company_id: string }
         Returns: string
+      }
+      get_accessible_projects: {
+        Args: { user_id: string; check_time?: string }
+        Returns: {
+          project_id: string
+        }[]
       }
       get_album_by_share_key: {
         Args: { share_key_param: string }

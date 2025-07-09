@@ -99,7 +99,8 @@ export const useGalleryImages = (isAdmin: boolean) => {
     currentPage,
     shouldFetchRandom,
     userRole,
-    userClientId
+    userClientId,
+    userId: user?.id || null
   });
 
   // Use the extracted image formatting hook

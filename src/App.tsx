@@ -1,106 +1,115 @@
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/context/AuthContext";
+import { ImageProvider } from "@/context/ImageContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import Index from "./pages/Index";
+import Gallery from "./pages/Gallery";
+import Auth from "./pages/Auth";
+import Images from "./pages/Images";
+import Clients from "./pages/Clients";
+import Projects from "./pages/Projects";
+import Users from "./pages/Users";
+import AccessPeriods from "./pages/AccessPeriods";
+import Downloads from "./pages/Downloads";
+import NotFound from "./pages/NotFound";
+import ImageView from "./pages/ImageView";
+import SharedAlbum from "./pages/SharedAlbum";
+import Ensemble from "./pages/Ensemble";
+import BlogPost from "./pages/BlogPost";
+import BlogEditor from "./pages/BlogEditor";
+import Resources from "./pages/Resources";
+import ResetPassword from "./pages/ResetPassword";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import Licenses from "./pages/Licenses";
 
-import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import Auth from './pages/Auth';
-import Index from './pages/Index';
-import Ensemble from './pages/Ensemble';
-import Gallery from './pages/Gallery';
-import ImageView from './pages/ImageView';
-import Images from './pages/Images';
-import { AuthProvider } from './context/AuthContext';
-import { ImageProvider } from './context/ImageContext';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { LoadingScreen } from './components/ui/LoadingScreen';
-import Projects from './pages/Projects';
-import Clients from './pages/Clients';
-import Users from './pages/Users';
-import NotFound from './pages/NotFound';
-import Resources from './pages/Resources';
-import Downloads from './pages/Downloads';
-import BlogEditor from './pages/BlogEditor';
-import BlogPost from './pages/BlogPost';
-import ResetPassword from './pages/ResetPassword';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import TermsOfService from './pages/TermsOfService';
-import Licenses from './pages/Licenses';
-import { ProtectedRoute } from './components/auth/ProtectedRoute';
-import SharedAlbum from './pages/SharedAlbum';
-import './App.css';
-
-// Create a client
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ImageProvider>
-          <Router>
-            <Suspense fallback={<LoadingScreen />}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <ImageProvider>
               <Routes>
+                <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/" element={<Index />} />
-                <Route path="/ensemble/:ensembleId" element={<Ensemble />} />
-                {/* Add the new route for gallery without parameters */}
-                <Route path="/gallery" element={<Gallery />} />
-                <Route path="/gallery/:ensembleId" element={<Gallery />} />
-                <Route path="/shared-album/:albumKey" element={<SharedAlbum />} />
-                <Route path="/image/:imageId" element={<ImageView />} />
+                <Route path="/resources" element={<Resources />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
                 <Route path="/licenses" element={<Licenses />} />
-
-                <Route path="/blog/:blogId" element={<BlogPost />} />
-
-                <Route path="/downloads" element={
+                <Route path="/blog/:slug" element={<BlogPost />} />
+                <Route path="/shared-album/:shareKey" element={<SharedAlbum />} />
+                <Route path="/gallery" element={
                   <ProtectedRoute>
-                    <Downloads />
+                    <Gallery />
                   </ProtectedRoute>
                 } />
-
-                <Route path="/images" element={
+                <Route path="/images/:id" element={
                   <ProtectedRoute>
+                    <ImageView />
+                  </ProtectedRoute>
+                } />
+                <Route path="/images" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
                     <Images />
                   </ProtectedRoute>
                 } />
-
+                <Route path="/clients" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <Clients />
+                  </ProtectedRoute>
+                } />
                 <Route path="/projects" element={
                   <ProtectedRoute>
                     <Projects />
                   </ProtectedRoute>
                 } />
-
-                <Route path="/clients" element={
-                  <ProtectedRoute>
-                    <Clients />
-                  </ProtectedRoute>
-                } />
-
                 <Route path="/users" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute allowedRoles={['admin']}>
                     <Users />
                   </ProtectedRoute>
                 } />
-
-                <Route path="/resources" element={
-                  <ProtectedRoute>
-                    <Resources />
+                <Route path="/access-periods" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AccessPeriods />
                   </ProtectedRoute>
                 } />
-
-                <Route path="/blog-editor" element={
+                <Route path="/downloads" element={
                   <ProtectedRoute>
+                    <Downloads />
+                  </ProtectedRoute>
+                } />
+                <Route path="/ensemble" element={
+                  <ProtectedRoute>
+                    <Ensemble />
+                  </ProtectedRoute>
+                } />
+                <Route path="/blog-editor" element={
+                  <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
                     <BlogEditor />
                   </ProtectedRoute>
                 } />
-
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </Suspense>
-          </Router>
-        </ImageProvider>
-      </AuthProvider>
+            </ImageProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

@@ -14,6 +14,7 @@ interface GalleryQueryStateProps {
   shouldFetchRandom: boolean;
   userRole: string;
   userClientId: string | null;
+  userId?: string | null;
 }
 
 export const useGalleryQueryState = ({
@@ -26,12 +27,13 @@ export const useGalleryQueryState = ({
   currentPage,
   shouldFetchRandom,
   userRole,
-  userClientId
+  userClientId,
+  userId
 }: GalleryQueryStateProps) => {
   const [accumulatedImages, setAccumulatedImages] = useState<any[]>([]);
   const [hasMorePages, setHasMorePages] = useState(true);
 
-  // Fetch images query with all filters
+  // Fetch images query with all filters and access control
   const {
     data: currentPageImages = [],
     isLoading,
@@ -49,7 +51,8 @@ export const useGalleryQueryState = ({
       currentPage,
       shouldFetchRandom,
       userRole,
-      userClientId
+      userClientId,
+      userId
     ],
     queryFn: () => fetchGalleryImages(
       searchQuery,
@@ -61,7 +64,8 @@ export const useGalleryQueryState = ({
       shouldFetchRandom,
       userRole,
       userClientId,
-      selectedOrientation
+      selectedOrientation,
+      userId
     ),
     staleTime: 60000, // 1 minute
   });
