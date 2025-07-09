@@ -3,8 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Users, Image, FolderOpen, User, Settings, Shield, Download } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Menu } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { UserMenu } from './header/UserMenu';
 import { MobileMenu } from './header/MobileMenu';
@@ -14,13 +13,8 @@ export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, userRole, signOut, isAdmin, isAdminClient } = useAuth();
+  const { user, userRole, signOut } = useAuth();
   const { userProfile } = useUserProfile(user, userRole);
-
-  const canAccessClientsPage = isAdmin();
-  const canAccessImagesPage = isAdmin();
-  const canAccessUsersPage = isAdmin();
-  const canAccessAccessPeriodsPage = isAdmin();
 
   const handleLogout = async () => {
     try {
@@ -49,52 +43,6 @@ export function Header() {
     }
   };
 
-  // Navigation items
-  const navigationItems = [
-    {
-      path: '/gallery',
-      label: 'Galerie',
-      icon: Image,
-      show: true
-    },
-    {
-      path: '/projects',
-      label: 'Projets',
-      icon: FolderOpen,
-      show: true
-    },
-    {
-      path: '/clients',
-      label: 'Clients',
-      icon: Users,
-      show: canAccessClientsPage
-    },
-    {
-      path: '/images',
-      label: 'Images',
-      icon: Image,
-      show: canAccessImagesPage
-    },
-    {
-      path: '/users',
-      label: 'Utilisateurs',
-      icon: User,
-      show: canAccessUsersPage
-    },
-    {
-      path: '/access-periods',
-      label: 'Droits d\'accès',
-      icon: Shield,
-      show: canAccessAccessPeriodsPage
-    },
-    {
-      path: '/downloads',
-      label: 'Téléchargements',
-      icon: Download,
-      show: true
-    }
-  ];
-
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
@@ -104,28 +52,6 @@ export function Header() {
               Banque d'images
             </span>
           </Link>
-          <nav className="flex items-center space-x-6 text-sm font-medium">
-            {navigationItems
-              .filter(item => item.show)
-              .map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={cn(
-                      "transition-colors hover:text-foreground/80 flex items-center space-x-2",
-                      location.pathname === item.path
-                        ? "text-foreground"
-                        : "text-foreground/60"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-          </nav>
         </div>
 
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -141,7 +67,6 @@ export function Header() {
           <SheetContent side="left" className="pr-0">
             <MobileMenu
               location={location}
-              navigationItems={navigationItems}
               user={user}
               userProfile={userProfile}
               onLogout={handleLogout}

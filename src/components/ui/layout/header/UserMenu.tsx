@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Download, User, Users, Image, Settings, LogOut } from 'lucide-react';
+import { Download, User, Users, Image, Settings, LogOut, Shield, FolderOpen } from 'lucide-react';
 
 interface UserProfile {
   firstName: string;
@@ -76,6 +76,20 @@ export function UserMenu({ user, userProfile, onLogout, formatRole }: UserMenuPr
 
         <DropdownMenuGroup>
           <DropdownMenuItem>
+            <Link to="/gallery" className="flex w-full items-center">
+              <Image className="mr-2 h-4 w-4" />
+              <span>Galerie</span>
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem>
+            <Link to="/projects" className="flex w-full items-center">
+              <FolderOpen className="mr-2 h-4 w-4" />
+              <span>Projets</span>
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem>
             <Link to="/downloads" className="flex w-full items-center">
               <Download className="mr-2 h-4 w-4" />
               <span>Vos téléchargements</span>
@@ -86,16 +100,19 @@ export function UserMenu({ user, userProfile, onLogout, formatRole }: UserMenuPr
             <User className="mr-2 h-4 w-4" />
             <span>Profil</span>
           </DropdownMenuItem>
+        </DropdownMenuGroup>
 
-          {(isAdmin || isAdminClient) && (
-            <>
-              <DropdownMenuSeparator />
+        {(isAdmin || isAdminClient) && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
               <DropdownMenuItem>
                 <Link to="/images" className="flex w-full items-center">
                   <Image className="mr-2 h-4 w-4" />
                   <span>Gestion des images</span>
                 </Link>
               </DropdownMenuItem>
+              
               {isAdmin && (
                 <>
                   <DropdownMenuItem>
@@ -104,17 +121,25 @@ export function UserMenu({ user, userProfile, onLogout, formatRole }: UserMenuPr
                       <span>Gestion des clients</span>
                     </Link>
                   </DropdownMenuItem>
+                  
+                  <DropdownMenuItem>
+                    <Link to="/access-periods" className="flex w-full items-center">
+                      <Shield className="mr-2 h-4 w-4" />
+                      <span>Droits d'accès</span>
+                    </Link>
+                  </DropdownMenuItem>
                 </>
               )}
+              
               <DropdownMenuItem>
                 <Link to="/users" className="flex w-full items-center">
                   <Users className="mr-2 h-4 w-4" />
                   <span>Gestion des utilisateurs</span>
                 </Link>
               </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuGroup>
+            </DropdownMenuGroup>
+          </>
+        )}
 
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>

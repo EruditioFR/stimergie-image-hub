@@ -2,13 +2,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
-interface NavigationItem {
-  path: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  show: boolean;
-}
+import { Users, Image, FolderOpen, User, Settings, Shield, Download } from 'lucide-react';
 
 interface UserProfile {
   firstName: string;
@@ -18,7 +12,6 @@ interface UserProfile {
 
 interface MobileMenuProps {
   location: { pathname: string };
-  navigationItems: NavigationItem[];
   user: any;
   userProfile: UserProfile | null;
   onLogout: () => Promise<void>;
@@ -28,14 +21,64 @@ interface MobileMenuProps {
 
 export function MobileMenu({
   location,
-  navigationItems,
   user,
   userProfile,
   onLogout,
   onNavigate,
   formatRole
 }: MobileMenuProps) {
-  const filteredNavItems = navigationItems.filter(item => item.show);
+  const isAdmin = userProfile?.role === 'admin';
+  const isAdminClient = userProfile?.role === 'admin_client';
+
+  const navigationItems = [
+    {
+      path: '/gallery',
+      label: 'Galerie',
+      icon: Image,
+      show: true
+    },
+    {
+      path: '/projects',
+      label: 'Projets',
+      icon: FolderOpen,
+      show: true
+    },
+    {
+      path: '/downloads',
+      label: 'Téléchargements',
+      icon: Download,
+      show: true
+    }
+  ];
+
+  const adminItems = [
+    {
+      path: '/clients',
+      label: 'Clients',
+      icon: Users,
+      show: isAdmin
+    },
+    {
+      path: '/images',
+      label: 'Images',
+      icon: Image,
+      show: isAdmin || isAdminClient
+    },
+    {
+      path: '/users',
+      label: 'Utilisateurs',
+      icon: User,
+      show: isAdmin || isAdminClient
+    },
+    {
+      path: '/access-periods',
+      label: 'Droits d\'accès',
+      icon: Shield,
+      show: isAdmin
+    }
+  ];
+
+  const allItems = [...navigationItems, ...adminItems.filter(item => item.show)];
 
   return (
     <div className="flex flex-col space-y-2">
@@ -46,7 +89,7 @@ export function MobileMenu({
         </div>
       )}
       
-      {filteredNavItems.map((item) => {
+      {allItems.map((item) => {
         const Icon = item.icon;
         return (
           <Link 
