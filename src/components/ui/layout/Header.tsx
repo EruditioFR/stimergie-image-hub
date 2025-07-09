@@ -48,9 +48,11 @@ export function Header() {
       <div className="container flex h-14 items-center">
         <div className="mr-4 hidden md:flex">
           <Link to="/" className="mr-6 flex items-center space-x-2">
-            <span className="hidden font-bold sm:inline-block">
-              Banque d'images
-            </span>
+            <img 
+              src="/lovable-uploads/2e22afc1-eb57-43a8-9e2b-6807b23c6e92.png" 
+              alt="Stimergie" 
+              className="h-8 w-auto"
+            />
           </Link>
         </div>
 
@@ -79,9 +81,24 @@ export function Header() {
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none md:hidden">
             <Link to="/" className="flex items-center space-x-2">
-              <span className="font-bold">Banque d'images</span>
+              <img 
+                src="/lovable-uploads/2e22afc1-eb57-43a8-9e2b-6807b23c6e92.png" 
+                alt="Stimergie" 
+                className="h-6 w-auto"
+              />
             </Link>
           </div>
+          
+          {/* Menu de navigation desktop */}
+          <nav className="hidden md:flex items-center space-x-6 mr-4">
+            <Link 
+              to="/gallery" 
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Banque d'images
+            </Link>
+          </nav>
+          
           <nav className="flex items-center">
             <UserMenu
               user={user}

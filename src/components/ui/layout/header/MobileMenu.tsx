@@ -33,7 +33,7 @@ export function MobileMenu({
   const navigationItems = [
     {
       path: '/gallery',
-      label: 'Galerie',
+      label: 'Banque d\'images',
       icon: Image,
       show: true
     },
