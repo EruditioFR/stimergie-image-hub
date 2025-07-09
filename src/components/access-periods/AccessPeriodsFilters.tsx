@@ -15,6 +15,7 @@ interface Client {
 interface Project {
   id: string;
   nom_projet: string;
+  id_client: string;
 }
 
 interface AccessPeriodsFiltersProps {
@@ -37,7 +38,7 @@ export function AccessPeriodsFilters({
   onClearFilters
 }: AccessPeriodsFiltersProps) {
   const [clients, setClients] = useState<Client[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,17 +60,56 @@ export function AccessPeriodsFilters({
       // Fetch projects
       const { data: projectsData, error: projectsError } = await supabase
         .from('projets')
-        .select('id, nom_projet')
+        .select('id, nom_projet, id_client')
         .order('nom_projet');
 
       if (projectsError) throw projectsError;
 
       setClients(clientsData || []);
-      setProjects(projectsData || []);
+      setAllProjects(projectsData || []);
     } catch (error) {
       console.error('Error fetching clients and projects:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Filter projects based on selected client
+  const filteredProjects = selectedClientId 
+    ? allProjects.filter(project => project.id_client === selectedClientId)
+    : allProjects;
+
+  // Filter clients based on selected project
+  const filteredClients = selectedProjectId
+    ? clients.filter(client => {
+        const project = allProjects.find(p => p.id === selectedProjectId);
+        return project ? client.id === project.id_client : true;
+      })
+    : clients;
+
+  const handleClientChange = (value: string) => {
+    const clientId = value === "all" ? null : value;
+    onClientChange(clientId);
+    
+    // If a client is selected and the current project doesn't belong to this client, clear project selection
+    if (clientId && selectedProjectId) {
+      const currentProject = allProjects.find(p => p.id === selectedProjectId);
+      if (currentProject && currentProject.id_client !== clientId) {
+        onProjectChange(null);
+      }
+    }
+  };
+
+  const handleProjectChange = (value: string) => {
+    const projectId = value === "all" ? null : value;
+    onProjectChange(projectId);
+    
+    // If a project is selected and the current client doesn't match, update client selection
+    if (projectId && selectedClientId) {
+      const selectedProject = allProjects.find(p => p.id === projectId);
+      if (selectedProject && selectedProject.id_client !== selectedClientId) {
+        onClientChange(selectedProject.id_client);
+      }
     }
   };
 
@@ -93,7 +133,7 @@ export function AccessPeriodsFilters({
           {/* Client filter */}
           <Select
             value={selectedClientId || "all"}
-            onValueChange={(value) => onClientChange(value === "all" ? null : value)}
+            onValueChange={handleClientChange}
             disabled={loading}
           >
             <SelectTrigger>
@@ -101,7 +141,7 @@ export function AccessPeriodsFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous les clients</SelectItem>
-              {clients.map((client) => (
+              {filteredClients.map((client) => (
                 <SelectItem key={client.id} value={client.id}>
                   {client.nom}
                 </SelectItem>
@@ -112,7 +152,7 @@ export function AccessPeriodsFilters({
           {/* Project filter */}
           <Select
             value={selectedProjectId || "all"}
-            onValueChange={(value) => onProjectChange(value === "all" ? null : value)}
+            onValueChange={handleProjectChange}
             disabled={loading}
           >
             <SelectTrigger>
@@ -120,7 +160,7 @@ export function AccessPeriodsFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous les projets</SelectItem>
-              {projects.map((project) => (
+              {filteredProjects.map((project) => (
                 <SelectItem key={project.id} value={project.id}>
                   {project.nom_projet}
                 </SelectItem>
@@ -155,7 +195,7 @@ export function AccessPeriodsFilters({
             )}
             {selectedProjectId && (
               <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                Projet: {projects.find(p => p.id === selectedProjectId)?.nom_projet}
+                Projet: {allProjects.find(p => p.id === selectedProjectId)?.nom_projet}
                 <button
                   onClick={() => onProjectChange(null)}
                   className="hover:bg-primary/20 rounded-full p-1"
