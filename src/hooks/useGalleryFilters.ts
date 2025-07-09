@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -17,7 +16,7 @@ export function useGalleryFilters() {
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
   const [userClientId, setUserClientId] = useState<string | null>(null);
 
-  // Fetch user's client_id for regular users
+  // Fetch user's client_id for regular users and admin_client
   useEffect(() => {
     const getUserClientId = async () => {
       if ((userRole === 'user' || userRole === 'admin_client') && user) {
@@ -33,8 +32,8 @@ export function useGalleryFilters() {
           
           if (data) {
             setUserClientId(data);
-            // Auto-sélectionner le client pour les utilisateurs réguliers
-            if (userRole === 'user') {
+            // Auto-sélectionner le client pour les utilisateurs réguliers et admin_client
+            if (userRole === 'user' || userRole === 'admin_client') {
               setSelectedClient(data);
             }
           }
@@ -54,8 +53,8 @@ export function useGalleryFilters() {
 
   const handleClientChange = useCallback((clientId: string | null) => {
     // Only allow client change for admin users
-    if (userRole === 'user') {
-      console.log('Regular users cannot change their client filter');
+    if (userRole === 'user' || userRole === 'admin_client') {
+      console.log('Non-admin users cannot change their client filter');
       return;
     }
     
@@ -81,8 +80,10 @@ export function useGalleryFilters() {
     console.log('Resetting filters');
     setActiveTab('all');
     
-    // For regular users, don't reset the client filter
-    if (userRole !== 'user') {
+    // For regular users and admin_client, don't reset the client filter
+    if (userRole !== 'admin') {
+      // Keep the client filter for non-admin users
+    } else {
       setSelectedClient(null);
     }
     
@@ -101,11 +102,11 @@ export function useGalleryFilters() {
       searchQuery !== '' || 
       tagFilter !== '' || 
       activeTab.toLowerCase() !== 'all' ||
-      (selectedClient !== null && (userRole !== 'user' || selectedClient !== userClientId)) ||
+      (selectedClient !== null && (userRole === 'admin')) ||
       selectedProject !== null ||
       selectedOrientation !== null
     );
-  }, [activeTab, selectedClient, selectedProject, selectedOrientation, userRole, userClientId]);
+  }, [activeTab, selectedClient, selectedProject, selectedOrientation, userRole]);
 
   return {
     activeTab,

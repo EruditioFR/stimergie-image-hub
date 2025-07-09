@@ -40,7 +40,9 @@ export function GalleryHeader({
   userClientId
 }: GalleryHeaderProps) {
   const { userRole: contextUserRole } = useAuth();
-  const isAdmin = ['admin', 'admin_client'].includes(userRole || contextUserRole);
+  const effectiveUserRole = userRole || contextUserRole;
+  const isAdmin = ['admin', 'admin_client'].includes(effectiveUserRole);
+  const canSeeProjectFilter = ['admin', 'admin_client', 'user'].includes(effectiveUserRole);
   const [searchParams] = useSearchParams();
   const tagFilter = searchParams.get('tag') || '';
   
@@ -83,30 +85,21 @@ export function GalleryHeader({
             />
             
             {isAdmin && (
-              <>
-                <ClientsFilter 
-                  selectedClient={selectedClient}
-                  onClientChange={onClientChange}
-                  className="w-full sm:w-auto"
-                  userRole={userRole}
-                  userClientId={userClientId}
-                />
-                
-                <ProjectsFilter 
-                  selectedProject={selectedProject}
-                  onProjectChange={onProjectChange}
-                  className="w-full sm:w-auto"
-                  selectedClient={selectedClient}
-                />
-              </>
+              <ClientsFilter 
+                selectedClient={selectedClient}
+                onClientChange={onClientChange}
+                className="w-full sm:w-auto"
+                userRole={effectiveUserRole}
+                userClientId={userClientId}
+              />
             )}
             
-            {userRole === 'user' && (
+            {canSeeProjectFilter && (
               <ProjectsFilter 
                 selectedProject={selectedProject}
                 onProjectChange={onProjectChange}
                 className="w-full sm:w-auto"
-                selectedClient={userClientId}
+                selectedClient={effectiveUserRole === 'user' ? userClientId : selectedClient}
               />
             )}
           </div>
