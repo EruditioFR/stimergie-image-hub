@@ -1,9 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/ui/layout/Header';
 import { useDownloads } from '@/hooks/useDownloads';
 import { Footer } from '@/components/ui/layout/Footer';
-import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useRealtimeStatus } from '@/hooks/useRealtimeStatus';
@@ -99,7 +97,6 @@ const Downloads = () => {
         </div>
       </main>
       <Footer />
-      <Toaster />
     </div>
   );
 };
