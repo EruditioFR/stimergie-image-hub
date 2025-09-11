@@ -78,56 +78,20 @@ export const ImageContent = ({
         throw new Error('Aucune URL de téléchargement disponible');
       }
 
-      // Télécharger l'image comme blob pour forcer le téléchargement
-      const response = await fetch(downloadUrl, {
-        mode: 'cors',
-        headers: {
-          'Accept': 'image/*'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Erreur réseau: ${response.status}`);
-      }
-      
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      
-      // Créer un lien temporaire pour le téléchargement
+      // Créer un lien de téléchargement direct
       const link = document.createElement('a');
-      link.href = blobUrl;
+      link.href = downloadUrl;
       link.download = `${image?.title || 'image'}_${isHD ? 'HD' : 'SD'}.jpg`;
+      link.setAttribute('crossorigin', 'anonymous');
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      // Nettoyer l'URL blob
-      URL.revokeObjectURL(blobUrl);
-      
-      toast.success(`Téléchargement ${isHD ? 'HD' : 'SD'} terminé !`);
+      toast.success(`Téléchargement ${isHD ? 'HD' : 'SD'} en cours...`);
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
-      // En cas d'erreur, essayer un téléchargement direct simple
-      if (downloadUrl) {
-        try {
-          const link = document.createElement('a');
-          link.href = downloadUrl;
-          link.download = `${image?.title || 'image'}_${isHD ? 'HD' : 'SD'}.jpg`;
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          link.style.display = 'none';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          toast.info('Téléchargement initié - si l\'image s\'ouvre, faites clic droit > Enregistrer sous...');
-        } catch (linkError) {
-          console.error('Erreur lors du téléchargement direct:', linkError);
-          toast.error('Impossible de télécharger le fichier');
-        }
-      } else {
-        toast.error('Aucune URL de téléchargement disponible');
-      }
+      toast.error('Impossible de télécharger le fichier');
     } finally {
       setIsDownloading(false);
     }
