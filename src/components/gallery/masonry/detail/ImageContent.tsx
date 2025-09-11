@@ -199,6 +199,10 @@ export const ImageContent = ({
               <span className="capitalize">{image.orientation}</span>
             </div>
           )}
+          <div>
+            <span className="block text-foreground font-medium">Copyright</span>
+            <span>{image?.copyright || 'Stimergie'}</span>
+          </div>
           {image?.created_at && (
             <div>
               <span className="block text-foreground font-medium">Date d'ajout</span>
