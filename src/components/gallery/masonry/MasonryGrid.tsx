@@ -22,6 +22,7 @@ interface MasonryGridProps {
   selectedImages?: string[];
   onImageSelect?: (id: string) => void;
   onClearSelection?: () => void;
+  onSelectAll?: (imageIds: string[]) => void;
 }
 
 export function MasonryGrid({ 
@@ -31,7 +32,8 @@ export function MasonryGrid({
   loadMoreImages,
   selectedImages = [],
   onImageSelect,
-  onClearSelection
+  onClearSelection,
+  onSelectAll
 }: MasonryGridProps) {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [selectedImageDetail, setSelectedImageDetail] = useState<any>(null);
@@ -112,8 +114,12 @@ export function MasonryGrid({
 
   const handleSelectAll = useCallback(() => {
     const imageIds = images.map(img => img.id);
-    selectAllImages(imageIds);
-  }, [images, selectAllImages]);
+    if (onSelectAll) {
+      onSelectAll(imageIds);
+    } else {
+      selectAllImages(imageIds);
+    }
+  }, [images, onSelectAll, selectAllImages]);
 
   if (isLoading && images.length === 0) {
     return <MasonryLoading columnCount={columnCount} />;

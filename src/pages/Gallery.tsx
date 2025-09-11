@@ -38,7 +38,8 @@ const Gallery = () => {
   const {
     selectedImages,
     toggleImageSelection,
-    clearSelection
+    clearSelection,
+    selectAllImages
   } = useImageSelection();
   const { invalidateImageCaches, forceRefreshProject } = useSmartCacheInvalidation();
 
@@ -250,7 +251,8 @@ const Gallery = () => {
               loadMoreImages={loadMoreImages} 
               selectedImages={selectedImages} 
               onImageSelect={toggleImageSelection} 
-              onClearSelection={clearSelection} 
+              onClearSelection={clearSelection}
+              onSelectAll={selectAllImages}
             />
           ) : (
             <EmptyResults 
