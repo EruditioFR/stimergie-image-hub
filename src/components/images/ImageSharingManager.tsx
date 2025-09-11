@@ -12,6 +12,7 @@ import {
   ImageSharedClient 
 } from "@/services/gallery/sharingService";
 import { useClients } from "@/hooks/useClients";
+import { useAuth } from "@/context/AuthContext";
 
 interface ImageSharingManagerProps {
   imageId: number;
@@ -30,6 +31,12 @@ export function ImageSharingManager({
   const [isSharing, setIsSharing] = useState(false);
   const { toast } = useToast();
   const { clients } = useClients();
+  const { isAdmin } = useAuth();
+
+  // Only administrators can share images with other clients
+  if (!isAdmin) {
+    return null;
+  }
 
   // Filter out the primary client from available clients
   const availableClients = clients.filter(client => 
