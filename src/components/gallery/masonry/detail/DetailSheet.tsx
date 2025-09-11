@@ -30,7 +30,7 @@ export const DetailSheet = ({
               size="icon" 
               onClick={onClose}
               aria-label="Fermer le détail de l'image"
-              className="text-foreground border-none hover:border-none focus:border-none active:border-none ring-0 hover:ring-0 focus:ring-0"
+              className="text-foreground border-0 hover:border-0 focus:border-0 active:border-0 ring-0 hover:ring-0 focus:ring-0 outline-none focus:outline-none"
             >
               <X className="h-6 w-6" />
             </Button>

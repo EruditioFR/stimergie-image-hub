@@ -235,7 +235,7 @@ export function ImageDetailModal({ image, isOpen, onClose }: ImageDetailModalPro
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="absolute right-4 top-4 z-10 text-foreground py-4" 
+                className="absolute right-4 top-4 z-10 text-foreground border-0 hover:border-0 focus:border-0 active:border-0 ring-0 hover:ring-0 focus:ring-0 outline-none focus:outline-none" 
                 onClick={handleModalClose}
               >
                 <X className="h-6 w-6" />

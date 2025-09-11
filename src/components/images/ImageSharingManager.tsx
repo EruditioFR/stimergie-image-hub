@@ -31,10 +31,10 @@ export function ImageSharingManager({
   const [isSharing, setIsSharing] = useState(false);
   const { toast } = useToast();
   const { clients } = useClients();
-  const { isAdmin } = useAuth();
+  const { isAdmin, userRole } = useAuth();
 
   // Only administrators can share images with other clients
-  if (!isAdmin) {
+  if (!isAdmin || userRole !== 'admin') {
     return null;
   }
 
