@@ -55,14 +55,30 @@ export function DetailDialog({
                 </div>
                 <div className="flex items-center gap-2 ml-4">
                   <button 
-                    onClick={() => {
-                      const link = document.createElement('a');
-                      link.href = image?.display_url || image?.url_miniature || image?.url || '';
-                      link.download = `${image?.title || 'image'}_SD.jpg`;
-                      link.style.display = 'none';
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
+                    onClick={async () => {
+                      try {
+                        const imageUrl = image?.display_url || image?.url_miniature || image?.url || '';
+                        if (!imageUrl) throw new Error('URL non disponible');
+                        
+                        const response = await fetch(imageUrl, { mode: 'cors' });
+                        if (!response.ok) throw new Error('Erreur réseau');
+                        
+                        const blob = await response.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        
+                        const link = document.createElement('a');
+                        link.href = blobUrl;
+                        link.download = `${image?.title || 'image'}_SD.jpg`;
+                        link.style.display = 'none';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(blobUrl);
+                      } catch (error) {
+                        console.error('Erreur téléchargement:', error);
+                        // Fallback
+                        window.open(image?.display_url || image?.url || '', '_blank');
+                      }
                     }}
                     className="flex items-center px-3 py-1.5 text-sm bg-primary text-white rounded hover:bg-primary/90 transition-colors"
                   >
@@ -70,14 +86,30 @@ export function DetailDialog({
                     SD (Web)
                   </button>
                   <button 
-                    onClick={() => {
-                      const link = document.createElement('a');
-                      link.href = image?.download_url || image?.url || '';
-                      link.download = `${image?.title || 'image'}_HD.jpg`;
-                      link.style.display = 'none';
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
+                    onClick={async () => {
+                      try {
+                        const imageUrl = image?.download_url || image?.url || '';
+                        if (!imageUrl) throw new Error('URL non disponible');
+                        
+                        const response = await fetch(imageUrl, { mode: 'cors' });
+                        if (!response.ok) throw new Error('Erreur réseau');
+                        
+                        const blob = await response.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        
+                        const link = document.createElement('a');
+                        link.href = blobUrl;
+                        link.download = `${image?.title || 'image'}_HD.jpg`;
+                        link.style.display = 'none';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(blobUrl);
+                      } catch (error) {
+                        console.error('Erreur téléchargement:', error);
+                        // Fallback
+                        window.open(image?.download_url || image?.url || '', '_blank');
+                      }
                     }}
                     className="flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                   >
