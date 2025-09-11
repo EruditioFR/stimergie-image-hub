@@ -33,6 +33,9 @@ export const useGalleryQueryState = ({
   const [accumulatedImages, setAccumulatedImages] = useState<any[]>([]);
   const [hasMorePages, setHasMorePages] = useState(true);
 
+  // Don't make queries for non-admin users until userClientId is loaded
+  const shouldSkipQuery = ['admin_client', 'user'].includes(userRole) && !userClientId && userId;
+
   // Fetch images query with all filters and access control
   const {
     data: currentPageImages = [],
@@ -68,6 +71,7 @@ export const useGalleryQueryState = ({
       userId
     ),
     staleTime: 15000, // 15 seconds (was 60)
+    enabled: !shouldSkipQuery, // Skip queries for non-admin users without client ID
   });
 
   // Reset accumulated images when filters change

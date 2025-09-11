@@ -87,8 +87,9 @@ export async function buildGalleryQuery(
       return { query, hasEmptyResult: true };
     }
   } else if (['admin_client', 'user'].includes(userRole) && !userClientId) {
-    // If non-admin user with no client ID, don't show any images
-    console.warn('Non-admin user with no client ID, returning empty result');
+    // If non-admin user with no client ID, this means the client ID is still loading
+    // We should wait for it to be available rather than showing empty results
+    console.log('Non-admin user with no client ID yet (still loading), waiting...');
     return { query, hasEmptyResult: true };
   } else if (['admin_client', 'user'].includes(userRole) && userId) {
     // Pour les utilisateurs non-admin sans client spécifique, limiter aux projets accessibles
