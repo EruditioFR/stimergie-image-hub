@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAccessibleProjects } from '@/hooks/projects/useAccessibleProjects';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
 interface ProjectsFilterProps {
@@ -20,21 +21,28 @@ interface ProjectsFilterProps {
 
 export function ProjectsFilter({ selectedProject, onProjectChange, className, selectedClient }: ProjectsFilterProps) {
   const { projects, isLoading, error, getProjectsForClient } = useAccessibleProjects();
+  const { userRole } = useAuth();
   const [filteredProjects, setFilteredProjects] = useState<Array<{ id: string; nom_projet: string }>>([]);
 
   useEffect(() => {
-    console.log("Loading projects for ProjectsFilter, client:", selectedClient);
+    console.log("Loading projects for ProjectsFilter, client:", selectedClient, "user role:", userRole);
     
-    // If no client is selected, show all accessible projects
-    if (!selectedClient) {
+    // For regular users, always show all accessible projects since they can only see 
+    // projects they have access to through access periods or direct ownership
+    if (userRole === 'user') {
       setFilteredProjects(projects.map(p => ({ id: p.id, nom_projet: p.nom_projet })));
+      console.log(`Retrieved ${projects.length} accessible projects for user`);
     } else {
-      // Filter to projects for the selected client
-      const clientProjects = getProjectsForClient(selectedClient);
-      setFilteredProjects(clientProjects.map(p => ({ id: p.id, nom_projet: p.nom_projet })));
-      console.log(`Retrieved ${clientProjects.length} projects for client ${selectedClient}`);
+      // For admin users, filter by client if one is selected
+      if (!selectedClient) {
+        setFilteredProjects(projects.map(p => ({ id: p.id, nom_projet: p.nom_projet })));
+      } else {
+        const clientProjects = getProjectsForClient(selectedClient);
+        setFilteredProjects(clientProjects.map(p => ({ id: p.id, nom_projet: p.nom_projet })));
+        console.log(`Retrieved ${clientProjects.length} projects for client ${selectedClient}`);
+      }
     }
-  }, [selectedClient, projects, getProjectsForClient]);
+  }, [selectedClient, projects, getProjectsForClient, userRole]);
 
   // Clear project selection when client changes
   useEffect(() => {
