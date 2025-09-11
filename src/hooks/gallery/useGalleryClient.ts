@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { clearCorruptedProjectCache } from '@/services/gallery/projectUtils';
 
 export const useGalleryClient = (user: User | null, userRole: string) => {
   const [userClientId, setUserClientId] = useState<string | null>(user?.user_metadata?.client_id || null);
@@ -23,6 +24,9 @@ export const useGalleryClient = (user: User | null, userRole: string) => {
           if (data) {
             setUserClientId(data);
             console.log("Fetched user client ID:", data);
+            
+            // Clear any corrupted project cache when we get the client ID
+            clearCorruptedProjectCache(data);
           }
         } catch (error) {
           console.error("Unexpected error fetching client ID:", error);

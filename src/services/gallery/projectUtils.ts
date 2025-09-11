@@ -2,7 +2,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Fetch project IDs for a client, with caching
+ * Fetch project IDs for a client, with caching (ADMIN USE ONLY)
+ * This function should only be used by admin users as it tries to fetch ALL projects for a client
+ * Non-admin users should use getAccessibleProjects() instead
  */
 export async function fetchProjectIdsForClient(client: string | null): Promise<string[] | null> {
   if (!client) return null;
@@ -11,12 +13,11 @@ export async function fetchProjectIdsForClient(client: string | null): Promise<s
   const cachedProjetIds = sessionStorage.getItem(cacheKey);
   
   if (cachedProjetIds) {
-    // Utiliser les IDs de projets mis en cache
     const projetIds = JSON.parse(cachedProjetIds);
     console.log('Using cached project IDs:', projetIds.length);
     return projetIds;
   } else {
-    // Récupérer les IDs de projets et les mettre en cache
+    // This query works only for admin users due to RLS policies
     const { data: projetData, error: projetError } = await supabase
       .from('projets')
       .select('id')
@@ -29,7 +30,6 @@ export async function fetchProjectIdsForClient(client: string | null): Promise<s
     
     if (!projetData || projetData.length === 0) {
       console.log('No projects found for this client');
-      // Mettre en cache un tableau vide pour éviter des requêtes répétées
       sessionStorage.setItem(cacheKey, JSON.stringify([]));
       return [];
     }
@@ -37,8 +37,27 @@ export async function fetchProjectIdsForClient(client: string | null): Promise<s
     const projetIds = projetData.map(projet => projet.id);
     console.log('Project IDs for client:', projetIds.length);
     
-    // Mettre en cache les IDs de projets
     sessionStorage.setItem(cacheKey, JSON.stringify(projetIds));
     return projetIds;
+  }
+}
+
+/**
+ * Clear corrupted project caches for non-admin users
+ * This helps resolve cases where empty project lists were cached due to RLS restrictions
+ */
+export function clearCorruptedProjectCache(clientId: string | null) {
+  if (clientId) {
+    const cacheKey = `projectIds-${clientId}`;
+    const cachedData = sessionStorage.getItem(cacheKey);
+    
+    if (cachedData) {
+      const projetIds = JSON.parse(cachedData);
+      // If cached data is an empty array, it might be corrupted for non-admin users
+      if (Array.isArray(projetIds) && projetIds.length === 0) {
+        console.log('Clearing potentially corrupted project cache for client:', clientId);
+        sessionStorage.removeItem(cacheKey);
+      }
+    }
   }
 }

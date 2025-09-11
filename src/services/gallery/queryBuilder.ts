@@ -63,36 +63,36 @@ export async function buildGalleryQuery(
       image_shared_clients (client_id, clients:client_id (id, nom))
     `);
   
-  // Obtenir et appliquer les IDs de projets si un client est sélectionné
+  // Apply project filtering based on user role and access rights
   if (client) {
-    const projetIds = await fetchProjectIdsForClient(client);
-    
-    if (projetIds && projetIds.length > 0) {
-      // Filtrer les projets selon les droits d'accès pour les non-admins
-      let accessibleProjectIds = projetIds;
-      if (userRole !== 'admin' && userId) {
-        const userAccessibleProjects = await getAccessibleProjects(userId);
-        accessibleProjectIds = projetIds.filter(id => userAccessibleProjects.includes(id));
-        
-        if (accessibleProjectIds.length === 0) {
-          console.log('User has no access to any projects for this client');
-          return { query, hasEmptyResult: true };
-        }
+    if (userRole === 'admin') {
+      // Admins can use the full client project list
+      const projetIds = await fetchProjectIdsForClient(client);
+      
+      if (projetIds && projetIds.length > 0) {
+        query = query.in('id_projet', projetIds);
+      } else {
+        return { query, hasEmptyResult: true };
+      }
+    } else if (userId) {
+      // Non-admin users: get accessible projects directly (respects RLS and access periods)
+      const userAccessibleProjects = await getAccessibleProjects(userId);
+      
+      if (userAccessibleProjects.length === 0) {
+        console.log('User has no accessible projects');
+        return { query, hasEmptyResult: true };
       }
       
-      // Filter by project IDs (basic functionality restored)
-      query = query.in('id_projet', accessibleProjectIds);
-    } else {
-      // No projects found, return empty result for now
-      return { query, hasEmptyResult: true };
+      // For non-admin users with client filter, we still filter by their accessible projects
+      // but this ensures they only see projects they actually have access to
+      query = query.in('id_projet', userAccessibleProjects);
     }
   } else if (['admin_client', 'user'].includes(userRole) && !userClientId) {
     // If non-admin user with no client ID, this means the client ID is still loading
-    // We should wait for it to be available rather than showing empty results
     console.log('Non-admin user with no client ID yet (still loading), waiting...');
     return { query, hasEmptyResult: true };
   } else if (['admin_client', 'user'].includes(userRole) && userId) {
-    // Pour les utilisateurs non-admin sans client spécifique, limiter aux projets accessibles
+    // Non-admin users without specific client: show all accessible projects
     const userAccessibleProjects = await getAccessibleProjects(userId);
     
     if (userAccessibleProjects.length === 0) {
