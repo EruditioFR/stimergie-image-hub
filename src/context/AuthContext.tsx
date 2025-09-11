@@ -33,8 +33,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
       console.log("Initial session:", session?.user?.id);
+      
+      if (error) {
+        console.error("Error getting initial session:", error);
+        // Clear any invalid session data
+        setSession(null);
+        setUser(null);
+        setUserRole('user');
+        setUserClientId(null);
+        setLoading(false);
+        return;
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -49,12 +61,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log("Auth state change event:", event, "User ID:", session?.user?.id);
+        
+        // Handle token refresh errors by clearing session
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          console.log("Token refresh failed, clearing session");
+          setSession(null);
+          setUser(null);
+          setUserRole('user');
+          setUserClientId(null);
+          setLoading(false);
+          return;
+        }
+        
+        // Handle sign out event
+        if (event === 'SIGNED_OUT') {
+          console.log("User signed out");
+          setSession(null);
+          setUser(null);
+          setUserRole('user');
+          setUserClientId(null);
+          setLoading(false);
+          return;
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          fetchUserRoleViaRPC(session.user.id);
-          fetchUserClientId(session.user.id);
+          // Use setTimeout to avoid blocking the auth state change
+          setTimeout(() => {
+            fetchUserRoleViaRPC(session.user.id);
+            fetchUserClientId(session.user.id);
+          }, 0);
         } else {
           setUserRole('user');
           setUserClientId(null);
@@ -90,6 +128,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (error) {
         console.error("Error fetching user role:", error);
+        // If it's an auth error, don't try fallback
+        if (error.message?.includes('Invalid Refresh Token') || error.message?.includes('JWT expired')) {
+          console.log("Auth token invalid, clearing session");
+          await supabase.auth.signOut();
+          return;
+        }
         await fallbackFetchRole(userId);
         return;
       }
@@ -102,6 +146,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error("Unexpected error fetching role:", error);
+      // If it's an auth error, sign out
+      if (error instanceof Error && (error.message?.includes('Invalid Refresh Token') || error.message?.includes('JWT expired'))) {
+        console.log("Auth token invalid, clearing session");
+        await supabase.auth.signOut();
+        return;
+      }
       await fallbackFetchRole(userId);
     } finally {
       setLoading(false);
