@@ -34,7 +34,7 @@ export function ImageSharingManager({
   const { isAdmin, userRole } = useAuth();
 
   // Only administrators can share images with other clients
-  if (!isAdmin || userRole !== 'admin') {
+  if (userRole !== 'admin') {
     return null;
   }
 

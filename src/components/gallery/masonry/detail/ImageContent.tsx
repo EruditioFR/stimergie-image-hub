@@ -183,7 +183,7 @@ export const ImageContent = ({
       />
       
       {/* Image sharing for admins */}
-      {isAdmin && (
+      {userRole === 'admin' && (
         <ImageSharingManager 
           imageId={parseInt(image?.id)}
           primaryClientId={image?.projets?.clients?.id}
@@ -221,8 +221,8 @@ export const ImageContent = ({
         </div>
         
         <div className="space-y-4">
-          {/* Show shared clients if any */}
-          {image?.image_shared_clients && image.image_shared_clients.length > 0 && (
+          {/* Show shared clients if any (admin only) */}
+          {userRole === 'admin' && image?.image_shared_clients && image.image_shared_clients.length > 0 && (
             <div>
               <span className="block text-foreground font-medium">Également partagé avec</span>
               <p className="text-muted-foreground">
