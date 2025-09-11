@@ -80,11 +80,11 @@ export async function buildGalleryQuery(
         }
       }
       
-      // Include images from client's projects OR images shared with this client
-      query = query.or(`id_projet.in.(${accessibleProjectIds.join(',')}),image_shared_clients.client_id.eq.${client}`);
+      // Filter by project IDs (basic functionality restored)
+      query = query.in('id_projet', accessibleProjectIds);
     } else {
-      // No projects found, but check for shared images
-      query = query.eq('image_shared_clients.client_id', client);
+      // No projects found, return empty result for now
+      return { query, hasEmptyResult: true };
     }
   } else if (['admin_client', 'user'].includes(userRole) && !userClientId) {
     // If non-admin user with no client ID, don't show any images
