@@ -3,7 +3,7 @@
  * Uses get_accessible_projects function instead of direct client filtering
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
@@ -106,14 +106,14 @@ export const useAccessibleProjects = () => {
   }, [user?.id, userRole]);
 
   // Helper function to check if user has access to a specific project
-  const hasAccessToProject = (projectId: string): boolean => {
+  const hasAccessToProject = useCallback((projectId: string): boolean => {
     return projectIds.includes(projectId);
-  };
+  }, [projectIds]);
 
   // Helper function to get projects for a specific client (from accessible projects)
-  const getProjectsForClient = (clientId: string): AccessibleProject[] => {
+  const getProjectsForClient = useCallback((clientId: string): AccessibleProject[] => {
     return projects.filter(project => project.id_client === clientId);
-  };
+  }, [projects]);
 
   return {
     projects,
