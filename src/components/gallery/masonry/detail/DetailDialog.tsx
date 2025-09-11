@@ -45,10 +45,28 @@ export function DetailDialog({
             </div>
             
             <div className="p-6">
-              <h3 className="text-xl font-semibold mb-2">{image.title}</h3>
-              {image.description && (
-                <p className="text-muted-foreground mb-4">{image.description}</p>
-              )}
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">{image.title}</h3>
+                  {image.description && (
+                    <p className="text-muted-foreground">{image.description}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  <button 
+                    onClick={() => window.open(image?.display_url || image?.url || '', '_blank')}
+                    className="px-3 py-1.5 text-sm bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+                  >
+                    SD (Web)
+                  </button>
+                  <button 
+                    onClick={() => window.open(image?.download_url || image?.url || '', '_blank')}
+                    className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  >
+                    HD (Impression)
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </ScrollArea>

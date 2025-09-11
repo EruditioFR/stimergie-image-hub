@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { downloadImage } from '@/utils/image/imageDownloader';
 import { toast } from 'sonner';
+import { generateDownloadImageHDUrl, generateDownloadImageSDUrl } from '@/utils/image/imageUrlGenerator';
 import { parseTagsString } from '@/utils/imageUtils';
 import { TagsEditor } from './TagsEditor';
 import { useAuth } from '@/context/AuthContext';
@@ -44,34 +44,53 @@ export const ImageContent = ({
   console.log("ImageContent component - Current tags:", currentTags);
   console.log("ImageContent component - Processed tags:", displayTags);
 
-  const handleDownload = async () => {
-    if (image && !isDownloading) {
-      setIsDownloading(true);
+  const handleDownload = async (isHD: boolean = false) => {
+    setIsDownloading(true);
+    try {
+      let downloadUrl = '';
       
-      try {
-        // Get the best quality image URL available
-        const downloadUrl = image.download_url || image.url || image.display_url || image.url_miniature || image.src;
-        console.log('Detail modal download requested for URL:', downloadUrl);
-        
-        if (downloadUrl) {
-          // Create a descriptive filename based on the image title
-          const filename = image.title 
-            ? `${image.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg` 
-            : `image_${image.id || 'download'}.jpg`;
-          
-          await downloadImage(downloadUrl, filename);
-        } else {
-          console.error('Aucune URL de téléchargement disponible pour cette image');
-          toast.error('URL de téléchargement manquante');
+      if (isHD) {
+        // Version HD - Priorité 1: download_url (version HD)
+        if (image?.download_url) {
+          downloadUrl = image.download_url;
         }
-      } catch (error) {
-        console.error('Erreur lors du téléchargement:', error);
-        toast.error('Échec du téléchargement', { 
-          description: 'Une erreur s\'est produite lors du téléchargement de l\'image.' 
-        });
-      } finally {
-        setIsDownloading(false);
+        // Priorité 2: Construire l'URL HD depuis folder_name
+        else if (image?.folder_name && image?.title) {
+          downloadUrl = generateDownloadImageHDUrl(image.folder_name, image.title);
+        }
+        // Fallback HD: URL d'affichage
+        else {
+          downloadUrl = image?.display_url || image?.url || image?.url_miniature || image?.src || '';
+        }
+      } else {
+        // Version SD - Construire l'URL SD depuis folder_name ou utiliser display_url
+        if (image?.folder_name && image?.title) {
+          downloadUrl = generateDownloadImageSDUrl(image.folder_name, image.title);
+        }
+        // Fallback SD: display_url ou url_miniature
+        else {
+          downloadUrl = image?.display_url || image?.url_miniature || image?.url || image?.src || '';
+        }
       }
+
+      if (!downloadUrl) {
+        throw new Error('Aucune URL de téléchargement disponible');
+      }
+
+      await downloadImage(
+        downloadUrl, 
+        image?.title || 'image',
+        'auto',
+        isHD
+      );
+      
+      toast.success(`Téléchargement ${isHD ? 'HD' : 'SD'} démarré !`);
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
+      toast.error('Erreur lors du téléchargement');
+      handleDirectDownload(); // Fallback
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -105,7 +124,24 @@ export const ImageContent = ({
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">{image?.title || 'Sans titre'}</h2>
         <div className="flex items-center gap-2">
-          {/* Button removed as requested */}
+          <Button 
+            onClick={() => handleDownload(false)}
+            disabled={isDownloading}
+            variant="outline"
+            size="sm"
+            className="bg-primary text-white hover:bg-primary/90"
+          >
+            {isDownloading ? 'Téléchargement...' : 'SD (Web)'}
+          </Button>
+          <Button 
+            onClick={() => handleDownload(true)}
+            disabled={isDownloading}
+            variant="outline"
+            size="sm"
+            className="bg-blue-600 text-white hover:bg-blue-700"
+          >
+            {isDownloading ? 'Téléchargement...' : 'HD (Impression)'}
+          </Button>
         </div>
       </div>
       
