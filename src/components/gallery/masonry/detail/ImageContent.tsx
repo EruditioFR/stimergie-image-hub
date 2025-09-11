@@ -193,6 +193,12 @@ export const ImageContent = ({
               <span className="capitalize">{image.orientation}</span>
             </div>
           )}
+          {(image?.folder_name || image?.projets?.nom_dossier) && (
+            <div>
+              <span className="block text-foreground font-medium">Dossier</span>
+              <span>{image?.folder_name || image?.projets?.nom_dossier}</span>
+            </div>
+          )}
           {image?.created_at && (
             <div>
               <span className="block text-foreground font-medium">Date d'ajout</span>
