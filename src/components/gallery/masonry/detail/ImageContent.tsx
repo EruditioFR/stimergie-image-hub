@@ -187,16 +187,16 @@ export const ImageContent = ({
             <span className="block text-foreground font-medium">Dimensions</span>
             <span>{imageDimensions.width || image?.width || '–'} × {imageDimensions.height || image?.height || '–'}</span>
           </div>
-          {image?.orientation && (
-            <div>
-              <span className="block text-foreground font-medium">Orientation</span>
-              <span className="capitalize">{image.orientation}</span>
-            </div>
-          )}
           {(image?.folder_name || image?.projets?.nom_dossier) && (
             <div>
               <span className="block text-foreground font-medium">Dossier</span>
               <span>{image?.folder_name || image?.projets?.nom_dossier}</span>
+            </div>
+          )}
+          {image?.orientation && (
+            <div>
+              <span className="block text-foreground font-medium">Orientation</span>
+              <span className="capitalize">{image.orientation}</span>
             </div>
           )}
           {image?.created_at && (
