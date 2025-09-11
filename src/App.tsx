@@ -1,11 +1,12 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { ImageProvider } from "@/context/ImageContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { unifiedCacheManager } from "@/lib/cache/UnifiedCacheManager";
 import Index from "./pages/Index";
 import Gallery from "./pages/Gallery";
 import Auth from "./pages/Auth";
@@ -27,13 +28,8 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Licenses from "./pages/Licenses";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+// Use the unified cache system
+const queryClient = unifiedCacheManager.getQueryClient();
 
 function App() {
   return (
