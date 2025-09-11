@@ -57,9 +57,12 @@ export function DetailDialog({
                   <button 
                     onClick={() => {
                       const link = document.createElement('a');
-                      link.href = image?.display_url || image?.url || '';
+                      link.href = image?.display_url || image?.url_miniature || image?.url || '';
                       link.download = `${image?.title || 'image'}_SD.jpg`;
+                      link.style.display = 'none';
+                      document.body.appendChild(link);
                       link.click();
+                      document.body.removeChild(link);
                     }}
                     className="flex items-center px-3 py-1.5 text-sm bg-primary text-white rounded hover:bg-primary/90 transition-colors"
                   >
@@ -71,7 +74,10 @@ export function DetailDialog({
                       const link = document.createElement('a');
                       link.href = image?.download_url || image?.url || '';
                       link.download = `${image?.title || 'image'}_HD.jpg`;
+                      link.style.display = 'none';
+                      document.body.appendChild(link);
                       link.click();
+                      document.body.removeChild(link);
                     }}
                     className="flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                   >

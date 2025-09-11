@@ -88,25 +88,46 @@ export const ImageContent = ({
       toast.success(`Téléchargement ${isHD ? 'HD' : 'SD'} démarré !`);
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
-      toast.error('Erreur lors du téléchargement');
-      // En cas d'erreur, essayer un téléchargement direct
+      // En cas d'erreur, forcer le téléchargement direct via un lien temporaire
       if (downloadUrl) {
-        window.open(downloadUrl, '_blank');
+        try {
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.download = `${image?.title || 'image'}_${isHD ? 'HD' : 'SD'}.jpg`;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          toast.success(`Téléchargement ${isHD ? 'HD' : 'SD'} démarré !`);
+        } catch (linkError) {
+          console.error('Erreur lors du téléchargement direct:', linkError);
+          toast.error('Impossible de télécharger le fichier');
+        }
+      } else {
+        toast.error('Aucune URL de téléchargement disponible');
       }
     } finally {
       setIsDownloading(false);
     }
   };
 
-  const handleDirectDownload = () => {
+  const handleDirectDownload = (isHD: boolean = false) => {
     if (image) {
-      const downloadUrl = image.download_url || image.url || image.display_url || image.url_miniature || image.src;
+      const downloadUrl = isHD ? 
+        (image.download_url || image.url || image.display_url || image.url_miniature || image.src) :
+        (image.display_url || image.url_miniature || image.url || image.src);
+      
       if (downloadUrl) {
-        // Ouvrir dans un nouvel onglet pour téléchargement manuel
-        window.open(downloadUrl, '_blank');
-        toast.info('Image ouverte dans un nouvel onglet', {
-          description: 'Pour télécharger: clic droit sur l\'image et sélectionnez "Enregistrer l\'image sous..."'
-        });
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `${image?.title || 'image'}_${isHD ? 'HD' : 'SD'}.jpg`;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success(`Téléchargement ${isHD ? 'HD' : 'SD'} démarré !`);
+      } else {
+        toast.error('Aucune URL de téléchargement disponible');
       }
     }
   };
