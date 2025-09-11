@@ -25,11 +25,6 @@ export function ProjectsFilter({ selectedProject, onProjectChange, className, se
   useEffect(() => {
     console.log("Loading projects for ProjectsFilter, client:", selectedClient);
     
-    // Clear project selection when client changes
-    if (selectedProject) {
-      onProjectChange(null);
-    }
-    
     // If no client is selected, show all accessible projects
     if (!selectedClient) {
       setFilteredProjects(projects.map(p => ({ id: p.id, nom_projet: p.nom_projet })));
@@ -39,7 +34,14 @@ export function ProjectsFilter({ selectedProject, onProjectChange, className, se
       setFilteredProjects(clientProjects.map(p => ({ id: p.id, nom_projet: p.nom_projet })));
       console.log(`Retrieved ${clientProjects.length} projects for client ${selectedClient}`);
     }
-  }, [selectedClient, projects, getProjectsForClient, onProjectChange, selectedProject]);
+  }, [selectedClient, projects, getProjectsForClient]);
+
+  // Clear project selection when client changes
+  useEffect(() => {
+    if (selectedProject) {
+      onProjectChange(null);
+    }
+  }, [selectedClient]); // Only depend on selectedClient, not onProjectChange or selectedProject
 
   // Show error if projects failed to load
   useEffect(() => {
