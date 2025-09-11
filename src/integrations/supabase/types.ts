@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -225,6 +225,91 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      ftp_files: {
+        Row: {
+          created_at: string
+          date_added: string
+          file_name: string
+          file_type: string | null
+          file_url: string
+          folder_name: string
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_added?: string
+          file_name: string
+          file_type?: string | null
+          file_url: string
+          folder_name: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_added?: string
+          file_name?: string
+          file_type?: string | null
+          file_url?: string
+          folder_name?: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      image_shared_clients: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          id: string
+          image_id: number
+          shared_at: string | null
+          shared_by: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          id?: string
+          image_id: number
+          shared_at?: string | null
+          shared_by?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          image_id?: number
+          shared_at?: string | null
+          shared_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "image_shared_clients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "image_shared_clients_image_id_fkey"
+            columns: ["image_id"]
+            isOneToOne: false
+            referencedRelation: "images"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "image_shared_clients_shared_by_fkey"
+            columns: ["shared_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       images: {
         Row: {
@@ -476,7 +561,7 @@ export type Database = {
     }
     Functions: {
       admin_update_user_password: {
-        Args: { user_id: string; new_password: string }
+        Args: { new_password: string; user_id: string }
         Returns: boolean
       }
       bytea_to_text: {
@@ -496,15 +581,15 @@ export type Database = {
         Returns: boolean
       }
       check_project_access: {
-        Args: { user_id: string; project_id: string; check_time?: string }
+        Args: { check_time?: string; project_id: string; user_id: string }
         Returns: boolean
       }
       generate_unique_slug: {
-        Args: { title: string; company_id: string }
+        Args: { company_id: string; title: string }
         Returns: string
       }
       get_accessible_projects: {
-        Args: { user_id: string; check_time?: string }
+        Args: { check_time?: string; user_id: string }
         Returns: {
           project_id: string
         }[]
@@ -512,12 +597,12 @@ export type Database = {
       get_album_by_share_key: {
         Args: { share_key_param: string }
         Returns: {
-          id: string
-          name: string
-          description: string
           access_from: string
           access_until: string
+          description: string
+          id: string
           images: Json
+          name: string
         }[]
       }
       get_current_user_role: {
@@ -536,9 +621,9 @@ export type Database = {
         Args: { user_id: string }
         Returns: {
           first_name: string
+          id_client: string
           last_name: string
           role: string
-          id_client: string
         }[]
       }
       get_user_role: {
@@ -548,16 +633,16 @@ export type Database = {
       get_user_shared_albums: {
         Args: { limit_param?: number; offset_param?: number }
         Returns: {
-          id: string
-          name: string
-          description: string
           access_from: string
           access_until: string
           created_at: string
           created_by: string
           created_by_name: string
-          share_key: string
+          description: string
+          id: string
           image_count: number
+          name: string
+          share_key: string
         }[]
       }
       get_user_shared_albums_count: {
@@ -578,12 +663,12 @@ export type Database = {
       }
       http_delete: {
         Args:
+          | { content: string; content_type: string; uri: string }
           | { uri: string }
-          | { uri: string; content: string; content_type: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_get: {
-        Args: { uri: string } | { uri: string; data: Json }
+        Args: { data: Json; uri: string } | { uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_head: {
@@ -602,17 +687,17 @@ export type Database = {
         }[]
       }
       http_patch: {
-        Args: { uri: string; content: string; content_type: string }
+        Args: { content: string; content_type: string; uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_post: {
         Args:
-          | { uri: string; content: string; content_type: string }
-          | { uri: string; data: Json }
+          | { content: string; content_type: string; uri: string }
+          | { data: Json; uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_put: {
-        Args: { uri: string; content: string; content_type: string }
+        Args: { content: string; content_type: string; uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
       }
       http_reset_curlopt: {

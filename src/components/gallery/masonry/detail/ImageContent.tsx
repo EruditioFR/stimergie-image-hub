@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { generateDownloadImageHDUrl, generateDownloadImageSDUrl } from '@/utils/image/imageUrlGenerator';
 import { parseTagsString } from '@/utils/imageUtils';
 import { TagsEditor } from './TagsEditor';
+import { ImageSharingManager } from '@/components/images/ImageSharingManager';
 import { useAuth } from '@/context/AuthContext';
 
 interface ImageContentProps {
@@ -24,7 +25,7 @@ export const ImageContent = ({
   const [isDownloading, setIsDownloading] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [currentTags, setCurrentTags] = useState(image?.tags);
-  const { userRole } = useAuth();
+  const { userRole, isAdmin } = useAuth();
 
   // Process tags to ensure they're always in array format
   const processTags = (tags: any): string[] => {
@@ -181,6 +182,14 @@ export const ImageContent = ({
         onTagsUpdated={handleTagsUpdated}
       />
       
+      {/* Image sharing for admins */}
+      {isAdmin && (
+        <ImageSharingManager 
+          imageId={parseInt(image?.id)}
+          primaryClientId={image?.projets?.clients?.id}
+        />
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
           <div>
@@ -211,12 +220,24 @@ export const ImageContent = ({
           )}
         </div>
         
-        {image?.description && (
-          <div>
-            <span className="block text-foreground font-medium">Description</span>
-            <p className="text-muted-foreground">{image.description}</p>
-          </div>
-        )}
+        <div className="space-y-4">
+          {/* Show shared clients if any */}
+          {image?.image_shared_clients && image.image_shared_clients.length > 0 && (
+            <div>
+              <span className="block text-foreground font-medium">Également partagé avec</span>
+              <p className="text-muted-foreground">
+                {image.image_shared_clients.map((shared: any) => shared.clients?.nom).filter(Boolean).join(', ')}
+              </p>
+            </div>
+          )}
+          
+          {image?.description && (
+            <div>
+              <span className="block text-foreground font-medium">Description</span>
+              <p className="text-muted-foreground">{image.description}</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

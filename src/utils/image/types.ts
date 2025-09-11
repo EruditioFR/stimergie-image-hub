@@ -23,6 +23,18 @@ export interface Image {
   projets?: {
     nom_projet?: string;
     nom_dossier?: string;
+    clients?: {
+      id?: string;
+      nom?: string;
+    };
   };
   id_projet?: string;
+  // Shared clients information
+  image_shared_clients?: Array<{
+    client_id: string;
+    clients?: {
+      id?: string;
+      nom?: string;
+    };
+  }>;
 }

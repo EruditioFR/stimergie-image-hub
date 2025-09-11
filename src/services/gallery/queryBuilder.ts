@@ -57,7 +57,11 @@ export async function buildGalleryQuery(
   // Construction de la requête de base
   let query = supabase
     .from('images')
-    .select('*');
+    .select(`
+      *,
+      projets:id_projet (nom_projet, nom_dossier, clients:id_client (id, nom)),
+      image_shared_clients (client_id, clients:client_id (id, nom))
+    `);
   
   // Obtenir et appliquer les IDs de projets si un client est sélectionné
   if (client) {
@@ -76,10 +80,11 @@ export async function buildGalleryQuery(
         }
       }
       
-      query = query.in('id_projet', accessibleProjectIds);
+      // Include images from client's projects OR images shared with this client
+      query = query.or(`id_projet.in.(${accessibleProjectIds.join(',')}),image_shared_clients.client_id.eq.${client}`);
     } else {
-      // Aucun projet trouvé, retourner une requête qui ne donnera aucun résultat
-      return { query, hasEmptyResult: true };
+      // No projects found, but check for shared images
+      query = query.eq('image_shared_clients.client_id', client);
     }
   } else if (['admin_client', 'user'].includes(userRole) && !userClientId) {
     // If non-admin user with no client ID, don't show any images
