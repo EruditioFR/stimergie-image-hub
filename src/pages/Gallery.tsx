@@ -17,6 +17,8 @@ import { GalleryDownloadButtons } from '@/components/gallery/GalleryDownloadButt
 import { useImageSelection } from '@/hooks/useImageSelection';
 import { CacheDebugPanel } from '@/components/admin/CacheDebugPanel';
 import { useSmartCacheInvalidation } from '@/hooks/useSmartCacheInvalidation';
+import { useGalleryRealtime } from '@/hooks/gallery/useGalleryRealtime';
+import { GalleryDebugPanel } from '@/components/gallery/debug/GalleryDebugPanel';
 
 // Catégories pour les filtres
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
@@ -42,6 +44,9 @@ const Gallery = () => {
     selectAllImages
   } = useImageSelection();
   const { invalidateImageCaches, forceRefreshProject } = useSmartCacheInvalidation();
+  
+  // Setup realtime listening for automatic cache invalidation
+  useGalleryRealtime();
 
   const {
     allImages,
@@ -263,9 +268,13 @@ const Gallery = () => {
         </div>
       </main>
       
-      <Footer />
-    </div>
-  );
+        <Footer />
+        
+        {showDebugPanel && (
+          <GalleryDebugPanel onClose={() => setShowDebugPanel(false)} />
+        )}
+      </div>
+    );
 };
 
 export default Gallery;

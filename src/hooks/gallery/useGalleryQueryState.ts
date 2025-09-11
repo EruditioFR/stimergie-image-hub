@@ -67,7 +67,7 @@ export const useGalleryQueryState = ({
       selectedOrientation,
       userId
     ),
-    staleTime: 60000, // 1 minute
+    staleTime: 15000, // 15 seconds (was 60)
   });
 
   // Reset accumulated images when filters change
