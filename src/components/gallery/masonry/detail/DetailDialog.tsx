@@ -2,6 +2,7 @@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import { Download } from 'lucide-react';
 
 interface DetailDialogProps {
   isOpen: boolean;
@@ -54,15 +55,27 @@ export function DetailDialog({
                 </div>
                 <div className="flex items-center gap-2 ml-4">
                   <button 
-                    onClick={() => window.open(image?.display_url || image?.url || '', '_blank')}
-                    className="px-3 py-1.5 text-sm bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = image?.display_url || image?.url || '';
+                      link.download = `${image?.title || 'image'}_SD.jpg`;
+                      link.click();
+                    }}
+                    className="flex items-center px-3 py-1.5 text-sm bg-primary text-white rounded hover:bg-primary/90 transition-colors"
                   >
+                    <Download className="h-4 w-4 mr-2" />
                     SD (Web)
                   </button>
                   <button 
-                    onClick={() => window.open(image?.download_url || image?.url || '', '_blank')}
-                    className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = image?.download_url || image?.url || '';
+                      link.download = `${image?.title || 'image'}_HD.jpg`;
+                      link.click();
+                    }}
+                    className="flex items-center px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                   >
+                    <Download className="h-4 w-4 mr-2" />
                     HD (Impression)
                   </button>
                 </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
 import { downloadImage } from '@/utils/image/imageDownloader';
 import { toast } from 'sonner';
 import { generateDownloadImageHDUrl, generateDownloadImageSDUrl } from '@/utils/image/imageUrlGenerator';
@@ -46,9 +47,9 @@ export const ImageContent = ({
 
   const handleDownload = async (isHD: boolean = false) => {
     setIsDownloading(true);
+    let downloadUrl = '';
+    
     try {
-      let downloadUrl = '';
-      
       if (isHD) {
         // Version HD - Priorité 1: download_url (version HD)
         if (image?.download_url) {
@@ -88,7 +89,10 @@ export const ImageContent = ({
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
       toast.error('Erreur lors du téléchargement');
-      handleDirectDownload(); // Fallback
+      // En cas d'erreur, essayer un téléchargement direct
+      if (downloadUrl) {
+        window.open(downloadUrl, '_blank');
+      }
     } finally {
       setIsDownloading(false);
     }
@@ -128,16 +132,18 @@ export const ImageContent = ({
             onClick={() => handleDownload(false)}
             disabled={isDownloading}
             size="sm"
-            className="bg-primary text-white hover:bg-primary/90 border-0 font-medium px-4 py-2 min-w-[100px]"
+            className="bg-primary text-white hover:bg-primary/90 border-0 font-medium px-4 py-2 min-w-[120px]"
           >
+            <Download className="h-4 w-4 mr-2" />
             {isDownloading ? 'Téléchargement...' : 'SD (Web)'}
           </Button>
           <Button 
             onClick={() => handleDownload(true)}
             disabled={isDownloading}
             size="sm"
-            className="bg-blue-600 text-white hover:bg-blue-700 border-0 font-medium px-4 py-2 min-w-[120px]"
+            className="bg-blue-600 text-white hover:bg-blue-700 border-0 font-medium px-4 py-2 min-w-[140px]"
           >
+            <Download className="h-4 w-4 mr-2" />
             {isDownloading ? 'Téléchargement...' : 'HD (Impression)'}
           </Button>
         </div>
