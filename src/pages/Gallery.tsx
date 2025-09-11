@@ -18,7 +18,7 @@ import { useImageSelection } from '@/hooks/useImageSelection';
 import { CacheDebugPanel } from '@/components/admin/CacheDebugPanel';
 import { useSmartCacheInvalidation } from '@/hooks/useSmartCacheInvalidation';
 import { useGalleryRealtime } from '@/hooks/gallery/useGalleryRealtime';
-import { GalleryDebugPanel } from '@/components/gallery/debug/GalleryDebugPanel';
+import { GalleryDebugInfo } from '@/components/debug/GalleryDebugInfo';
 
 // Catégories pour les filtres
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
@@ -245,6 +245,11 @@ const Gallery = () => {
           </div>
         )}
 
+        {/* Debug info for image visibility issues */}
+        <div className="px-4">
+          <GalleryDebugInfo />
+        </div>
+
         <div className="w-full px-0 py-0">
           {isLoading && allImages.length === 0 ? (
             <MasonryGrid images={[]} isLoading={true} />
@@ -268,13 +273,9 @@ const Gallery = () => {
         </div>
       </main>
       
-        <Footer />
-        
-        {showDebugPanel && (
-          <GalleryDebugPanel onClose={() => setShowDebugPanel(false)} />
-        )}
-      </div>
-    );
+      <Footer />
+    </div>
+  );
 };
 
 export default Gallery;
