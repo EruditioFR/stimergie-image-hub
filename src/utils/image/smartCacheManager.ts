@@ -63,12 +63,15 @@ export function clearImageCachesOnly(): void {
     console.log(`🗑️ Removed ${localKeysToRemove.length} local storage items`);
     
     // Vider les caches mémoire
-    const { fetchCache, processedUrlCache } = require('./cacheManager');
-    const memoryKeysCleared = fetchCache.size + processedUrlCache.size;
-    fetchCache.clear();
-    processedUrlCache.clear();
-    
-    console.log(`🗑️ Cleared ${memoryKeysCleared} memory cache items`);
+    try {
+      const { fetchCache, processedUrlCache } = require('./cacheManager');
+      const memoryKeysCleared = fetchCache.size + processedUrlCache.size;
+      fetchCache.clear();
+      processedUrlCache.clear();
+      console.log(`🗑️ Cleared ${memoryKeysCleared} memory cache items`);
+    } catch (e) {
+      console.warn('Failed to clear memory caches:', e);
+    }
     
     // Vider Cache API si disponible
     if ('caches' in window) {
@@ -79,7 +82,12 @@ export function clearImageCachesOnly(): void {
       });
     }
     
-    console.log('✅ Image caches cleared successfully (auth preserved)');
+    // Forcer le rechargement de la page pour vider complètement tous les caches
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+    
+    console.log('✅ Image caches cleared successfully (auth preserved) - Page will reload');
     
   } catch (error) {
     console.error('❌ Error clearing image caches:', error);
