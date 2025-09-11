@@ -3,8 +3,9 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useAccessibleProjects } from "@/hooks/projects/useAccessibleProjects";
+import { useAuth } from "@/context/AuthContext";
 
 interface ProjectFiltersProps {
   clients: { id: string; nom: string }[];
@@ -23,7 +24,8 @@ export function ProjectFilters({
 }: ProjectFiltersProps) {
   const [projectOptions, setProjectOptions] = useState<{id: string, name: string}[]>([]);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { userRole } = useAuth();
+  const { projects, isLoading } = useAccessibleProjects();
 
   // Effet pour réinitialiser les options et la sélection quand le client change
   useEffect(() => {
@@ -32,44 +34,23 @@ export function ProjectFilters({
     onSearchQueryChange("");
   }, [clientFilter, onSearchQueryChange]);
 
-  // Charger les projets depuis la base de données pour le client sélectionné
+  // Utiliser les projets accessibles au lieu de faire des requêtes directes
   useEffect(() => {
-    const fetchProjects = async () => {
-      if (!clientFilter) {
-        setProjectOptions([]);
-        return;
-      }
-      
-      try {
-        setLoading(true);
-        
-        const { data, error } = await supabase
-          .from('projets')
-          .select('id, nom_projet')
-          .eq('id_client', clientFilter)
-          .order('nom_projet');
-          
-        if (error) {
-          console.error("Erreur lors de la récupération des projets:", error);
-          throw error;
-        }
-        
-        if (data) {
-          const projects = data.map(project => ({
-            id: project.id,
-            name: project.nom_projet
-          }));
-          setProjectOptions(projects);
-        }
-      } catch (error) {
-        console.error("Erreur:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!clientFilter) {
+      setProjectOptions([]);
+      return;
+    }
     
-    fetchProjects();
-  }, [clientFilter]);
+    // Filtrer les projets accessibles par client sélectionné
+    const filteredProjects = projects
+      .filter(project => project.id_client === clientFilter)
+      .map(project => ({
+        id: project.id,
+        name: project.nom_projet
+      }));
+    
+    setProjectOptions(filteredProjects);
+  }, [clientFilter, projects]);
 
   // Gestion du changement de projet sélectionné
   const handleProjectChange = (value: string) => {
@@ -77,33 +58,38 @@ export function ProjectFilters({
     onSearchQueryChange(value);
   };
 
+  // Don't show client filter for regular users - they only see their own accessible projects
+  const showClientFilter = userRole === 'admin' || userRole === 'admin_client';
+
   return (
     <div className="mb-6">
       <div className="flex flex-col md:flex-row gap-4">
-        <div className="w-full md:w-1/3">
-          <Select
-            value={clientFilter || "all"}
-            onValueChange={(value) => onClientFilterChange(value === "all" ? null : value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrer par client" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les clients</SelectItem>
-              {clients.map((client) => (
-                <SelectItem key={client.id} value={client.id}>
-                  {client.nom}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {showClientFilter && (
+          <div className="w-full md:w-1/3">
+            <Select
+              value={clientFilter || "all"}
+              onValueChange={(value) => onClientFilterChange(value === "all" ? null : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrer par client" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les clients</SelectItem>
+                {clients.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         
-        <div className="w-full md:w-2/3">
-          {clientFilter ? (
+        <div className={showClientFilter ? "w-full md:w-2/3" : "w-full"}>
+          {showClientFilter && clientFilter ? (
             // Si un client est sélectionné, montrer un select avec les projets de ce client
             <div>
-              {loading ? (
+              {isLoading ? (
                 <div className="flex items-center justify-center h-10">
                   <LoadingSpinner />
                 </div>
@@ -132,7 +118,7 @@ export function ProjectFilters({
               )}
             </div>
           ) : (
-            // Si aucun client n'est sélectionné, montrer le champ de recherche normal
+            // Champ de recherche normal
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input

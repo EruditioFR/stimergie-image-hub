@@ -8,6 +8,7 @@ import { ProjectFormDialog } from "./ProjectFormDialog";
 import { Project } from "@/types/project";
 import { DeleteProjectDialog } from "./DeleteProjectDialog";
 import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
+import { useAuth } from "@/context/AuthContext";
 
 export function ProjectsContainer() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -15,6 +16,9 @@ export function ProjectsContainer() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("card");
+  
+  const { userRole } = useAuth();
+  const canManageProjects = userRole === 'admin' || userRole === 'admin_client';
 
   const {
     projects,
@@ -34,11 +38,13 @@ export function ProjectsContainer() {
   };
 
   const handleEditProject = (project: Project) => {
+    if (!canManageProjects) return;
     setCurrentProject(project);
     setIsEditDialogOpen(true);
   };
 
   const handleDeleteProject = (projectId: string) => {
+    if (!canManageProjects) return;
     const projectToDelete = projects.find(p => p.id === projectId);
     if (projectToDelete) {
       setCurrentProject(projectToDelete);
@@ -71,33 +77,39 @@ export function ProjectsContainer() {
       <ProjectsList 
         projects={projects} 
         loading={loading} 
-        onEdit={handleEditProject} 
-        onDelete={handleDeleteProject}
+        onEdit={canManageProjects ? handleEditProject : undefined} 
+        onDelete={canManageProjects ? handleDeleteProject : undefined}
         viewMode={viewMode}
       />
       
-      {/* Add Project Dialog */}
-      <ProjectFormDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
-        onSubmit={addProject}
-      />
+      {/* Add Project Dialog - Only for admins and admin clients */}
+      {canManageProjects && (
+        <ProjectFormDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          onSubmit={addProject}
+        />
+      )}
       
-      {/* Edit Project Dialog */}
-      <ProjectFormDialog
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        onSubmit={updateProject}
-        initialData={currentProject || undefined}
-      />
+      {/* Edit Project Dialog - Only for admins and admin clients */}
+      {canManageProjects && (
+        <ProjectFormDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          onSubmit={updateProject}
+          initialData={currentProject || undefined}
+        />
+      )}
       
-      {/* Delete Project Dialog */}
-      <DeleteProjectDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        projectName={currentProject?.nom_projet || ""}
-        onConfirm={() => currentProject?.id && deleteProject(currentProject.id)}
-      />
+      {/* Delete Project Dialog - Only for admins and admin clients */}
+      {canManageProjects && (
+        <DeleteProjectDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          projectName={currentProject?.nom_projet || ""}
+          onConfirm={() => currentProject?.id && deleteProject(currentProject.id)}
+        />
+      )}
     </div>
   );
 }

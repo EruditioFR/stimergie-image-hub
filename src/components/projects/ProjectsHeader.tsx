@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { ReactNode } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 interface ProjectsHeaderProps {
   onAddClick: () => void;
@@ -9,6 +10,9 @@ interface ProjectsHeaderProps {
 }
 
 export function ProjectsHeader({ onAddClick, viewToggle }: ProjectsHeaderProps) {
+  const { userRole } = useAuth();
+  const canAddProjects = userRole === 'admin' || userRole === 'admin_client';
+  
   return (
     <div className="bg-muted/30 border-b border-border">
       <div className="max-w-7xl mx-auto px-6 py-16">
@@ -18,10 +22,12 @@ export function ProjectsHeader({ onAddClick, viewToggle }: ProjectsHeaderProps) 
           <div className="flex items-center gap-4">
             {viewToggle}
             
-            <Button onClick={onAddClick}>
-              <Plus size={16} className="mr-2" />
-              Ajouter un projet
-            </Button>
+            {canAddProjects && (
+              <Button onClick={onAddClick}>
+                <Plus size={16} className="mr-2" />
+                Ajouter un projet
+              </Button>
+            )}
           </div>
         </div>
       </div>
