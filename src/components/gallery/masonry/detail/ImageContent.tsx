@@ -121,24 +121,22 @@ export const ImageContent = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">{image?.title || 'Sans titre'}</h2>
-        <div className="flex items-center gap-2">
+      <div className="flex justify-between items-center flex-wrap gap-4">
+        <h2 className="text-xl font-bold flex-1">{image?.title || 'Sans titre'}</h2>
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Button 
             onClick={() => handleDownload(false)}
             disabled={isDownloading}
-            variant="outline"
             size="sm"
-            className="bg-primary text-white hover:bg-primary/90"
+            className="bg-primary text-white hover:bg-primary/90 border-0 font-medium px-4 py-2 min-w-[100px]"
           >
             {isDownloading ? 'Téléchargement...' : 'SD (Web)'}
           </Button>
           <Button 
             onClick={() => handleDownload(true)}
             disabled={isDownloading}
-            variant="outline"
             size="sm"
-            className="bg-blue-600 text-white hover:bg-blue-700"
+            className="bg-blue-600 text-white hover:bg-blue-700 border-0 font-medium px-4 py-2 min-w-[120px]"
           >
             {isDownloading ? 'Téléchargement...' : 'HD (Impression)'}
           </Button>
