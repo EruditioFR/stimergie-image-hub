@@ -1,7 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { fetchProjectIdsForClient } from "./projectUtils";
-import { getAccessibleProjects } from "./accessControl";
+import { fetchProjectIdsForClient, getAccessibleProjectIds } from "./projectUtils";
 import { IMAGES_PER_PAGE } from "./constants";
 
 /**
@@ -76,7 +75,7 @@ export async function buildGalleryQuery(
       }
     } else if (userId) {
       // Non-admin users: get accessible projects directly (respects RLS and access periods)
-      const userAccessibleProjects = await getAccessibleProjects(userId);
+      const userAccessibleProjects = await getAccessibleProjectIds(userId);
       
       if (userAccessibleProjects.length === 0) {
         console.log('User has no accessible projects');
@@ -93,7 +92,7 @@ export async function buildGalleryQuery(
     return { query, hasEmptyResult: true };
   } else if (['admin_client', 'user'].includes(userRole) && userId) {
     // Non-admin users without specific client: show all accessible projects
-    const userAccessibleProjects = await getAccessibleProjects(userId);
+    const userAccessibleProjects = await getAccessibleProjectIds(userId);
     
     if (userAccessibleProjects.length === 0) {
       console.log('User has no accessible projects');
@@ -107,7 +106,7 @@ export async function buildGalleryQuery(
   if (project && (!hasTagFilter || ['admin_client', 'user'].includes(userRole))) {
     // Vérifier si l'utilisateur a accès à ce projet spécifique
     if (userRole !== 'admin' && userId) {
-      const userAccessibleProjects = await getAccessibleProjects(userId);
+      const userAccessibleProjects = await getAccessibleProjectIds(userId);
       if (!userAccessibleProjects.includes(project)) {
         console.log(`User does not have access to project: ${project}`);
         return { query, hasEmptyResult: true };

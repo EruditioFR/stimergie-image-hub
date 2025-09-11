@@ -1,5 +1,58 @@
 
-import { supabase } from "@/integrations/supabase/client";
+/**
+ * Project utilities for gallery - Uses accessible projects instead of direct client filtering
+ */
+
+import { supabase } from '@/integrations/supabase/client';
+
+// Cache for accessible projects to avoid repeated calls
+let accessibleProjectsCache: { userId: string; projectIds: string[] } | null = null;
+
+/**
+ * Get accessible project IDs for the current user
+ * Uses get_accessible_projects function which respects RLS and access periods
+ */
+export async function getAccessibleProjectIds(userId: string): Promise<string[]> {
+  try {
+    // Use cache if available for the same user
+    if (accessibleProjectsCache?.userId === userId) {
+      console.log('📋 Using cached accessible projects:', accessibleProjectsCache.projectIds.length);
+      return accessibleProjectsCache.projectIds;
+    }
+
+    console.log('🔍 Fetching accessible projects for user:', userId);
+    
+    const { data, error } = await supabase
+      .rpc('get_accessible_projects', {
+        user_id: userId,
+        check_time: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('❌ Error fetching accessible projects:', error);
+      throw error;
+    }
+
+    const projectIds = data?.map(item => item.project_id) || [];
+    console.log('✅ Retrieved accessible project IDs:', projectIds);
+
+    // Cache the result
+    accessibleProjectsCache = { userId, projectIds };
+
+    return projectIds;
+  } catch (error) {
+    console.error('Error in getAccessibleProjectIds:', error);
+    return [];
+  }
+}
+
+/**
+ * Clear the accessible projects cache (call when user changes or access changes)
+ */
+export function clearAccessibleProjectsCache(): void {
+  console.log('🧹 Clearing accessible projects cache');
+  accessibleProjectsCache = null;
+}
 
 /**
  * Fetch project IDs for a client, with caching (ADMIN USE ONLY)
