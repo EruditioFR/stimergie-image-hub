@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { UserMenu } from './header/UserMenu';
 import { MobileMenu } from './header/MobileMenu';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { ContactForm } from '@/components/contact/ContactForm';
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -55,13 +56,16 @@ export function Header() {
             />
           </Link>
           
-          {/* Navigation link moved here, right after the logo */}
-          <Link 
-            to="/gallery" 
-            className="text-sm font-medium transition-colors hover:text-primary"
-          >
-            Banque d'images
-          </Link>
+          {/* Navigation links */}
+          <div className="flex items-center space-x-6">
+            <Link 
+              to="/gallery" 
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Banque d'images
+            </Link>
+            <ContactForm userProfile={userProfile} userEmail={user?.email} />
+          </div>
         </div>
 
         <Sheet open={isOpen} onOpenChange={setIsOpen}>

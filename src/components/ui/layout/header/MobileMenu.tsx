@@ -2,12 +2,14 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Users, Image, FolderOpen, User, Settings, Shield, Download } from 'lucide-react';
+import { Users, Image, FolderOpen, User, Settings, Shield, Download, Mail } from 'lucide-react';
+import { ContactForm } from '@/components/contact/ContactForm';
 
 interface UserProfile {
   firstName: string;
   lastName: string;
   role: string;
+  clientId: string | null;
 }
 
 interface MobileMenuProps {
@@ -108,6 +110,11 @@ export function MobileMenu({
           </Link>
         );
       })}
+      
+      {/* Contact Form */}
+      <div className="py-2">
+        <ContactForm userProfile={userProfile} userEmail={user?.email} />
+      </div>
       
       {user && (
         <Button variant="destructive" onClick={onLogout} className="mt-4">
