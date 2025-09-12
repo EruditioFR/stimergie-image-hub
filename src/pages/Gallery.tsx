@@ -18,8 +18,6 @@ import { useImageSelection } from '@/hooks/useImageSelection';
 import { CacheDebugPanel } from '@/components/admin/CacheDebugPanel';
 import { useSmartCacheInvalidation } from '@/hooks/useSmartCacheInvalidation';
 import { useGalleryRealtime } from '@/hooks/gallery/useGalleryRealtime';
-import { GalleryDebugInfo } from '@/components/debug/GalleryDebugInfo';
-import { AccessDebugInfo } from '@/components/debug/AccessDebugInfo';
 
 // Catégories pour les filtres
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
@@ -246,11 +244,6 @@ const Gallery = () => {
           </div>
         )}
 
-        {/* Debug info for image visibility issues */}
-        <div className="px-4">
-          <GalleryDebugInfo />
-          <AccessDebugInfo />
-        </div>
 
         <div className="w-full px-0 py-0">
           {isLoading && allImages.length === 0 ? (
