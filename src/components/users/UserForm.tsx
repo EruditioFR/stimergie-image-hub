@@ -34,14 +34,14 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
       first_name: initialData.firstName || initialData.first_name || "",
       last_name: initialData.lastName || initialData.last_name || "",
       role: initialData.role as UserRole,
-      clientId: initialData.clientId || initialData.id_client || null,
+      clientIds: initialData.clientIds || (initialData.id_client ? [initialData.id_client] : []) || [],
       password: "",
     } : {
       email: "",
       first_name: "",
       last_name: "",
       role: "user" as UserRole,
-      clientId: null,
+      clientIds: [],
       password: "",
     },
   });
@@ -82,13 +82,14 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
         fullName: `${values.first_name} ${values.last_name}`.trim(),
         avatarUrl: initialData.avatarUrl,
         role: values.role,
-        clientId: values.clientId,
+        clientIds: values.clientIds,
         createdAt: initialData.createdAt || "",
         updatedAt: new Date().toISOString(),
         // For backward compatibility
         first_name: values.first_name,
         last_name: values.last_name,
-        id_client: values.clientId,
+        id_client: values.clientIds?.[0] || null,
+        client_ids: values.clientIds,
       }, values.password); // Pass password even when editing
     } else {
       // For new user, pass without ID and include password
@@ -99,13 +100,14 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
         fullName: `${values.first_name} ${values.last_name}`.trim(),
         avatarUrl: null,
         role: values.role,
-        clientId: values.clientId,
+        clientIds: values.clientIds,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         // For backward compatibility
         first_name: values.first_name,
         last_name: values.last_name,
-        id_client: values.clientId,
+        id_client: values.clientIds?.[0] || null,
+        client_ids: values.clientIds,
       }, values.password || generatedPassword); // Use generated password if field is empty
     }
   };

@@ -21,7 +21,7 @@ export const createUserSchema = z.object({
     .min(6, "Le mot de passe doit contenir au moins 6 caractères")
     .max(100),
   role: z.enum(["user", "admin", "admin_client"] as const).default("user"),
-  clientId: z.string().nullable().optional(),
+  clientIds: z.array(z.string()).nullable().optional(),
 });
 
 // Schéma de validation pour la mise à jour d'un utilisateur
@@ -41,7 +41,7 @@ export const updateUserSchema = z.object({
     .max(100)
     .optional(),
   role: z.enum(["user", "admin", "admin_client"] as const),
-  clientId: z.string().nullable().optional(),
+  clientIds: z.array(z.string()).nullable().optional(),
 });
 
 // Type pour les valeurs du formulaire

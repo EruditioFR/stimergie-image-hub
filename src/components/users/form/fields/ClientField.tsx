@@ -7,13 +7,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Client } from "@/types/user";
 import { UserFormFieldProps } from "../UserFormTypes";
 
@@ -25,29 +19,45 @@ export function ClientField({ form, clients, isEditing = false, disabled = false
   return (
     <FormField
       control={form.control}
-      name="clientId"
+      name="clientIds"
       render={({ field }) => (
-        <FormItem className="col-span-1">
-          <FormLabel>Client</FormLabel>
-          <Select
-            disabled={disabled}
-            onValueChange={field.onChange}
-            defaultValue={field.value}
-            value={field.value || ""}
-          >
-            <FormControl>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Sélectionner un client" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {clients.map((client) => (
-                <SelectItem key={client.id} value={client.id || ""}>
-                  {client.nom}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <FormItem className="col-span-1 md:col-span-2">
+          <FormLabel>Clients</FormLabel>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 border rounded-md">
+            {clients.map((client) => (
+              <FormField
+                key={client.id}
+                control={form.control}
+                name="clientIds"
+                render={({ field }) => {
+                  return (
+                    <FormItem
+                      key={client.id}
+                      className="flex flex-row items-start space-x-3 space-y-0"
+                    >
+                      <FormControl>
+                        <Checkbox
+                          disabled={disabled}
+                          checked={field.value?.includes(client.id) || false}
+                          onCheckedChange={(checked) => {
+                            const currentValues = field.value || [];
+                            return checked
+                              ? field.onChange([...currentValues, client.id])
+                              : field.onChange(
+                                  currentValues?.filter((value) => value !== client.id)
+                                );
+                          }}
+                        />
+                      </FormControl>
+                      <FormLabel className="font-normal cursor-pointer">
+                        {client.nom}
+                      </FormLabel>
+                    </FormItem>
+                  );
+                }}
+              />
+            ))}
+          </div>
           <FormMessage />
         </FormItem>
       )}
