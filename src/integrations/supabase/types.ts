@@ -430,7 +430,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          client_ids: string[] | null
           created_at: string
           email: string
           first_name: string | null
@@ -441,7 +440,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          client_ids?: string[] | null
           created_at?: string
           email: string
           first_name?: string | null
@@ -452,7 +450,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          client_ids?: string[] | null
           created_at?: string
           email?: string
           first_name?: string | null

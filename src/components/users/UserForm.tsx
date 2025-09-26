@@ -34,14 +34,14 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
       first_name: initialData.firstName || initialData.first_name || "",
       last_name: initialData.lastName || initialData.last_name || "",
       role: initialData.role as UserRole,
-      clientIds: initialData.clientIds || (initialData.id_client ? [initialData.id_client] : []) || [],
+      clientId: initialData.clientId || initialData.id_client || null,
       password: "",
     } : {
       email: "",
       first_name: "",
       last_name: "",
       role: "user" as UserRole,
-      clientIds: [],
+      clientId: null,
       password: "",
     },
   });
@@ -82,14 +82,13 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
         fullName: `${values.first_name} ${values.last_name}`.trim(),
         avatarUrl: initialData.avatarUrl,
         role: values.role,
-        clientIds: values.clientIds,
+        clientId: values.clientId,
         createdAt: initialData.createdAt || "",
         updatedAt: new Date().toISOString(),
         // For backward compatibility
         first_name: values.first_name,
         last_name: values.last_name,
-        id_client: values.clientIds?.[0] || null,
-        client_ids: values.clientIds,
+        id_client: values.clientId,
       }, values.password); // Pass password even when editing
     } else {
       // For new user, pass without ID and include password
@@ -100,14 +99,13 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
         fullName: `${values.first_name} ${values.last_name}`.trim(),
         avatarUrl: null,
         role: values.role,
-        clientIds: values.clientIds,
+        clientId: values.clientId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         // For backward compatibility
         first_name: values.first_name,
         last_name: values.last_name,
-        id_client: values.clientIds?.[0] || null,
-        client_ids: values.clientIds,
+        id_client: values.clientId,
       }, values.password || generatedPassword); // Use generated password if field is empty
     }
   };
