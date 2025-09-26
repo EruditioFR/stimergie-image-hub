@@ -32,7 +32,7 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
 
       const firstName = userData.firstName || userData.first_name || '';
       const lastName = userData.lastName || userData.last_name || '';
-      const clientId = userData.clientId || userData.id_client || null;
+      const clientIds = userData.clientIds || (userData.id_client ? [userData.id_client] : null);
 
       console.log("Calling admin-create-user function with email and user data");
 
@@ -53,7 +53,7 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
           firstName,
           lastName,
           role: userData.role || 'user',
-          clientId
+          clientIds
         })
       });
 
@@ -106,7 +106,7 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
               `${newUser.first_name} ${newUser.last_name}` : null,
             avatarUrl: null,
             role: newUser.role,
-            clientId: newUser.id_client,
+            clientIds: newUser.id_client ? [newUser.id_client] : null,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             first_name: newUser.first_name,
@@ -134,7 +134,7 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
     try {
       const firstName = userData.firstName || userData.first_name;
       const lastName = userData.lastName || userData.last_name;
-      const clientId = userData.clientId || userData.id_client;
+      const clientIds = userData.clientIds || (userData.id_client ? [userData.id_client] : null);
       
       const { error } = await supabase
         .from("profiles")
@@ -142,7 +142,8 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
           first_name: firstName,
           last_name: lastName,
           role: userData.role,
-          id_client: clientId
+          id_client: clientIds && clientIds.length > 0 ? clientIds[0] : null,
+          client_ids: clientIds
         })
         .eq('id', userData.id);
 
@@ -207,12 +208,13 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
               lastName: lastName,
               fullName: firstName && lastName ? `${firstName} ${lastName}` : null,
               role: userData.role,
-              clientId: clientId,
+              clientIds: clientIds,
               updatedAt: new Date().toISOString(),
               first_name: firstName,
               last_name: lastName,
-              id_client: clientId,
-              client_name: clients.find(c => c.id === clientId)?.nom || null
+              id_client: clientIds && clientIds.length > 0 ? clientIds[0] : null,
+              client_ids: clientIds,
+              client_name: clientIds && clientIds.length > 0 ? clients.find(c => c.id === clientIds[0])?.nom || null : null
             }
           : user
       ));

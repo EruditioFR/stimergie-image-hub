@@ -66,7 +66,7 @@ export function UserCard({ user, onEdit, onDelete }: UserCardProps) {
             {user.role || "utilisateur"}
           </p>
           
-          {(user.client_name || user.clientId) && (
+          {(user.client_name || (user.clientIds && user.clientIds.length > 0)) && (
             <p className="flex items-center gap-2">
               <Building2 size={16} className="text-muted-foreground" />
               {user.client_name || "Client"}

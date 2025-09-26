@@ -68,13 +68,14 @@ export function useUserData(
           `${record.first_name} ${record.last_name}` : null,
         avatarUrl: null,
         role: record.role,
-        clientId: record.id_client,
+        clientIds: record.id_client ? [record.id_client] : null,
         createdAt: "", // These fields are not available in the query
         updatedAt: "",
         // For backward compatibility
         first_name: record.first_name,
         last_name: record.last_name,
         id_client: record.id_client,
+        client_ids: record.id_client ? [record.id_client] : null,
         client_name: record.clients ? record.clients.nom : null
       }));
       
