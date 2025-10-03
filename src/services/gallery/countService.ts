@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { fetchProjectIdsForClient } from "./projectUtils";
+import { fetchProjectIdsForClient, getAccessibleProjectIds } from "./projectUtils";
 
 /**
  * Fetch total count of images matching filter criteria
@@ -13,7 +13,8 @@ export async function fetchTotalImagesCount(
   project: string | null,
   orientation: string | null,
   userRole: string,
-  userClientId: string | null
+  userClientId: string | null,
+  userId: string | null
 ): Promise<number> {
   try {
     // Pour admin_client et utilisateurs normaux, toujours filtrer par leur client ID
@@ -26,13 +27,31 @@ export async function fetchTotalImagesCount(
     
     // Obtenir et appliquer les IDs de projets si un client est sélectionné
     if (client) {
-      const projetIds = await fetchProjectIdsForClient(client);
-      
-      if (projetIds && projetIds.length > 0) {
-        query = query.in('id_projet', projetIds);
-      } else {
-        return 0; // Aucun projet trouvé, donc aucune image
+      if (userRole === 'admin') {
+        const projetIds = await fetchProjectIdsForClient(client);
+        
+        if (projetIds && projetIds.length > 0) {
+          query = query.in('id_projet', projetIds);
+        } else {
+          return 0;
+        }
+      } else if (userId) {
+        const userAccessibleProjects = await getAccessibleProjectIds(userId);
+        
+        if (userAccessibleProjects.length === 0) {
+          return 0;
+        }
+        
+        query = query.in('id_projet', userAccessibleProjects);
       }
+    } else if (['admin_client', 'user'].includes(userRole) && userId) {
+      const userAccessibleProjects = await getAccessibleProjectIds(userId);
+      
+      if (userAccessibleProjects.length === 0) {
+        return 0;
+      }
+      
+      query = query.in('id_projet', userAccessibleProjects);
     }
     
     // Appliquer le filtre de projet si fourni

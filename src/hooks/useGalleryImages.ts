@@ -139,6 +139,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     totalCount,
     userRole,
     userClientId,
+    userId: user?.id || null,
     shouldFetchRandom,
     setTotalCount
   });

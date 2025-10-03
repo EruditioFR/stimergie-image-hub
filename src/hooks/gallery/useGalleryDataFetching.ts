@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 
 interface GalleryDataFetchingProps {
-  fetchTotalCount: (searchQuery: string, tagFilter: string, activeTab: string, client: string | null, project: string | null, orientation: string | null, userRole: string, userClientId: string | null) => void;
+  fetchTotalCount: (searchQuery: string, tagFilter: string, activeTab: string, client: string | null, project: string | null, orientation: string | null, userRole: string, userClientId: string | null, userId: string | null) => void;
   prefetchNextPage: (searchQuery: string, tagFilter: string, activeTab: string, client: string | null, project: string | null, orientation: string | null, page: number, userRole: string, userClientId: string | null) => void;
   isLoading: boolean;
   isFetching: boolean;
@@ -16,6 +16,7 @@ interface GalleryDataFetchingProps {
   totalCount: number;
   userRole: string;
   userClientId: string | null;
+  userId: string | null;
   shouldFetchRandom: boolean;
   setTotalCount: (count: number) => void;
 }
@@ -35,6 +36,7 @@ export const useGalleryDataFetching = ({
   totalCount,
   userRole,
   userClientId,
+  userId,
   shouldFetchRandom,
   setTotalCount
 }: GalleryDataFetchingProps) => {
@@ -50,7 +52,8 @@ export const useGalleryDataFetching = ({
         selectedProject,
         selectedOrientation,
         userRole,
-        userClientId
+        userClientId,
+        userId
       );
     };
 
@@ -64,7 +67,8 @@ export const useGalleryDataFetching = ({
     selectedOrientation,
     fetchTotalCount,
     userRole,
-    userClientId
+    userClientId,
+    userId
   ]);
 
   // Prefetch next page data

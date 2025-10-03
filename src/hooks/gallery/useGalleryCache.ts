@@ -48,7 +48,8 @@ export const useGalleryCache = () => {
     project: string | null,
     orientation: string | null,
     userRole: string,
-    userClientId: string | null
+    userClientId: string | null,
+    userId: string | null
   ) => {
     try {
       const count = await fetchTotalImagesCount(
@@ -59,7 +60,8 @@ export const useGalleryCache = () => {
         project,
         orientation,
         userRole,
-        userClientId
+        userClientId,
+        userId
       );
       
       queryClient.setQueryData(
@@ -72,7 +74,8 @@ export const useGalleryCache = () => {
           project,
           orientation,
           userRole,
-          userClientId
+          userClientId,
+          userId
         ], 
         count
       );
