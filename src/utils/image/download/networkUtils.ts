@@ -19,7 +19,10 @@ export const transformToHDUrl = (url: string): string => {
   
   // If URL contains /JPG/ segment, remove it to get the HD version
   if (url.includes('/JPG/')) {
-    const transformedUrl = url.replace('/JPG/', '/');
+    // Remove /JPG/ and clean up any double slashes
+    let transformedUrl = url.replace('/JPG/', '/');
+    // Remove any double slashes except in protocol (http://)
+    transformedUrl = transformedUrl.replace(/([^:]\/)\/+/g, '$1');
     console.log(`[transformToHDUrl] Transformed URL from ${url} to ${transformedUrl}`);
     return transformedUrl;
   }

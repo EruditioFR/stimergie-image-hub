@@ -25,7 +25,17 @@ export async function downloadImage(
   console.log(`[downloadImage] HD mode: ${isHD}`);
   
   // Si c'est un téléchargement HD, transformer l'URL en supprimant /JPG/
-  const downloadUrl = isHD ? transformToHDUrl(url) : url;
+  let downloadUrl = isHD ? transformToHDUrl(url) : url;
+  
+  // Encoder correctement l'URL pour gérer les espaces et caractères spéciaux
+  try {
+    const urlObj = new URL(downloadUrl);
+    // Encoder le pathname seulement (pas le protocole et domaine)
+    urlObj.pathname = urlObj.pathname.split('/').map(part => encodeURIComponent(decodeURIComponent(part))).join('/');
+    downloadUrl = urlObj.toString();
+  } catch (e) {
+    console.warn('[downloadImage] URL encoding failed, using original URL', e);
+  }
   
   console.log(`[downloadImage] Final download URL: ${downloadUrl}`);
   console.log(`[downloadImage] Final URL contains '/JPG/': ${downloadUrl.includes('/JPG/')}`);
