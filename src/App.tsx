@@ -50,6 +50,7 @@ function App() {
                 <Route path="/licenses" element={<Licenses />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
                 <Route path="/shared-album/:albumKey" element={<SharedAlbum />} />
+                <Route path="/shared-album/:shareKey" element={<SharedAlbum />} />
                 <Route path="/gallery" element={
                   <ProtectedRoute>
                     <Gallery />

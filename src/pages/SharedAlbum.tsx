@@ -56,15 +56,19 @@ interface RawImageData {
 }
 
 const SharedAlbum = () => {
-  const { albumKey } = useParams<{ albumKey: string }>();
+  const params = useParams<{ albumKey?: string; shareKey?: string }>();
   const navigate = useNavigate();
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
   const [folderNames, setFolderNames] = useState<Record<string, string>>({});
   
+  // Extract albumKey from multiple sources with fallback
+  const albumKey = params.albumKey ?? params.shareKey ?? window.location.pathname.split('/').filter(Boolean).pop() ?? '';
+  
   useEffect(() => {
-    console.log('Album key from params:', albumKey);
-  }, [albumKey]);
+    console.log('useParams():', params);
+    console.log('pathname:', window.location.pathname, 'derived albumKey:', albumKey);
+  }, [params, albumKey]);
   
   useEffect(() => {
     const currentHostname = window.location.hostname;
