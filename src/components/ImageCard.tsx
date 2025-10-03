@@ -106,6 +106,9 @@ export const ImageCard = memo(function ImageCard({
       
       console.log(`Download requested for URL:`, downloadTarget);
       
+      // Détecter si c'est une URL basse définition et la transformer en HD
+      const isJPGUrl = downloadTarget.includes('/JPG/');
+      
       const isPngUrl = downloadTarget.toLowerCase().includes('/png/') || downloadTarget.toLowerCase().endsWith('.png');
       const fileExtension = isPngUrl ? '.png' : '.jpg';
       
@@ -113,7 +116,8 @@ export const ImageCard = memo(function ImageCard({
         ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}${fileExtension}` 
         : `image_${id}${fileExtension}`;
       
-      await downloadImage(downloadTarget, filename);
+      // Si l'URL contient /JPG/, on télécharge en HD (transformToHDUrl sera appliqué)
+      await downloadImage(downloadTarget, filename, 'auto', isJPGUrl);
       toast.success('Image téléchargée avec succès');
     } catch (error) {
       console.error(`Erreur lors du téléchargement:`, error);
