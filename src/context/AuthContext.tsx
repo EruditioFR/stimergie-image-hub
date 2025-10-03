@@ -10,6 +10,7 @@ type AuthContextType = {
   session: Session | null;
   user: User | null;
   userRole: UserRole;
+  userClientId: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
@@ -407,7 +408,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{ 
       session, 
       user, 
-      userRole, 
+      userRole,
+      userClientId,
       loading, 
       signIn, 
       signUp, 
