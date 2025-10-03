@@ -74,7 +74,11 @@ const SharedAlbum = () => {
     const currentHostname = window.location.hostname;
     console.log('Current hostname:', currentHostname);
     
-    if (albumKey && !currentHostname.includes('stimergie.fr') && !currentHostname.includes('localhost')) {
+    const isPreview = currentHostname.includes('lovable.app');
+    const isAllowedHost = ['stimergie.fr', 'www.stimergie.fr', 'localhost', '127.0.0.1'].includes(currentHostname);
+
+    // Only enforce redirect on unknown hosts in production (not in preview)
+    if (albumKey && !isPreview && !isAllowedHost) {
       const redirectUrl = `https://www.stimergie.fr/shared-album/${albumKey}`;
       console.log('Redirecting to:', redirectUrl);
       window.location.href = redirectUrl;
