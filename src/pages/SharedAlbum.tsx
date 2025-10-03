@@ -383,6 +383,7 @@ const SharedAlbum = () => {
         <MasonryGrid
           images={formatImagesForGrid()}
           isLoading={isLoading}
+          disableSelection={true}
         />
       </main>
       

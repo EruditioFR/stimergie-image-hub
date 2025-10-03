@@ -23,6 +23,7 @@ interface MasonryGridProps {
   onImageSelect?: (id: string) => void;
   onClearSelection?: () => void;
   onSelectAll?: (imageIds: string[]) => void;
+  disableSelection?: boolean;
 }
 
 export function MasonryGrid({ 
@@ -33,7 +34,8 @@ export function MasonryGrid({
   selectedImages = [],
   onImageSelect,
   onClearSelection,
-  onSelectAll
+  onSelectAll,
+  disableSelection = false
 }: MasonryGridProps) {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [selectedImageDetail, setSelectedImageDetail] = useState<any>(null);
@@ -127,32 +129,34 @@ export function MasonryGrid({
 
   return (
     <div ref={viewportRef}>
-      <div className="flex items-center justify-between mb-4">
-        <MasonryToolbar 
-          selectedImages={effectiveSelectedImages}
-          clearSelection={clearSelection}
-          onShareDialogChange={setIsShareDialogOpen}
-          images={images}
-        />
-        {effectiveSelectedImages.length === 0 && images.length > 0 && (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleSelectAll}
-            className="flex items-center gap-2"
-          >
-            <SquareCheck className="h-4 w-4" /> Tout sélectionner
-          </Button>
-        )}
-      </div>
+      {!disableSelection && (
+        <div className="flex items-center justify-between mb-4">
+          <MasonryToolbar 
+            selectedImages={effectiveSelectedImages}
+            clearSelection={clearSelection}
+            onShareDialogChange={setIsShareDialogOpen}
+            images={images}
+          />
+          {effectiveSelectedImages.length === 0 && images.length > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleSelectAll}
+              className="flex items-center gap-2"
+            >
+              <SquareCheck className="h-4 w-4" /> Tout sélectionner
+            </Button>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-0.5 px-0.5">
         {columnImages.map((columnImages, columnIndex) => (
           <MasonryColumn 
             key={columnIndex}
             images={columnImages} 
-            isImageSelected={isImageSelected}
-            toggleImageSelection={toggleImageSelection}
+            isImageSelected={disableSelection ? () => false : isImageSelected}
+            toggleImageSelection={disableSelection ? () => {} : toggleImageSelection}
             onImageClick={handleImageClick}
           />
         ))}
