@@ -269,20 +269,13 @@ const SharedAlbum = () => {
     return album.images.map((image: AlbumImage) => {
       const display_url = image.url;
       
-      // Pour l'URL de téléchargement HD, nous utilisons le format direct
-      let download_url = image.url;
-      // Si on a un id_projet et un nom de dossier, on peut générer l'URL HD directe
-      if (image.id_projet && folderNames[image.id_projet] && image.title) {
-        const folderName = folderNames[image.id_projet];
-        download_url = `https://www.stimergie.fr/photos/${encodeURIComponent(folderName)}/${encodeURIComponent(image.title)}.jpg`;
-      }
-      
+      // Pour l'URL de téléchargement, on utilise simplement l'URL fournie
+      // ImageCard gérera la transformation si nécessaire
       return {
         id: image.id.toString(),
         src: display_url,
         display_url: display_url,
-        download_url: download_url, // URL HD pour téléchargement 
-        download_url_sd: image.url, // URL SD pour affichage
+        url: image.url, // URL originale
         alt: image.title || 'Image partagée',
         title: image.title || 'Sans titre',
         author: 'Album partagé',
