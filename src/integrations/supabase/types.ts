@@ -606,6 +606,7 @@ export type Database = {
           id: string
           images: Json
           name: string
+          share_key: string
         }[]
       }
       get_current_user_client_id: {
