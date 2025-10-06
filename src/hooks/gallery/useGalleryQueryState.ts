@@ -33,8 +33,8 @@ export const useGalleryQueryState = ({
   const [accumulatedImages, setAccumulatedImages] = useState<any[]>([]);
   const [hasMorePages, setHasMorePages] = useState(true);
 
-  // Don't make queries for non-admin users until userClientId is loaded
-  const shouldSkipQuery = ['admin_client', 'user'].includes(userRole) && !userClientId && userId;
+  // Skip query only if we definitely don't have access (logged in user without client ID)
+  const shouldSkipQuery = userId && ['admin_client', 'user'].includes(userRole) && userClientId === null;
 
   // Fetch images query with all filters and access control
   const {

@@ -2,7 +2,6 @@
 import { useSearchParams } from 'react-router-dom';
 import { useGalleryFilters } from './useGalleryFilters';
 import { useAuth } from '@/context/AuthContext';
-import { useGalleryClient } from './gallery/useGalleryClient';
 import { useGalleryCache } from './gallery/useGalleryCache';
 import { useGalleryPagination } from './gallery/useGalleryPagination';
 import { useGalleryFiltersHandlers } from './gallery/useGalleryFiltersHandlers';
@@ -15,9 +14,10 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const tagFilter = searchParams.get('tag') || '';
-  const { userRole, user } = useAuth();
+  const { userRole, user, userClientId } = useAuth();
 
-  const { userClientId, enforceClientForNonAdmin, canChangeClient } = useGalleryClient(user, userRole);
+  // Only admin users can change the client filter
+  const canChangeClient = () => userRole === 'admin';
   
   const {
     activeTab,
@@ -111,7 +111,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     resetPagination,
     updateRandomFetchMode,
     updateFilterStatus,
-    enforceClientForNonAdmin,
+    userClientId,
     searchQuery,
     tagFilter,
     activeTab,

@@ -5,7 +5,7 @@ interface GalleryInitializationProps {
   resetPagination: (useRandomMode?: boolean) => void;
   updateRandomFetchMode: (randomMode: boolean) => void;
   updateFilterStatus: (searchQuery: string, tagFilter: string) => void;
-  enforceClientForNonAdmin: () => string | null;
+  userClientId: string | null;
   searchQuery: string;
   tagFilter: string;
   activeTab: string;
@@ -21,7 +21,7 @@ export const useGalleryInitialization = ({
   resetPagination,
   updateRandomFetchMode,
   updateFilterStatus,
-  enforceClientForNonAdmin,
+  userClientId,
   searchQuery,
   tagFilter,
   activeTab,
@@ -38,14 +38,13 @@ export const useGalleryInitialization = ({
     const hasTagFilter = tagFilter && tagFilter.toLowerCase() !== 'toutes';
     
     // Si on a un filtre de tag, on n'applique pas le filtre client forcé
-    if (!hasTagFilter) {
-      const forcedClientId = enforceClientForNonAdmin();
-      if (forcedClientId && selectedClient !== forcedClientId) {
-        console.log(`Forcing client filter to ${forcedClientId} for ${userRole} role`);
-        baseHandleClientChange(forcedClientId);
+    if (!hasTagFilter && userRole === 'user' && userClientId) {
+      if (selectedClient !== userClientId) {
+        console.log(`Forcing client filter to ${userClientId} for ${userRole} role`);
+        baseHandleClientChange(userClientId);
       }
     }
-  }, [enforceClientForNonAdmin, userRole, selectedClient, baseHandleClientChange, tagFilter]);
+  }, [userClientId, userRole, selectedClient, baseHandleClientChange, tagFilter]);
 
   // Initial filters setup and random mode determination
   useEffect(() => {
