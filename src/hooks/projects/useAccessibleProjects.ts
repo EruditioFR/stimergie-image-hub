@@ -61,34 +61,33 @@ export const useAccessibleProjects = () => {
       if (projectIds.length === 0) {
         console.log('⚠️ No accessible projects found');
         setProjects([]);
-        return;
-      }
-
-      // 2. Fetch full project details for accessible projects
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projets')
-        .select(`
-          id,
-          nom_projet,
-          nom_dossier,
-          type_projet,
-          id_client,
-          created_at,
-          clients:id_client (
+      } else {
+        // 2. Fetch full project details for accessible projects
+        const { data: projectsData, error: projectsError } = await supabase
+          .from('projets')
+          .select(`
             id,
-            nom,
-            logo
-          )
-        `)
-        .in('id', projectIds)
-        .order('nom_projet');
+            nom_projet,
+            nom_dossier,
+            type_projet,
+            id_client,
+            created_at,
+            clients:id_client (
+              id,
+              nom,
+              logo
+            )
+          `)
+          .in('id', projectIds)
+          .order('nom_projet');
 
-      if (projectsError) {
-        throw projectsError;
+        if (projectsError) {
+          throw projectsError;
+        }
+
+        console.log('✅ Retrieved accessible projects:', projectsData?.length || 0);
+        setProjects(projectsData || []);
       }
-
-      console.log('✅ Retrieved accessible projects:', projectsData?.length || 0);
-      setProjects(projectsData || []);
 
     } catch (err) {
       console.error('❌ Error fetching accessible projects:', err);
