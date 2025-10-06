@@ -53,7 +53,10 @@ export async function fetchGalleryImages(
       project,
       search,
       tag,
-      tab
+      tab,
+      userRole,
+      userId,
+      userClientId
     );
 
     const { data, error } = await finalQuery;

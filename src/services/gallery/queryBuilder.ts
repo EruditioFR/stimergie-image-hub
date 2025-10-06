@@ -159,7 +159,10 @@ export async function applyPaginationToQuery(
   project: string | null,
   search: string,
   tag: string,
-  tab: string
+  tab: string,
+  userRole: string,
+  userId: string | null,
+  userClientId: string | null
 ) {
   // Déterminer si le mode aléatoire doit être utilisé
   const useRandomMode = shouldFetchRandom && 
@@ -173,7 +176,8 @@ export async function applyPaginationToQuery(
     console.log('Applying random ordering to images');
     
     // Optimisation: Utiliser le cache pour le comptage total
-    const countCacheKey = `imageCount-${client || 'all'}`;
+    // Include userRole and userId in cache key to avoid mixing counts between users
+    const countCacheKey = `imageCount-${userRole}-${userId || 'anon'}-${client || 'all'}`;
     let count: number | null = null;
     const cachedCount = sessionStorage.getItem(countCacheKey);
     
@@ -182,27 +186,52 @@ export async function applyPaginationToQuery(
       console.log(`Using cached image count: ${count}`);
     } else {
       // Obtenir le nombre total pour déterminer le décalage aléatoire
-      const countQuery = supabase.from('images').select('*', { count: 'exact', head: true });
+      let countQuery = supabase.from('images').select('*', { count: 'exact', head: true });
       
-      // Appliquer les mêmes filtres à la requête de comptage
+      // Appliquer les mêmes filtres d'accès que la requête principale
       if (client) {
-        const projetIds = await fetchProjectIdsForClient(client);
-        if (projetIds && projetIds.length > 0) {
-          countQuery.in('id_projet', projetIds);
+        if (userRole === 'admin') {
+          // Admin: use all client projects
+          const projetIds = await fetchProjectIdsForClient(client);
+          if (projetIds && projetIds.length > 0) {
+            countQuery = countQuery.in('id_projet', projetIds);
+          } else {
+            count = 0; // No projects for this client
+          }
+        } else if (userId) {
+          // Non-admin: use only accessible projects
+          const userAccessibleProjects = await getAccessibleProjectIds(userId);
+          if (userAccessibleProjects.length > 0) {
+            countQuery = countQuery.in('id_projet', userAccessibleProjects);
+          } else {
+            count = 0; // No accessible projects
+          }
+        }
+      } else if (['admin_client', 'user'].includes(userRole) && userId) {
+        // Non-admin without client filter: still need to filter by accessible projects
+        const userAccessibleProjects = await getAccessibleProjectIds(userId);
+        if (userAccessibleProjects.length > 0) {
+          countQuery = countQuery.in('id_projet', userAccessibleProjects);
+        } else {
+          count = 0; // No accessible projects
         }
       }
       
-      const { count: fetchedCount, error: countError } = await countQuery;
-      
-      if (countError) {
-        console.error('Error getting count:', countError);
-      } else if (fetchedCount !== null) {
-        count = fetchedCount;
-        // Mettre en cache pour de futures requêtes
-        sessionStorage.setItem(countCacheKey, count.toString());
+      // Only execute query if we didn't already set count to 0
+      if (count === null) {
+        const { count: fetchedCount, error: countError } = await countQuery;
+        
+        if (countError) {
+          console.error('Error getting count:', countError);
+          count = 0;
+        } else {
+          count = fetchedCount || 0;
+          // Mettre en cache pour de futures requêtes
+          sessionStorage.setItem(countCacheKey, count.toString());
+        }
       }
       
-      console.log(`Total image count: ${count}`);
+      console.log(`Total image count for ${userRole} (accessible): ${count}`);
     }
     
     // S'il y a des images, sélectionner un sous-ensemble aléatoire
@@ -210,7 +239,7 @@ export async function applyPaginationToQuery(
       // Calculer le décalage maximal possible pour garantir que nous obtenons suffisamment d'images
       const maxOffset = Math.max(0, count - IMAGES_PER_PAGE);
       const randomOffset = maxOffset > 0 ? Math.floor(Math.random() * maxOffset) : 0;
-      console.log(`Using random offset: ${randomOffset}`);
+      console.log(`Using random offset: ${randomOffset} out of ${count} total accessible images`);
       
       // Appliquer le tri et la pagination
       return query
@@ -218,6 +247,7 @@ export async function applyPaginationToQuery(
         .range(randomOffset, randomOffset + IMAGES_PER_PAGE - 1);
     } else {
       // Fallback si le comptage est 0 ou null
+      console.log('No images accessible or count is 0, returning empty result');
       return query
         .order('created_at', { ascending: false })
         .limit(IMAGES_PER_PAGE);
