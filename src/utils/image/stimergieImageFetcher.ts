@@ -30,8 +30,7 @@ export async function fetchImageFromStimergieServer(url: string, cacheKey: strin
       redirect: 'follow',
       signal: controller.signal,
       headers: {
-        'Accept': 'image/*, */*;q=0.8',
-        'Cache-Control': 'max-age=31536000',
+        'Accept': 'image/*, */*;q=0.8'
       }
     };
     

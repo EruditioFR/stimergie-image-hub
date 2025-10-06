@@ -143,8 +143,7 @@ async function fetchWithRetry(request, cache) {
         credentials: 'omit',
         redirect: 'follow',
         headers: new Headers({
-          'Accept': 'image/*, */*;q=0.8',
-          'Cache-Control': 'max-age=31536000'
+          'Accept': 'image/*, */*;q=0.8'
         })
       };
       

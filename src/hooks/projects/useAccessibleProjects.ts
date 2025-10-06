@@ -86,7 +86,62 @@ export const useAccessibleProjects = () => {
         }
 
         console.log('✅ Retrieved accessible projects:', projectsData?.length || 0);
-        setProjects(projectsData || []);
+        
+        // Fallback: if RLS blocks direct project access, fetch via images table
+        if ((!projectsData || projectsData.length === 0) && projectIds.length > 0) {
+          console.log('⚠️ Direct project query returned empty, trying fallback via images table...');
+          
+          const { data: imagesData, error: imagesError } = await supabase
+            .from('images')
+            .select(`
+              id_projet,
+              projets!inner (
+                id,
+                nom_projet,
+                nom_dossier,
+                type_projet,
+                id_client,
+                created_at,
+                clients:id_client (
+                  id,
+                  nom,
+                  logo
+                )
+              )
+            `)
+            .in('id_projet', projectIds);
+          
+          if (imagesError) {
+            console.error('❌ Fallback query error:', imagesError);
+          } else if (imagesData && imagesData.length > 0) {
+            // Deduplicate projects from images
+            const projectsMap = new Map<string, AccessibleProject>();
+            imagesData.forEach(item => {
+              const project = item.projets;
+              if (project && !projectsMap.has(project.id)) {
+                projectsMap.set(project.id, {
+                  id: project.id,
+                  nom_projet: project.nom_projet,
+                  nom_dossier: project.nom_dossier,
+                  type_projet: project.type_projet,
+                  id_client: project.id_client,
+                  created_at: project.created_at,
+                  clients: project.clients
+                });
+              }
+            });
+            
+            const fallbackProjects = Array.from(projectsMap.values())
+              .sort((a, b) => a.nom_projet.localeCompare(b.nom_projet));
+            
+            console.log('✅ Fallback retrieved projects:', fallbackProjects.length);
+            setProjects(fallbackProjects);
+          } else {
+            setProjects([]);
+          }
+        } else {
+          setProjects(projectsData || []);
+        }
       }
 
     } catch (err) {
