@@ -46,11 +46,12 @@ export const useAccessibleProjects = () => {
       // This bypasses RLS and returns complete project info with client data
       const { data: projectsData, error: projectsError } = await supabase
         .rpc('get_accessible_projects_details', {
-          user_id: user.id,
-          check_time: new Date().toISOString()
+          p_user_id: user.id,
+          p_check_time: new Date().toISOString()
         });
 
       if (projectsError) {
+        console.error('❌ RPC Error details:', projectsError);
         throw projectsError;
       }
 
