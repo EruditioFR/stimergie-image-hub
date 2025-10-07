@@ -597,6 +597,20 @@ export type Database = {
           project_id: string
         }[]
       }
+      get_accessible_projects_details: {
+        Args: { check_time?: string; user_id: string }
+        Returns: {
+          client_id: string
+          client_logo: string
+          client_nom: string
+          created_at: string
+          id: string
+          id_client: string
+          nom_dossier: string
+          nom_projet: string
+          type_projet: string
+        }[]
+      }
       get_album_by_share_key: {
         Args: { share_key_param: string }
         Returns: {
