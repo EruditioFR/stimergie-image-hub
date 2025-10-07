@@ -598,7 +598,7 @@ export type Database = {
         }[]
       }
       get_accessible_projects_details: {
-        Args: { check_time?: string; user_id: string }
+        Args: { p_check_time?: string; p_user_id: string }
         Returns: {
           client_id: string
           client_logo: string
