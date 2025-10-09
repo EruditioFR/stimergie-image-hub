@@ -27,12 +27,19 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function Index() {
-  const { user, loading: authLoading, signIn } = useAuth();
+  const { user, loading: authLoading, signIn, userRole } = useAuth();
   const { dashboardType, loading: dataLoading } = useDashboardData();
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const navigate = useNavigate();
+  
+  // Redirect users with "user" role to gallery
+  useEffect(() => {
+    if (user && !authLoading && !dataLoading && userRole === 'user') {
+      navigate('/gallery', { replace: true });
+    }
+  }, [user, authLoading, dataLoading, userRole, navigate]);
   
   // Check for online/offline status
   useEffect(() => {
