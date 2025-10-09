@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Mail } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const contactFormSchema = z.object({
   firstName: z.string().min(1, "Le prénom est requis"),
@@ -49,26 +50,23 @@ export function ContactForm({ userProfile, userEmail }: ContactFormProps) {
     setIsSubmitting(true);
     
     try {
-      // Construire le body de l'email
-      const emailBody = `
-Nouveau message de contact depuis Stimergie
+      const { data: result, error } = await supabase.functions.invoke('send-contact-email', {
+        body: {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          subject: data.subject,
+          message: data.message
+        }
+      });
 
-Nom: ${data.lastName}
-Prénom: ${data.firstName}
-Email: ${data.email}
-Objet: ${data.subject}
+      if (error) {
+        console.error('Erreur lors de l\'envoi:', error);
+        toast.error('Erreur lors de l\'envoi du message');
+        return;
+      }
 
-Message:
-${data.message}
-      `.trim();
-
-      // Créer un lien mailto
-      const mailtoLink = `mailto:contact@stimergie.fr?subject=${encodeURIComponent(data.subject)}&body=${encodeURIComponent(emailBody)}`;
-      
-      // Ouvrir le client email par défaut
-      window.location.href = mailtoLink;
-      
-      toast.success('Votre client email va s\'ouvrir pour envoyer le message');
+      toast.success('Message envoyé avec succès !');
       setIsOpen(false);
       form.reset({
         firstName: userProfile?.firstName || '',
@@ -79,7 +77,7 @@ ${data.message}
       });
     } catch (error) {
       console.error('Erreur lors de l\'envoi:', error);
-      toast.error('Erreur lors de l\'ouverture du client email');
+      toast.error('Erreur lors de l\'envoi du message');
     } finally {
       setIsSubmitting(false);
     }
