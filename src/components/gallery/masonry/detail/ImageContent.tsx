@@ -195,10 +195,10 @@ export const ImageContent = ({
     : (image?.display_url || image?.url_miniature || image?.src || image?.url || '');
 
   return (
-    <>
-      {/* Barre de progression du téléchargement HD - Centrée et visible */}
+    <div className="relative">
+      {/* Barre de progression du téléchargement HD - Centrée sur le panneau */}
       {isDownloading && downloadProgress > 0 && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
           <div className="bg-background border border-border p-8 rounded-xl shadow-2xl min-w-[400px] max-w-[500px]">
             <p className="text-lg font-semibold mb-4 text-center">Téléchargement HD en cours...</p>
             <div className="w-full h-3 bg-muted rounded-full overflow-hidden mb-3">
@@ -320,6 +320,6 @@ export const ImageContent = ({
         </div>
       </div>
     </div>
-    </>
+    </div>
   );
 };
