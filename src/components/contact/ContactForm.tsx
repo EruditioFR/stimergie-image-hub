@@ -91,7 +91,7 @@ export function ContactForm({ userProfile, userEmail }: ContactFormProps) {
           Contact
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] bg-[#dcd0bb]">
+      <DialogContent className="sm:max-w-[500px] bg-[#c8bfac]">
         <DialogHeader>
           <DialogTitle>Formulaire de contact</DialogTitle>
         </DialogHeader>
