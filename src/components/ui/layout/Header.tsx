@@ -50,7 +50,7 @@ export function Header() {
         <div className="mr-4 hidden md:flex items-center">
           <Link to="/" className="mr-6 flex items-center space-x-2">
             <img 
-              src="/lovable-uploads/2e22afc1-eb57-43a8-9e2b-6807b23c6e92.png" 
+              src="/logo_stimergie.png" 
               alt="Stimergie" 
               className="h-8 w-auto"
             />
@@ -94,7 +94,7 @@ export function Header() {
           <div className="w-full flex-1 md:w-auto md:flex-none md:hidden">
             <Link to="/" className="flex items-center space-x-2">
               <img 
-                src="/lovable-uploads/2e22afc1-eb57-43a8-9e2b-6807b23c6e92.png" 
+                src="/logo_stimergie.png" 
                 alt="Stimergie" 
                 className="h-6 w-auto"
               />
