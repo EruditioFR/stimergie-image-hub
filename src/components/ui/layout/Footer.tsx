@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { ContactForm } from '@/components/contact/ContactForm';
+
 export function Footer() {
   const currentYear = new Date().getFullYear();
-  const {
-    user
-  } = useAuth();
+  const { user, userRole } = useAuth();
+  const { userProfile } = useUserProfile(user, userRole);
   return <footer className="w-full bg-background border-t border-border mt-20">
       <div className="max-w-7xl mx-auto py-12 px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
@@ -62,9 +64,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="text-foreground/80 hover:text-primary transition-colors">
-                  Contact
-                </Link>
+                <ContactForm 
+                  userProfile={userProfile} 
+                  userEmail={user?.email} 
+                  triggerVariant="link" 
+                />
               </li>
             </ul>
           </div>

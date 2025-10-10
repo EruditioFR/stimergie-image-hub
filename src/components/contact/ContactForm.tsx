@@ -29,9 +29,10 @@ interface ContactFormProps {
     clientId: string | null;
   } | null;
   userEmail?: string;
+  triggerVariant?: 'button' | 'link';
 }
 
-export function ContactForm({ userProfile, userEmail }: ContactFormProps) {
+export function ContactForm({ userProfile, userEmail, triggerVariant = 'button' }: ContactFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -86,10 +87,16 @@ export function ContactForm({ userProfile, userEmail }: ContactFormProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-sm font-medium">
-          <Mail className="w-4 h-4 mr-2" />
-          Contact
-        </Button>
+        {triggerVariant === 'link' ? (
+          <button className="text-foreground/80 hover:text-primary transition-colors text-left">
+            Contact
+          </button>
+        ) : (
+          <Button variant="ghost" size="sm" className="text-sm font-medium">
+            <Mail className="w-4 h-4 mr-2" />
+            Contact
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] bg-[#c8bfac]">
         <DialogHeader>
