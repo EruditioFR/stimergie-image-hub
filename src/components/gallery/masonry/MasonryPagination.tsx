@@ -28,12 +28,19 @@ export function MasonryPagination({
 }: MasonryPaginationProps) {
   const [pageInput, setPageInput] = useState('');
   
-  if (!totalCount || totalCount <= 0 || !onPageChange) return null;
-
   const imagesPerPage = 100;
   const totalPages = totalCount > 0 ? Math.ceil(totalCount / imagesPerPage) : 0;
+  
+  console.log('🔍 MasonryPagination Debug:', { 
+    totalCount, 
+    totalPages, 
+    currentPage, 
+    imagesPerPage 
+  });
+  
+  if (!totalCount || totalCount <= 0 || !onPageChange) return null;
 
-  // Si une seule page, ne pas afficher la pagination
+  // Afficher la pagination si totalPages > 1
   if (totalPages <= 1) return null;
 
   const startImage = (currentPage - 1) * imagesPerPage + 1;

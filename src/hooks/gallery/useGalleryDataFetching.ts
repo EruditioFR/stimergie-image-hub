@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 
 interface GalleryDataFetchingProps {
-  fetchTotalCount: (searchQuery: string, tagFilter: string, activeTab: string, client: string | null, project: string | null, orientation: string | null, userRole: string, userClientId: string | null, userId: string | null) => void;
+  fetchTotalCount: (searchQuery: string, tagFilter: string, activeTab: string, client: string | null, project: string | null, orientation: string | null, userRole: string, userClientId: string | null, userId: string | null) => Promise<number>;
   prefetchNextPage: (searchQuery: string, tagFilter: string, activeTab: string, client: string | null, project: string | null, orientation: string | null, page: number, userRole: string, userClientId: string | null) => void;
   isLoading: boolean;
   isFetching: boolean;
@@ -43,8 +43,20 @@ export const useGalleryDataFetching = ({
 
   // Prefetch total count for pagination
   useEffect(() => {
-    const handleFetchTotalCount = () => {
-      fetchTotalCount(
+    const handleFetchTotalCount = async () => {
+      console.log('🔍 Fetching total count with filters:', {
+        searchQuery,
+        tagFilter,
+        activeTab,
+        selectedClient,
+        selectedProject,
+        selectedOrientation,
+        userRole,
+        userClientId,
+        shouldFetchRandom
+      });
+      
+      const count = await fetchTotalCount(
         searchQuery,
         tagFilter,
         activeTab,
@@ -55,6 +67,9 @@ export const useGalleryDataFetching = ({
         userClientId,
         userId
       );
+      
+      console.log('✅ Total count fetched:', count);
+      setTotalCount(count);
     };
 
     handleFetchTotalCount();
@@ -68,7 +83,9 @@ export const useGalleryDataFetching = ({
     fetchTotalCount,
     userRole,
     userClientId,
-    userId
+    userId,
+    shouldFetchRandom,
+    setTotalCount
   ]);
 
   // Prefetch next page data
