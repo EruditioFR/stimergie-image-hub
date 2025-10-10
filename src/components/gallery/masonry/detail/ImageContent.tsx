@@ -87,7 +87,6 @@ export const ImageContent = ({
         const link = document.createElement('a');
         link.href = downloadUrl;
         link.download = `${image?.title || 'image'}_HD.jpg`;
-        link.target = '_blank';
         link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
