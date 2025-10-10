@@ -115,17 +115,40 @@ export const ImageContent = ({
         
         toast.success('Téléchargement HD démarré !');
       } else {
-        // Pour la version SD, utiliser la méthode classique
+        // Pour la version SD, utiliser fetch + blob pour forcer le téléchargement
+        console.log('Téléchargement SD depuis:', downloadUrl);
+        
+        // Récupérer l'image via fetch
+        const response = await fetch(downloadUrl, {
+          mode: 'cors',
+          credentials: 'omit'
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        // Convertir en Blob
+        const blob = await response.blob();
+        
+        // Créer une URL Blob locale
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        // Créer un lien de téléchargement avec l'URL Blob
         const link = document.createElement('a');
-        link.href = downloadUrl;
+        link.href = blobUrl;
         link.download = `${image?.title || 'image'}_SD.jpg`;
-        link.setAttribute('crossorigin', 'anonymous');
         link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         
-        toast.success('Téléchargement SD en cours...');
+        // Révoquer l'URL Blob après un délai pour nettoyer la mémoire
+        setTimeout(() => {
+          window.URL.revokeObjectURL(blobUrl);
+        }, 100);
+        
+        toast.success('Téléchargement SD démarré !');
       }
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
