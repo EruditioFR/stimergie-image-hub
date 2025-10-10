@@ -1,7 +1,8 @@
-
+ 
 import { useQuery } from '@tanstack/react-query';
 import { fetchGalleryImages } from '@/services/gallery/imageService';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useGalleryImageFormatting } from './useGalleryImageFormatting';
 
 interface GalleryQueryStateProps {
   searchQuery: string;
@@ -30,6 +31,8 @@ export const useGalleryQueryState = ({
   userClientId,
   userId
 }: GalleryQueryStateProps) => {
+  const { formatImagesForGrid } = useGalleryImageFormatting();
+
   // Skip query only if we definitely don't have access (logged in user without client ID)
   const shouldSkipQuery = userId && ['admin_client', 'user'].includes(userRole) && userClientId === null;
 
@@ -71,15 +74,18 @@ export const useGalleryQueryState = ({
     enabled: !shouldSkipQuery, // Skip queries for non-admin users without client ID
   });
 
+  // Format images for the grid
+  const formattedImages = useMemo(() => formatImagesForGrid(currentPageImages), [currentPageImages, formatImagesForGrid]);
+
   // Determine if more pages are available based on page size
-  const hasMorePages = currentPageImages.length >= 200;
+  const hasMorePages = formattedImages.length >= 200;
 
   const refreshGallery = useCallback(() => {
     refetch();
   }, [refetch]);
 
   return {
-    allImages: currentPageImages,
+    allImages: formattedImages,
     isLoading,
     isFetching,
     refreshGallery,
