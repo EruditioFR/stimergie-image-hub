@@ -6,7 +6,6 @@ import { useGalleryCache } from './gallery/useGalleryCache';
 import { useGalleryPagination } from './gallery/useGalleryPagination';
 import { useGalleryFiltersHandlers } from './gallery/useGalleryFiltersHandlers';
 import { useGalleryQueryState } from './gallery/useGalleryQueryState';
-import { useGalleryImageFormatting } from './gallery/useGalleryImageFormatting';
 import { useGalleryInitialization } from './gallery/useGalleryInitialization';
 import { useGalleryDataFetching } from './gallery/useGalleryDataFetching';
 
@@ -103,9 +102,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     userId: user?.id || null
   });
 
-  // Use the extracted image formatting hook
-  const { formatImagesForGrid } = useGalleryImageFormatting();
-
   // Use the initialization hook for side effects
   useGalleryInitialization({
     resetPagination,
@@ -173,7 +169,6 @@ export const useGalleryImages = (isAdmin: boolean) => {
     handleOrientationChange,
     handleResetFilters,
     refreshGallery: refreshGalleryWithCacheInvalidation,
-    formatImagesForGrid,
     userRole,
     userClientId,
     shouldFetchRandom,

@@ -10,8 +10,6 @@ export const useGalleryImageFormatting = () => {
    * Formats raw image data from the API for display in the gallery grid
    */
   const formatImagesForGrid = useCallback((images: any[] = []) => {
-    console.log(`Formatting ${images.length} images for gallery display`);
-    
     return images.map(image => {
       // Garantir que toutes les images ont un ID au format string
       const id = image.id ? String(image.id) : `img-${Math.random().toString(36).substring(2, 9)}`;

@@ -65,7 +65,6 @@ const Gallery = () => {
     handleOrientationChange,
     handleResetFilters,
     refreshGallery,
-    formatImagesForGrid,
     userRole: galleryUserRole,
     userClientId,
     shouldFetchRandom,
@@ -101,12 +100,6 @@ const Gallery = () => {
 
   // Les images à afficher sont toujours celles de la requête actuelle (pas d'accumulation)
   const displayedImages = allImages;
-
-  // Formater les images pour la grille masonry en prenant en compte les dimensions et proportions
-  const formattedImages = useMemo(() => {
-    console.log(`Formatting ${displayedImages.length} images for grid display...`);
-    return formatImagesForGrid(displayedImages);
-  }, [displayedImages, formatImagesForGrid]);
 
   const shouldShowEmptyState = !isLoading && displayedImages.length === 0;
 
@@ -250,7 +243,7 @@ const Gallery = () => {
             <MasonryGrid images={[]} isLoading={true} />
           ) : displayedImages.length > 0 ? (
             <MasonryGrid 
-              images={formattedImages} 
+              images={displayedImages} 
               isLoading={isLoading || isFetching} 
               hasMorePages={hasMorePages} 
               loadMoreImages={loadMoreImages} 
