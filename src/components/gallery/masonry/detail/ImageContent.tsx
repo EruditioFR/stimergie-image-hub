@@ -79,20 +79,57 @@ export const ImageContent = ({
         throw new Error('Aucune URL de téléchargement disponible');
       }
 
-      // Créer un lien de téléchargement direct
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `${image?.title || 'image'}_${isHD ? 'HD' : 'SD'}.jpg`;
-      link.setAttribute('crossorigin', 'anonymous');
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast.success(`Téléchargement ${isHD ? 'HD' : 'SD'} en cours...`);
+      // Pour la version HD, utiliser fetch + blob pour forcer le téléchargement
+      if (isHD) {
+        console.log('Téléchargement HD depuis:', downloadUrl);
+        
+        // Récupérer l'image via fetch
+        const response = await fetch(downloadUrl, {
+          mode: 'cors',
+          credentials: 'omit'
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        // Convertir en Blob
+        const blob = await response.blob();
+        
+        // Créer une URL Blob locale
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        // Créer un lien de téléchargement avec l'URL Blob
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `${image?.title || 'image'}_HD.jpg`;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Révoquer l'URL Blob après un délai pour nettoyer la mémoire
+        setTimeout(() => {
+          window.URL.revokeObjectURL(blobUrl);
+        }, 100);
+        
+        toast.success('Téléchargement HD démarré !');
+      } else {
+        // Pour la version SD, utiliser la méthode classique
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `${image?.title || 'image'}_SD.jpg`;
+        link.setAttribute('crossorigin', 'anonymous');
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast.success('Téléchargement SD en cours...');
+      }
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
-      toast.error('Impossible de télécharger le fichier');
+      toast.error(`Impossible de télécharger le fichier: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     } finally {
       setIsDownloading(false);
     }
