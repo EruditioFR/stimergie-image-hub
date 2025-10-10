@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, KeyboardEvent } from 'react';
 import { 
   Pagination, 
   PaginationContent, 
@@ -9,12 +9,15 @@ import {
   PaginationPrevious,
   PaginationEllipsis
 } from '@/components/ui/pagination';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ChevronFirst, ChevronLast, Loader2 } from 'lucide-react';
 
 interface MasonryPaginationProps {
   totalCount?: number;
   currentPage?: number;
   onPageChange?: (page: number) => void;
-  isLoading?: boolean; // Ajout d'un indicateur de chargement
+  isLoading?: boolean;
 }
 
 export function MasonryPagination({
@@ -23,34 +26,33 @@ export function MasonryPagination({
   onPageChange,
   isLoading = false
 }: MasonryPaginationProps) {
+  const [pageInput, setPageInput] = useState('');
+  
   if (!totalCount || totalCount <= 0 || !onPageChange) return null;
 
-  const imagesPerPage = 200;
+  const imagesPerPage = 100;
   const totalPages = totalCount > 0 ? Math.ceil(totalCount / imagesPerPage) : 0;
 
   // Si une seule page, ne pas afficher la pagination
   if (totalPages <= 1) return null;
 
+  const startImage = (currentPage - 1) * imagesPerPage + 1;
+  const endImage = Math.min(currentPage * imagesPerPage, totalCount);
+
   // Déterminer quelles pages afficher
   const getVisiblePages = () => {
-    const pages = [];
+    const pages: (number | string)[] = [];
     
-    // Maximum 5 pages visibles
-    if (totalPages <= 5) {
-      // Moins de 5 pages, afficher toutes les pages
+    if (totalPages <= 7) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // Plus de 5 pages, logique avancée
       if (currentPage <= 3) {
-        // Près du début: 1, 2, 3, 4, ..., totalPages
         pages.push(1, 2, 3, 4, 'ellipsis', totalPages);
       } else if (currentPage >= totalPages - 2) {
-        // Près de la fin: 1, ..., totalPages-3, totalPages-2, totalPages-1, totalPages
         pages.push(1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
       } else {
-        // Au milieu: 1, ..., currentPage-1, currentPage, currentPage+1, ..., totalPages
         pages.push(1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages);
       }
     }
@@ -61,14 +63,58 @@ export function MasonryPagination({
   const visiblePages = getVisiblePages();
 
   const handlePageClick = (page: number) => {
-    if (isLoading || page === currentPage) return; // Éviter les clics multiples pendant le chargement
+    if (isLoading || page === currentPage || page < 1 || page > totalPages) return;
     onPageChange(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleGoToPage = () => {
+    const page = parseInt(pageInput);
+    if (!isNaN(page) && page >= 1 && page <= totalPages) {
+      handlePageClick(page);
+      setPageInput('');
+    }
+  };
+
+  const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleGoToPage();
+    }
   };
 
   return (
-    <div className="mt-8 mb-6">
+    <div className="flex flex-col items-center gap-6 py-8 px-4">
+      {/* Info sur les images affichées */}
+      <div className="text-sm text-muted-foreground flex items-center gap-2">
+        <span className="font-medium text-foreground">
+          {startImage} - {endImage}
+        </span>
+        <span>sur</span>
+        <span className="font-medium text-foreground">{totalCount}</span>
+        <span>images</span>
+        {isLoading && (
+          <Loader2 className="h-4 w-4 animate-spin ml-2" />
+        )}
+      </div>
+
+      {/* Navigation principale */}
       <Pagination>
-        <PaginationContent>
+        <PaginationContent className="gap-1">
+          {/* Première page */}
+          <PaginationItem>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageClick(1)}
+              disabled={currentPage === 1 || isLoading}
+              className="h-9 w-9 p-0"
+              title="Première page"
+            >
+              <ChevronFirst className="h-4 w-4" />
+            </Button>
+          </PaginationItem>
+
+          {/* Page précédente */}
           {currentPage > 1 && (
             <PaginationItem>
               <PaginationPrevious 
@@ -78,6 +124,7 @@ export function MasonryPagination({
             </PaginationItem>
           )}
           
+          {/* Numéros de page */}
           {visiblePages.map((page, i) => {
             if (page === 'ellipsis') {
               return (
@@ -91,8 +138,10 @@ export function MasonryPagination({
               <PaginationItem key={page}>
                 <PaginationLink
                   isActive={page === currentPage}
-                  onClick={() => handlePageClick(page)}
-                  className={isLoading ? "pointer-events-none" : ""}
+                  onClick={() => handlePageClick(page as number)}
+                  className={`${isLoading ? "pointer-events-none" : ""} ${
+                    page === currentPage ? "bg-primary text-primary-foreground" : ""
+                  }`}
                 >
                   {page}
                 </PaginationLink>
@@ -100,6 +149,7 @@ export function MasonryPagination({
             );
           })}
           
+          {/* Page suivante */}
           {currentPage < totalPages && (
             <PaginationItem>
               <PaginationNext 
@@ -108,8 +158,49 @@ export function MasonryPagination({
               />
             </PaginationItem>
           )}
+
+          {/* Dernière page */}
+          <PaginationItem>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageClick(totalPages)}
+              disabled={currentPage === totalPages || isLoading}
+              className="h-9 w-9 p-0"
+              title="Dernière page"
+            >
+              <ChevronLast className="h-4 w-4" />
+            </Button>
+          </PaginationItem>
         </PaginationContent>
       </Pagination>
+
+      {/* Navigation rapide par saisie */}
+      {totalPages > 10 && (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Aller à la page :</span>
+          <Input
+            type="number"
+            min={1}
+            max={totalPages}
+            value={pageInput}
+            onChange={(e) => setPageInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder={`1-${totalPages}`}
+            className="w-20 h-9 text-center"
+            disabled={isLoading}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleGoToPage}
+            disabled={isLoading || !pageInput}
+            className="h-9"
+          >
+            Aller
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

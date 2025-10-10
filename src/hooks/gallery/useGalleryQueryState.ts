@@ -78,7 +78,7 @@ export const useGalleryQueryState = ({
   const formattedImages = useMemo(() => formatImagesForGrid(currentPageImages), [currentPageImages, formatImagesForGrid]);
 
   // Determine if more pages are available based on page size
-  const hasMorePages = formattedImages.length >= 200;
+  const hasMorePages = formattedImages.length >= 100;
 
   const refreshGallery = useCallback(() => {
     refetch();
