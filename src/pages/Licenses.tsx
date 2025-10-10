@@ -1,14 +1,16 @@
 
-import { useState, useEffect } from 'react';
-import { Header } from '@/components/ui/layout/Header';
-import { Footer } from '@/components/ui/layout/Footer';
-import { Button } from '@/components/ui/button';
-import { Edit, Save, X } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
-import { Input } from '@/components/ui/input';
-import { RichTextEditor } from '@/components/ui/rich-text-editor/RichTextEditor';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/context/AuthContext";
+import { RichTextEditor } from "@/components/ui/rich-text-editor/RichTextEditor";
+import { toast } from "sonner";
+import { Pencil, Save, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import Header from "@/components/ui/layout/Header";
+import Footer from "@/components/ui/layout/Footer";
 
 interface LegalPage {
   id: string;
@@ -17,14 +19,15 @@ interface LegalPage {
   updated_at: string;
 }
 
-const Licenses = () => {
+export default function Licenses() {
   const [page, setPage] = useState<LegalPage | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState('');
-  const [editContent, setEditContent] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const { userRole } = useAuth();
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const { user, userRole } = useAuth();
+  
   const isAdmin = userRole === 'admin';
 
   useEffect(() => {
@@ -33,89 +36,47 @@ const Licenses = () => {
 
   const fetchPage = async () => {
     try {
-      console.log('Fetching licenses page...');
+      setLoading(true);
       const { data, error } = await supabase
-        .from('legal_pages')
-        .select('*')
-        .eq('page_type', 'licenses')
+        .from("legal_pages")
+        .select("*")
+        .eq("page_type", "licenses")
         .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching licenses page:', error);
-        // Si la page n'existe pas, on la crée
-        if (error.code === 'PGRST116') {
-          await createDefaultPage();
-          return;
-        }
-        toast.error('Erreur lors du chargement de la page');
-        return;
-      }
+      if (error) throw error;
 
       if (!data) {
-        console.log('No licenses page found, creating default...');
         await createDefaultPage();
-        return;
+      } else {
+        setPage(data);
       }
-
-      console.log('Licenses page found:', data);
-      setPage(data);
     } catch (error) {
-      console.error('Error:', error);
-      toast.error('Erreur lors du chargement de la page');
+      console.error("Error fetching licenses page:", error);
+      toast.error("Erreur lors du chargement de la page");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   const createDefaultPage = async () => {
     try {
-      console.log('Creating default licenses page...');
       const { data, error } = await supabase
-        .from('legal_pages')
+        .from("legal_pages")
         .insert({
-          page_type: 'licenses',
-          title: 'Licences',
-          content: `<h2>Licences</h2>
-<p>Cette page présente les différentes licences utilisées dans notre application et service.</p>
-
-<h3>Licences des images</h3>
-<p>Les images disponibles sur notre plateforme sont soumises aux licences suivantes :</p>
-<ul>
-<li>Images libres de droits : Utilisation commerciale et non commerciale autorisée</li>
-<li>Images sous licence Creative Commons : Voir les conditions spécifiques de chaque licence</li>
-<li>Images sous licence propriétaire : Utilisation selon les termes du contrat client</li>
-</ul>
-
-<h3>Licences des logiciels</h3>
-<p>Notre application utilise des composants logiciels sous différentes licences :</p>
-<ul>
-<li>React : Licence MIT</li>
-<li>Tailwind CSS : Licence MIT</li>
-<li>Supabase : Licence Apache 2.0</li>
-<li>Autres dépendances : Voir le fichier package.json pour les détails</li>
-</ul>
-
-<h3>Attribution</h3>
-<p>Nous remercions les créateurs et contributeurs des projets open source que nous utilisons.</p>
-
-<h3>Contact</h3>
-<p>Pour toute question concernant les licences, contactez-nous à : legal@votre-entreprise.com</p>`
+          page_type: "licenses",
+          title: "Licences",
+          content: "<h2>Licences</h2><p>Contenu à définir...</p>",
+          updated_by: user?.id
         })
         .select()
         .single();
 
-      if (error) {
-        console.error('Error creating default page:', error);
-        toast.error('Erreur lors de la création de la page par défaut');
-        return;
-      }
-
-      console.log('Default page created:', data);
+      if (error) throw error;
       setPage(data);
-      toast.success('Page par défaut créée avec succès');
+      toast.success("Page créée avec succès");
     } catch (error) {
-      console.error('Error creating default page:', error);
-      toast.error('Erreur lors de la création de la page par défaut');
+      console.error("Error creating default page:", error);
+      toast.error("Erreur lors de la création de la page");
     }
   };
 
@@ -129,53 +90,50 @@ const Licenses = () => {
 
   const handleCancel = () => {
     setIsEditing(false);
-    setEditTitle('');
-    setEditContent('');
+    setEditTitle("");
+    setEditContent("");
   };
 
   const handleSave = async () => {
     if (!page) return;
 
-    setIsSaving(true);
     try {
+      setSaving(true);
       const { error } = await supabase
-        .from('legal_pages')
+        .from("legal_pages")
         .update({
           title: editTitle,
           content: editContent,
-          updated_by: (await supabase.auth.getUser()).data.user?.id
+          updated_by: user?.id,
+          updated_at: new Date().toISOString()
         })
-        .eq('id', page.id);
+        .eq("id", page.id);
 
-      if (error) {
-        console.error('Error updating page:', error);
-        toast.error('Erreur lors de la sauvegarde');
-        return;
-      }
+      if (error) throw error;
 
-      toast.success('Page mise à jour avec succès');
+      setPage({
+        ...page,
+        title: editTitle,
+        content: editContent,
+        updated_at: new Date().toISOString()
+      });
       setIsEditing(false);
-      fetchPage(); // Refresh the page content
+      toast.success("Page mise à jour avec succès");
     } catch (error) {
-      console.error('Error:', error);
-      toast.error('Erreur lors de la sauvegarde');
+      console.error("Error updating page:", error);
+      toast.error("Erreur lors de la mise à jour de la page");
     } finally {
-      setIsSaving(false);
+      setSaving(false);
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-grow container mx-auto px-6 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-muted rounded w-1/3 mb-6"></div>
-            <div className="space-y-3">
-              <div className="h-4 bg-muted rounded"></div>
-              <div className="h-4 bg-muted rounded w-5/6"></div>
-              <div className="h-4 bg-muted rounded w-4/6"></div>
-            </div>
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Chargement...</p>
           </div>
         </main>
         <Footer />
@@ -187,14 +145,14 @@ const Licenses = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-grow container mx-auto px-6 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Page en cours de création</h1>
-            <p className="text-muted-foreground">La page des licences est en cours de création...</p>
-            <Button onClick={fetchPage} className="mt-4">
-              Actualiser
-            </Button>
-          </div>
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-center text-muted-foreground">
+                Page en construction...
+              </p>
+            </CardContent>
+          </Card>
         </main>
         <Footer />
       </div>
@@ -204,102 +162,88 @@ const Licenses = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
-      <main className="flex-grow container mx-auto px-6 py-8">
-        <div className="w-full">
-          {/* Header with edit button */}
-          <div className="flex justify-between items-start mb-8">
-            <div className="flex-1">
+      <main className="flex-1 container mx-auto px-4 py-8">
+        <Card className="max-w-4xl mx-auto">
+          <CardHeader>
+            <div className="flex items-center justify-between">
               {isEditing ? (
-                <Input
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="text-3xl font-bold border-none p-0 focus-visible:ring-0 bg-transparent"
-                  placeholder="Titre de la page"
-                />
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="title">Titre de la page</Label>
+                  <Input
+                    id="title"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Titre de la page"
+                  />
+                </div>
               ) : (
-                <h1 className="text-3xl font-bold">{page.title}</h1>
+                <CardTitle className="text-3xl">{page.title}</CardTitle>
+              )}
+              
+              {isAdmin && !isEditing && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEdit}
+                  className="ml-4"
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Modifier
+                </Button>
               )}
             </div>
-            
-            {isAdmin && (
-              <div className="flex gap-2 ml-4">
-                {isEditing ? (
-                  <>
-                    <Button
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <Save className="h-4 w-4" />
-                      {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
-                    </Button>
-                    <Button
-                      onClick={handleCancel}
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <X className="h-4 w-4" />
-                      Annuler
-                    </Button>
-                  </>
-                ) : (
+          </CardHeader>
+          
+          <CardContent className="space-y-6">
+            {isEditing ? (
+              <>
+                <div className="space-y-2">
+                  <Label>Contenu</Label>
+                  <RichTextEditor
+                    value={editContent}
+                    onChange={setEditContent}
+                    placeholder="Contenu de la page..."
+                  />
+                </div>
+                
+                <div className="flex gap-2 justify-end">
                   <Button
-                    onClick={handleEdit}
                     variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
+                    onClick={handleCancel}
+                    disabled={saving}
                   >
-                    <Edit className="h-4 w-4" />
-                    Éditer
+                    <X className="h-4 w-4 mr-2" />
+                    Annuler
                   </Button>
-                )}
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {saving ? "Enregistrement..." : "Enregistrer"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div
+                className="prose prose-sm max-w-none dark:prose-invert"
+                dangerouslySetInnerHTML={{ __html: page.content }}
+              />
+            )}
+            
+            {!isEditing && (
+              <div className="text-sm text-muted-foreground pt-4 border-t">
+                Dernière mise à jour : {new Date(page.updated_at).toLocaleDateString('fr-FR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
               </div>
             )}
-          </div>
-
-          {/* Content */}
-          <div className="w-full">
-            {isEditing ? (
-              <RichTextEditor
-                value={editContent}
-                onChange={setEditContent}
-                placeholder="Contenu de la page..."
-                className="w-full"
-              />
-            ) : (
-              <div 
-                className="prose prose-lg max-w-none w-full
-                  prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground
-                  prose-h1:text-3xl prose-h1:font-bold prose-h1:mb-6 prose-h1:mt-8
-                  prose-h2:text-2xl prose-h2:font-bold prose-h2:mb-4 prose-h2:mt-6
-                  prose-h3:text-xl prose-h3:font-bold prose-h3:mb-3 prose-h3:mt-5
-                  prose-h4:text-lg prose-h4:font-semibold prose-h4:mb-2 prose-h4:mt-4
-                  prose-p:mb-4 prose-p:leading-relaxed
-                  prose-ul:mb-4 prose-ol:mb-4 prose-li:mb-1
-                  prose-table:w-full prose-table:border-collapse prose-th:border prose-th:p-2 prose-td:border prose-td:p-2
-                  prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:pl-4 prose-blockquote:italic
-                  prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded
-                  prose-pre:bg-muted prose-pre:p-4 prose-pre:rounded-md prose-pre:overflow-x-auto"
-                dangerouslySetInnerHTML={{ __html: page.content }} 
-              />
-            )}
-          </div>
-
-          {/* Last updated info */}
-          {!isEditing && (
-            <div className="mt-8 pt-4 border-t border-border text-sm text-muted-foreground">
-              Dernière mise à jour : {new Date(page.updated_at).toLocaleDateString('fr-FR')}
-            </div>
-          )}
-        </div>
+          </CardContent>
+        </Card>
       </main>
-      
       <Footer />
     </div>
   );
-};
-
-export default Licenses;
+}
