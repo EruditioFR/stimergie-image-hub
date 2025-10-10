@@ -1,6 +1,18 @@
-
-import React, { useRef, useEffect } from 'react';
-import { Editor } from '@tinymce/tinymce-react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { Table } from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+import TextAlign from '@tiptap/extension-text-align';
+import Underline from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
+import Placeholder from '@tiptap/extension-placeholder';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import Highlight from '@tiptap/extension-highlight';
+import { EditorToolbar } from './EditorToolbar';
+import { useEffect } from 'react';
 
 interface RichTextEditorProps {
   value: string;
@@ -10,60 +22,124 @@ interface RichTextEditorProps {
 }
 
 export function RichTextEditor({ value, onChange, placeholder, className }: RichTextEditorProps) {
-  const editorRef = useRef<any>(null);
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3, 4],
+        },
+      }),
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Underline,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-primary underline',
+        },
+      }),
+      TextStyle,
+      Color,
+      Highlight.configure({
+        multicolor: true,
+      }),
+      Placeholder.configure({
+        placeholder: placeholder || 'Commencez à écrire...',
+      }),
+    ],
+    content: value,
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none focus:outline-none min-h-[400px] p-4',
+      },
+    },
+  });
+
+  // Update editor content when value changes externally
+  useEffect(() => {
+    if (editor && value !== editor.getHTML()) {
+      editor.commands.setContent(value);
+    }
+  }, [value, editor]);
 
   return (
     <div className={className}>
-      <Editor
-        apiKey="quu1whftoq5rnpmordgzf3i052ljp6z1quwtsgt7o4f2k80h"
-        onInit={(evt, editor) => editorRef.current = editor}
-        initialValue={value}
-        onEditorChange={(content) => {
-          onChange(content);
-        }}
-        init={{
-          height: 500,
-          menubar: true,
-          plugins: [
-            'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
-            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-            'insertdatetime', 'table', 'code', 'help', 'wordcount',
-            'hr', 'nonbreaking', 'paste', 'print', 'save',
-            'template', 'textpattern', 'visualchars'
-          ],
-          toolbar1: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify',
-          toolbar2: 'bullist numlist | outdent indent | removeformat | help | fullscreen | preview | print | searchreplace',
-          toolbar3: 'forecolor backcolor | formatselect | hr | table tabledelete tableprops tablerowprops tablecellprops',
-          toolbar4: 'tableinsertrowbefore tableinsertrowafter tabledeleterow | tableinsertcolbefore tableinsertcolafter tabledeletecol',
-          toolbar_mode: 'sliding',
-          content_style: `
-            body { 
-              font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; 
-              font-size: 14px;
-              line-height: 1.6;
-            }
-            h1 { font-size: 2.5em; font-weight: bold; margin: 1em 0 0.5em 0; }
-            h2 { font-size: 2em; font-weight: bold; margin: 1.5em 0 0.75em 0; }
-            h3 { font-size: 1.5em; font-weight: bold; margin: 1.25em 0 0.625em 0; }
-            h4 { font-size: 1.25em; font-weight: bold; margin: 1em 0 0.5em 0; }
-            p { margin: 0 0 1em 0; }
-            ul, ol { margin: 0 0 1em 1.5em; }
-            li { margin: 0 0 0.5em 0; }
-          `,
-          branding: false,
-          promotion: false,
-          placeholder: placeholder,
-          setup: function(editor) {
-            // Configuration additionnelle si nécessaire
-            editor.on('focus', function() {
-              editor.getContainer().style.borderColor = 'hsl(var(--ring))';
-            });
-            editor.on('blur', function() {
-              editor.getContainer().style.borderColor = 'hsl(var(--border))';
-            });
-          }
-        }}
-      />
+      <div className="border rounded-lg overflow-hidden bg-background">
+        <EditorToolbar editor={editor} />
+        <EditorContent 
+          editor={editor} 
+          className="prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1"
+        />
+      </div>
+      <style>{`
+        .ProseMirror {
+          min-height: 400px;
+        }
+        
+        .ProseMirror p.is-editor-empty:first-child::before {
+          color: hsl(var(--muted-foreground));
+          content: attr(data-placeholder);
+          float: left;
+          height: 0;
+          pointer-events: none;
+        }
+
+        .ProseMirror table {
+          border-collapse: collapse;
+          table-layout: fixed;
+          width: 100%;
+          margin: 1em 0;
+          overflow: hidden;
+        }
+
+        .ProseMirror td,
+        .ProseMirror th {
+          min-width: 1em;
+          border: 2px solid hsl(var(--border));
+          padding: 0.5em;
+          vertical-align: top;
+          box-sizing: border-box;
+          position: relative;
+        }
+
+        .ProseMirror th {
+          font-weight: bold;
+          text-align: left;
+          background-color: hsl(var(--muted));
+        }
+
+        .ProseMirror .selectedCell:after {
+          z-index: 2;
+          position: absolute;
+          content: "";
+          left: 0;
+          right: 0;
+          top: 0;
+          bottom: 0;
+          background: hsl(var(--primary) / 0.1);
+          pointer-events: none;
+        }
+
+        .ProseMirror a {
+          color: hsl(var(--primary));
+          text-decoration: underline;
+          cursor: pointer;
+        }
+
+        .ProseMirror a:hover {
+          opacity: 0.8;
+        }
+      `}</style>
     </div>
   );
 }
