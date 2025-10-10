@@ -70,7 +70,7 @@ export const useGalleryQueryState = ({
       selectedOrientation,
       userId
     ),
-    staleTime: 15000, // 15 seconds (was 60)
+    staleTime: 300000, // 5 minutes for better caching
     enabled: !shouldSkipQuery, // Skip queries for non-admin users without client ID
   });
 

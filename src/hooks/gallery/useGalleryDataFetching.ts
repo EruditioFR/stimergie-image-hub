@@ -76,7 +76,7 @@ export const useGalleryDataFetching = ({
     const shouldPrefetch = 
       !isLoading && 
       !isFetching && 
-      currentPage < Math.ceil(totalCount / 20);
+      currentPage < Math.ceil(totalCount / 100); // Fixed: use IMAGES_PER_PAGE (100) instead of 20
       
     if (shouldPrefetch) {
       prefetchNextPage(

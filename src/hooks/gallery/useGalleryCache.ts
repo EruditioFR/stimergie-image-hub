@@ -134,7 +134,73 @@ export const useGalleryCache = () => {
     }
   }, [queryClient]);
   
-  // Nouvelle méthode pour invalider les caches de galerie
+  // Invalidate cache for a specific image (targeted invalidation)
+  const invalidateImageCache = useCallback(async (imageId: string) => {
+    console.log(`Invalidating cache for image: ${imageId}`);
+    
+    try {
+      await queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return queryKey.includes('gallery-images') && 
+                 JSON.stringify(queryKey).includes(imageId);
+        }
+      });
+      
+      console.log(`Image cache invalidated for: ${imageId}`);
+    } catch (error) {
+      console.error(`Error invalidating image cache for ${imageId}:`, error);
+    }
+  }, [queryClient]);
+
+  // Invalidate cache for a specific project (targeted invalidation)
+  const invalidateProjectCache = useCallback(async (projectId: string) => {
+    console.log(`Invalidating cache for project: ${projectId}`);
+    
+    try {
+      await queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return queryKey.includes('gallery-images') && 
+                 (queryKey.includes(projectId) || queryKey.some(key => key === projectId));
+        }
+      });
+      
+      await queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return queryKey.includes('gallery-images-count') && 
+                 (queryKey.includes(projectId) || queryKey.some(key => key === projectId));
+        }
+      });
+      
+      console.log(`Project cache invalidated for: ${projectId}`);
+    } catch (error) {
+      console.error(`Error invalidating project cache for ${projectId}:`, error);
+    }
+  }, [queryClient]);
+  
+  // Bulk invalidation for multiple affected items
+  const invalidateBulkCache = useCallback(async (affectedIds: string[]) => {
+    console.log(`Invalidating cache for ${affectedIds.length} items`);
+    
+    try {
+      await queryClient.invalidateQueries({
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          const keyString = JSON.stringify(queryKey);
+          return queryKey.includes('gallery-images') && 
+                 affectedIds.some(id => keyString.includes(id));
+        }
+      });
+      
+      console.log(`Bulk cache invalidation completed`);
+    } catch (error) {
+      console.error(`Error in bulk cache invalidation:`, error);
+    }
+  }, [queryClient]);
+
+  // Nouvelle méthode pour invalider les caches de galerie (fallback pour invalidation complète)
   const invalidateGalleryData = useCallback(async () => {
     console.log('Invalidating all gallery data caches...');
     
@@ -150,7 +216,7 @@ export const useGalleryCache = () => {
         exact: false
       });
       
-      // Vider les caches d'images
+      // Vider les caches d'images (only when necessary)
       clearAllCaches();
       
       console.log('Gallery data cache invalidation completed');
@@ -188,6 +254,9 @@ export const useGalleryCache = () => {
     setPreviousRequest,
     fetchTotalCount,
     prefetchNextPage,
+    invalidateImageCache,
+    invalidateProjectCache,
+    invalidateBulkCache,
     invalidateGalleryData,
     invalidateClientData
   };

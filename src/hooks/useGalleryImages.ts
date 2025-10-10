@@ -56,6 +56,9 @@ export const useGalleryImages = (isAdmin: boolean) => {
     setPreviousRequest,
     fetchTotalCount,
     prefetchNextPage,
+    invalidateImageCache,
+    invalidateProjectCache,
+    invalidateBulkCache,
     invalidateGalleryData,
     invalidateClientData
   } = useGalleryCache();
@@ -173,7 +176,10 @@ export const useGalleryImages = (isAdmin: boolean) => {
     userClientId,
     shouldFetchRandom,
     hasMorePages,
-    // Exposer les méthodes de cache pour usage externe
+    // Exposer les méthodes de cache pour usage externe (targeted invalidation)
+    invalidateImageCache,
+    invalidateProjectCache,
+    invalidateBulkCache,
     invalidateGalleryData,
     invalidateClientData
   };

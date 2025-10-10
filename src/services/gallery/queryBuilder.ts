@@ -53,13 +53,21 @@ export async function buildGalleryQuery(
     }
   }
   
-  // Construction de la requête de base
+  // Construction de la requête de base avec colonnes minimales pour meilleures performances
   let query = supabase
     .from('images')
     .select(`
-      *,
-      projets:id_projet (nom_projet, nom_dossier, clients:id_client (id, nom)),
-      image_shared_clients (client_id, clients:client_id (id, nom))
+      id,
+      title,
+      url,
+      url_miniature,
+      orientation,
+      tags,
+      created_at,
+      id_projet,
+      width,
+      height,
+      projets:id_projet (nom_projet, nom_dossier, id_client)
     `);
   
   // Apply project filtering based on user role and access rights
