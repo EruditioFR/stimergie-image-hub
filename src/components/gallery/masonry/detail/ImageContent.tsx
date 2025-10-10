@@ -197,17 +197,27 @@ export const ImageContent = ({
   return (
     <div className="relative">
       {/* Barre de progression du téléchargement HD - Centrée sur le panneau */}
-      {isDownloading && downloadProgress > 0 && (
+      {isDownloading && (
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
-          <div className="bg-background border border-border p-8 rounded-xl shadow-2xl min-w-[400px] max-w-[500px]">
+          <div className="bg-background border border-border p-8 rounded-xl shadow-2xl w-[min(90%,480px)]">
             <p className="text-lg font-semibold mb-4 text-center">Téléchargement HD en cours...</p>
-            <div className="w-full h-3 bg-muted rounded-full overflow-hidden mb-3">
-              <div 
-                className="h-full bg-primary rounded-full transition-all duration-300"
-                style={{ width: `${downloadProgress}%` }}
-              />
-            </div>
-            <p className="text-base font-medium text-center">{downloadProgress}%</p>
+
+            {downloadProgress > 0 ? (
+              <>
+                <div className="w-full h-3 bg-muted rounded-full overflow-hidden mb-3">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all duration-300"
+                    style={{ width: `${downloadProgress}%` }}
+                  />
+                </div>
+                <p className="text-base font-medium text-center">{downloadProgress}%</p>
+              </>
+            ) : (
+              <div className="flex items-center justify-center gap-3">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground/40 border-t-primary" />
+                <p className="text-sm text-muted-foreground">Préparation du téléchargement…</p>
+              </div>
+            )}
           </div>
         </div>
       )}
