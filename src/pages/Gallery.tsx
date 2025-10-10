@@ -49,9 +49,7 @@ const Gallery = () => {
     handleResetFilters,
     refreshGallery,
     userClientId,
-    hasMorePages,
-    isRandomMode,
-    handleToggleRandomMode
+    hasMorePages
   } = galleryData;
 
   const {
@@ -130,8 +128,6 @@ const Gallery = () => {
           userLastName={userProfile?.lastName || ''} 
           userRole={userRole} 
           userClientId={userClientId}
-          isRandomMode={isRandomMode}
-          onToggleRandomMode={handleToggleRandomMode}
         />
 
         <div className="flex justify-between items-center px-4 mb-2 pt-[10px]">

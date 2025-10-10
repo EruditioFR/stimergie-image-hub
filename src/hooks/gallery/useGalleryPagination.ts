@@ -10,7 +10,6 @@ interface GalleryPaginationProps {
   selectedOrientation: string | null;
   userRole: string;
   userClientId: string | null;
-  isRandomMode?: boolean;
 }
 
 export const useGalleryPagination = ({
@@ -21,15 +20,14 @@ export const useGalleryPagination = ({
   selectedProject,
   selectedOrientation,
   userRole,
-  userClientId,
-  isRandomMode = false
+  userClientId
 }: GalleryPaginationProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  // Admins: random mode disabled by default, controlled by toggle
+  // Admins: no random mode
   // Non-admins: always use random mode when no filters
   const [shouldFetchRandom, setShouldFetchRandom] = useState(
-    userRole === 'admin' ? isRandomMode : true
+    userRole !== 'admin'
   );
   const [allFetched, setAllFetched] = useState(false);
 
@@ -58,9 +56,7 @@ export const useGalleryPagination = ({
   // Reset pagination when filters change
   useEffect(() => {
     console.log('Filters changed, resetting pagination');
-    const shouldUseRandom = userRole === 'admin' 
-      ? isRandomMode // For admins, use the toggle state
-      : (!selectedProject && 
+    const shouldUseRandom = userRole !== 'admin' && (!selectedProject && 
          !searchQuery && 
          (!tagFilter || tagFilter === '') && 
          activeTab === 'all' &&
@@ -75,7 +71,6 @@ export const useGalleryPagination = ({
     selectedProject,
     selectedOrientation,
     userRole,
-    isRandomMode,
     resetPagination
   ]);
 

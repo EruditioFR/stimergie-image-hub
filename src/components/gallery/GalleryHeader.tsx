@@ -4,9 +4,6 @@ import { ClientsFilter } from './ClientsFilter';
 import { ProjectsFilter } from './ProjectsFilter';
 import { OrientationFilter } from './OrientationFilter';
 import { useSearchParams } from 'react-router-dom';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Shuffle } from 'lucide-react';
 interface GalleryHeaderProps {
   title: string;
   activeTab: string;
@@ -22,8 +19,6 @@ interface GalleryHeaderProps {
   userLastName?: string;
   userRole?: string;
   userClientId?: string | null;
-  isRandomMode?: boolean;
-  onToggleRandomMode?: (enabled: boolean) => void;
 }
 export function GalleryHeader({
   title,
@@ -39,9 +34,7 @@ export function GalleryHeader({
   userName = "",
   userLastName = "",
   userRole,
-  userClientId,
-  isRandomMode = false,
-  onToggleRandomMode
+  userClientId
 }: GalleryHeaderProps) {
   const {
     userRole: contextUserRole
@@ -84,20 +77,6 @@ export function GalleryHeader({
             {canSeeProjectFilter && <ProjectsFilter selectedProject={selectedProject} onProjectChange={onProjectChange} className="w-full sm:w-auto" selectedClient={effectiveUserRole === 'user' ? userClientId : selectedClient} />}
           </div>
         </div>
-        
-        {effectiveUserRole === 'admin' && onToggleRandomMode && (
-          <div className="flex items-center space-x-2 mt-4">
-            <Switch
-              id="random-mode"
-              checked={isRandomMode}
-              onCheckedChange={onToggleRandomMode}
-            />
-            <Label htmlFor="random-mode" className="flex items-center gap-2 cursor-pointer">
-              <Shuffle className="h-4 w-4" />
-              Mode aléatoire
-            </Label>
-          </div>
-        )}
       </div>
     </div>;
 }
