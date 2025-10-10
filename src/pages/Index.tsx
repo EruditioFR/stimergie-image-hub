@@ -112,7 +112,7 @@ export default function Index() {
           </div>
           
           {/* Login overlay */}
-          <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 bg-black/40 backdrop-blur-sm">
+          <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 bg-[#264653] backdrop-blur-sm">
             <div className="w-full max-w-sm mx-auto mb-8">
               <img 
                 src="/logo_stimergie_baseline_login.jpg" 
