@@ -25,7 +25,7 @@ export function MasonryPagination({
 }: MasonryPaginationProps) {
   if (!totalCount || totalCount <= 0 || !onPageChange) return null;
 
-  const imagesPerPage = 50;
+  const imagesPerPage = 200;
   const totalPages = totalCount > 0 ? Math.ceil(totalCount / imagesPerPage) : 0;
 
   // Si une seule page, ne pas afficher la pagination

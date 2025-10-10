@@ -4,7 +4,6 @@ import { useImageSelection } from '@/hooks/useImageSelection';
 import { useSearchParams } from 'react-router-dom';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { MasonryColumn } from './MasonryColumn';
 import { MasonryToolbar } from './MasonryToolbar';
 import { MasonryDetailModal } from './MasonryDetailModal';
@@ -17,8 +16,6 @@ import { CheckSquare, SquareCheck } from 'lucide-react';
 interface MasonryGridProps {
   images: Image[];
   isLoading?: boolean;
-  hasMorePages?: boolean;
-  loadMoreImages?: () => void;
   selectedImages?: string[];
   onImageSelect?: (id: string) => void;
   onClearSelection?: () => void;
@@ -29,8 +26,6 @@ interface MasonryGridProps {
 export function MasonryGrid({ 
   images, 
   isLoading = false,
-  hasMorePages = false,
-  loadMoreImages,
   selectedImages = [],
   onImageSelect,
   onClearSelection,
@@ -102,8 +97,6 @@ export function MasonryGrid({
     return columns;
   }, [images, columnCount]);
   
-  const infiniteScrollRef = useInfiniteScroll(loadMoreImages, isLoading);
-  
   const handleImageClick = useCallback((image: any) => {
     setSelectedImageDetail(image);
     setIsImageDetailOpen(true);
@@ -168,11 +161,7 @@ export function MasonryGrid({
         </div>
       )}
       
-      {hasMorePages && !isLoading && loadMoreImages && (
-        <div ref={infiniteScrollRef} className="h-1 w-full my-4" />
-      )}
-      
-      <MasonryDetailModal 
+      <MasonryDetailModal
         image={selectedImageDetail}
         isOpen={isImageDetailOpen}
         onClose={handleCloseImageDetail}

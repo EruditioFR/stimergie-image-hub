@@ -5,6 +5,7 @@ import { Header } from '@/components/ui/layout/Header';
 import { Footer } from '@/components/ui/layout/Footer';
 import { GalleryHeader } from '@/components/gallery/GalleryHeader';
 import { MasonryGrid } from '@/components/gallery/masonry/MasonryGrid';
+import { MasonryPagination } from '@/components/gallery/masonry/MasonryPagination';
 import { EmptyResults } from '@/components/gallery/EmptyResults';
 import { useAuth } from '@/context/AuthContext';
 import { useGalleryImages } from '@/hooks/useGalleryImages';
@@ -67,8 +68,7 @@ const Gallery = () => {
     refreshGallery,
     userRole: galleryUserRole,
     userClientId,
-    shouldFetchRandom,
-    hasMorePages
+    shouldFetchRandom
   } = useGalleryImages(isAdmin);
 
   // Log détaillé pour le projet problématique
@@ -81,8 +81,7 @@ const Gallery = () => {
         isLoading,
         isFetching,
         currentPage,
-        totalCount,
-        hasMorePages
+        totalCount
       });
       
       if (allImages.length === 0 && !isLoading) {
@@ -98,18 +97,10 @@ const Gallery = () => {
     }
   }, [searchQuery, activeTab, selectedClient, selectedProject, selectedOrientation, currentPage]);
 
-  // Les images à afficher sont toujours celles de la requête actuelle (pas d'accumulation)
+  // Les images à afficher sont toujours celles de la requête actuelle
   const displayedImages = allImages;
 
   const shouldShowEmptyState = !isLoading && displayedImages.length === 0;
-
-  // Fonction pour charger plus d'images en défilement infini
-  const loadMoreImages = useCallback(() => {
-    if (hasMorePages && !isLoading && !isFetching) {
-      console.log('Loading more gallery images, page:', currentPage + 1);
-      handlePageChange(currentPage + 1);
-    }
-  }, [currentPage, handlePageChange, hasMorePages, isLoading, isFetching]);
 
   // Fonction intelligente pour vider le cache d'images (préserve l'auth)
   const handleSmartFlushCache = useCallback(async () => {
@@ -242,16 +233,22 @@ const Gallery = () => {
           {isLoading && allImages.length === 0 ? (
             <MasonryGrid images={[]} isLoading={true} />
           ) : displayedImages.length > 0 ? (
-            <MasonryGrid 
-              images={displayedImages} 
-              isLoading={isLoading || isFetching} 
-              hasMorePages={hasMorePages} 
-              loadMoreImages={loadMoreImages} 
-              selectedImages={selectedImages} 
-              onImageSelect={toggleImageSelection} 
-              onClearSelection={clearSelection}
-              onSelectAll={selectAllImages}
-            />
+            <>
+              <MasonryGrid 
+                images={displayedImages} 
+                isLoading={isLoading || isFetching} 
+                selectedImages={selectedImages} 
+                onImageSelect={toggleImageSelection} 
+                onClearSelection={clearSelection}
+                onSelectAll={selectAllImages}
+              />
+              <MasonryPagination 
+                totalCount={totalCount}
+                currentPage={currentPage}
+                onPageChange={handlePageChange}
+                isLoading={isLoading || isFetching}
+              />
+            </>
           ) : (
             <EmptyResults 
               onReset={handleResetFilters} 

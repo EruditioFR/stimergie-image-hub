@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { fetchGalleryImages } from '@/services/gallery/imageService';
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback } from 'react';
 
 interface GalleryQueryStateProps {
   searchQuery: string;
@@ -30,9 +30,6 @@ export const useGalleryQueryState = ({
   userClientId,
   userId
 }: GalleryQueryStateProps) => {
-  const [accumulatedImages, setAccumulatedImages] = useState<any[]>([]);
-  const [hasMorePages, setHasMorePages] = useState(true);
-
   // Skip query only if we definitely don't have access (logged in user without client ID)
   const shouldSkipQuery = userId && ['admin_client', 'user'].includes(userRole) && userClientId === null;
 
@@ -74,42 +71,15 @@ export const useGalleryQueryState = ({
     enabled: !shouldSkipQuery, // Skip queries for non-admin users without client ID
   });
 
-  // Reset accumulated images when filters change
-  useEffect(() => {
-    if (currentPage === 1) {
-      setAccumulatedImages([]);
-      setHasMorePages(true);
-    }
-  }, [searchQuery, tagFilter, activeTab, selectedClient, selectedProject, selectedOrientation, currentPage === 1]);
-
-  // Accumulate images for infinite scrolling
-  useEffect(() => {
-    if (currentPageImages.length > 0) {
-      if (currentPage === 1) {
-        setAccumulatedImages(currentPageImages);
-      } else {
-        // Add new images but prevent duplicates
-        const newImageIds = new Set(currentPageImages.map((img: any) => img.id));
-        const existingImages = accumulatedImages.filter((img: any) => !newImageIds.has(img.id));
-        setAccumulatedImages([...existingImages, ...currentPageImages]);
-      }
-      
-      // Determine if more pages are available
-      setHasMorePages(currentPageImages.length >= 20);
-    } else if (currentPage > 1 && currentPageImages.length === 0) {
-      // If we fetched a page and got no results, we've reached the end
-      setHasMorePages(false);
-    }
-  }, [currentPageImages, currentPage, accumulatedImages]);
+  // Determine if more pages are available based on page size
+  const hasMorePages = currentPageImages.length >= 200;
 
   const refreshGallery = useCallback(() => {
-    setAccumulatedImages([]);
-    setHasMorePages(true);
     refetch();
   }, [refetch]);
 
   return {
-    allImages: accumulatedImages,
+    allImages: currentPageImages,
     isLoading,
     isFetching,
     refreshGallery,

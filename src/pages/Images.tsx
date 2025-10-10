@@ -210,8 +210,6 @@ const Images = () => {
                 <MasonryGrid 
                   images={formatImagesForGrid(images)} 
                   isLoading={isLoading}
-                  hasMorePages={hasMorePages}
-                  loadMoreImages={loadMoreImages}
                 />
               ) : (
                 <ImagesTable images={formatImagesForGrid(images) || []} />

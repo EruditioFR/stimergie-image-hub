@@ -43,13 +43,6 @@ export const useGalleryPagination = ({
     setAllFetched(false);
   }, []);
 
-  // Update whether all images have been fetched
-  const checkIfAllFetched = useCallback((fetchedCount: number) => {
-    if (fetchedCount < 20) {
-      setAllFetched(true);
-    }
-  }, []);
-
   // Update whether we should fetch random images or not
   const updateRandomFetchMode = useCallback((randomMode: boolean) => {
     setShouldFetchRandom(randomMode);
@@ -83,7 +76,6 @@ export const useGalleryPagination = ({
     setTotalCount,
     handlePageChange,
     resetPagination,
-    updateRandomFetchMode,
-    checkIfAllFetched
+    updateRandomFetchMode
   };
 };
