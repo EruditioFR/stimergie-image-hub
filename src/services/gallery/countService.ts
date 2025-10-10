@@ -2,6 +2,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import { fetchProjectIdsForClient, getAccessibleProjectIds } from "./projectUtils";
 
+// Cache for admin total count (5 minutes TTL)
+let cachedAdminCount: number | null = null;
+let cacheTime: number | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 /**
  * Fetch total count of images matching filter criteria
  */
@@ -17,6 +22,16 @@ export async function fetchTotalImagesCount(
   userId: string | null
 ): Promise<number> {
   try {
+    // Check if we can use cached count for admin without filters
+    const hasAnyFilter = search || tag || client || project || orientation;
+    if (userRole === 'admin' && !hasAnyFilter) {
+      const now = Date.now();
+      if (cachedAdminCount !== null && cacheTime !== null && (now - cacheTime < CACHE_DURATION)) {
+        console.log('Using cached admin count:', cachedAdminCount);
+        return cachedAdminCount;
+      }
+    }
+
     // Pour admin_client et utilisateurs normaux, toujours filtrer par leur client ID
     if (['admin_client', 'user'].includes(userRole) && userClientId) {
       console.log('Non-admin user detected, forcing client filter in count even with tag filter:', userClientId);
@@ -82,6 +97,13 @@ export async function fetchTotalImagesCount(
     const { count, error } = await query;
     
     if (error) throw error;
+    
+    // Cache the result for admins without filters
+    if (userRole === 'admin' && !hasAnyFilter && count !== null) {
+      cachedAdminCount = count;
+      cacheTime = Date.now();
+      console.log('Cached admin count:', count);
+    }
     
     console.log(`Total count for filters: ${count}`);
     return count || 0;

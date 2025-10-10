@@ -174,7 +174,9 @@ export async function applyPaginationToQuery(
   userClientId: string | null
 ): Promise<{ data: any[] | null; error: any }> {
   // Déterminer si le mode aléatoire doit être utilisé
+  // Force standard pagination for admins unless explicitly in random mode
   const useRandomMode = shouldFetchRandom && 
+                         userRole !== 'admin' && // Admins always use standard pagination by default
                          !project && 
                          !search && 
                          (!tag || tag.toLowerCase() === 'toutes') && 

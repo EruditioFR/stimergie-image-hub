@@ -92,6 +92,11 @@ export function MasonryPagination({
         <span>sur</span>
         <span className="font-medium text-foreground">{totalCount}</span>
         <span>images</span>
+        {totalPages > 1 && (
+          <span className="text-xs ml-2 text-muted-foreground">
+            (Page {currentPage}/{totalPages})
+          </span>
+        )}
         {isLoading && (
           <Loader2 className="h-4 w-4 animate-spin ml-2" />
         )}

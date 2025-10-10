@@ -10,6 +10,7 @@ interface GalleryPaginationProps {
   selectedOrientation: string | null;
   userRole: string;
   userClientId: string | null;
+  isRandomMode?: boolean;
 }
 
 export const useGalleryPagination = ({
@@ -20,11 +21,16 @@ export const useGalleryPagination = ({
   selectedProject,
   selectedOrientation,
   userRole,
-  userClientId
+  userClientId,
+  isRandomMode = false
 }: GalleryPaginationProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [shouldFetchRandom, setShouldFetchRandom] = useState(true);
+  // Admins: random mode disabled by default, controlled by toggle
+  // Non-admins: always use random mode when no filters
+  const [shouldFetchRandom, setShouldFetchRandom] = useState(
+    userRole === 'admin' ? isRandomMode : true
+  );
   const [allFetched, setAllFetched] = useState(false);
 
   // Handle page changes
@@ -46,18 +52,21 @@ export const useGalleryPagination = ({
   // Update whether we should fetch random images or not
   const updateRandomFetchMode = useCallback((randomMode: boolean) => {
     setShouldFetchRandom(randomMode);
+    setCurrentPage(1); // Reset to page 1 when toggling modes
   }, []);
 
   // Reset pagination when filters change
   useEffect(() => {
     console.log('Filters changed, resetting pagination');
-    resetPagination(
-      !selectedProject && 
-      !searchQuery && 
-      (!tagFilter || tagFilter === '') && 
-      activeTab === 'all' &&
-      !selectedOrientation
-    );
+    const shouldUseRandom = userRole === 'admin' 
+      ? isRandomMode // For admins, use the toggle state
+      : (!selectedProject && 
+         !searchQuery && 
+         (!tagFilter || tagFilter === '') && 
+         activeTab === 'all' &&
+         !selectedOrientation);
+    
+    resetPagination(shouldUseRandom);
   }, [
     searchQuery,
     tagFilter,
@@ -65,6 +74,8 @@ export const useGalleryPagination = ({
     selectedClient,
     selectedProject,
     selectedOrientation,
+    userRole,
+    isRandomMode,
     resetPagination
   ]);
 

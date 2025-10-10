@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGalleryFilters } from './useGalleryFilters';
 import { useAuth } from '@/context/AuthContext';
@@ -14,6 +15,9 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const searchQuery = searchParams.get('q') || '';
   const tagFilter = searchParams.get('tag') || '';
   const { userRole, user, userClientId } = useAuth();
+  
+  // Random mode state (only for admins)
+  const [isRandomMode, setIsRandomMode] = useState(false);
 
   // Only admin users can change the client filter
   const canChangeClient = () => userRole === 'admin';
@@ -48,7 +52,8 @@ export const useGalleryImages = (isAdmin: boolean) => {
     selectedProject,
     selectedOrientation,
     userRole,
-    userClientId
+    userClientId,
+    isRandomMode
   });
 
   const {
@@ -153,6 +158,13 @@ export const useGalleryImages = (isAdmin: boolean) => {
     // Rafraîchir la galerie
     refreshGallery();
   };
+  
+  // Toggle random mode handler
+  const handleToggleRandomMode = (enabled: boolean) => {
+    console.log('Toggling random mode:', enabled);
+    setIsRandomMode(enabled);
+    updateRandomFetchMode(enabled);
+  };
 
   return {
     allImages,
@@ -176,6 +188,8 @@ export const useGalleryImages = (isAdmin: boolean) => {
     userClientId,
     shouldFetchRandom,
     hasMorePages,
+    isRandomMode,
+    handleToggleRandomMode,
     // Exposer les méthodes de cache pour usage externe (targeted invalidation)
     invalidateImageCache,
     invalidateProjectCache,

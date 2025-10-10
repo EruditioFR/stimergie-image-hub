@@ -5,6 +5,9 @@ import { ClientsFilter } from './ClientsFilter';
 import { ProjectsFilter } from './ProjectsFilter';
 import { OrientationFilter } from './OrientationFilter';
 import { useSearchParams } from 'react-router-dom';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Shuffle } from 'lucide-react';
 
 interface GalleryHeaderProps {
   title: string;
@@ -21,6 +24,8 @@ interface GalleryHeaderProps {
   userLastName?: string;
   userRole?: string;
   userClientId?: string | null;
+  isRandomMode?: boolean;
+  onToggleRandomMode?: (enabled: boolean) => void;
 }
 
 export function GalleryHeader({ 
@@ -37,7 +42,9 @@ export function GalleryHeader({
   userName = "",
   userLastName = "",
   userRole,
-  userClientId
+  userClientId,
+  isRandomMode = false,
+  onToggleRandomMode
 }: GalleryHeaderProps) {
   const { userRole: contextUserRole } = useAuth();
   const effectiveUserRole = userRole || contextUserRole;
@@ -104,6 +111,23 @@ export function GalleryHeader({
             )}
           </div>
         </div>
+        
+        {effectiveUserRole === 'admin' && onToggleRandomMode && (
+          <div className="flex items-center justify-center gap-3 mt-4 p-3 bg-muted/30 rounded-lg border border-border">
+            <Shuffle className="h-4 w-4 text-muted-foreground" />
+            <Label htmlFor="random-mode" className="text-sm font-medium cursor-pointer">
+              Mode aléatoire
+            </Label>
+            <Switch 
+              id="random-mode"
+              checked={isRandomMode}
+              onCheckedChange={onToggleRandomMode}
+            />
+            <span className="text-xs text-muted-foreground">
+              {isRandomMode ? '100 images aléatoires' : 'Navigation complète dans toutes les images'}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
