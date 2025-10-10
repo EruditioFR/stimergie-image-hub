@@ -196,17 +196,19 @@ export const ImageContent = ({
 
   return (
     <>
-      {/* Barre de progression du téléchargement HD */}
+      {/* Barre de progression du téléchargement HD - Centrée et visible */}
       {isDownloading && downloadProgress > 0 && (
-        <div className="fixed bottom-4 right-4 bg-background border border-border p-4 rounded-lg shadow-lg z-50 min-w-[280px]">
-          <p className="text-sm font-medium mb-2">Téléchargement en cours...</p>
-          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-primary rounded-full transition-all duration-300"
-              style={{ width: `${downloadProgress}%` }}
-            />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-background border border-border p-8 rounded-xl shadow-2xl min-w-[400px] max-w-[500px]">
+            <p className="text-lg font-semibold mb-4 text-center">Téléchargement HD en cours...</p>
+            <div className="w-full h-3 bg-muted rounded-full overflow-hidden mb-3">
+              <div 
+                className="h-full bg-primary rounded-full transition-all duration-300"
+                style={{ width: `${downloadProgress}%` }}
+              />
+            </div>
+            <p className="text-base font-medium text-center">{downloadProgress}%</p>
           </div>
-          <p className="text-xs text-muted-foreground mt-2 text-right">{downloadProgress}%</p>
         </div>
       )}
 
