@@ -85,7 +85,19 @@ export function GalleryHeader({
           </div>
         </div>
         
-        {effectiveUserRole === 'admin' && onToggleRandomMode}
+        {effectiveUserRole === 'admin' && onToggleRandomMode && (
+          <div className="flex items-center space-x-2 mt-4">
+            <Switch
+              id="random-mode"
+              checked={isRandomMode}
+              onCheckedChange={onToggleRandomMode}
+            />
+            <Label htmlFor="random-mode" className="flex items-center gap-2 cursor-pointer">
+              <Shuffle className="h-4 w-4" />
+              Mode aléatoire
+            </Label>
+          </div>
+        )}
       </div>
     </div>;
 }

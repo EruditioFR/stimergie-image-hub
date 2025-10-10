@@ -134,7 +134,7 @@ const Gallery = () => {
           onToggleRandomMode={handleToggleRandomMode}
         />
 
-        <div className="flex justify-between items-center px-4 mb-2">
+        <div className="flex justify-between items-center px-4 mb-2 pt-[10px]">
           <GalleryScrollToggle 
             enabled={infiniteScrollEnabled}
             onToggle={setInfiniteScrollEnabled}
