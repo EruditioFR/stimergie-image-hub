@@ -48,13 +48,11 @@ export const ImageContent = ({
   console.log("ImageContent component - Processed tags:", displayTags);
 
   const handleDownload = async (isHD: boolean = false) => {
-    setIsDownloading(true);
-    setDownloadProgress(0);
     let downloadUrl = '';
     
     try {
       if (isHD) {
-        // Version HD - Toujours construire l'URL HD depuis folder_name (sans /JPG/)
+        // Version HD - Construire l'URL HD depuis folder_name (sans /JPG/)
         if (image?.folder_name && image?.title) {
           downloadUrl = generateDownloadImageHDUrl(image.folder_name, image.title);
         }
@@ -65,7 +63,6 @@ export const ImageContent = ({
         // Dernier fallback: URL d'affichage
         else {
           downloadUrl = image?.display_url || image?.url || image?.url_miniature || image?.src || '';
-          // Supprimer /JPG/ si présent dans le fallback
           downloadUrl = downloadUrl.replace('/JPG/', '/');
         }
       } else {
@@ -85,7 +82,25 @@ export const ImageContent = ({
 
       console.log(`Téléchargement ${isHD ? 'HD' : 'SD'} depuis:`, downloadUrl);
       
-      // Récupérer l'image via fetch
+      // TÉLÉCHARGEMENT DIRECT HD - Le plus rapide (2-3x plus rapide)
+      if (isHD) {
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `${image?.title || 'image'}_HD.jpg`;
+        link.target = '_blank';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast.success('Téléchargement HD démarré !');
+        return;
+      }
+      
+      // Pour SD, téléchargement avec fetch (plus rapide pour petits fichiers)
+      setIsDownloading(true);
+      setDownloadProgress(0);
+      
       const response = await fetch(downloadUrl, {
         mode: 'cors',
         credentials: 'omit'
@@ -95,63 +110,22 @@ export const ImageContent = ({
         throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
       }
       
-      // Téléchargement avec progression pour les fichiers HD
-      const contentLength = response.headers.get('content-length');
-      const total = contentLength ? parseInt(contentLength, 10) : 0;
-
-      let blob: Blob;
-
-      if (isHD && total > 0 && response.body) {
-        // Streaming avec progression pour HD
-        const reader = response.body.getReader();
-        const chunks: Uint8Array[] = [];
-        let receivedLength = 0;
-
-        while (true) {
-          const { done, value } = await reader.read();
-          
-          if (done) break;
-          
-          chunks.push(value);
-          receivedLength += value.length;
-          
-          // Mettre à jour la progression
-          const progress = Math.round((receivedLength / total) * 100);
-          setDownloadProgress(progress);
-        }
-
-        // Reconstruire le blob depuis les chunks
-        const chunksAll = new Uint8Array(receivedLength);
-        let position = 0;
-        for (const chunk of chunks) {
-          chunksAll.set(chunk, position);
-          position += chunk.length;
-        }
-
-        blob = new Blob([chunksAll], { type: 'image/jpeg' });
-      } else {
-        // Téléchargement classique pour SD ou si pas de progression disponible
-        blob = await response.blob();
-      }
-      
-      // Créer une URL Blob locale
+      const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       
-      // Créer un lien de téléchargement avec l'URL Blob
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `${image?.title || 'image'}_${isHD ? 'HD' : 'SD'}.jpg`;
+      link.download = `${image?.title || 'image'}_SD.jpg`;
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      // Révoquer l'URL Blob après un délai pour nettoyer la mémoire
       setTimeout(() => {
         window.URL.revokeObjectURL(blobUrl);
       }, 100);
       
-      toast.success(`Téléchargement ${isHD ? 'HD' : 'SD'} démarré !`);
+      toast.success('Téléchargement SD démarré !');
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
       toast.error(`Impossible de télécharger le fichier: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
@@ -195,34 +169,7 @@ export const ImageContent = ({
     : (image?.display_url || image?.url_miniature || image?.src || image?.url || '');
 
   return (
-    <div className="relative">
-      {/* Barre de progression du téléchargement HD - Centrée sur le panneau */}
-      {isDownloading && (
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
-          <div className="bg-background border border-border p-8 rounded-xl shadow-2xl w-[min(90%,480px)]">
-            <p className="text-lg font-semibold mb-4 text-center">Téléchargement HD en cours...</p>
-
-            {downloadProgress > 0 ? (
-              <>
-                <div className="w-full h-3 bg-muted rounded-full overflow-hidden mb-3">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all duration-300"
-                    style={{ width: `${downloadProgress}%` }}
-                  />
-                </div>
-                <p className="text-base font-medium text-center">{downloadProgress}%</p>
-              </>
-            ) : (
-              <div className="flex items-center justify-center gap-3">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground/40 border-t-primary" />
-                <p className="text-sm text-muted-foreground">Préparation du téléchargement…</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-4">
+    <div className="space-y-4">
         <div className="flex justify-between items-center flex-wrap gap-4">
         <h2 className="text-xl font-bold flex-1">{image?.title || 'Sans titre'}</h2>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -329,7 +276,6 @@ export const ImageContent = ({
           )}
         </div>
       </div>
-    </div>
     </div>
   );
 };
