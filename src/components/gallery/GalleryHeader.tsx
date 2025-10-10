@@ -65,7 +65,7 @@ export function GalleryHeader({
           )}
           
           {title === "Banque d'images" && (
-            <p className="text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-[#150B0D] max-w-3xl mx-auto">
               Bonjour {userName} {userLastName},
               <br /><br />
               Cette galerie vous propose l'ensemble des photos créées par Imprononçable pour vos projets. 
