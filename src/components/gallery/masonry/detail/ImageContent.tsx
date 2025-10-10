@@ -52,17 +52,19 @@ export const ImageContent = ({
     
     try {
       if (isHD) {
-        // Version HD - Priorité 1: download_url (version HD)
-        if (image?.download_url) {
-          downloadUrl = image.download_url;
-        }
-        // Priorité 2: Construire l'URL HD depuis folder_name
-        else if (image?.folder_name && image?.title) {
+        // Version HD - Toujours construire l'URL HD depuis folder_name (sans /JPG/)
+        if (image?.folder_name && image?.title) {
           downloadUrl = generateDownloadImageHDUrl(image.folder_name, image.title);
         }
-        // Fallback HD: URL d'affichage
+        // Fallback HD: Transformer download_url en supprimant /JPG/ si présent
+        else if (image?.download_url) {
+          downloadUrl = image.download_url.replace('/JPG/', '/');
+        }
+        // Dernier fallback: URL d'affichage
         else {
           downloadUrl = image?.display_url || image?.url || image?.url_miniature || image?.src || '';
+          // Supprimer /JPG/ si présent dans le fallback
+          downloadUrl = downloadUrl.replace('/JPG/', '/');
         }
       } else {
         // Version SD - Construire l'URL SD depuis folder_name ou utiliser display_url
