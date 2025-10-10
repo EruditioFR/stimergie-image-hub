@@ -23,6 +23,7 @@ export const ImageContent = ({
   onImageLoad 
 }: ImageContentProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<number>(0);
   const [imageError, setImageError] = useState(false);
   const [currentTags, setCurrentTags] = useState(image?.tags);
   const { userRole, isAdmin } = useAuth();
@@ -48,6 +49,7 @@ export const ImageContent = ({
 
   const handleDownload = async (isHD: boolean = false) => {
     setIsDownloading(true);
+    setDownloadProgress(0);
     let downloadUrl = '';
     
     try {
@@ -81,82 +83,81 @@ export const ImageContent = ({
         throw new Error('Aucune URL de téléchargement disponible');
       }
 
-      // Pour la version HD, utiliser fetch + blob pour forcer le téléchargement
-      if (isHD) {
-        console.log('Téléchargement HD depuis:', downloadUrl);
-        
-        // Récupérer l'image via fetch
-        const response = await fetch(downloadUrl, {
-          mode: 'cors',
-          credentials: 'omit'
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        // Convertir en Blob
-        const blob = await response.blob();
-        
-        // Créer une URL Blob locale
-        const blobUrl = window.URL.createObjectURL(blob);
-        
-        // Créer un lien de téléchargement avec l'URL Blob
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = `${image?.title || 'image'}_HD.jpg`;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Révoquer l'URL Blob après un délai pour nettoyer la mémoire
-        setTimeout(() => {
-          window.URL.revokeObjectURL(blobUrl);
-        }, 100);
-        
-        toast.success('Téléchargement HD démarré !');
-      } else {
-        // Pour la version SD, utiliser fetch + blob pour forcer le téléchargement
-        console.log('Téléchargement SD depuis:', downloadUrl);
-        
-        // Récupérer l'image via fetch
-        const response = await fetch(downloadUrl, {
-          mode: 'cors',
-          credentials: 'omit'
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        // Convertir en Blob
-        const blob = await response.blob();
-        
-        // Créer une URL Blob locale
-        const blobUrl = window.URL.createObjectURL(blob);
-        
-        // Créer un lien de téléchargement avec l'URL Blob
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = `${image?.title || 'image'}_SD.jpg`;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Révoquer l'URL Blob après un délai pour nettoyer la mémoire
-        setTimeout(() => {
-          window.URL.revokeObjectURL(blobUrl);
-        }, 100);
-        
-        toast.success('Téléchargement SD démarré !');
+      console.log(`Téléchargement ${isHD ? 'HD' : 'SD'} depuis:`, downloadUrl);
+      
+      // Récupérer l'image via fetch
+      const response = await fetch(downloadUrl, {
+        mode: 'cors',
+        credentials: 'omit'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
       }
+      
+      // Téléchargement avec progression pour les fichiers HD
+      const contentLength = response.headers.get('content-length');
+      const total = contentLength ? parseInt(contentLength, 10) : 0;
+
+      let blob: Blob;
+
+      if (isHD && total > 0 && response.body) {
+        // Streaming avec progression pour HD
+        const reader = response.body.getReader();
+        const chunks: Uint8Array[] = [];
+        let receivedLength = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) break;
+          
+          chunks.push(value);
+          receivedLength += value.length;
+          
+          // Mettre à jour la progression
+          const progress = Math.round((receivedLength / total) * 100);
+          setDownloadProgress(progress);
+        }
+
+        // Reconstruire le blob depuis les chunks
+        const chunksAll = new Uint8Array(receivedLength);
+        let position = 0;
+        for (const chunk of chunks) {
+          chunksAll.set(chunk, position);
+          position += chunk.length;
+        }
+
+        blob = new Blob([chunksAll], { type: 'image/jpeg' });
+      } else {
+        // Téléchargement classique pour SD ou si pas de progression disponible
+        blob = await response.blob();
+      }
+      
+      // Créer une URL Blob locale
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Créer un lien de téléchargement avec l'URL Blob
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `${image?.title || 'image'}_${isHD ? 'HD' : 'SD'}.jpg`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Révoquer l'URL Blob après un délai pour nettoyer la mémoire
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+      }, 100);
+      
+      toast.success(`Téléchargement ${isHD ? 'HD' : 'SD'} démarré !`);
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
       toast.error(`Impossible de télécharger le fichier: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     } finally {
       setIsDownloading(false);
+      setDownloadProgress(0);
     }
   };
 
@@ -194,8 +195,23 @@ export const ImageContent = ({
     : (image?.display_url || image?.url_miniature || image?.src || image?.url || '');
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center flex-wrap gap-4">
+    <>
+      {/* Barre de progression du téléchargement HD */}
+      {isDownloading && downloadProgress > 0 && (
+        <div className="fixed bottom-4 right-4 bg-background border border-border p-4 rounded-lg shadow-lg z-50 min-w-[280px]">
+          <p className="text-sm font-medium mb-2">Téléchargement en cours...</p>
+          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary rounded-full transition-all duration-300"
+              style={{ width: `${downloadProgress}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-2 text-right">{downloadProgress}%</p>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <div className="flex justify-between items-center flex-wrap gap-4">
         <h2 className="text-xl font-bold flex-1">{image?.title || 'Sans titre'}</h2>
         <div className="flex items-center gap-2 flex-shrink-0">
           <Button 
@@ -302,5 +318,6 @@ export const ImageContent = ({
         </div>
       </div>
     </div>
+    </>
   );
 };

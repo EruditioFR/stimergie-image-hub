@@ -1,6 +1,6 @@
 
 // Network utilities for download operations
-export const FETCH_TIMEOUT = 30000; // 30 seconds
+export const FETCH_TIMEOUT = 120000; // 120 seconds for large HD images
 export const MAX_RETRIES = 3;
 export const RETRY_DELAY = 1000; // 1 second delay between retries
 
