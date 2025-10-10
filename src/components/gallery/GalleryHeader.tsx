@@ -53,7 +53,7 @@ export function GalleryHeader({
   };
   
   return (
-    <div className="bg-muted/30 border-b border-border">
+    <div className="bg-[#c8bfac] border-b border-border">
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold mb-6">{title}</h1>
