@@ -115,10 +115,9 @@ export default function Index() {
           <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 bg-black/40 backdrop-blur-sm">
             <div className="w-full max-w-sm mx-auto mb-8">
               <img 
-                src="/lovable-uploads/9ce78881-8c65-4716-ab7f-128bb420c8e9.png" 
+                src="/logo_stimergie_bleu.jpg" 
                 alt="Stimergie Logo" 
                 className="h-40 w-auto mx-auto"
-                style={{ filter: 'brightness(0) invert(1)' }} // Apply filter to make logo white
               />
             </div>
             
