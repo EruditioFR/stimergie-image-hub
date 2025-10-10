@@ -21,6 +21,7 @@ interface MasonryGridProps {
   onClearSelection?: () => void;
   onSelectAll?: (imageIds: string[]) => void;
   disableSelection?: boolean;
+  infiniteScrollEnabled?: boolean;
 }
 
 export function MasonryGrid({ 
@@ -30,7 +31,8 @@ export function MasonryGrid({
   onImageSelect,
   onClearSelection,
   onSelectAll,
-  disableSelection = false
+  disableSelection = false,
+  infiniteScrollEnabled = false
 }: MasonryGridProps) {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [selectedImageDetail, setSelectedImageDetail] = useState<any>(null);
@@ -130,7 +132,7 @@ export function MasonryGrid({
             onShareDialogChange={setIsShareDialogOpen}
             images={images}
           />
-          {effectiveSelectedImages.length === 0 && images.length > 0 && (
+          {effectiveSelectedImages.length === 0 && images.length > 0 && !infiniteScrollEnabled && (
             <Button 
               variant="outline" 
               size="sm" 

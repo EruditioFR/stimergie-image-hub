@@ -73,6 +73,7 @@ export const GalleryContent = ({
         onImageSelect={toggleImageSelection} 
         onClearSelection={clearSelection}
         onSelectAll={selectAllImages}
+        infiniteScrollEnabled={infiniteScrollEnabled}
       />
       
       {infiniteScrollEnabled && hasMorePages && (
