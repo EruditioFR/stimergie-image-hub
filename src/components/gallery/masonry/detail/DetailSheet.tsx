@@ -22,7 +22,7 @@ export const DetailSheet = ({
 }: DetailSheetProps) => {
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="h-screen p-0 max-w-none w-[50%] sm:max-w-none">
+      <SheetContent side="right" className="h-screen p-0 max-w-none w-full sm:w-[85%] md:w-[75%] lg:w-[60%] xl:w-[50%]">
         <div className="h-full overflow-y-auto p-6 relative">
           <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
             <Button 
