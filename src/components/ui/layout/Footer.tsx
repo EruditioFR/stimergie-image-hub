@@ -1,13 +1,11 @@
-
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-
 export function Footer() {
   const currentYear = new Date().getFullYear();
-  const { user } = useAuth();
-
-  return (
-    <footer className="w-full bg-background border-t border-border mt-20">
+  const {
+    user
+  } = useAuth();
+  return <footer className="w-full bg-background border-t border-border mt-20">
       <div className="max-w-7xl mx-auto py-12 px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Logo and Description */}
@@ -15,9 +13,7 @@ export function Footer() {
             <Link to="/" className="text-xl font-semibold tracking-tight mb-4 inline-block">
               Stimergie
             </Link>
-            <p className="text-muted-foreground mt-4 max-w-md">
-              Une banque d'images de haute qualité pour tous vos projets créatifs. Découvrez, téléchargez et utilisez des images exceptionnelles.
-            </p>
+            <p className="text-muted-foreground mt-4 max-w-md">Stimergie centralise, organise et valorise vos contenus de marque. Un espace unique, simple et souverain pour gagner du temps, retrouver vos visuels facilement et les utiliser.</p>
           </div>
 
           {/* Navigation Links */}
@@ -31,13 +27,11 @@ export function Footer() {
                   Accueil
                 </Link>
               </li>
-              {user && (
-                <li>
+              {user && <li>
                   <Link to="/gallery" className="text-foreground/80 hover:text-primary transition-colors">
                     Banque d'images
                   </Link>
-                </li>
-              )}
+                </li>}
               <li>
                 <Link to="/about" className="text-foreground/80 hover:text-primary transition-colors">
                   À propos
@@ -105,8 +99,6 @@ export function Footer() {
           </div>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 }
-
 export default Footer;
