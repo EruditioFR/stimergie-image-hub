@@ -234,6 +234,14 @@ const Gallery = () => {
             <MasonryGrid images={[]} isLoading={true} />
           ) : displayedImages.length > 0 ? (
             <>
+              <div className="mb-4">
+                <MasonryPagination 
+                  totalCount={totalCount}
+                  currentPage={currentPage}
+                  onPageChange={handlePageChange}
+                  isLoading={isLoading || isFetching}
+                />
+              </div>
               <MasonryGrid 
                 images={displayedImages} 
                 isLoading={isLoading || isFetching} 
