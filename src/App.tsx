@@ -27,6 +27,7 @@ import ResetPassword from "./pages/ResetPassword";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Licenses from "./pages/Licenses";
+import About from "./pages/About";
 
 // Use the unified cache system
 const queryClient = unifiedCacheManager.getQueryClient();
@@ -48,6 +49,7 @@ function App() {
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
                 <Route path="/licenses" element={<Licenses />} />
+                <Route path="/about" element={<About />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
                 <Route path="/shared-album/:albumKey" element={<SharedAlbum />} />
                 <Route path="/shared-album/:shareKey" element={<SharedAlbum />} />
