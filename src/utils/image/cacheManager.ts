@@ -1,5 +1,11 @@
 
-// Cache manager for image fetching system
+// ============================================
+// UNIFIED CACHE MANAGER - Sprint 2 Optimized
+// ============================================
+// Uses React Query + SessionStorage only
+// Implements intelligent LRU eviction (200 images max)
+
+import { MAX_CACHE_ENTRIES } from '@/services/gallery/constants';
 
 // Memory cache for image promises
 export const fetchCache = new Map<string, Promise<Blob | null>>();
@@ -7,97 +13,24 @@ export const fetchCache = new Map<string, Promise<Blob | null>>();
 // Secondary cache for processed URLs after transformation
 export const processedUrlCache = new Map<string, string>();
 
-// For tracking usage order of cache entries (LRU - Least Recently Used)
-let cacheUsageOrder: string[] = [];
+// LRU tracking: Map to store access timestamps
+const cacheAccessTimes = new Map<string, number>();
 
-// Maximum cache size (number of entries)
-const MAX_CACHE_SIZE = 500; // Augmenté pour un cache plus persistant
+// Maximum cache size (number of entries) - from constants
+const MAX_CACHE_SIZE = MAX_CACHE_ENTRIES;
 
-// Shared application-wide cache - persiste entre les sessions utilisateurs
-// S'active lorsque le site est ouvert dans plusieurs onglets ou que plusieurs utilisateurs partagent un ordinateur
-let appWideCache: Record<string, string> = {};
-
-// Tentative d'utilisation de SharedWorker pour le partage entre utilisateurs si disponible
-try {
-  if (typeof SharedWorker !== 'undefined') {
-    // Tentative d'activation du cache partagé entre utilisateurs
-    const initSharedCache = () => {
-      const blob = new Blob([`
-        let sharedCache = {};
-        
-        onconnect = function(e) {
-          const port = e.ports[0];
-          
-          port.onmessage = function(e) {
-            const { action, key, value } = e.data;
-            
-            if (action === 'set') {
-              sharedCache[key] = value;
-              port.postMessage({ result: 'set', key });
-            }
-            else if (action === 'get') {
-              port.postMessage({ result: 'get', key, value: sharedCache[key] });
-            }
-            else if (action === 'getAll') {
-              port.postMessage({ result: 'getAll', cache: sharedCache });
-            }
-            else if (action === 'clear') {
-              sharedCache = {};
-              port.postMessage({ result: 'clear', success: true });
-            }
-          };
-          
-          // Synchroniser le cache existant lors de la connexion
-          port.postMessage({ result: 'getAll', cache: sharedCache });
-        };
-      `], { type: 'application/javascript' });
-      
-      const worker = new SharedWorker(URL.createObjectURL(blob));
-      
-      worker.port.onmessage = (e) => {
-        if (e.data.result === 'getAll') {
-          appWideCache = e.data.cache || {};
-        }
-      };
-      
-      worker.port.start();
-      
-      // Obtenir le cache initial
-      worker.port.postMessage({ action: 'getAll' });
-      
-      return worker;
-    };
-    
-    // Initialiser et stocker le worker
-    try {
-      const worker = initSharedCache();
-      console.log("Cache partagé entre utilisateurs activé");
-      
-      // Ajouter une méthode pour partager des entrées de cache
-      (window as any).__shareImageCache = (key: string, value: string) => {
-        worker.port.postMessage({ action: 'set', key, value });
-      };
-      
-      // Ajouter une méthode pour vider le cache partagé
-      (window as any).__clearSharedImageCache = () => {
-        worker.port.postMessage({ action: 'clear' });
-      };
-    } catch (e) {
-      console.warn("Impossible d'initialiser le cache partagé", e);
-    }
-  }
-} catch (e) {
-  console.warn("SharedWorker non disponible pour le partage de cache", e);
-}
-
-// Cache for storing actual blob data as base64 strings, persisting across page loads
+// Unified session storage cache with intelligent LRU eviction
 export const sessionImageCache = (() => {
   try {
-    // Using a wrapper for sessionStorage to handle exceptions
     return {
       getItem: (key: string): string | null => {
         try {
-          return sessionStorage.getItem(`img_cache_${key}`);
+          const value = sessionStorage.getItem(`img_cache_${key}`);
+          if (value) {
+            // Update access time for LRU
+            cacheAccessTimes.set(key, Date.now());
+          }
+          return value;
         } catch (e) {
           console.warn('Failed to access session storage:', e);
           return null;
@@ -105,50 +38,35 @@ export const sessionImageCache = (() => {
       },
       setItem: (key: string, value: string): void => {
         try {
+          // Update access time
+          cacheAccessTimes.set(key, Date.now());
+          
           sessionStorage.setItem(`img_cache_${key}`, value);
           
-          // Partager avec le cache entre utilisateurs si disponible
-          if ((window as any).__shareImageCache) {
-            try {
-              (window as any).__shareImageCache(`img_cache_${key}`, value);
-            } catch (e) {
-              console.warn("Erreur lors du partage du cache", e);
-            }
-          }
+          // Check cache size and apply LRU eviction if needed
+          evictLRUIfNeeded();
         } catch (e) {
-          console.warn('Failed to write to session storage:', e);
-          // If storage is full, clear old items
+          console.warn('Storage full, applying LRU eviction:', e);
+          // Force LRU eviction
+          evictLRUEntries(Math.ceil(MAX_CACHE_SIZE * 0.2)); // Remove 20% of cache
           try {
-            const keysToRemove = [];
-            for (let i = 0; i < sessionStorage.length; i++) {
-              const key = sessionStorage.key(i);
-              if (key && key.startsWith('img_cache_')) {
-                keysToRemove.push(key);
-              }
-            }
-            // Remove oldest 20% of cached images
-            const removeCount = Math.ceil(keysToRemove.length * 0.2);
-            for (let i = 0; i < removeCount; i++) {
-              sessionStorage.removeItem(keysToRemove[i]);
-            }
-            // Try again
             sessionStorage.setItem(`img_cache_${key}`, value);
-          } catch (clearError) {
-            console.error('Failed to clear cache and retry:', clearError);
+          } catch (retryError) {
+            console.error('Failed to cache after LRU eviction:', retryError);
           }
         }
       },
       removeItem: (key: string): void => {
         try {
           sessionStorage.removeItem(`img_cache_${key}`);
+          cacheAccessTimes.delete(key);
         } catch (e) {
           console.warn('Failed to remove from session storage:', e);
         }
       },
       clear: (): void => {
         try {
-          // Clear only image cache items
-          const keysToRemove = [];
+          const keysToRemove: string[] = [];
           for (let i = 0; i < sessionStorage.length; i++) {
             const key = sessionStorage.key(i);
             if (key && key.startsWith('img_cache_')) {
@@ -158,26 +76,74 @@ export const sessionImageCache = (() => {
           
           for (const key of keysToRemove) {
             sessionStorage.removeItem(key);
+            const cacheKey = key.replace('img_cache_', '');
+            cacheAccessTimes.delete(cacheKey);
           }
           
-          console.log(`Cleared ${keysToRemove.length} items from session storage`);
+          console.log(`✨ Cleared ${keysToRemove.length} items from unified cache`);
         } catch (e) {
           console.warn('Failed to clear session storage:', e);
         }
       }
     };
   } catch (e) {
-    // Provide a fallback if sessionStorage is not available
-    console.warn('Session storage not available, using in-memory cache instead');
+    console.warn('Session storage not available, using in-memory fallback');
     const memoryCache = new Map<string, string>();
     return {
-      getItem: (key: string): string | null => memoryCache.get(key) || null,
-      setItem: (key: string, value: string): void => { memoryCache.set(key, value); },
-      removeItem: (key: string): void => { memoryCache.delete(key); },
-      clear: (): void => { memoryCache.clear(); }
+      getItem: (key: string): string | null => {
+        const value = memoryCache.get(key) || null;
+        if (value) cacheAccessTimes.set(key, Date.now());
+        return value;
+      },
+      setItem: (key: string, value: string): void => { 
+        cacheAccessTimes.set(key, Date.now());
+        memoryCache.set(key, value);
+        if (memoryCache.size > MAX_CACHE_SIZE) {
+          const oldestKey = Array.from(cacheAccessTimes.entries())
+            .sort((a, b) => a[1] - b[1])[0][0];
+          memoryCache.delete(oldestKey);
+          cacheAccessTimes.delete(oldestKey);
+        }
+      },
+      removeItem: (key: string): void => { 
+        memoryCache.delete(key);
+        cacheAccessTimes.delete(key);
+      },
+      clear: (): void => { 
+        memoryCache.clear();
+        cacheAccessTimes.clear();
+      }
     };
   }
 })();
+
+/**
+ * LRU Eviction: Remove least recently used entries
+ */
+function evictLRUEntries(count: number): void {
+  // Get all cache keys sorted by access time (oldest first)
+  const sortedEntries = Array.from(cacheAccessTimes.entries())
+    .sort((a, b) => a[1] - b[1])
+    .slice(0, count);
+  
+  console.log(`🗑️ LRU eviction: removing ${sortedEntries.length} oldest entries`);
+  
+  for (const [key] of sortedEntries) {
+    sessionImageCache.removeItem(key);
+    fetchCache.delete(key);
+    processedUrlCache.delete(key);
+  }
+}
+
+/**
+ * Check cache size and evict if needed
+ */
+function evictLRUIfNeeded(): void {
+  if (cacheAccessTimes.size > MAX_CACHE_SIZE) {
+    const toRemove = cacheAccessTimes.size - MAX_CACHE_SIZE + Math.ceil(MAX_CACHE_SIZE * 0.1); // Remove 10% extra
+    evictLRUEntries(toRemove);
+  }
+}
 
 /**
  * Generates a cache key that includes essential URL parameters
@@ -207,100 +173,43 @@ export function generateCacheKey(url: string): string {
 
 /**
  * Manages cache size using LRU (Least Recently Used) policy
- * Removes least recently used entries when cache exceeds maximum size
+ * Updates access time for the given URL
  */
 export function manageCacheSize(url: string): void {
-  // Update usage order
-  // Remove URL if it already exists in the order
-  cacheUsageOrder = cacheUsageOrder.filter(cachedUrl => cachedUrl !== url);
-  // Add URL to the end (most recently used)
-  cacheUsageOrder.push(url);
+  // Update access time for LRU tracking
+  const cacheKey = generateCacheKey(url);
+  cacheAccessTimes.set(cacheKey, Date.now());
   
-  // If cache exceeds maximum size, remove least recently used entries
-  if (cacheUsageOrder.length > MAX_CACHE_SIZE) {
-    const urlsToRemove = cacheUsageOrder.slice(0, cacheUsageOrder.length - MAX_CACHE_SIZE);
-    urlsToRemove.forEach(urlToRemove => {
-      fetchCache.delete(urlToRemove);
-      processedUrlCache.delete(urlToRemove);
-      sessionImageCache.removeItem(generateCacheKey(urlToRemove));
-    });
-    // Update usage order
-    cacheUsageOrder = cacheUsageOrder.slice(-(MAX_CACHE_SIZE));
-  }
+  // Check if eviction is needed
+  evictLRUIfNeeded();
 }
 
 /**
- * Clears all cache stores (memory, session, browser cache)
+ * Clears all unified cache stores (memory + session)
  */
 export function clearAllCaches(): void {
-  console.log('Clearing all image caches...');
+  console.log('🧹 Clearing all unified image caches...');
   
   // Clear in-memory caches
   fetchCache.clear();
   processedUrlCache.clear();
-  cacheUsageOrder = [];
+  cacheAccessTimes.clear();
   
   // Clear session storage cache
   sessionImageCache.clear();
   
-  // Clear shared cache if available
-  if ((window as any).__clearSharedImageCache) {
-    try {
-      (window as any).__clearSharedImageCache();
-      console.log('Shared cache cleared');
-    } catch (e) {
-      console.warn('Failed to clear shared cache:', e);
-    }
-  }
-  
-  // Try to clear Cache API cache
-  if ('caches' in window) {
-    try {
-      caches.delete('images-cache-v1').then(success => {
-        console.log('Browser Cache API cache cleared:', success);
-      });
-    } catch (e) {
-      console.warn('Failed to clear Cache API cache:', e);
-    }
-  }
-  
-  // Clear localStorage image cache
-  try {
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('global_img_cache_')) {
-        keysToRemove.push(key);
-      }
-    }
-    
-    for (const key of keysToRemove) {
-      localStorage.removeItem(key);
-    }
-    
-    console.log(`Cleared ${keysToRemove.length} items from localStorage`);
-  } catch (e) {
-    console.warn('Failed to clear localStorage:', e);
-  }
+  console.log('✅ All caches cleared successfully');
 }
 
-// Vérifier si le Service Worker API est disponible
-export const initServiceWorkerCache = () => {
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', async () => {
-      try {
-        const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-        console.log('ServiceWorker enregistré avec succès:', registration.scope);
-      } catch (e) {
-        console.warn('Échec de l\'enregistrement du ServiceWorker:', e);
-      }
-    });
-  }
-};
-
-// Tenter d'activer le ServiceWorker pour le cache persistant
-try {
-  initServiceWorkerCache();
-} catch (e) {
-  console.warn("ServiceWorker non pris en charge:", e);
+/**
+ * Get cache statistics for monitoring
+ */
+export function getCacheStats() {
+  return {
+    memoryCache: fetchCache.size,
+    processedUrls: processedUrlCache.size,
+    trackedEntries: cacheAccessTimes.size,
+    maxSize: MAX_CACHE_SIZE,
+    utilizationPercent: Math.round((cacheAccessTimes.size / MAX_CACHE_SIZE) * 100)
+  };
 }

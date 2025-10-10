@@ -44,8 +44,8 @@ export async function fetchGalleryImages(
       query = query.eq('orientation', orientation);
     }
 
-    // Apply pagination or random selection
-    const finalQuery = await applyPaginationToQuery(
+    // Apply pagination or random selection (now returns { data, error } directly)
+    const { data, error } = await applyPaginationToQuery(
       query,
       pageNum,
       shouldFetchRandom,
@@ -58,8 +58,6 @@ export async function fetchGalleryImages(
       userId,
       userClientId
     );
-
-    const { data, error } = await finalQuery;
 
     if (error) {
       console.error('Supabase query error:', error);

@@ -9,15 +9,11 @@ import {
   processedUrlCache, 
   sessionImageCache, 
   generateCacheKey, 
-  manageCacheSize,
-  initServiceWorkerCache
+  manageCacheSize
 } from './cacheManager';
 import { fetchImageFromStimergieServer } from './stimergieImageFetcher';
 import { fetchGenericImage } from './genericImageFetcher';
 import { getFromGlobalCache } from './globalCache';
-
-// Ensure the Service Worker is registered
-initServiceWorkerCache();
 
 /**
  * Downloads an image from any source with improved caching strategy

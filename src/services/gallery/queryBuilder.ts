@@ -158,6 +158,7 @@ export async function buildGalleryQuery(
 
 /**
  * Apply pagination or random selection to a query
+ * IMPORTANT: This function now executes the query and returns { data, error }
  */
 export async function applyPaginationToQuery(
   query: any,
@@ -171,7 +172,7 @@ export async function applyPaginationToQuery(
   userRole: string,
   userId: string | null,
   userClientId: string | null
-) {
+): Promise<{ data: any[] | null; error: any }> {
   // Déterminer si le mode aléatoire doit être utilisé
   const useRandomMode = shouldFetchRandom && 
                          !project && 
@@ -180,89 +181,35 @@ export async function applyPaginationToQuery(
                          tab.toLowerCase() === 'all';
   
   if (useRandomMode) {
-    // Pour un tri aléatoire lorsqu'aucun filtre n'est appliqué (sauf éventuellement client)
-    console.log('Applying random ordering to images');
+    // OPTIMIZED: Fetch more images and shuffle client-side (faster than count + offset)
+    // This avoids the expensive COUNT(*) query entirely
+    console.log('🎲 Applying optimized random ordering (client-side shuffle)');
     
-    // Optimisation: Utiliser le cache pour le comptage total
-    // Include userRole and userId in cache key to avoid mixing counts between users
-    const countCacheKey = `imageCount-${userRole}-${userId || 'anon'}-${client || 'all'}`;
-    let count: number | null = null;
-    const cachedCount = sessionStorage.getItem(countCacheKey);
+    // Fetch 2x the needed images to have variety, then shuffle
+    const fetchLimit = IMAGES_PER_PAGE * 2;
     
-    if (cachedCount) {
-      count = parseInt(cachedCount, 10);
-      console.log(`Using cached image count: ${count}`);
-    } else {
-      // Obtenir le nombre total pour déterminer le décalage aléatoire
-      let countQuery = supabase.from('images').select('*', { count: 'exact', head: true });
-      
-      // Appliquer les mêmes filtres d'accès que la requête principale
-      if (client) {
-        if (userRole === 'admin') {
-          // Admin: use all client projects
-          const projetIds = await fetchProjectIdsForClient(client);
-          if (projetIds && projetIds.length > 0) {
-            countQuery = countQuery.in('id_projet', projetIds);
-          } else {
-            count = 0; // No projects for this client
-          }
-        } else if (userId) {
-          // Non-admin: use only accessible projects
-          const userAccessibleProjects = await getAccessibleProjectIds(userId);
-          if (userAccessibleProjects.length > 0) {
-            countQuery = countQuery.in('id_projet', userAccessibleProjects);
-          } else {
-            count = 0; // No accessible projects
-          }
-        }
-      } else if (['admin_client', 'user'].includes(userRole) && userId) {
-        // Non-admin without client filter: still need to filter by accessible projects
-        const userAccessibleProjects = await getAccessibleProjectIds(userId);
-        if (userAccessibleProjects.length > 0) {
-          countQuery = countQuery.in('id_projet', userAccessibleProjects);
-        } else {
-          count = 0; // No accessible projects
-        }
-      }
-      
-      // Only execute query if we didn't already set count to 0
-      if (count === null) {
-        const { count: fetchedCount, error: countError } = await countQuery;
-        
-        if (countError) {
-          console.error('Error getting count:', countError);
-          count = 0;
-        } else {
-          count = fetchedCount || 0;
-          // Mettre en cache pour de futures requêtes
-          sessionStorage.setItem(countCacheKey, count.toString());
-        }
-      }
-      
-      console.log(`Total image count for ${userRole} (accessible): ${count}`);
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .limit(fetchLimit);
+    
+    if (error) {
+      console.error('Error fetching images for random mode:', error);
+      return { data: null, error };
     }
     
-    // S'il y a des images, sélectionner un sous-ensemble aléatoire
-    if (count && count > 0) {
-      // Calculer le décalage maximal possible pour garantir que nous obtenons suffisamment d'images
-      const maxOffset = Math.max(0, count - IMAGES_PER_PAGE);
-      const randomOffset = maxOffset > 0 ? Math.floor(Math.random() * maxOffset) : 0;
-      console.log(`Using random offset: ${randomOffset} out of ${count} total accessible images`);
-      
-      // Appliquer le tri et la pagination
-      return query
-        .order('created_at', { ascending: false })
-        .range(randomOffset, randomOffset + IMAGES_PER_PAGE - 1);
-    } else {
-      // Fallback si le comptage est 0 ou null
-      console.log('No images accessible or count is 0, returning empty result');
-      return query
-        .order('created_at', { ascending: false })
-        .limit(IMAGES_PER_PAGE);
+    // Shuffle the results using Fisher-Yates algorithm
+    const shuffled = [...(data || [])];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
+    
+    // Return only the first IMAGES_PER_PAGE items
+    return { data: shuffled.slice(0, IMAGES_PER_PAGE), error: null };
   } else {
-    // Tri normal avec pagination lorsque des filtres sont appliqués
-    return query
+    // Standard pagination with cursor for filtered queries
+    console.log(`📄 Standard pagination: page ${pageNum}`);
+    return await query
       .order('created_at', { ascending: false })
       .range((pageNum - 1) * IMAGES_PER_PAGE, pageNum * IMAGES_PER_PAGE - 1);
   }
