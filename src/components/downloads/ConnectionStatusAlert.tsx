@@ -27,6 +27,12 @@ export function ConnectionStatusAlert({
 
   const isDisconnected = realtimeStatus === 'disconnected';
   
+  // Ne pas afficher l'alerte si seulement quelques tentatives de reconnexion
+  // (les téléchargements fonctionnent indépendamment du realtime websocket)
+  if (reconnectAttempts < 3 && !isDisconnected) {
+    return null;
+  }
+  
   return (
     <Alert 
       variant={isDisconnected ? "destructive" : "default"}
@@ -53,8 +59,8 @@ export function ConnectionStatusAlert({
       <AlertDescription className="mt-2">
         {isDisconnected ? (
           <span>
-            La connexion au service de téléchargement a été perdue. 
-            Vos requêtes seront traitées une fois la connexion rétablie.
+            La connexion temps réel a été perdue. 
+            Les demandes de téléchargement continueront d'être traitées normalement.
             {reconnectAttempts > 0 && (
               <span className="block mt-1 text-xs">
                 Tentatives de reconnexion: {reconnectAttempts}
@@ -63,7 +69,7 @@ export function ConnectionStatusAlert({
           </span>
         ) : (
           <span>
-            Tentative de reconnexion au service de téléchargement...
+            Tentative de reconnexion au service temps réel...
             {lastConnectedAt && (
               <span className="block mt-1 text-xs">
                 Dernière connexion: {lastConnectedAt.toLocaleTimeString()}

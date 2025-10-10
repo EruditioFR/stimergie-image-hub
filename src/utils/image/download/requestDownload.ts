@@ -10,6 +10,20 @@ import JSZip from "jszip";
 import { uploadZipToO2Switch } from "./o2switchUploader";
 import { ImageForZip } from "./types";
 
+// Limite pour diviser les téléchargements en plusieurs archives
+const MAX_IMAGES_PER_BATCH = 50;
+
+/**
+ * Divise un tableau d'images en lots de taille maximale
+ */
+function splitIntoBatches<T>(array: T[], batchSize: number): T[][] {
+  const batches: T[][] = [];
+  for (let i = 0; i < array.length; i += batchSize) {
+    batches.push(array.slice(i, i + batchSize));
+  }
+  return batches;
+}
+
 /**
  * Traite une demande de téléchargement en masse sur le serveur
  * @param user Utilisateur actuel
@@ -34,10 +48,66 @@ export async function requestServerDownload(
     return false;
   }
 
+  // Si plus de 50 images, diviser en plusieurs archives pour éviter les timeouts
+  if (images.length > MAX_IMAGES_PER_BATCH) {
+    const batches = splitIntoBatches(images, MAX_IMAGES_PER_BATCH);
+    console.log(`Dividing ${images.length} images into ${batches.length} batches`);
+    
+    if (showToasts) {
+      toast.info(`Division en ${batches.length} archives`, {
+        description: `Pour éviter les problèmes de timeout, vos ${images.length} images seront divisées en ${batches.length} archives de ${MAX_IMAGES_PER_BATCH} images maximum.`,
+        duration: 5000
+      });
+    }
+    
+    // Traiter chaque lot séquentiellement pour éviter de surcharger
+    let successCount = 0;
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
+      const batchSuccess = await processDownloadBatch(user, batch, isHD, showToasts, i + 1, batches.length);
+      if (batchSuccess) successCount++;
+    }
+    
+    if (showToasts) {
+      if (successCount === batches.length) {
+        toast.success(`${batches.length} archives créées avec succès`, {
+          description: `Toutes vos images sont prêtes à être téléchargées dans la page Téléchargements.`
+        });
+      } else if (successCount > 0) {
+        toast.warning(`${successCount}/${batches.length} archives créées`, {
+          description: `Certaines archives ont échoué. Consultez la page Téléchargements.`
+        });
+      } else {
+        toast.error("Échec de toutes les archives", {
+          description: "Veuillez réessayer avec moins d'images."
+        });
+      }
+    }
+    
+    return successCount > 0;
+  }
+
+  // Traitement normal pour moins de 50 images
+  return processDownloadBatch(user, images, isHD, showToasts);
+}
+
+/**
+ * Traite un lot d'images (fonction interne)
+ */
+async function processDownloadBatch(
+  user: User,
+  images: ImageForZip[],
+  isHD: boolean,
+  showToasts: boolean,
+  batchNumber?: number,
+  totalBatches?: number
+): Promise<boolean> {
+  const batchPrefix = batchNumber ? `[${batchNumber}/${totalBatches}] ` : "";
+  const toastId = batchNumber ? `download-request-${batchNumber}` : "download-request";
+  
   // Afficher le toast pendant le traitement
-  const toastId = "download-request";
   if (showToasts) {
-    toast.loading("Préparation de votre demande...", {
+    toast.loading(`${batchPrefix}Préparation de votre demande...`, {
       id: toastId,
       duration: Infinity
     });
@@ -49,12 +119,12 @@ export async function requestServerDownload(
       .from("download_requests")
       .insert({
         user_id: user.id,
-        image_id: String(images[0].id),  // Convertir explicitement en string
-        image_title: `${images.length} images (${isHD ? "HD" : "Web"}) - En préparation`,
+        image_id: String(images[0].id),
+        image_title: `${batchPrefix}${images.length} images (${isHD ? "HD" : "Web"}) - En préparation`,
         image_src: images[0].url,
         status: "pending",
         is_hd: isHD,
-        download_url: ""  // Initialisé vide, sera mis à jour après l'upload
+        download_url: ""
       })
       .select("id")
       .single();
@@ -115,7 +185,8 @@ export async function requestServerDownload(
         
         // Mettre à jour le toast pendant le traitement
         if (showToasts) {
-          toast.loading(`Préparation : ${Math.min((i + BATCH_SIZE), images.length)}/${images.length}`, {
+          const progress = Math.min((i + BATCH_SIZE), images.length);
+          toast.loading(`${batchPrefix}Téléchargement : ${progress}/${images.length}`, {
             id: toastId,
             duration: Infinity
           });
@@ -124,7 +195,7 @@ export async function requestServerDownload(
 
       // 2.2 Générer le ZIP
       if (showToasts) {
-        toast.loading("Compression du ZIP...", {
+        toast.loading(`${batchPrefix}Compression du ZIP...`, {
           id: toastId,
           duration: Infinity
         });
@@ -143,7 +214,7 @@ export async function requestServerDownload(
 
       // 2.4 Uploader le ZIP vers O2Switch
       if (showToasts) {
-        toast.loading("Envoi vers le serveur...", {
+        toast.loading(`${batchPrefix}Envoi vers le serveur... (${Math.round(zipBlob.size / 1024 / 1024)}MB)`, {
           id: toastId,
           duration: Infinity
         });
@@ -163,7 +234,7 @@ export async function requestServerDownload(
       const updateData = {
         download_url: downloadUrl,
         status: "ready" as const,
-        image_title: `${images.length} images (${isHD ? "HD" : "Web"})`
+        image_title: `${batchPrefix}${images.length} images (${isHD ? "HD" : "Web"})`
       };
 
       // Si processed_at est disponible dans le schéma, l'ajouter aux données
@@ -201,7 +272,7 @@ export async function requestServerDownload(
       // 2.6 Afficher le message de succès
       if (showToasts) {
         toast.dismiss(toastId);
-        toast.success("Téléchargement prêt", {
+        toast.success(`${batchPrefix}Téléchargement prêt`, {
           description: `Votre archive de ${images.length} images est prête.`,
           duration: 5000
         });
@@ -220,7 +291,7 @@ export async function requestServerDownload(
             status: "failed",
             processed_at: new Date().toISOString(),
             error_details: err instanceof Error ? err.message : String(err),
-            image_title: `Échec - ${images.length} images (${isHD ? "HD" : "Web"})`
+            image_title: `${batchPrefix}Échec - ${images.length} images (${isHD ? "HD" : "Web"})`
           })
           .eq("id", recordData.id);
       } catch (updateError) {
@@ -231,7 +302,7 @@ export async function requestServerDownload(
           .from("download_requests")
           .update({
             status: "expired",
-            image_title: `Échec - ${images.length} images (${isHD ? "HD" : "Web"})`
+            image_title: `${batchPrefix}Échec - ${images.length} images (${isHD ? "HD" : "Web"})`
           })
           .eq("id", recordData.id);
       }
