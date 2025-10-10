@@ -34,12 +34,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Check for valid session on mount
     supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log("Initial session:", session?.user?.id);
+      console.log("🔐 Initial session check:", session?.user?.id || 'No session');
       
       if (error) {
-        console.error("Error getting initial session:", error);
-        // Clear any invalid session data
+        console.error("❌ Error getting initial session:", error.message);
+        
+        // Clear any invalid session data from localStorage
+        localStorage.removeItem('sb-mjhbugzaqmtfnbxaqpss-auth-token');
+        
         setSession(null);
         setUser(null);
         setUserRole('user');
@@ -61,11 +65,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log("Auth state change event:", event, "User ID:", session?.user?.id);
+        console.log("🔄 Auth state change:", event, "| User:", session?.user?.id || 'None');
         
-        // Handle token refresh errors by clearing session
-        if (event === 'TOKEN_REFRESHED' && !session) {
-          console.log("Token refresh failed, clearing session");
+        // Handle token refresh errors
+        if (event === 'TOKEN_REFRESHED') {
+          if (!session) {
+            console.error("❌ Token refresh failed - no session returned");
+            
+            // Clear invalid tokens from storage
+            localStorage.removeItem('sb-mjhbugzaqmtfnbxaqpss-auth-token');
+            
+            toast({
+              title: "Session expirée",
+              description: "Veuillez vous reconnecter",
+              variant: "destructive"
+            });
+            
+            setSession(null);
+            setUser(null);
+            setUserRole('user');
+            setUserClientId(null);
+            setLoading(false);
+            return;
+          }
+          console.log("✅ Token refreshed successfully");
+        }
+        
+        // Handle sign out event
+        if (event === 'SIGNED_OUT') {
+          console.log("👋 User signed out");
+          
+          // Clear all auth data
+          localStorage.removeItem('sb-mjhbugzaqmtfnbxaqpss-auth-token');
+          
           setSession(null);
           setUser(null);
           setUserRole('user');
@@ -74,15 +106,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         
-        // Handle sign out event
-        if (event === 'SIGNED_OUT') {
-          console.log("User signed out");
-          setSession(null);
-          setUser(null);
-          setUserRole('user');
-          setUserClientId(null);
-          setLoading(false);
-          return;
+        // Handle sign in success
+        if (event === 'SIGNED_IN' && session) {
+          console.log("✅ User signed in successfully");
         }
         
         setSession(session);
@@ -103,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [toast]);
 
   const fetchUserClientId = async (userId: string) => {
     try {
@@ -124,35 +150,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserRoleViaRPC = async (userId: string) => {
     try {
-      console.log("Fetching user role for:", userId);
+      console.log("👤 Fetching user role for:", userId);
       const { data, error } = await supabase.rpc('get_user_role');
       
       if (error) {
-        console.error("Error fetching user role:", error);
-        // If it's an auth error, don't try fallback
-        if (error.message?.includes('Invalid Refresh Token') || error.message?.includes('JWT expired')) {
-          console.log("Auth token invalid, clearing session");
+        console.error("❌ Error fetching user role:", error.message);
+        
+        // Check for authentication/token errors
+        const isAuthError = error.message?.includes('Invalid Refresh Token') || 
+                           error.message?.includes('JWT expired') ||
+                           error.message?.includes('refresh_token_not_found') ||
+                           error.code === 'PGRST301';
+        
+        if (isAuthError) {
+          console.error("🔐 Authentication error detected, signing out...");
+          
+          // Clear storage and sign out
+          localStorage.removeItem('sb-mjhbugzaqmtfnbxaqpss-auth-token');
+          
+          toast({
+            title: "Session invalide",
+            description: "Veuillez vous reconnecter",
+            variant: "destructive"
+          });
+          
           await supabase.auth.signOut();
           return;
         }
+        
         await fallbackFetchRole(userId);
         return;
       }
       
-      console.log("User role from RPC:", data);
+      console.log("✅ User role from RPC:", data);
       if (data) {
         setUserRole(data);
       } else {
         await fallbackFetchRole(userId);
       }
     } catch (error) {
-      console.error("Unexpected error fetching role:", error);
-      // If it's an auth error, sign out
-      if (error instanceof Error && (error.message?.includes('Invalid Refresh Token') || error.message?.includes('JWT expired'))) {
-        console.log("Auth token invalid, clearing session");
-        await supabase.auth.signOut();
-        return;
+      console.error("❌ Unexpected error fetching role:", error);
+      
+      // Check for authentication errors in catch block
+      if (error instanceof Error) {
+        const isAuthError = error.message?.includes('Invalid Refresh Token') || 
+                           error.message?.includes('JWT expired') ||
+                           error.message?.includes('refresh_token_not_found');
+        
+        if (isAuthError) {
+          console.error("🔐 Authentication error in catch, signing out...");
+          localStorage.removeItem('sb-mjhbugzaqmtfnbxaqpss-auth-token');
+          await supabase.auth.signOut();
+          return;
+        }
       }
+      
       await fallbackFetchRole(userId);
     } finally {
       setLoading(false);
