@@ -12,13 +12,16 @@ import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Trash2, Bug } from 'lucide-react';
+import { Trash2, Bug, Infinity } from 'lucide-react';
 import { clearImageCachesOnly } from '@/utils/image/smartCacheManager';
 import { GalleryDownloadButtons } from '@/components/gallery/GalleryDownloadButtons';
 import { useImageSelection } from '@/hooks/useImageSelection';
 import { CacheDebugPanel } from '@/components/admin/CacheDebugPanel';
 import { useSmartCacheInvalidation } from '@/hooks/useSmartCacheInvalidation';
 import { useGalleryRealtime } from '@/hooks/gallery/useGalleryRealtime';
+import { useInfiniteScroll } from '@/hooks/gallery/useInfiniteScroll';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 // Catégories pour les filtres
 const categories = ['Toutes', 'Nature', 'Technologie', 'Architecture', 'Personnes', 'Animaux', 'Voyage'];
@@ -37,6 +40,8 @@ const Gallery = () => {
   const pageLoadTimeRef = useRef(Date.now());
   const [isFlushing, setIsFlushing] = useState(false);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const [infiniteScrollEnabled, setInfiniteScrollEnabled] = useState(false);
+  const [accumulatedImages, setAccumulatedImages] = useState<any[]>([]);
   const {
     selectedImages,
     toggleImageSelection,
@@ -68,8 +73,25 @@ const Gallery = () => {
     refreshGallery,
     userRole: galleryUserRole,
     userClientId,
-    shouldFetchRandom
+    shouldFetchRandom,
+    hasMorePages
   } = useGalleryImages(isAdmin);
+
+  // Gestion de l'infinite scroll
+  const handleLoadMorePage = useCallback(() => {
+    if (hasMorePages && !isLoading && !isFetching) {
+      handlePageChange(currentPage + 1);
+    }
+  }, [hasMorePages, isLoading, isFetching, currentPage, handlePageChange]);
+
+  const { setSentinelRef } = useInfiniteScroll({
+    enabled: infiniteScrollEnabled,
+    isLoading: isLoading || isFetching,
+    hasMorePages: hasMorePages || false,
+    currentPage,
+    onLoadMore: handleLoadMorePage,
+    threshold: 0.8
+  });
 
   // Log détaillé pour le projet problématique
   useEffect(() => {
@@ -97,8 +119,33 @@ const Gallery = () => {
     }
   }, [searchQuery, activeTab, selectedClient, selectedProject, selectedOrientation, currentPage]);
 
-  // Les images à afficher sont toujours celles de la requête actuelle
-  const displayedImages = allImages;
+  // Gestion des images accumulées pour l'infinite scroll
+  useEffect(() => {
+    if (infiniteScrollEnabled) {
+      if (currentPage === 1) {
+        // Réinitialiser l'accumulation lors d'un changement de filtre
+        setAccumulatedImages(allImages);
+      } else {
+        // Ajouter les nouvelles images aux images existantes
+        setAccumulatedImages(prev => {
+          const existingIds = new Set(prev.map(img => img.id));
+          const newImages = allImages.filter(img => !existingIds.has(img.id));
+          return [...prev, ...newImages];
+        });
+      }
+    } else {
+      // En mode pagination classique, afficher uniquement les images de la page courante
+      setAccumulatedImages(allImages);
+    }
+  }, [allImages, currentPage, infiniteScrollEnabled]);
+
+  // Réinitialiser l'accumulation lors d'un changement de filtre
+  useEffect(() => {
+    setAccumulatedImages([]);
+  }, [searchQuery, activeTab, selectedClient, selectedProject, selectedOrientation]);
+
+  // Les images à afficher selon le mode
+  const displayedImages = infiniteScrollEnabled ? accumulatedImages : allImages;
 
   const shouldShowEmptyState = !isLoading && displayedImages.length === 0;
 
@@ -183,43 +230,58 @@ const Gallery = () => {
           userClientId={userClientId} 
         />
 
-        {isAdmin && (
-          <div className="flex justify-end px-4 mb-2 gap-2">
-            <Button
-              variant="outline" 
-              size="sm"
-              disabled={isFlushing}
-              onClick={handleSmartFlushCache}
-              className="flex items-center gap-1"
-            >
-              <Trash2 className="h-4 w-4" /> 
-              {isFlushing ? 'Vidage...' : 'Vider Cache Images'}
-            </Button>
-            
-            {selectedProject && (
+        <div className="flex justify-between items-center px-4 mb-2">
+          {/* Toggle infinite scroll */}
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="infinite-scroll"
+              checked={infiniteScrollEnabled}
+              onCheckedChange={setInfiniteScrollEnabled}
+            />
+            <Label htmlFor="infinite-scroll" className="flex items-center gap-2 cursor-pointer">
+              <Infinity className="h-4 w-4" />
+              Défilement infini
+            </Label>
+          </div>
+
+          {isAdmin && (
+            <div className="flex gap-2">
               <Button
                 variant="outline" 
                 size="sm"
                 disabled={isFlushing}
-                onClick={handleForceRefreshProject}
+                onClick={handleSmartFlushCache}
                 className="flex items-center gap-1"
               >
                 <Trash2 className="h-4 w-4" /> 
-                {isFlushing ? 'Actualisation...' : 'Actualiser Projet'}
+                {isFlushing ? 'Vidage...' : 'Vider Cache'}
               </Button>
-            )}
-            
-            <Button
-              variant="ghost" 
-              size="sm"
-              onClick={() => setShowDebugPanel(!showDebugPanel)}
-              className="flex items-center gap-1"
-            >
-              <Bug className="h-4 w-4" /> 
-              Debug Cache
-            </Button>
-          </div>
-        )}
+              
+              {selectedProject && (
+                <Button
+                  variant="outline" 
+                  size="sm"
+                  disabled={isFlushing}
+                  onClick={handleForceRefreshProject}
+                  className="flex items-center gap-1"
+                >
+                  <Trash2 className="h-4 w-4" /> 
+                  {isFlushing ? 'Actualisation...' : 'Actualiser Projet'}
+                </Button>
+              )}
+              
+              <Button
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowDebugPanel(!showDebugPanel)}
+                className="flex items-center gap-1"
+              >
+                <Bug className="h-4 w-4" /> 
+                Debug
+              </Button>
+            </div>
+          )}
+        </div>
 
         {/* Panel de debug admin */}
         {isAdmin && showDebugPanel && (
@@ -234,14 +296,17 @@ const Gallery = () => {
             <MasonryGrid images={[]} isLoading={true} />
           ) : displayedImages.length > 0 ? (
             <>
-              <div className="mb-4">
-                <MasonryPagination 
-                  totalCount={totalCount}
-                  currentPage={currentPage}
-                  onPageChange={handlePageChange}
-                  isLoading={isLoading || isFetching}
-                />
-              </div>
+              {!infiniteScrollEnabled && (
+                <div className="mb-4">
+                  <MasonryPagination 
+                    totalCount={totalCount}
+                    currentPage={currentPage}
+                    onPageChange={handlePageChange}
+                    isLoading={isLoading || isFetching}
+                  />
+                </div>
+              )}
+              
               <MasonryGrid 
                 images={displayedImages} 
                 isLoading={isLoading || isFetching} 
@@ -250,12 +315,27 @@ const Gallery = () => {
                 onClearSelection={clearSelection}
                 onSelectAll={selectAllImages}
               />
-              <MasonryPagination 
-                totalCount={totalCount}
-                currentPage={currentPage}
-                onPageChange={handlePageChange}
-                isLoading={isLoading || isFetching}
-              />
+              
+              {/* Sentinel pour l'infinite scroll */}
+              {infiniteScrollEnabled && hasMorePages && (
+                <div ref={setSentinelRef} className="h-20 flex items-center justify-center">
+                  {(isLoading || isFetching) && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      <span>Chargement...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {!infiniteScrollEnabled && (
+                <MasonryPagination 
+                  totalCount={totalCount}
+                  currentPage={currentPage}
+                  onPageChange={handlePageChange}
+                  isLoading={isLoading || isFetching}
+                />
+              )}
             </>
           ) : (
             <EmptyResults 

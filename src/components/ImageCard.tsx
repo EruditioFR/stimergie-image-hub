@@ -7,6 +7,7 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { downloadImage } from '@/utils/image/download';
 import { toast } from 'sonner';
 import { validateImageUrl } from '@/utils/image/errorHandler';
+import { LazyImage } from '@/components/gallery/masonry/LazyImage';
 
 interface ImageCardProps {
   id: string;
@@ -153,24 +154,20 @@ export const ImageCard = memo(function ImageCard({
       <div className="block relative">
         {shouldUseAspectRatio ? (
           <AspectRatio ratio={aspectRatio}>
-            <img 
-              ref={imageRef}
+            <LazyImage
               src={imageSrc}
-              alt={alt} 
-              className="w-full h-full object-cover"
-              loading="lazy"
+              alt={alt}
+              aspectRatio={aspectRatio}
+              className="w-full h-full"
               onLoad={handleImageLoad}
               onError={handleImageError}
             />
           </AspectRatio>
         ) : (
-          <img 
-            ref={imageRef}
+          <LazyImage
             src={imageSrc}
-            alt={alt} 
-            className="w-full object-contain"
-            loading="lazy"
-            style={{ maxHeight: '80vh' }}
+            alt={alt}
+            className="w-full"
             onLoad={handleImageLoad}
             onError={handleImageError}
           />
