@@ -25,24 +25,38 @@ export function useInfiniteScroll({
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef(false);
 
+  const lastLoadTime = useRef(0);
+
   const handleLoadMore = useCallback(() => {
+    const now = Date.now();
+    const timeSinceLastLoad = now - lastLoadTime.current;
+    
+    // Ne charger qu'une fois toutes les 2 secondes minimum
+    if (timeSinceLastLoad < 2000) {
+      console.log('⏳ Cooldown actif, chargement ignoré');
+      return;
+    }
+    
     if (!enabled || isLoading || !hasMorePages || loadingRef.current) {
       return;
     }
 
     loadingRef.current = true;
+    lastLoadTime.current = now;
     onLoadMore();
     
-    // Reset loading flag après un délai
+    // Reset loading flag après un délai plus long
     setTimeout(() => {
       loadingRef.current = false;
-    }, 1000);
+    }, 2000);
   }, [enabled, isLoading, hasMorePages, onLoadMore]);
 
   useEffect(() => {
     if (!enabled) return;
 
-    // Observer basé sur le scroll position
+    // Observer basé sur le scroll position avec debounce
+    let debounceTimer: NodeJS.Timeout;
+    
     const handleScroll = () => {
       if (isLoading || !hasMorePages || loadingRef.current) return;
 
@@ -57,10 +71,16 @@ export function useInfiniteScroll({
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    const debouncedHandleScroll = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(handleScroll, 200);
+    };
+
+    window.addEventListener('scroll', debouncedHandleScroll, { passive: true });
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', debouncedHandleScroll);
+      clearTimeout(debounceTimer);
     };
   }, [enabled, isLoading, hasMorePages, threshold, handleLoadMore]);
 

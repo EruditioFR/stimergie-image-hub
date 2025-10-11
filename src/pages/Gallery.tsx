@@ -86,25 +86,39 @@ const Gallery = () => {
     }
   }, [searchQuery, activeTab, selectedClient, selectedProject, selectedOrientation, currentPage]);
 
+  // Accumulate images for infinite scroll with duplicate prevention
   useEffect(() => {
     if (infiniteScrollEnabled) {
       if (currentPage === 1) {
+        // Page 1: remplacement complet
         setAccumulatedImages(allImages);
-      } else {
+      } else if (allImages.length > 0) {
+        // Pages suivantes: ajout uniquement si on a vraiment de nouvelles images
         setAccumulatedImages(prev => {
           const existingIds = new Set(prev.map(img => img.id));
           const newImages = allImages.filter(img => !existingIds.has(img.id));
+          
+          // Ne rien faire si pas de nouvelles images (évite les re-renders inutiles)
+          if (newImages.length === 0) {
+            return prev;
+          }
+          
+          console.log(`📦 Ajout de ${newImages.length} nouvelles images (total: ${prev.length + newImages.length})`);
           return [...prev, ...newImages];
         });
       }
     } else {
+      // Mode pagination classique
       setAccumulatedImages(allImages);
     }
   }, [allImages, currentPage, infiniteScrollEnabled]);
 
+  // Reset accumulated images when filters change (only if on page 1)
   useEffect(() => {
-    setAccumulatedImages([]);
-  }, [searchQuery, activeTab, selectedClient, selectedProject, selectedOrientation]);
+    if (currentPage === 1) {
+      setAccumulatedImages([]);
+    }
+  }, [searchQuery, activeTab, selectedClient, selectedProject, selectedOrientation, currentPage]);
 
   const displayedImages = infiniteScrollEnabled ? accumulatedImages : allImages;
   

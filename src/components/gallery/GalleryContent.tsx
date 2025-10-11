@@ -1,6 +1,7 @@
 import { MasonryGrid } from '@/components/gallery/masonry/MasonryGrid';
 import { MasonryPagination } from '@/components/gallery/masonry/MasonryPagination';
 import { EmptyResults } from '@/components/gallery/EmptyResults';
+import { Loader2 } from 'lucide-react';
 
 interface GalleryContentProps {
   displayedImages: any[];
@@ -77,11 +78,16 @@ export const GalleryContent = ({
       />
       
       {infiniteScrollEnabled && hasMorePages && (
-        <div ref={setSentinelRef} className="h-20 flex items-center justify-center">
-          {(isLoading || isFetching) && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <span>Chargement...</span>
+        <div 
+          ref={setSentinelRef} 
+          className="w-full py-12 flex justify-center"
+        >
+          {isFetching && (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <span className="text-sm text-muted-foreground">
+                Chargement de plus d'images...
+              </span>
             </div>
           )}
         </div>
