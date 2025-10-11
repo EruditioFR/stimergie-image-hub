@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useMemo, useEffect } from 'react';
 import { 
   Select,
   SelectContent,
@@ -8,10 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
-import { fetchClients } from '@/services/clientService';
-import { Client } from '@/types/user';
+import { useClientsData } from '@/hooks/projects/useClientsData';
 
 interface ClientsFilterProps {
   selectedClient: string | null;
@@ -22,52 +19,24 @@ interface ClientsFilterProps {
 }
 
 export function ClientsFilter({ selectedClient, onClientChange, className, userRole, userClientId }: ClientsFilterProps) {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const { user } = useAuth();
+  const { clients: allClients, loading: isLoading } = useClientsData();
   const isRegularUser = userRole === 'user';
   const isAdminClient = userRole === 'admin_client';
   
+  // Filtrer les clients en fonction du rôle - mémorisé pour éviter recalculs
+  const clients = useMemo(() => {
+    if ((isRegularUser || isAdminClient) && userClientId) {
+      return allClients.filter(client => client.id === userClientId);
+    }
+    return allClients;
+  }, [allClients, isRegularUser, isAdminClient, userClientId]);
+  
+  // Auto-sélection du client pour les utilisateurs avec un seul client
   useEffect(() => {
-    const loadClients = async () => {
-      setIsLoading(true);
-      try {
-        console.log("Loading clients for ClientsFilter");
-        
-        const clientsData = await fetchClients();
-        
-        // Si c'est un utilisateur régulier, filtrer pour n'afficher que leur client
-        if (isRegularUser && userClientId) {
-          const filteredClients = clientsData.filter(client => client.id === userClientId);
-          setClients(filteredClients);
-          
-          // Auto-sélectionner le client
-          if (filteredClients.length === 1 && selectedClient !== userClientId) {
-            onClientChange(userClientId);
-          }
-        } else if (isAdminClient && userClientId) {
-          const filteredClients = clientsData.filter(client => client.id === userClientId);
-          setClients(filteredClients);
-          
-          // Auto-sélectionner le client
-          if (filteredClients.length === 1 && selectedClient !== userClientId) {
-            onClientChange(userClientId);
-          }
-        } else {
-          setClients(clientsData);
-        }
-      } catch (error) {
-        console.error('Error loading clients:', error);
-        toast("Impossible de charger la liste des clients", {
-          description: "Une erreur est survenue lors du chargement des clients"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    loadClients();
-  }, [userRole, userClientId, user, onClientChange, isRegularUser, isAdminClient, selectedClient]);
+    if ((isRegularUser || isAdminClient) && userClientId && clients.length === 1 && selectedClient !== userClientId) {
+      onClientChange(userClientId);
+    }
+  }, [clients.length, userClientId, selectedClient, isRegularUser, isAdminClient, onClientChange]);
   
   const handleValueChange = (value: string) => {
     // Ne pas autoriser les utilisateurs réguliers à changer leur client

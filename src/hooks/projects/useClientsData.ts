@@ -1,42 +1,17 @@
-
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { fetchClients } from "@/services/clientService";
 
 export function useClientsData() {
-  const [clients, setClients] = useState<{ id: string; nom: string }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
-  const fetchClients = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('clients')
-        .select('id, nom')
-        .order('nom');
-
-      if (error) throw error;
-      if (data) setClients(data);
-    } catch (error) {
-      console.error("Erreur lors de la récupération des clients:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de récupérer les clients.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchClients();
-  }, []);
+  const { data: clients = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ['clients'],
+    queryFn: fetchClients,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
 
   return {
-    clients,
+    clients: clients.map(c => ({ id: c.id, nom: c.nom })),
     loading,
-    fetchClients
+    fetchClients: refetch
   };
 }
