@@ -190,12 +190,21 @@ export const ImageCard = memo(function ImageCard({
           <Button 
             size="icon" 
             variant="secondary" 
-            className="bg-white/90 hover:bg-white w-8 h-8 rounded-full shadow-md"
+            className={cn(
+              "w-8 h-8 rounded-full shadow-md transition-all duration-300",
+              isDownloading 
+                ? "bg-primary text-white animate-pulse" 
+                : "bg-white/90 hover:bg-white"
+            )}
             onClick={handleDownload}
             disabled={isDownloading}
             title="Télécharger"
           >
-            <Download className={`h-4 w-4 ${isDownloading ? 'animate-pulse' : ''} text-foreground`} />
+            <Download className={cn(
+              "h-4 w-4 transition-transform duration-500",
+              isDownloading ? "animate-spin" : "",
+              isDownloading ? "text-white" : "text-foreground"
+            )} />
             <span className="sr-only">Télécharger</span>
           </Button>
         </div>
