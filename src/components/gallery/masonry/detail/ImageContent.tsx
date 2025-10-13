@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Folder, User } from 'lucide-react';
 import { downloadImage } from '@/utils/image/imageDownloader';
@@ -9,6 +9,8 @@ import { TagsEditor } from './TagsEditor';
 import { ImageSharingManager } from '@/components/images/ImageSharingManager';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { fetchImageAsBlob } from '@/utils/image/fetcher';
+import { fetchWithTimeout } from '@/utils/image/download/networkUtils';
 
 interface ImageContentProps {
   image: any;
@@ -70,6 +72,17 @@ export const ImageContent = ({
   console.log("ImageContent component - Current tags:", currentTags);
   console.log("ImageContent component - Processed tags:", displayTags);
 
+  // Pré-charger l'image HD en arrière-plan pour un téléchargement instantané
+  useEffect(() => {
+    if (image?.folder_name && image?.title) {
+      const hdUrl = generateDownloadImageHDUrl(image.folder_name, image.title);
+      // Pré-charge en cache silencieusement
+      fetchImageAsBlob(hdUrl).catch(() => {
+        // Ignore les erreurs de pré-chargement
+      });
+    }
+  }, [image?.folder_name, image?.title]);
+
   const handleDownload = async (isHD: boolean = false) => {
     let downloadUrl = '';
     
@@ -105,13 +118,27 @@ export const ImageContent = ({
 
       console.log(`Téléchargement ${isHD ? 'HD' : 'SD'} depuis:`, downloadUrl);
       
-      // TÉLÉCHARGEMENT HD avec fetch + blob (force le téléchargement)
-      if (isHD) {
-        setIsDownloading(true);
-        setDownloadProgress(0);
-        
-        try {
-          const response = await fetch(downloadUrl, {
+      setIsDownloading(true);
+      setDownloadProgress(0);
+      
+      const toastId = toast.loading(
+        isHD ? 'Téléchargement HD en cours...' : 'Téléchargement SD en cours...',
+        { description: '0%' }
+      );
+      
+      try {
+        let blob: Blob | null = null;
+
+        if (isHD) {
+          // Pour HD, utiliser fetchImageAsBlob qui gère le cache, retry, timeout
+          blob = await fetchImageAsBlob(downloadUrl);
+          
+          if (!blob) {
+            throw new Error('Impossible de récupérer l\'image HD');
+          }
+        } else {
+          // Pour SD, fetch avec suivi de progression
+          const response = await fetchWithTimeout(downloadUrl, {
             mode: 'cors',
             credentials: 'omit',
             headers: {
@@ -120,65 +147,87 @@ export const ImageContent = ({
           });
           
           if (!response.ok) {
-            throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+            throw new Error(`Erreur HTTP ${response.status}`);
           }
           
-          const blob = await response.blob();
-          const blobUrl = window.URL.createObjectURL(blob);
+          // Suivi de la progression pour SD
+          const contentLength = parseInt(response.headers.get('content-length') || '0');
+          const reader = response.body?.getReader();
           
-          const link = document.createElement('a');
-          link.href = blobUrl;
-          link.download = `${image?.title || 'image'}_HD.jpg`;
-          link.style.display = 'none';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          setTimeout(() => {
-            window.URL.revokeObjectURL(blobUrl);
-          }, 100);
-          
-          toast.success('Téléchargement HD démarré !');
-          return;
-        } catch (error) {
-          console.error('Erreur téléchargement HD:', error);
-          toast.error('Impossible de télécharger la version HD');
-          return;
-        } finally {
-          setIsDownloading(false);
-          setDownloadProgress(0);
+          if (reader && contentLength > 0) {
+            let receivedLength = 0;
+            const chunks: BlobPart[] = [];
+            
+            while (true) {
+              const { done, value } = await reader.read();
+              
+              if (done) break;
+              
+              if (value) {
+                chunks.push(value);
+                receivedLength += value.length;
+              }
+              
+              const progress = Math.round((receivedLength / contentLength) * 100);
+              setDownloadProgress(progress);
+              
+              const mbReceived = (receivedLength / (1024 * 1024)).toFixed(1);
+              const mbTotal = (contentLength / (1024 * 1024)).toFixed(1);
+              
+              toast.loading(
+                isHD ? 'Téléchargement HD en cours...' : 'Téléchargement SD en cours...',
+                { 
+                  id: toastId,
+                  description: `${progress}% (${mbReceived} MB / ${mbTotal} MB)`
+                }
+              );
+            }
+            
+            blob = new Blob(chunks, { type: 'image/jpeg' });
+          } else {
+            blob = await response.blob();
+          }
         }
+        
+        if (!blob) {
+          throw new Error('Aucune donnée reçue');
+        }
+        
+        // Sauvegarder le fichier
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `${image?.title || 'image'}_${isHD ? 'HD' : 'SD'}.jpg`;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        setTimeout(() => {
+          window.URL.revokeObjectURL(blobUrl);
+        }, 100);
+        
+        const sizeMB = (blob.size / (1024 * 1024)).toFixed(1);
+        toast.success(
+          `Téléchargement ${isHD ? 'HD' : 'SD'} terminé !`,
+          { 
+            id: toastId,
+            description: `${sizeMB} MB`
+          }
+        );
+      } catch (error) {
+        console.error('Erreur lors du téléchargement:', error);
+        toast.error(
+          `Échec du téléchargement ${isHD ? 'HD' : 'SD'}`,
+          { 
+            id: toastId,
+            description: error instanceof Error ? error.message : 'Erreur inconnue'
+          }
+        );
+      } finally {
+        setIsDownloading(false);
+        setDownloadProgress(0);
       }
-      
-      // Pour SD, téléchargement avec fetch (plus rapide pour petits fichiers)
-      setIsDownloading(true);
-      setDownloadProgress(0);
-      
-      const response = await fetch(downloadUrl, {
-        mode: 'cors',
-        credentials: 'omit'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = `${image?.title || 'image'}_SD.jpg`;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      setTimeout(() => {
-        window.URL.revokeObjectURL(blobUrl);
-      }, 100);
-      
-      toast.success('Téléchargement SD démarré !');
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
       toast.error(`Impossible de télécharger le fichier: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
