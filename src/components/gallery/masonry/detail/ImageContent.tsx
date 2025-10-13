@@ -202,7 +202,7 @@ export const ImageContent = ({
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer"
           >
             <Folder className="h-3.5 w-3.5" />
-            <span>{getFolderDisplayName()}</span>
+            <span className="text-left">{getFolderDisplayName()}</span>
           </button>
         )}
         
