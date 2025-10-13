@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Download } from 'lucide-react';
@@ -28,9 +28,9 @@ export function DetailDialog({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 overflow-hidden" style={{ width: modalWidth }}>
-        {/* Ajout du DialogTitle pour l'accessibilité */}
+        {/* Titre caché pour l'accessibilité */}
         <VisuallyHidden>
-          <h2 id="dialog-title">{image.title || 'Détail de l\'image'}</h2>
+          <DialogTitle>{image.title || 'Détail de l\'image'}</DialogTitle>
         </VisuallyHidden>
         
         <ScrollArea className="max-h-[90vh]">
