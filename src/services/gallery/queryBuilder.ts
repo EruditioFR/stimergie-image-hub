@@ -67,7 +67,6 @@ export async function buildGalleryQuery(
       id_projet,
       width,
       height,
-      folder_name,
       projets:id_projet (nom_projet, nom_dossier, id_client, clients:id_client(id, nom))
     `);
   
@@ -130,11 +129,11 @@ export async function buildGalleryQuery(
     console.log('Applying search filter for:', search);
     
     if (clientProjectIds.length > 0 && userRole === 'admin') {
-      // Pour les admins : chercher dans les titres/tags/dossiers OU dans les projets des clients correspondants
-      query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%,folder_name.ilike.%${search}%,id_projet.in.(${clientProjectIds.join(',')})`);
+      // Pour les admins : chercher dans les titres/tags OU dans les projets des clients correspondants
+      query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%,id_projet.in.(${clientProjectIds.join(',')})`);
     } else {
-      // Recherche normale dans les titres, tags et noms de dossiers
-      query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%,folder_name.ilike.%${search}%`);
+      // Recherche normale dans les titres et tags
+      query = query.or(`title.ilike.%${search}%,tags.ilike.%${search}%`);
     }
   }
 

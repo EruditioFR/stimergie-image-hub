@@ -30,18 +30,9 @@ export const ImageContent = ({
   const { userRole, isAdmin } = useAuth();
   const navigate = useNavigate();
 
-  // Get the folder name to display (parent if folder is JPG)
+  // Get the folder name to display from project
   const getFolderDisplayName = (): string | null => {
-    const folderName = image?.folder_name || image?.projets?.nom_dossier;
-    
-    if (!folderName) return null;
-    
-    // If folder contains "JPG", use the parent folder
-    if (folderName.toLowerCase().includes('jpg')) {
-      return image?.projets?.nom_dossier || folderName;
-    }
-    
-    return folderName;
+    return image?.projets?.nom_dossier || null;
   };
 
   const handleFolderClick = () => {
