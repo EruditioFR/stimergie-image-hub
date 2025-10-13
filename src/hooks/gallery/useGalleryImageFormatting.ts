@@ -63,7 +63,10 @@ export const useGalleryImageFormatting = () => {
         created_at: image.created_at || new Date().toISOString(),
         description: image.description || '',
         url_miniature: srcUrl,
-        url: downloadUrl
+        url: downloadUrl,
+        projets: image.projets || null,
+        id_projet: image.id_projet || null,
+        image_shared_clients: image.image_shared_clients || null
       } as Image;
     });
   }, []);
