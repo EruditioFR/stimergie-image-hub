@@ -13,6 +13,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const tagFilter = searchParams.get('tag') || '';
+  const clientFilter = searchParams.get('client') || null;
   const { userRole, user, userClientId } = useAuth();
 
   // Only admin users can change the client filter

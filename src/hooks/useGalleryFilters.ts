@@ -46,6 +46,16 @@ export function useGalleryFilters() {
     getUserClientId();
   }, [userRole, user]);
 
+  // Synchronize client filter with URL parameter (admin only)
+  useEffect(() => {
+    const urlClient = searchParams.get('client');
+    if (urlClient && urlClient !== selectedClient && userRole === 'admin') {
+      console.log('Synchronizing client filter from URL:', urlClient);
+      setSelectedClient(urlClient);
+      setSelectedProject(null); // Clear project when client changes from URL
+    }
+  }, [searchParams, userRole]);
+
   const handleTabChange = useCallback((value: string) => {
     console.log('Tab changed to:', value);
     setActiveTab(value);

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Folder, User } from 'lucide-react';
 import { downloadImage } from '@/utils/image/imageDownloader';
 import { toast } from 'sonner';
 import { generateDownloadImageHDUrl, generateDownloadImageSDUrl } from '@/utils/image/imageUrlGenerator';
@@ -8,6 +8,7 @@ import { parseTagsString } from '@/utils/imageUtils';
 import { TagsEditor } from './TagsEditor';
 import { ImageSharingManager } from '@/components/images/ImageSharingManager';
 import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface ImageContentProps {
   image: any;
@@ -27,6 +28,37 @@ export const ImageContent = ({
   const [imageError, setImageError] = useState(false);
   const [currentTags, setCurrentTags] = useState(image?.tags);
   const { userRole, isAdmin } = useAuth();
+  const navigate = useNavigate();
+
+  // Get the folder name to display (parent if folder is JPG)
+  const getFolderDisplayName = (): string | null => {
+    const folderName = image?.folder_name || image?.projets?.nom_dossier;
+    
+    if (!folderName) return null;
+    
+    // If folder contains "JPG", use the parent folder
+    if (folderName.toLowerCase().includes('jpg')) {
+      return image?.projets?.nom_dossier || folderName;
+    }
+    
+    return folderName;
+  };
+
+  const handleFolderClick = () => {
+    const folderName = getFolderDisplayName();
+    if (!folderName) return;
+    
+    // Navigate to gallery with folder search
+    navigate(`/gallery?q=${encodeURIComponent(folderName)}`);
+  };
+
+  const handleClientClick = () => {
+    const clientId = image?.projets?.clients?.id;
+    if (!clientId) return;
+    
+    // Navigate to gallery filtering by client
+    navigate(`/gallery?client=${clientId}`);
+  };
 
   // Process tags to ensure they're always in array format
   const processTags = (tags: any): string[] => {
@@ -169,9 +201,33 @@ export const ImageContent = ({
 
   return (
     <div className="space-y-4">
-        <div className="flex justify-between items-center flex-wrap gap-4">
-        <h2 className="text-xl font-bold flex-1">{image?.title || 'Sans titre'}</h2>
-        <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="space-y-2">
+        <h2 className="text-xl font-bold">{image?.title || 'Sans titre'}</h2>
+        
+        {/* Display folder name */}
+        {getFolderDisplayName() && (
+          <button
+            onClick={handleFolderClick}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+          >
+            <Folder className="h-3.5 w-3.5" />
+            <span>{getFolderDisplayName()}</span>
+          </button>
+        )}
+        
+        {/* Display client name */}
+        {image?.projets?.clients?.nom && (
+          <button
+            onClick={handleClientClick}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+          >
+            <User className="h-3 w-3" />
+            <span>{image.projets.clients.nom}</span>
+          </button>
+        )}
+        
+        {/* Download buttons */}
+        <div className="flex items-center gap-2 flex-shrink-0 pt-2">
           <Button 
             onClick={() => handleDownload(false)}
             disabled={isDownloading}
