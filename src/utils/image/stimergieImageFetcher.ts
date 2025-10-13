@@ -12,8 +12,15 @@ const FETCH_TIMEOUT = 8000; // 8 seconds
 
 /**
  * Optimized direct fetching function for Stimergie images without proxies
+ * @param url - The URL of the image to fetch
+ * @param cacheKey - Cache key for storage
+ * @param onProgress - Optional callback for download progress
  */
-export async function fetchImageFromStimergieServer(url: string, cacheKey: string): Promise<Blob | null> {
+export async function fetchImageFromStimergieServer(
+  url: string, 
+  cacheKey: string,
+  onProgress?: (loaded: number, total: number) => void
+): Promise<Blob | null> {
   let timeoutId: number | null = null;
   
   try {
@@ -59,6 +66,10 @@ export async function fetchImageFromStimergieServer(url: string, cacheKey: strin
       
       // Opaque responses don't allow us to check content type, so check blob size
       if (blob.size > 0) {
+        if (onProgress) {
+          onProgress(blob.size, blob.size);
+        }
+        
         const base64Data = await blobToBase64(blob);
         sessionImageCache.setItem(cacheKey, base64Data);
         saveToGlobalCache(cacheKey, base64Data);
@@ -96,7 +107,38 @@ export async function fetchImageFromStimergieServer(url: string, cacheKey: strin
       throw new Error(`HTML response detected: ${contentType}`);
     }
     
-    const blob = await response.blob();
+    // Use streaming with progress if callback is provided
+    let blob: Blob;
+    if (onProgress) {
+      const contentLength = parseInt(response.headers.get('content-length') || '0');
+      const reader = response.body?.getReader();
+      
+      if (reader && contentLength > 0) {
+        let receivedLength = 0;
+        const chunks: BlobPart[] = [];
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          if (value) {
+            chunks.push(value);
+            receivedLength += value.length;
+            onProgress(receivedLength, contentLength);
+          }
+        }
+        
+        blob = new Blob(chunks, { type: contentType || 'image/jpeg' });
+      } else {
+        blob = await response.blob();
+        if (contentLength > 0) {
+          onProgress(blob.size, contentLength);
+        }
+      }
+    } else {
+      blob = await response.blob();
+    }
+    
     if (blob.size === 0) {
       throw new Error("Empty download blob");
     }

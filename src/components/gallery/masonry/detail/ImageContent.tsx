@@ -130,8 +130,36 @@ export const ImageContent = ({
         let blob: Blob | null = null;
 
         if (isHD) {
-          // Pour HD, utiliser fetchImageAsBlob qui gère le cache, retry, timeout
-          blob = await fetchImageAsBlob(downloadUrl);
+          // Pour HD, utiliser fetchImageAsBlob avec suivi de progression
+          const startTime = Date.now();
+          
+          blob = await fetchImageAsBlob(downloadUrl, (loaded, total) => {
+            const progress = Math.round((loaded / total) * 100);
+            setDownloadProgress(progress);
+            
+            const mbReceived = (loaded / (1024 * 1024)).toFixed(1);
+            const mbTotal = (total / (1024 * 1024)).toFixed(1);
+            
+            // Calcul du temps restant
+            const elapsed = (Date.now() - startTime) / 1000;
+            const speed = loaded / elapsed;
+            const remaining = (total - loaded) / speed;
+            
+            let etaText = '';
+            if (remaining > 60) {
+              etaText = ` - ${Math.round(remaining / 60)}m restant`;
+            } else if (remaining > 0) {
+              etaText = ` - ${Math.round(remaining)}s restant`;
+            }
+            
+            toast.loading(
+              'Téléchargement HD en cours...',
+              { 
+                id: toastId,
+                description: `${progress}% (${mbReceived}/${mbTotal} MB)${etaText}`
+              }
+            );
+          });
           
           if (!blob) {
             throw new Error('Impossible de récupérer l\'image HD');

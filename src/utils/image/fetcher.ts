@@ -17,8 +17,13 @@ import { getFromGlobalCache } from './globalCache';
 
 /**
  * Downloads an image from any source with improved caching strategy
+ * @param url - The URL of the image to fetch
+ * @param onProgress - Optional callback for download progress (loaded bytes, total bytes)
  */
-export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
+export async function fetchImageAsBlob(
+  url: string, 
+  onProgress?: (loaded: number, total: number) => void
+): Promise<Blob | null> {
   // Check if the URL is directly on www.stimergie.fr without proxy
   if (url.includes('stimergie.fr')) {
     // Ensure the URL doesn't have unnecessary parameters
@@ -64,7 +69,7 @@ export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
     }
     
     // Create a new fetch promise and cache it
-    const fetchPromise = fetchImageFromStimergieServer(cleanUrl, cacheKey);
+    const fetchPromise = fetchImageFromStimergieServer(cleanUrl, cacheKey, onProgress);
     fetchCache.set(cacheKey, fetchPromise);
     manageCacheSize(cacheKey);
     
@@ -111,7 +116,7 @@ export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
   }
   
   // Create a new fetch promise and cache it
-  const fetchPromise = fetchGenericImage(url, cacheKey);
+  const fetchPromise = fetchGenericImage(url, cacheKey, onProgress);
   fetchCache.set(cacheKey, fetchPromise);
   manageCacheSize(cacheKey);
   
