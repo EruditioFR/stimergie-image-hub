@@ -8,6 +8,7 @@ import { downloadImage } from '@/utils/image/download';
 import { toast } from 'sonner';
 import { validateImageUrl } from '@/utils/image/errorHandler';
 import { LazyImage } from '@/components/gallery/masonry/LazyImage';
+import { DownloadProgressOverlay } from '@/components/gallery/DownloadProgressOverlay';
 
 interface ImageCardProps {
   id: string;
@@ -31,6 +32,8 @@ export const ImageCard = memo(function ImageCard({
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [downloadComplete, setDownloadComplete] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [naturalRatio, setNaturalRatio] = useState<number | undefined>(undefined);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -92,6 +95,8 @@ export const ImageCard = memo(function ImageCard({
     if (isDownloading) return;
     
     setIsDownloading(true);
+    setDownloadProgress(0);
+    setDownloadComplete(false);
     
     try {
       // Prioritize the original URL from database
@@ -105,28 +110,94 @@ export const ImageCard = memo(function ImageCard({
       // Use the validated URL (which might have been fixed)
       downloadTarget = validationResult.url || downloadTarget;
       
-      console.log(`Download requested for URL:`, downloadTarget);
-      
       // Détecter si c'est une URL basse définition et la transformer en HD
       const isJPGUrl = downloadTarget.includes('/JPG/');
+      if (isJPGUrl) {
+        downloadTarget = downloadTarget.replace('/JPG/', '/');
+      }
       
-      const isPngUrl = downloadTarget.toLowerCase().includes('/png/') || downloadTarget.toLowerCase().endsWith('.png');
-      const fileExtension = isPngUrl ? '.png' : '.jpg';
+      // Fetch avec suivi de progression
+      const response = await fetch(downloadTarget, {
+        mode: 'cors',
+        credentials: 'omit',
+        headers: { 'Accept': 'image/jpeg,image/jpg,image/png,image/*' }
+      });
       
-      const filename = title 
-        ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}${fileExtension}` 
-        : `image_${id}${fileExtension}`;
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
       
-      // Si l'URL contient /JPG/, on télécharge en HD (transformToHDUrl sera appliqué)
-      await downloadImage(downloadTarget, filename, 'auto', isJPGUrl);
-      toast.success('Image téléchargée avec succès');
+      const contentLength = parseInt(response.headers.get('content-length') || '0');
+      const reader = response.body?.getReader();
+      
+      if (reader && contentLength > 0) {
+        let receivedLength = 0;
+        const chunks: Uint8Array[] = [];
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          if (value) {
+            chunks.push(value);
+            receivedLength += value.length;
+            const progress = Math.round((receivedLength / contentLength) * 100);
+            setDownloadProgress(progress);
+          }
+        }
+        
+        const isPngUrl = downloadTarget.toLowerCase().includes('.png');
+        const blob = new Blob(chunks as BlobPart[], { type: isPngUrl ? 'image/png' : 'image/jpeg' });
+        
+        // Télécharger le fichier
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        
+        const fileExtension = isPngUrl ? '.png' : '.jpg';
+        const filename = title 
+          ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_HD${fileExtension}` 
+          : `image_${id}_HD${fileExtension}`;
+        
+        link.download = filename;
+        link.click();
+        window.URL.revokeObjectURL(blobUrl);
+        
+        // Animation de succès
+        setDownloadComplete(true);
+        toast.success(`Image HD téléchargée (${(contentLength / 1024 / 1024).toFixed(1)} MB)`);
+        
+        setTimeout(() => {
+          setDownloadComplete(false);
+          setIsDownloading(false);
+          setDownloadProgress(0);
+        }, 1500);
+      } else {
+        // Fallback sans progression
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        const isPngUrl = downloadTarget.toLowerCase().includes('.png');
+        const fileExtension = isPngUrl ? '.png' : '.jpg';
+        const filename = title 
+          ? `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_HD${fileExtension}` 
+          : `image_${id}_HD${fileExtension}`;
+        link.download = filename;
+        link.click();
+        window.URL.revokeObjectURL(blobUrl);
+        
+        toast.success('Image HD téléchargée');
+        setIsDownloading(false);
+      }
     } catch (error) {
       console.error(`Erreur lors du téléchargement:`, error);
-      toast.error('Échec du téléchargement', { 
+      toast.error('Échec du téléchargement HD', { 
         description: 'Une erreur s\'est produite lors du téléchargement de l\'image.' 
       });
-    } finally {
       setIsDownloading(false);
+      setDownloadProgress(0);
+      setDownloadComplete(false);
     }
   };
 
@@ -170,6 +241,14 @@ export const ImageCard = memo(function ImageCard({
             className="w-full"
             onLoad={handleImageLoad}
             onError={handleImageError}
+          />
+        )}
+        
+        {/* Overlay de progression de téléchargement */}
+        {isDownloading && (
+          <DownloadProgressOverlay 
+            progress={downloadProgress}
+            isComplete={downloadComplete}
           />
         )}
         
