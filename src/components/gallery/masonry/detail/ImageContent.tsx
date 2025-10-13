@@ -105,18 +105,49 @@ export const ImageContent = ({
 
       console.log(`Téléchargement ${isHD ? 'HD' : 'SD'} depuis:`, downloadUrl);
       
-      // TÉLÉCHARGEMENT DIRECT HD - Le plus rapide (2-3x plus rapide)
+      // TÉLÉCHARGEMENT HD avec fetch + blob (force le téléchargement)
       if (isHD) {
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = `${image?.title || 'image'}_HD.jpg`;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        setIsDownloading(true);
+        setDownloadProgress(0);
         
-        toast.success('Téléchargement HD démarré !');
-        return;
+        try {
+          const response = await fetch(downloadUrl, {
+            mode: 'cors',
+            credentials: 'omit',
+            headers: {
+              'Accept': 'image/jpeg,image/jpg,image/*'
+            }
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          const blob = await response.blob();
+          const blobUrl = window.URL.createObjectURL(blob);
+          
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = `${image?.title || 'image'}_HD.jpg`;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          setTimeout(() => {
+            window.URL.revokeObjectURL(blobUrl);
+          }, 100);
+          
+          toast.success('Téléchargement HD démarré !');
+          return;
+        } catch (error) {
+          console.error('Erreur téléchargement HD:', error);
+          toast.error('Impossible de télécharger la version HD');
+          return;
+        } finally {
+          setIsDownloading(false);
+          setDownloadProgress(0);
+        }
       }
       
       // Pour SD, téléchargement avec fetch (plus rapide pour petits fichiers)
