@@ -117,3 +117,25 @@ export async function fetchImageAsBlob(url: string): Promise<Blob | null> {
   
   return fetchPromise;
 }
+
+/**
+ * Preload HD images silently in the background to improve download performance
+ * @param images Array of images to preload
+ * @param count Number of images to preload (default: 3)
+ */
+export async function preloadHDImages(images: { url: string }[], count = 3): Promise<void> {
+  const hdUrls = images.slice(0, count).map(img => {
+    // Transform to HD URL if needed
+    if (img.url.includes('/JPG/')) {
+      return img.url.replace('/JPG/', '/');
+    }
+    return img.url;
+  });
+  
+  // Preload silently in background without blocking
+  hdUrls.forEach(url => {
+    fetchImageAsBlob(url).catch(() => {
+      // Silent fail - preloading is optional
+    });
+  });
+}

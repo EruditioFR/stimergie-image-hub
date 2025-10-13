@@ -88,7 +88,9 @@ export async function downloadImagesAsZip(
       }
     });
     
-    toast.loading(`Préparation du ZIP: ${successCount}/${images.length} images`, {
+    // Update progress with current file info
+    const currentFile = chunk[chunk.length - 1]?.title || 'Traitement...';
+    toast.loading(`${successCount}/${images.length} images • ${currentFile}`, {
       id: 'zip-download',
       duration: Infinity
     });

@@ -8,8 +8,8 @@ import { downloadImage } from '@/utils/image/download';
 import { generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
 import { transformToHDUrl } from '@/utils/image/download/networkUtils';
 
-// HD download threshold - use server for 3+ images
-const HD_SERVER_THRESHOLD = 3;
+// HD download threshold - use server for 20+ images
+const HD_SERVER_THRESHOLD = 20;
 
 export function useHDDownloader() {
   const [isDownloading, setIsDownloading] = useState(false);
