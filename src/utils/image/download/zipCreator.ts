@@ -19,7 +19,8 @@ const DOWNLOAD_CHUNK_SIZE = 10;
 export async function downloadImagesAsZip(
   images: ImageForZip[], 
   zipFilename: string, 
-  isHDDownload = false
+  isHDDownload = false,
+  onProgress?: (current: number, total: number, currentFile: string) => void
 ): Promise<void> {
   console.log(`[downloadImagesAsZip] Starting ZIP download for ${images.length} images, HD mode: ${isHDDownload}`);
   
@@ -90,6 +91,13 @@ export async function downloadImagesAsZip(
     
     // Update progress with current file info
     const currentFile = chunk[chunk.length - 1]?.title || 'Traitement...';
+    
+    // Call progress callback if provided
+    if (onProgress) {
+      onProgress(successCount, images.length, currentFile);
+    }
+    
+    // Also show toast for users without the progress component
     toast.loading(`${successCount}/${images.length} images • ${currentFile}`, {
       id: 'zip-download',
       duration: Infinity

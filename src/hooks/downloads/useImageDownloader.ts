@@ -26,6 +26,13 @@ export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) =>
   const { isDownloading: isDownloadingHD, downloadHD } = useHDDownloader();
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [isUploadComplete, setIsUploadComplete] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({
+    current: 0,
+    total: 0,
+    currentFile: '',
+    startTime: 0,
+    isActive: false
+  });
   
   const prepareImagesForDownload = (selectedImageIds: string[], isHD: boolean) => {
     // Filter images by selected IDs
@@ -154,19 +161,36 @@ export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) =>
         // For fewer images, use direct client-side download
         console.log(`SD download: Using client-side download for ${imagesForDownload.length} images (below threshold: ${SD_SERVER_THRESHOLD})`);
         
-        // Start toast notification
-        toast.loading("Préparation du téléchargement", {
-          id: "zip-preparation",
-          duration: Infinity
+        // Initialize progress
+        setBulkProgress({
+          current: 0,
+          total: imagesForDownload.length,
+          currentFile: 'Initialisation...',
+          startTime: Date.now(),
+          isActive: true
         });
         
         // Generate zip filename
         const zipName = `images_${Date.now()}.zip`;
         
-        // Download images as zip
-        await downloadImagesAsZip(imagesForDownload, zipName, false);
+        // Download images as zip with progress callback
+        await downloadImagesAsZip(
+          imagesForDownload, 
+          zipName, 
+          false,
+          (current, total, currentFile) => {
+            setBulkProgress({
+              current,
+              total,
+              currentFile,
+              startTime: bulkProgress.startTime || Date.now(),
+              isActive: true
+            });
+          }
+        );
         
-        toast.dismiss("zip-preparation");
+        // Hide progress
+        setBulkProgress(prev => ({ ...prev, isActive: false }));
       }
       
     } catch (error) {
@@ -209,6 +233,7 @@ export const useImageDownloader = ({ user, images }: UseImageDownloaderProps) =>
     downloadHD: handleHDDownload,
     showUploadModal,
     isUploadComplete,
-    closeUploadModal
+    closeUploadModal,
+    bulkProgress
   };
 };

@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useImageDownloader } from '@/hooks/downloads/useImageDownloader';
 import { toast } from 'sonner';
 import { UploadProgressModal } from '../../modals/UploadProgressModal';
+import { BulkDownloadProgress } from '../../BulkDownloadProgress';
 
 interface MasonryToolbarContentProps {
   selectedImages: string[];
@@ -30,7 +31,8 @@ export function MasonryToolbarContent({
     downloadHD,
     showUploadModal,
     isUploadComplete,
-    closeUploadModal
+    closeUploadModal,
+    bulkProgress
   } = useImageDownloader({ user, images });
 
   const openShareDialog = () => {
@@ -63,6 +65,14 @@ export function MasonryToolbarContent({
         isOpen={showUploadModal}
         onClose={closeUploadModal}
         isComplete={isUploadComplete}
+      />
+
+      <BulkDownloadProgress
+        current={bulkProgress.current}
+        total={bulkProgress.total}
+        currentFile={bulkProgress.currentFile}
+        startTime={bulkProgress.startTime}
+        isActive={bulkProgress.isActive}
       />
     </>
   );
