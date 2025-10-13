@@ -27,19 +27,26 @@ export async function buildGalleryQuery(
     client = userClientId;
   }
   
-  // Si on recherche par nom de client et qu'on est admin, chercher les projets de ce client
+  // Si on recherche par nom de client ou nom de dossier et qu'on est admin, chercher les projets correspondants
   let clientProjectIds: string[] = [];
   if (search && search.trim() !== '' && userRole === 'admin') {
-    console.log('Admin search detected, checking for client names:', search);
+    console.log('Admin search detected, checking for client names and project folders:', search);
     
-    // Chercher les clients qui correspondent à la recherche
+    // 1. Chercher les clients qui correspondent à la recherche
     const { data: matchingClients } = await supabase
       .from('clients')
       .select('id')
       .ilike('nom', `%${search}%`);
     
+    // 2. Chercher les projets dont le nom_dossier correspond à la recherche
+    const { data: matchingProjects } = await supabase
+      .from('projets')
+      .select('id')
+      .ilike('nom_dossier', `%${search}%`);
+    
+    // 3. Fusionner les résultats
+    const projectIdsFromClients: string[] = [];
     if (matchingClients && matchingClients.length > 0) {
-      // Récupérer tous les projets de ces clients
       const clientIds = matchingClients.map(c => c.id);
       const { data: clientProjects } = await supabase
         .from('projets')
@@ -47,10 +54,16 @@ export async function buildGalleryQuery(
         .in('id_client', clientIds);
       
       if (clientProjects) {
-        clientProjectIds = clientProjects.map(p => p.id);
-        console.log(`Found ${clientProjectIds.length} projects for matching clients`);
+        projectIdsFromClients.push(...clientProjects.map(p => p.id));
       }
     }
+    
+    const projectIdsFromFolders = matchingProjects?.map(p => p.id) || [];
+    
+    // Fusionner et dédupliquer les IDs de projets
+    clientProjectIds = [...new Set([...projectIdsFromClients, ...projectIdsFromFolders])];
+    
+    console.log(`Found ${clientProjectIds.length} projects matching search criteria (clients + folders)`);
   }
   
   // Construction de la requête de base avec colonnes minimales pour meilleures performances
