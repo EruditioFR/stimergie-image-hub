@@ -116,7 +116,7 @@ export const ImageCard = memo(function ImageCard({
         downloadTarget = downloadTarget.replace('/JPG/', '/');
       }
       
-      // Fetch avec suivi de progression
+      // Fetch avec suivi de progression en temps réel
       const response = await fetch(downloadTarget, {
         mode: 'cors',
         credentials: 'omit',
@@ -133,6 +133,9 @@ export const ImageCard = memo(function ImageCard({
       if (reader && contentLength > 0) {
         let receivedLength = 0;
         const chunks: Uint8Array[] = [];
+        const startTime = Date.now();
+        
+        console.log(`[ImageCard] Début téléchargement HD: ${(contentLength / 1024 / 1024).toFixed(1)} MB`);
         
         while (true) {
           const { done, value } = await reader.read();
@@ -142,9 +145,20 @@ export const ImageCard = memo(function ImageCard({
             chunks.push(value);
             receivedLength += value.length;
             const progress = Math.round((receivedLength / contentLength) * 100);
+            
+            // Mise à jour de la progression en temps réel
+            if (!mountedRef.current) break;
             setDownloadProgress(progress);
+            
+            // Log tous les 10%
+            if (progress % 10 === 0) {
+              const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+              console.log(`[ImageCard] Progression: ${progress}% (${elapsed}s)`);
+            }
           }
         }
+        
+        console.log(`[ImageCard] Téléchargement terminé: 100%`);
         
         const isPngUrl = downloadTarget.toLowerCase().includes('.png');
         const blob = new Blob(chunks as BlobPart[], { type: isPngUrl ? 'image/png' : 'image/jpeg' });
