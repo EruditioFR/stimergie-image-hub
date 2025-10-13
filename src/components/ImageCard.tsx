@@ -185,7 +185,7 @@ export const ImageCard = memo(function ImageCard({
       <div className="absolute top-3 right-3 transform">
         <div className={cn(
           "transform transition-all duration-300 ease-in-out",
-          isHovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
+          (isHovered || isDownloading) ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
         )}>
           <Button 
             size="icon" 
