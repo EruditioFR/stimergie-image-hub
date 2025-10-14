@@ -49,7 +49,6 @@ export function ImageToolbarActions({
         label={hdButtonLabel}
         sizeHint={hdButtonHint}
         mobileLabel={hdButtonMobileLabel}
-        className={selectedCount >= HD_SERVER_THRESHOLD ? "bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200" : ""}
       />
       <ShareButton onClick={onShare} />
     </div>
