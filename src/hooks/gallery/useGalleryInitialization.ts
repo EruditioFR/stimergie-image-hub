@@ -49,7 +49,7 @@ export const useGalleryInitialization = ({
     const hasTagFilter = tagFilter && tagFilter.toLowerCase() !== 'toutes';
     
     // Si on a un filtre de tag, on n'applique pas le filtre client forcé
-    if (!hasTagFilter && userRole === 'user' && userClientId) {
+    if (!hasTagFilter && ['user', 'admin_client'].includes(userRole) && userClientId) {
       if (selectedClient !== userClientId) {
         console.log(`Forcing client filter to ${userClientId} for ${userRole} role`);
         baseHandleClientChange(userClientId);
