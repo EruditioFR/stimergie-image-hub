@@ -12,10 +12,10 @@ let accessibleProjectsCache: { userId: string; projectIds: string[] } | null = n
  * Get accessible project IDs for the current user
  * Uses get_accessible_projects function which respects RLS and access periods
  */
-export async function getAccessibleProjectIds(userId: string): Promise<string[]> {
+export async function getAccessibleProjectIds(userId: string, bypassCache: boolean = false): Promise<string[]> {
   try {
-    // Use cache if available for the same user
-    if (accessibleProjectsCache?.userId === userId) {
+    // Use cache if available for the same user (unless bypassed)
+    if (!bypassCache && accessibleProjectsCache?.userId === userId) {
       console.log('📋 Using cached accessible projects:', accessibleProjectsCache.projectIds.length);
       return accessibleProjectsCache.projectIds;
     }
@@ -34,7 +34,7 @@ export async function getAccessibleProjectIds(userId: string): Promise<string[]>
     }
 
     const projectIds = data?.map(item => item.project_id) || [];
-    console.log('✅ Retrieved accessible project IDs:', projectIds);
+    console.log('✅ Retrieved accessible project IDs:', projectIds.length, 'projects');
 
     // Cache the result
     accessibleProjectsCache = { userId, projectIds };

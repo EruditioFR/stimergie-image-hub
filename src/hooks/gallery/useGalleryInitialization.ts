@@ -1,5 +1,6 @@
 
 import { useEffect } from 'react';
+import { clearAccessibleProjectsCache } from '@/services/gallery/projectUtils';
 
 interface GalleryInitializationProps {
   resetPagination: (useRandomMode?: boolean) => void;
@@ -15,6 +16,7 @@ interface GalleryInitializationProps {
   userRole: string;
   currentPage: number;
   baseHandleClientChange: (clientId: string | null) => void;
+  userId: string | null;
 }
 
 export const useGalleryInitialization = ({
@@ -30,8 +32,17 @@ export const useGalleryInitialization = ({
   selectedOrientation,
   userRole,
   currentPage,
-  baseHandleClientChange
+  baseHandleClientChange,
+  userId
 }: GalleryInitializationProps) => {
+
+  // Clear cache when user changes to ensure fresh data
+  useEffect(() => {
+    if (userId) {
+      console.log('🧹 Clearing accessible projects cache for user:', userId);
+      clearAccessibleProjectsCache();
+    }
+  }, [userId]);
 
   // Enforce client filter for non-admin users SAUF si on a un filtre de tag
   useEffect(() => {

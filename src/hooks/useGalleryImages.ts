@@ -118,6 +118,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     selectedClient,
     selectedProject,
     selectedOrientation,
+    userId: user?.id || null,
     userRole,
     currentPage,
     baseHandleClientChange
