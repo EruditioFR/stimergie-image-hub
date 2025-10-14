@@ -128,11 +128,11 @@ export const ImageCard = memo(function ImageCard({
       }
       
       const contentLength = parseInt(response.headers.get('content-length') || '0');
-      const reader = response.body?.getReader();
       let blob: Blob;
       
-      // Vérifier si le body n'est pas déjà consommé et si on peut lire le stream
-      if (reader && contentLength > 0 && !response.bodyUsed) {
+      // Ne créer le reader que si le body est lisible et non consommé
+      if (!response.bodyUsed && contentLength > 0 && response.body) {
+        const reader = response.body.getReader();
         let receivedLength = 0;
         const chunks: Uint8Array[] = [];
         const startTime = Date.now();
@@ -166,12 +166,28 @@ export const ImageCard = memo(function ImageCard({
           const isPngUrl = downloadTarget.toLowerCase().includes('.png');
           blob = new Blob(chunks as BlobPart[], { type: isPngUrl ? 'image/png' : 'image/jpeg' });
         } catch (readerError) {
-          console.warn('[ImageCard] Erreur lecture stream, fallback sur blob():', readerError);
-          // Fallback : Si erreur pendant la lecture du stream, utiliser blob()
-          blob = await response.blob();
+          console.error('[ImageCard] Erreur lecture stream:', readerError);
+          const isPngUrl = downloadTarget.toLowerCase().includes('.png');
+          
+          if (chunks.length > 0) {
+            // Reconstruire un blob avec les chunks déjà reçus
+            blob = new Blob(chunks as BlobPart[], { type: isPngUrl ? 'image/png' : 'image/jpeg' });
+          } else {
+            // Aucun chunk reçu: re-fetch sans utiliser le stream initial (verrouillé)
+            console.warn('[ImageCard] Aucun chunk reçu, re-fetch de l\'image');
+            const retryResponse = await fetch(downloadTarget, {
+              mode: 'cors',
+              credentials: 'omit',
+              headers: { 'Accept': 'image/jpeg,image/jpg,image/png,image/*' }
+            });
+            if (!retryResponse.ok) {
+              throw new Error(`HTTP ${retryResponse.status}`);
+            }
+            blob = await retryResponse.blob();
+          }
         }
       } else {
-        // Fallback : Body déjà consommé ou pas de reader/content-length
+        // Fallback : Body déjà consommé ou pas de content-length/reader
         console.log('[ImageCard] Body déjà consommé ou pas de content-length, utilisation de blob()');
         blob = await response.blob();
       }
