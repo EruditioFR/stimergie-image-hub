@@ -2,6 +2,7 @@
 import { User } from "@/types/user";
 import { UserRound, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -10,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getRoleDisplay } from "@/utils/roleUtils";
 
 interface UsersTableProps {
   users: User[];
@@ -44,7 +46,11 @@ export function UsersTable({ users, onEdit, onDelete }: UsersTableProps) {
                 </div>
               </TableCell>
               <TableCell>{user.email}</TableCell>
-              <TableCell>{user.role || "utilisateur"}</TableCell>
+              <TableCell>
+                <Badge variant="outline" className={getRoleDisplay(user.role).color}>
+                  {getRoleDisplay(user.role).label}
+                </Badge>
+              </TableCell>
               <TableCell>{user.client_name || "Non spécifié"}</TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">

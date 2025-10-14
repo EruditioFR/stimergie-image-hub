@@ -15,38 +15,15 @@ export function useUserData(
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Function to fetch users
+  // Function to fetch users using RPC that gets roles from user_roles table
   const fetchUsers = async () => {
     try {
       setLoading(true);
       
-      let query = supabase
-        .from("profiles")
-        .select(`
-          id,
-          email,
-          first_name,
-          last_name,
-          role,
-          id_client,
-          clients(nom)
-        `);
-      
-      if (isAdmin) {
-        if (selectedClientId) {
-          query = query.eq('id_client', selectedClientId);
-        }
-      } else {
-        if (userClientId) {
-          query = query.eq('id_client', userClientId);
-        }
-      }
-      
-      if (selectedRole) {
-        query = query.eq('role', selectedRole);
-      }
-      
-      const { data, error } = await query;
+      const { data, error } = await supabase.rpc('get_users_with_roles', {
+        p_filter_client_id: selectedClientId,
+        p_filter_role: selectedRole
+      });
       
       if (error) {
         console.error("Erreur lors du chargement des utilisateurs:", error);
@@ -58,8 +35,8 @@ export function useUserData(
         return;
       }
       
-      // Transform database records into User objects
-      const formattedUsers: User[] = data.map(record => ({
+      // Transform RPC results into User objects
+      const formattedUsers: User[] = (data || []).map(record => ({
         id: record.id,
         email: record.email,
         firstName: record.first_name,
@@ -69,13 +46,13 @@ export function useUserData(
         avatarUrl: null,
         role: record.role,
         clientId: record.id_client,
-        createdAt: "", // These fields are not available in the query
-        updatedAt: "",
+        createdAt: record.created_at || "",
+        updatedAt: record.updated_at || "",
         // For backward compatibility
         first_name: record.first_name,
         last_name: record.last_name,
         id_client: record.id_client,
-        client_name: record.clients ? record.clients.nom : null
+        client_name: record.client_name
       }));
       
       setUsers(formattedUsers);

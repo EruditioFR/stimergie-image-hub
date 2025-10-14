@@ -692,6 +692,24 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      get_users_with_roles: {
+        Args: {
+          p_filter_client_id?: string
+          p_filter_role?: string
+          p_requesting_user_id?: string
+        }
+        Returns: {
+          client_name: string
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          id_client: string
+          last_name: string
+          role: string
+          updated_at: string
+        }[]
+      }
       has_role: {
         Args:
           | { _role: Database["public"]["Enums"]["app_role"]; _user_id: string }

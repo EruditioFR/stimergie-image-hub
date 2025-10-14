@@ -2,12 +2,14 @@
 import { User } from "@/types/user";
 import { UserRound, Building2, Mail, Shield, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
+import { getRoleDisplay } from "@/utils/roleUtils";
 
 interface UserCardProps {
   user: User;
@@ -61,10 +63,12 @@ export function UserCard({ user, onEdit, onDelete }: UserCardProps) {
             {user.email}
           </p>
           
-          <p className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Shield size={16} className="text-muted-foreground" />
-            {user.role || "utilisateur"}
-          </p>
+            <Badge variant="outline" className={getRoleDisplay(user.role).color}>
+              {getRoleDisplay(user.role).label}
+            </Badge>
+          </div>
           
           {(user.client_name || user.clientId) && (
             <p className="flex items-center gap-2">
