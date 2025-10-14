@@ -73,7 +73,7 @@ export function ClientsFilter({ selectedClient, onClientChange, className, userR
         <SelectTrigger className="w-full sm:w-[200px]">
           <SelectValue placeholder="Filtrer par client" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent side="bottom">
           <SelectGroup>
             {!isRegularUser && <SelectItem value="all">Tous les clients</SelectItem>}
             {clients.map((client) => (

@@ -37,7 +37,7 @@ export function OrientationFilter({
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Orientation" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent side="bottom">
           <SelectItem value="all">
             Toutes les orientations
           </SelectItem>
