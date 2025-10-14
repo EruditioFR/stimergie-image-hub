@@ -9,7 +9,7 @@ interface SelectionInfoProps {
 
 export function SelectionInfo({ count, onClear }: SelectionInfoProps) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5 justify-center">
       <span className="text-[11px] font-medium whitespace-nowrap">{count} img</span>
       <Button 
         variant="ghost" 
