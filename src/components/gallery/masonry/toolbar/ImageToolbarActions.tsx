@@ -36,8 +36,8 @@ export function ImageToolbarActions({
   const hdButtonMobileLabel = selectedCount >= HD_SERVER_THRESHOLD ? "Téléchargements HD" : "HD";
 
   return (
-    <div className="flex flex-wrap gap-2">
-      <DownloadButton 
+    <div className="flex flex-wrap gap-1.5">
+      <DownloadButton
         isLoading={isDownloadingSD}
         onClick={onDownloadSD}
         label="Version web & réseaux sociaux"

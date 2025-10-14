@@ -9,15 +9,15 @@ interface SelectionInfoProps {
 
 export function SelectionInfo({ count, onClear }: SelectionInfoProps) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-sm font-medium">{count} image{count > 1 ? 's' : ''}</span>
+    <div className="flex items-center gap-1.5">
+      <span className="text-[11px] font-medium whitespace-nowrap">{count} img</span>
       <Button 
         variant="ghost" 
         size="sm" 
         onClick={onClear}
-        className="h-7 px-2 text-xs"
+        className="h-6 px-1.5 text-[10px]"
       >
-        Tout désélectionner
+        Effacer
       </Button>
     </div>
   );

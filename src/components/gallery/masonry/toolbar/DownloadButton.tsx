@@ -28,16 +28,16 @@ export function DownloadButton({
       onClick={onClick}
       disabled={isLoading || disabled}
       size="sm"
-      className={`h-8 text-xs px-3 ${className}`}
+      className={`h-7 text-[10px] px-2 ${className}`}
     >
       {isLoading ? (
-        <LoadingSpinner size={16} />
+        <LoadingSpinner size={14} />
       ) : (
-        <Download className="h-3.5 w-3.5" />
+        <Download className="h-3 w-3" />
       )}
-      <span className="hidden md:inline ml-1.5">{label}</span>
-      <span className="md:hidden ml-1.5">{mobileLabel}</span>
-      {sizeHint && <span className="hidden lg:inline text-[10px] opacity-70 ml-1">
+      <span className="hidden md:inline ml-1">{label}</span>
+      <span className="md:hidden ml-1">{mobileLabel}</span>
+      {sizeHint && <span className="hidden lg:inline text-[9px] opacity-70 ml-0.5">
         {sizeHint}
       </span>}
     </Button>
