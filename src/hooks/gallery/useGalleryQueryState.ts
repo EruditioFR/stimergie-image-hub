@@ -33,6 +33,12 @@ export const useGalleryQueryState = ({
 }: GalleryQueryStateProps) => {
   const { formatImagesForGrid } = useGalleryImageFormatting();
 
+  // Determine effective client for initial queries
+  const effectiveClient = useMemo(
+    () => (['admin_client', 'user'].includes(userRole) && userClientId ? userClientId : selectedClient),
+    [userRole, userClientId, selectedClient]
+  );
+
   // Skip query only if we definitely don't have access (logged in user without client ID)
   const shouldSkipQuery = userId && ['admin_client', 'user'].includes(userRole) && userClientId === null;
 
@@ -48,7 +54,7 @@ export const useGalleryQueryState = ({
       searchQuery,
       tagFilter,
       activeTab,
-      selectedClient,
+      effectiveClient,
       selectedProject,
       selectedOrientation,
       currentPage,
@@ -61,7 +67,7 @@ export const useGalleryQueryState = ({
       searchQuery,
       tagFilter,
       activeTab,
-      selectedClient,
+      effectiveClient,
       selectedProject,
       currentPage,
       shouldFetchRandom,

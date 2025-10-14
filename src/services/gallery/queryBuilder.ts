@@ -103,9 +103,18 @@ export async function buildGalleryQuery(
         return { query, hasEmptyResult: true };
       }
       
-      // For non-admin users with client filter, we still filter by their accessible projects
-      // but this ensures they only see projects they actually have access to
-      query = query.in('id_projet', userAccessibleProjects).eq('projets.id_client', client);
+      // For non-admin users with a client filter, intersect accessible projects with the client's projects
+      const clientProjects = await fetchProjectIdsForClient(client);
+      const allowedIds = clientProjects && clientProjects.length > 0
+        ? userAccessibleProjects.filter((id: string) => clientProjects.includes(id))
+        : userAccessibleProjects;
+
+      if (allowedIds.length === 0) {
+        console.log('No allowed projects after intersecting client projects and user access');
+        return { query, hasEmptyResult: true };
+      }
+
+      query = query.in('id_projet', allowedIds);
     }
   } else if (['admin_client', 'user'].includes(userRole) && !userClientId) {
     // If non-admin user with no client ID, this means the client ID is still loading

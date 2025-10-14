@@ -49,10 +49,9 @@ export const useGalleryInitialization = ({
     const hasTagFilter = tagFilter && tagFilter.toLowerCase() !== 'toutes';
     
     // Si on a un filtre de tag, on n'applique pas le filtre client forcé
-    if (!hasTagFilter && ['user', 'admin_client'].includes(userRole) && userClientId) {
+    if (!hasTagFilter && ['user', 'admin_client'].includes(userRole)) {
       if (selectedClient !== userClientId) {
-        console.log(`Forcing client filter to ${userClientId} for ${userRole} role`);
-        baseHandleClientChange(userClientId);
+        console.log(`Skipping client force to ${userClientId} for ${userRole} role; relying on effectiveClient`);
       }
     }
   }, [userClientId, userRole, selectedClient, baseHandleClientChange, tagFilter]);
