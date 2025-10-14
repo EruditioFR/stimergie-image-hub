@@ -558,6 +558,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          assigned_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -672,7 +693,9 @@ export type Database = {
         Returns: number
       }
       has_role: {
-        Args: { required_role: Database["public"]["Enums"]["user_role"] }
+        Args:
+          | { _role: Database["public"]["Enums"]["app_role"]; _user_id: string }
+          | { required_role: Database["public"]["Enums"]["user_role"] }
         Returns: boolean
       }
       has_specific_role: {
@@ -748,6 +771,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "user" | "admin_client" | "admin"
       user_role: "admin" | "admin_client" | "user" | "administrateur"
     }
     CompositeTypes: {
@@ -892,6 +916,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["user", "admin_client", "admin"],
       user_role: ["admin", "admin_client", "user", "administrateur"],
     },
   },

@@ -132,73 +132,82 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
 
   const handleUpdateUser = async (userData: User, password?: string) => {
     try {
+      console.log("Mise à jour de l'utilisateur via Edge Function:", userData);
+
+      const SUPABASE_URL = "https://mjhbugzaqmtfnbxaqpss.supabase.co";
+      const functionUrl = `${SUPABASE_URL}/functions/v1/admin-update-user`;
+      
+      // Call the admin-update-user Edge Function
+      const response = await fetch(functionUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify({
+          userId: userData.id,
+          userData: {
+            email: userData.email,
+            firstName: userData.first_name || userData.firstName,
+            lastName: userData.last_name || userData.lastName,
+            clientId: userData.id_client || userData.clientId,
+            role: userData.role
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error response from admin-update-user:", errorText);
+        
+        let errorMessage = "Erreur lors de la mise à jour de l'utilisateur";
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = errorText.includes("<") ? 
+            "Erreur de serveur lors de la mise à jour" : 
+            errorText || errorMessage;
+        }
+        
+        toast.error(errorMessage);
+        return false;
+      }
+
+      console.log("Profil mis à jour avec succès");
+
+      // Handle password update separately if provided
+      if (password && password.trim() !== '') {
+        console.log("Updating password for user:", userData.id);
+        
+        const passwordFunctionUrl = `${SUPABASE_URL}/functions/v1/admin-update-password`;
+        
+        const passwordResponse = await fetch(passwordFunctionUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+          body: JSON.stringify({
+            userId: userData.id,
+            newPassword: password
+          })
+        });
+
+        if (!passwordResponse.ok) {
+          const errorText = await passwordResponse.text();
+          console.error("Error response from password update:", errorText);
+          toast.error("Le profil a été mis à jour mais le mot de passe n'a pas pu être changé");
+        } else {
+          console.log("Mot de passe mis à jour avec succès");
+        }
+      }
+
+      // Update local state
       const firstName = userData.firstName || userData.first_name;
       const lastName = userData.lastName || userData.last_name;
       const clientId = userData.clientId || userData.id_client;
       
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          first_name: firstName,
-          last_name: lastName,
-          role: userData.role,
-          id_client: clientId
-        })
-        .eq('id', userData.id);
-
-      if (error) {
-        console.error("Erreur lors de la mise à jour de l'utilisateur:", error);
-        toast.error("Impossible de mettre à jour l'utilisateur");
-        return false;
-      }
-
-      if (password && password.trim() !== '') {
-        console.log("Updating password for user:", userData.id);
-        
-        try {
-          const SUPABASE_URL = "https://mjhbugzaqmtfnbxaqpss.supabase.co";
-          const functionUrl = `${SUPABASE_URL}/functions/v1/admin-update-password`;
-          
-          const response = await fetch(functionUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-            },
-            body: JSON.stringify({
-              userId: userData.id,
-              newPassword: password
-            })
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Error response from password update:", errorText);
-            
-            let errorMessage = "Erreur lors de la mise à jour du mot de passe";
-            try {
-              const errorData = JSON.parse(errorText);
-              errorMessage = errorData.error || errorMessage;
-            } catch (e) {
-              errorMessage = errorText.includes("<") ? 
-                "Erreur de serveur lors de la mise à jour du mot de passe" : 
-                errorText || errorMessage;
-            }
-            
-            toast.error(errorMessage);
-            return false;
-          }
-          
-          const result = await response.json();
-          console.log("Password updated successfully:", result);
-          
-        } catch (passwordUpdateError) {
-          console.error("Erreur lors de la mise à jour du mot de passe:", passwordUpdateError);
-          toast.error("Impossible de mettre à jour le mot de passe");
-          return false;
-        }
-      }
-
       setUsers(prev => prev.map(user => 
         user.id === userData.id 
           ? {
