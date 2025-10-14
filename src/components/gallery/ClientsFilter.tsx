@@ -16,27 +16,35 @@ interface ClientsFilterProps {
   className?: string;
   userRole?: string;
   userClientId?: string | null;
+  isAdmin?: boolean;
 }
 
-export function ClientsFilter({ selectedClient, onClientChange, className, userRole, userClientId }: ClientsFilterProps) {
+export function ClientsFilter({ selectedClient, onClientChange, className, userRole, userClientId, isAdmin = false }: ClientsFilterProps) {
   const { clients: allClients, loading: isLoading } = useClientsData();
   const isRegularUser = userRole === 'user';
   const isAdminClient = userRole === 'admin_client';
   
   // Filtrer les clients en fonction du rôle - mémorisé pour éviter recalculs
   const clients = useMemo(() => {
+    // Les admins voient TOUS les clients, même s'ils ont un id_client
+    if (isAdmin) {
+      return allClients;
+    }
+    
+    // Les admin_client et user sont limités à leur client
     if ((isRegularUser || isAdminClient) && userClientId) {
       return allClients.filter(client => client.id === userClientId);
     }
+    
     return allClients;
-  }, [allClients, isRegularUser, isAdminClient, userClientId]);
+  }, [allClients, isAdmin, isRegularUser, isAdminClient, userClientId]);
   
-  // Auto-sélection du client pour les utilisateurs avec un seul client
+  // Auto-sélection du client pour les utilisateurs avec un seul client (sauf admins)
   useEffect(() => {
-    if ((isRegularUser || isAdminClient) && userClientId && clients.length === 1 && selectedClient !== userClientId) {
+    if (!isAdmin && (isRegularUser || isAdminClient) && userClientId && clients.length === 1 && selectedClient !== userClientId) {
       onClientChange(userClientId);
     }
-  }, [clients.length, userClientId, selectedClient, isRegularUser, isAdminClient, onClientChange]);
+  }, [clients.length, userClientId, selectedClient, isAdmin, isRegularUser, isAdminClient, onClientChange]);
   
   const handleValueChange = (value: string) => {
     // Ne pas autoriser les utilisateurs réguliers à changer leur client

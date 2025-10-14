@@ -104,6 +104,7 @@ export function BlogPostList({ contentType, title, description }: BlogPostListPr
               className="w-full sm:w-auto"
               userRole={userRole}
               userClientId={userClientId}
+              isAdmin={userRole === 'admin'}
             />
           )}
           

@@ -72,7 +72,7 @@ export function GalleryHeader({
           <div className="flex flex-col sm:flex-row gap-4 w-full md:ml-auto">
             <OrientationFilter selectedOrientation={selectedOrientation} onOrientationChange={onOrientationChange} className="w-full sm:w-auto" />
             
-            {isAdmin && <ClientsFilter selectedClient={selectedClient} onClientChange={onClientChange} className="w-full sm:w-auto" userRole={effectiveUserRole} userClientId={userClientId} />}
+            {isAdmin && <ClientsFilter selectedClient={selectedClient} onClientChange={onClientChange} className="w-full sm:w-auto" userRole={effectiveUserRole} userClientId={userClientId} isAdmin={effectiveUserRole === 'admin'} />}
             
             {canSeeProjectFilter && <ProjectsFilter selectedProject={selectedProject} onProjectChange={onProjectChange} className="w-full sm:w-auto" selectedClient={effectiveUserRole === 'user' ? userClientId : selectedClient} />}
           </div>
