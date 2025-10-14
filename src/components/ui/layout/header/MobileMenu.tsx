@@ -10,6 +10,7 @@ interface UserProfile {
   lastName: string;
   role: string;
   clientId: string | null;
+  clientName?: string | null;
 }
 
 interface MobileMenuProps {
@@ -18,7 +19,7 @@ interface MobileMenuProps {
   userProfile: UserProfile | null;
   onLogout: () => Promise<void>;
   onNavigate: (path: string) => void;
-  formatRole: (role: string) => string;
+  formatRole: (role: string, clientName?: string | null) => string;
 }
 
 export function MobileMenu({
@@ -87,7 +88,7 @@ export function MobileMenu({
       {userProfile && (
         <div className="text-center mb-4 py-2 border-b border-gray-100">
           <div className="font-medium">{userProfile.firstName} {userProfile.lastName}</div>
-          <div className="text-sm text-muted-foreground">{formatRole(userProfile.role)}</div>
+          <div className="text-sm text-muted-foreground">{formatRole(userProfile.role, userProfile.clientName)}</div>
         </div>
       )}
       

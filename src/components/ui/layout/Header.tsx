@@ -31,12 +31,14 @@ export function Header() {
     setIsOpen(false);
   };
 
-  const formatRole = (role: string) => {
+  const formatRole = (role: string, clientName?: string | null) => {
     switch (role) {
       case 'admin':
         return 'Administrateur';
       case 'admin_client':
-        return 'Admin Client';
+        return clientName 
+          ? `Administrateur Client - ${clientName}` 
+          : 'Administrateur Client';
       case 'user':
         return 'Utilisateur';
       default:

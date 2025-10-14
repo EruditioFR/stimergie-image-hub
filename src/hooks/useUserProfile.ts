@@ -8,6 +8,7 @@ export interface UserProfile {
   lastName: string;
   role: string;
   clientId: string | null;
+  clientName: string | null;
 }
 
 interface UserProfileData {
@@ -35,7 +36,8 @@ export function useUserProfile(user: User | null, userRole: string) {
             firstName: user.user_metadata?.first_name || '',
             lastName: user.user_metadata?.last_name || '',
             role: userRole || 'user',
-            clientId: user.user_metadata?.id_client || null
+            clientId: user.user_metadata?.id_client || null,
+            clientName: null
           };
           
           // Set initial profile data from metadata
@@ -58,11 +60,24 @@ export function useUserProfile(user: User | null, userRole: string) {
               const profileData = data[0] as UserProfileData;
               console.log("Profile data retrieved from database:", profileData);
               
+              // Fetch client name if clientId exists
+              let clientName: string | null = null;
+              if (profileData.id_client) {
+                const { data: clientData } = await supabase
+                  .from('clients')
+                  .select('nom')
+                  .eq('id', profileData.id_client)
+                  .single();
+                
+                clientName = clientData?.nom || null;
+              }
+              
               setUserProfile({
                 firstName: profileData.first_name || metadataProfile.firstName,
                 lastName: profileData.last_name || metadataProfile.lastName,
                 role: profileData.role || metadataProfile.role,
-                clientId: profileData.id_client || metadataProfile.clientId
+                clientId: profileData.id_client || metadataProfile.clientId,
+                clientName: clientName
               });
             }
           } catch (profileError) {
@@ -89,11 +104,14 @@ export function useUserProfile(user: User | null, userRole: string) {
   return { userProfile, error, loading };
 }
 
-export function formatRole(role: string): string {
+export function formatRole(role: string, clientName?: string | null): string {
   // Convert API role names to user-friendly display names
   switch(role?.toLowerCase() || 'user') {
     case 'admin': return 'Administrateur';
-    case 'admin_client': return 'Admin Client';
+    case 'admin_client': 
+      return clientName 
+        ? `Administrateur Client - ${clientName}` 
+        : 'Administrateur Client';
     case 'user': return 'Utilisateur';
     default: return role || 'Utilisateur';
   }

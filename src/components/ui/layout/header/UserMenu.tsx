@@ -18,13 +18,14 @@ interface UserProfile {
   firstName: string;
   lastName: string;
   role: string;
+  clientName?: string | null;
 }
 
 interface UserMenuProps {
   user: any;
   userProfile: UserProfile | null;
   onLogout: () => Promise<void>;
-  formatRole: (role: string) => string;
+  formatRole: (role: string, clientName?: string | null) => string;
 }
 
 export function UserMenu({ user, userProfile, onLogout, formatRole }: UserMenuProps) {
@@ -67,7 +68,7 @@ export function UserMenu({ user, userProfile, onLogout, formatRole }: UserMenuPr
             </p>
             {userProfile?.role && (
               <span className="mt-1 inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                {formatRole(userProfile.role)}
+                {formatRole(userProfile.role, userProfile.clientName)}
               </span>
             )}
           </div>
