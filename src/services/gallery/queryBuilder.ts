@@ -96,7 +96,7 @@ export async function buildGalleryQuery(
       }
     } else if (userId) {
       // Non-admin users: get accessible projects directly (respects RLS and access periods)
-      const userAccessibleProjects = await getAccessibleProjectIds(userId);
+      const userAccessibleProjects = await getAccessibleProjectIds(userId, true);
       
       if (userAccessibleProjects.length === 0) {
         console.log('User has no accessible projects');
@@ -105,7 +105,7 @@ export async function buildGalleryQuery(
       
       // For non-admin users with client filter, we still filter by their accessible projects
       // but this ensures they only see projects they actually have access to
-      query = query.in('id_projet', userAccessibleProjects);
+      query = query.in('id_projet', userAccessibleProjects).eq('projets.id_client', client);
     }
   } else if (['admin_client', 'user'].includes(userRole) && !userClientId) {
     // If non-admin user with no client ID, this means the client ID is still loading
@@ -113,7 +113,7 @@ export async function buildGalleryQuery(
     return { query, hasEmptyResult: true };
   } else if (['admin_client', 'user'].includes(userRole) && userId) {
     // Non-admin users without specific client: show all accessible projects
-    const userAccessibleProjects = await getAccessibleProjectIds(userId);
+    const userAccessibleProjects = await getAccessibleProjectIds(userId, true);
     
     if (userAccessibleProjects.length === 0) {
       console.log('User has no accessible projects');

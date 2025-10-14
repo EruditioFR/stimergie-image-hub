@@ -51,16 +51,23 @@ export async function fetchTotalImagesCount(
           return 0;
         }
       } else if (userId) {
-        const userAccessibleProjects = await getAccessibleProjectIds(userId);
+        const userAccessibleProjects = await getAccessibleProjectIds(userId, true);
         
         if (userAccessibleProjects.length === 0) {
           return 0;
         }
         
-        query = query.in('id_projet', userAccessibleProjects);
+        // Enforce client ownership by intersecting with this client's projects
+        const clientProjectIds = await fetchProjectIdsForClient(client);
+        const allowedIds = clientProjectIds && clientProjectIds.length > 0
+          ? userAccessibleProjects.filter(id => clientProjectIds.includes(id))
+          : userAccessibleProjects;
+        
+        if (allowedIds.length === 0) return 0;
+        query = query.in('id_projet', allowedIds);
       }
     } else if (['admin_client', 'user'].includes(userRole) && userId) {
-      const userAccessibleProjects = await getAccessibleProjectIds(userId);
+      const userAccessibleProjects = await getAccessibleProjectIds(userId, true);
       
       if (userAccessibleProjects.length === 0) {
         return 0;
