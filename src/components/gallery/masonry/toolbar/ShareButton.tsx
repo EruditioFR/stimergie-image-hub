@@ -36,9 +36,10 @@ export function ShareButton({ onClick, shareKey }: ShareButtonProps) {
       variant="default" 
       size="sm" 
       onClick={handleShareClick}
-      className="flex items-center gap-2 py-4"
+      className="h-8 text-xs px-3 gap-1.5"
     >
-      <Share className="h-4 w-4" /> Partager
+      <Share className="h-3.5 w-3.5" />
+      <span className="hidden sm:inline">Partager</span>
     </Button>
   );
 }

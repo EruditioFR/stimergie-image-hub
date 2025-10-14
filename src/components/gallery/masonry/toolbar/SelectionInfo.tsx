@@ -9,13 +9,13 @@ interface SelectionInfoProps {
 
 export function SelectionInfo({ count, onClear }: SelectionInfoProps) {
   return (
-    <div>
-      <span className="font-medium">{count} image{count > 1 ? 's' : ''} sélectionnée{count > 1 ? 's' : ''}</span>
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-medium">{count} image{count > 1 ? 's' : ''}</span>
       <Button 
         variant="ghost" 
         size="sm" 
         onClick={onClear}
-        className="ml-2 py-4"
+        className="h-7 px-2 text-xs"
       >
         Tout désélectionner
       </Button>
