@@ -130,39 +130,81 @@ export const ImageContent = ({
         let blob: Blob | null = null;
 
         if (isHD) {
-          // Pour HD, utiliser fetchImageAsBlob avec suivi de progression
-          const startTime = Date.now();
-          
-          blob = await fetchImageAsBlob(downloadUrl, (loaded, total) => {
-            const progress = Math.round((loaded / total) * 100);
-            setDownloadProgress(progress);
-            
-            const mbReceived = (loaded / (1024 * 1024)).toFixed(1);
-            const mbTotal = (total / (1024 * 1024)).toFixed(1);
-            
-            // Calcul du temps restant
-            const elapsed = (Date.now() - startTime) / 1000;
-            const speed = loaded / elapsed;
-            const remaining = (total - loaded) / speed;
-            
-            let etaText = '';
-            if (remaining > 60) {
-              etaText = ` - ${Math.round(remaining / 60)}m restant`;
-            } else if (remaining > 0) {
-              etaText = ` - ${Math.round(remaining)}s restant`;
+          // Pour HD, utiliser un fetch robuste (même logique que SD) avec en-têtes adaptés
+          const response = await fetchWithTimeout(downloadUrl, {
+            mode: 'cors',
+            credentials: 'omit',
+            cache: 'no-store',
+            headers: {
+              'Accept': 'image/jpeg,image/jpg,image/*',
+              'pragma': 'no-cache',
+              'cache-control': 'no-cache'
             }
-            
-            toast.loading(
-              'Téléchargement HD en cours...',
-              { 
-                id: toastId,
-                description: `${progress}% (${mbReceived}/${mbTotal} MB)${etaText}`
-              }
-            );
           });
           
-          if (!blob) {
-            throw new Error('Impossible de récupérer l\'image HD');
+          if (!response.ok) {
+            throw new Error(`Erreur HTTP ${response.status}`);
+          }
+          
+          const contentLength = parseInt(response.headers.get('content-length') || '0');
+          const canStream = !!response.body && !response.bodyUsed && contentLength > 0;
+          
+          if (canStream) {
+            const reader = response.body!.getReader();
+            let receivedLength = 0;
+            const chunks: BlobPart[] = [];
+            let readerError: Error | null = null;
+            const startTime = Date.now();
+            
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (value) {
+                  chunks.push(value);
+                  receivedLength += value.length;
+                }
+                const progress = Math.round((receivedLength / contentLength) * 100);
+                setDownloadProgress(progress);
+                const mbReceived = (receivedLength / (1024 * 1024)).toFixed(1);
+                const mbTotal = (contentLength / (1024 * 1024)).toFixed(1);
+                const elapsed = (Date.now() - startTime) / 1000;
+                const speed = receivedLength / Math.max(elapsed, 0.001);
+                const remaining = contentLength - receivedLength;
+                const eta = remaining / Math.max(speed, 1);
+                const etaText = eta > 60 ? `${Math.round(eta/60)}m` : `${Math.round(eta)}s`;
+                toast.loading(
+                  'Téléchargement HD en cours...',
+                  { id: toastId, description: `${progress}% (${mbReceived}/${mbTotal} MB) · ${etaText}` }
+                );
+              }
+            } catch (err) {
+              readerError = err as Error;
+              console.warn('[ImageContent] Lecture du flux HD interrompue, tentative de récupération', readerError);
+            }
+            
+            if (readerError) {
+              if (chunks.length > 0) {
+                blob = new Blob(chunks, { type: 'image/jpeg' });
+              } else {
+                // Aucun chunk reçu: relancer une requête puis utiliser blob()
+                const retryResponse = await fetchWithTimeout(downloadUrl, {
+                  mode: 'cors',
+                  credentials: 'omit',
+                  cache: 'no-store',
+                  headers: { 'Accept': 'image/jpeg,image/jpg,image/*' }
+                });
+                if (!retryResponse.ok) {
+                  throw new Error(`Erreur HTTP ${retryResponse.status}`);
+                }
+                blob = await retryResponse.blob();
+              }
+            } else {
+              blob = new Blob(chunks, { type: 'image/jpeg' });
+            }
+          } else {
+            // Fallback : body déjà consommé ou absence de content-length
+            blob = await response.blob();
           }
         } else {
           // Pour SD, fetch avec suivi de progression
