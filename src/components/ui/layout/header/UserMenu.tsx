@@ -83,12 +83,14 @@ export function UserMenu({ user, userProfile, onLogout, formatRole }: UserMenuPr
             </Link>
           </DropdownMenuItem>
 
-          <DropdownMenuItem>
-            <Link to="/projects" className="flex w-full items-center">
-              <FolderOpen className="mr-2 h-4 w-4" />
-              <span>Projets</span>
-            </Link>
-          </DropdownMenuItem>
+          {isAdmin && (
+            <DropdownMenuItem>
+              <Link to="/projects" className="flex w-full items-center">
+                <FolderOpen className="mr-2 h-4 w-4" />
+                <span>Projets</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
 
           <DropdownMenuItem>
             <Link to="/downloads" className="flex w-full items-center">
