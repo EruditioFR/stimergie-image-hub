@@ -169,8 +169,11 @@ export const ImageContent = ({
           const response = await fetchWithTimeout(downloadUrl, {
             mode: 'cors',
             credentials: 'omit',
+            cache: 'no-store',
             headers: {
-              'Accept': 'image/jpeg,image/jpg,image/*'
+              'Accept': 'image/jpeg,image/jpg,image/*',
+              'pragma': 'no-cache',
+              'cache-control': 'no-cache'
             }
           });
           
@@ -178,41 +181,62 @@ export const ImageContent = ({
             throw new Error(`Erreur HTTP ${response.status}`);
           }
           
-          // Suivi de la progression pour SD
+          // Suivi de la progression pour SD avec gestion robuste du flux
           const contentLength = parseInt(response.headers.get('content-length') || '0');
-          const reader = response.body?.getReader();
+          const canStream = !!response.body && !response.bodyUsed && contentLength > 0;
           
-          if (reader && contentLength > 0) {
+          if (canStream) {
+            const reader = response.body!.getReader();
             let receivedLength = 0;
             const chunks: BlobPart[] = [];
+            let readerError: Error | null = null;
             
-            while (true) {
-              const { done, value } = await reader.read();
-              
-              if (done) break;
-              
-              if (value) {
-                chunks.push(value);
-                receivedLength += value.length;
-              }
-              
-              const progress = Math.round((receivedLength / contentLength) * 100);
-              setDownloadProgress(progress);
-              
-              const mbReceived = (receivedLength / (1024 * 1024)).toFixed(1);
-              const mbTotal = (contentLength / (1024 * 1024)).toFixed(1);
-              
-              toast.loading(
-                isHD ? 'Téléchargement HD en cours...' : 'Téléchargement SD en cours...',
-                { 
-                  id: toastId,
-                  description: `${progress}% (${mbReceived} MB / ${mbTotal} MB)`
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (value) {
+                  chunks.push(value);
+                  receivedLength += value.length;
                 }
-              );
+                const progress = Math.round((receivedLength / contentLength) * 100);
+                setDownloadProgress(progress);
+                const mbReceived = (receivedLength / (1024 * 1024)).toFixed(1);
+                const mbTotal = (contentLength / (1024 * 1024)).toFixed(1);
+                toast.loading(
+                  isHD ? 'Téléchargement HD en cours...' : 'Téléchargement SD en cours...',
+                  { 
+                    id: toastId,
+                    description: `${progress}% (${mbReceived} MB / ${mbTotal} MB)`
+                  }
+                );
+              }
+            } catch (err) {
+              readerError = err as Error;
+              console.warn('[ImageContent] Lecture du flux interrompue, tentative de récupération', readerError);
             }
             
-            blob = new Blob(chunks, { type: 'image/jpeg' });
+            if (readerError) {
+              if (chunks.length > 0) {
+                blob = new Blob(chunks, { type: 'image/jpeg' });
+              } else {
+                // Aucun chunk reçu: relancer une requête puis utiliser blob()
+                const retryResponse = await fetchWithTimeout(downloadUrl, {
+                  mode: 'cors',
+                  credentials: 'omit',
+                  cache: 'no-store',
+                  headers: { 'Accept': 'image/jpeg,image/jpg,image/*' }
+                });
+                if (!retryResponse.ok) {
+                  throw new Error(`Erreur HTTP ${retryResponse.status}`);
+                }
+                blob = await retryResponse.blob();
+              }
+            } else {
+              blob = new Blob(chunks, { type: 'image/jpeg' });
+            }
           } else {
+            // Fallback : body déjà consommé ou pas de content-length/stream
             blob = await response.blob();
           }
         }
