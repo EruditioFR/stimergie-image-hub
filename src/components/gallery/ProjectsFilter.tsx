@@ -88,7 +88,7 @@ export function ProjectsFilter({ selectedProject, onProjectChange, className, se
         <SelectTrigger className="w-full sm:w-[200px]">
           <SelectValue placeholder={isLoading ? "Chargement..." : "Filtrer par projet"} />
         </SelectTrigger>
-        <SelectContent side="bottom">
+        <SelectContent side="bottom" sideOffset={4} avoidCollisions={false} className="z-50 bg-background">
           <SelectGroup>
             <SelectItem value="all">Tous les projets</SelectItem>
             {filteredProjects.map((project) => (
