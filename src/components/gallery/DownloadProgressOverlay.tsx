@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react';
+import { Check, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DownloadProgressOverlayProps {
@@ -24,13 +24,11 @@ export const DownloadProgressOverlay = ({
         style={{ height: `${progress}%` }}
       />
       
-      {/* Pourcentage affiché au centre */}
+      {/* Animation de téléchargement au centre */}
       {!isComplete && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="bg-background/95 rounded-full px-6 py-3 shadow-lg border border-border">
-            <span className="text-2xl font-bold text-foreground tabular-nums">
-              {Math.round(progress)}%
-            </span>
+          <div className="bg-background/95 rounded-full p-4 shadow-lg border border-border">
+            <Download className="h-10 w-10 text-primary animate-pulse" />
           </div>
         </div>
       )}
