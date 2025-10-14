@@ -104,6 +104,10 @@ export default {
 				'fill-up': {
 					from: { height: '0%' },
 					to: { height: '100%' }
+				},
+				'slide-in-bottom': {
+					from: { transform: 'translate(-50%, 100%)', opacity: '0' },
+					to: { transform: 'translate(-50%, 0)', opacity: '1' }
 				}
 			},
 			animation: {
@@ -114,7 +118,8 @@ export default {
 				'scale-in': 'scale-in 0.3s ease-out',
 				'image-zoom': 'image-zoom 0.3s ease-out forwards',
 				'blur-in': 'blur-in 0.6s ease-out',
-				'fill-up': 'fill-up 0.5s ease-out'
+				'fill-up': 'fill-up 0.5s ease-out',
+				'slide-in-bottom': 'slide-in-bottom 0.3s ease-out'
 			},
 			typography: {
 				DEFAULT: {

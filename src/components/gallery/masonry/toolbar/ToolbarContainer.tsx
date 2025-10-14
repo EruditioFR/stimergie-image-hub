@@ -5,7 +5,9 @@ interface ToolbarContainerProps {
 export function ToolbarContainer({
   children
 }: ToolbarContainerProps) {
-  return <div className="sticky top-20 z-10 bg-background/80 backdrop-blur-sm p-4 mb-4 rounded-lg border shadow-sm items-center justify-between flex w-full">
+  return (
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background/95 backdrop-blur-md p-4 rounded-xl border-2 shadow-2xl items-center justify-between flex w-[95%] max-w-4xl animate-slide-in-bottom">
       {children}
-    </div>;
+    </div>
+  );
 }

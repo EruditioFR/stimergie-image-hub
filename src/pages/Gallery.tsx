@@ -161,7 +161,7 @@ const Gallery = () => {
           />
         </div>
 
-        <div className="w-full px-0 py-0">
+        <div className="w-full px-0 py-0 pb-24">
           <GalleryContent
             displayedImages={displayedImages}
             allImages={allImages}
