@@ -135,6 +135,7 @@ export async function buildGalleryQuery(
     return { query, hasEmptyResult: true };
   } else if (['admin_client', 'user'].includes(userRole) && userId) {
     // Non-admin users without specific client: show all accessible projects
+    // TRUST BACKEND: get_accessible_projects already handles RLS and access periods correctly
     const userAccessibleProjects = await getAccessibleProjectIds(userId, true);
     
     if (userAccessibleProjects.length === 0) {
@@ -142,29 +143,10 @@ export async function buildGalleryQuery(
       return { query, hasEmptyResult: true };
     }
     
-    // ✅ FILTRER par les projets des clients de l'utilisateur
-    if (userClientIds.length > 0) {
-      console.log('Filtering accessible projects by user client IDs:', userClientIds);
-      
-      const { data: userClientProjects } = await supabase
-        .from('projets')
-        .select('id')
-        .in('id_client', userClientIds);
-      
-      const userClientProjectIds = userClientProjects?.map(p => p.id) || [];
-      const filteredProjects = userAccessibleProjects.filter(id => userClientProjectIds.includes(id));
-      
-      console.log(`Filtered ${userAccessibleProjects.length} accessible projects to ${filteredProjects.length} projects from user clients`);
-      
-      if (filteredProjects.length === 0) {
-        console.log('No accessible projects within user clients');
-        return { query, hasEmptyResult: true };
-      }
-      
-      query = query.in('id_projet', filteredProjects);
-    } else {
-      query = query.in('id_projet', userAccessibleProjects);
-    }
+    // ✅ Use accessible projects directly - they are already filtered by backend RLS
+    // No need to re-filter by userClientIds as get_accessible_projects handles this correctly
+    console.log(`✅ Using ${userAccessibleProjects.length} accessible projects from backend (multi-client: ${userClientIds.length > 1})`);
+    query = query.in('id_projet', userAccessibleProjects);
   }
   
   // Appliquer le filtre de projet si fourni ET qu'on n'a pas de filtre de tag OU qu'on n'est pas admin
