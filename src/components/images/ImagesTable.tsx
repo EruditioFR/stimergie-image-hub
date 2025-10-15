@@ -92,11 +92,13 @@ export function ImagesTable({ images }: ImagesTableProps) {
                             {displayTags.length > 3 && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Badge variant="outline" className="text-xs cursor-help">
-                                    +{displayTags.length - 3}
-                                  </Badge>
+                                  <span className="inline-flex">
+                                    <Badge variant="outline" className="text-xs cursor-help">
+                                      +{displayTags.length - 3}
+                                    </Badge>
+                                  </span>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" className="z-[9999] max-w-xs">
+                                <TooltipContent side="top" className="max-w-xs">
                                   <div className="flex flex-wrap gap-1">
                                     {displayTags.slice(3).map((tag, index) => (
                                       <Badge key={index} variant="secondary" className="text-xs">
