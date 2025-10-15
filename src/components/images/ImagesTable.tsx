@@ -9,6 +9,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { parseTagsString } from '@/utils/imageUtils';
@@ -74,24 +80,39 @@ export function ImagesTable({ images }: ImagesTableProps) {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {displayTags.length > 0 ? (
-                        <>
-                          {displayTags.slice(0, 3).map((tag, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                              #{tag}
-                            </Badge>
-                          ))}
-                          {displayTags.length > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{displayTags.length - 3}
-                            </Badge>
-                          )}
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">Aucun tag</span>
-                      )}
-                    </div>
+                    <TooltipProvider>
+                      <div className="flex flex-wrap gap-1">
+                        {displayTags.length > 0 ? (
+                          <>
+                            {displayTags.slice(0, 3).map((tag, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                #{tag}
+                              </Badge>
+                            ))}
+                            {displayTags.length > 3 && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className="text-xs cursor-help">
+                                    +{displayTags.length - 3}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <div className="flex flex-wrap gap-1">
+                                    {displayTags.slice(3).map((tag, index) => (
+                                      <Badge key={index} variant="secondary" className="text-xs">
+                                        #{tag}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">Aucun tag</span>
+                        )}
+                      </div>
+                    </TooltipProvider>
                   </TableCell>
                   <TableCell>
                     {formatDistanceToNow(new Date(image.created_at || ''), { 
