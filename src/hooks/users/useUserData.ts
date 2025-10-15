@@ -8,7 +8,9 @@ export function useUserData(
   selectedClientId: string | null,
   selectedRole: string | null,
   userClientId: string | null,
-  isAdmin: boolean
+  isAdmin: boolean,
+  isAdminClient: boolean,
+  userClientIds: string[]
 ) {
   const [users, setUsers] = useState<User[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -67,10 +69,17 @@ export function useUserData(
   // Function to fetch clients
   const fetchClients = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("clients")
         .select("*")
         .order("nom");
+      
+      // Filter clients for admin_client users
+      if (isAdminClient && !isAdmin && userClientIds.length > 0) {
+        query = query.in('id', userClientIds);
+      }
+      
+      const { data, error } = await query;
       
       if (error) {
         console.error("Erreur lors du chargement des clients:", error);

@@ -8,6 +8,7 @@ export function useUsers() {
   // Get user permissions and role information
   const {
     userClientId,
+    userClientIds,
     isAdmin,
     isAdminClient,
     canSeeClientFilter,
@@ -20,7 +21,7 @@ export function useUsers() {
     selectedRole,
     setSelectedClientId,
     setSelectedRole
-  } = useUserFilters(isAdmin, userClientId);
+  } = useUserFilters(isAdmin, isAdminClient, userClientId, userClientIds);
 
   // Get user and client data
   const {
@@ -28,7 +29,7 @@ export function useUsers() {
     clients,
     loading,
     setUsers
-  } = useUserData(selectedClientId, selectedRole, userClientId, isAdmin);
+  } = useUserData(selectedClientId, selectedRole, userClientId, isAdmin, isAdminClient, userClientIds);
 
   // Get CRUD operations
   const {

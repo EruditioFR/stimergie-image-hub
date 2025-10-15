@@ -41,7 +41,6 @@ export function UserFilters({
               className="w-full rounded-md border border-input px-3 py-2"
               value={selectedClientId || ""}
               onChange={(e) => setSelectedClientId(e.target.value || null)}
-              disabled={!isAdmin && isAdminClient}
             >
               <option value="">Tous les clients</option>
               {clients.map((client) => (

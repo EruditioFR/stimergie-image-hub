@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 export function useUserPermissions() {
   const { user, userRole } = useAuth();
   const [userClientId, setUserClientId] = useState<string | null>(null);
+  const [userClientIds, setUserClientIds] = useState<string[]>([]);
 
   const isAdmin = userRole === 'admin';
   const isAdminClient = userRole === 'admin_client';
@@ -30,6 +31,21 @@ export function useUserPermissions() {
         if (data) {
           setUserClientId(data);
         }
+
+        // Fetch client_ids array for multi-client support
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('client_ids')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        // Build the complete list of client IDs
+        if (profileData?.client_ids && profileData.client_ids.length > 0) {
+          setUserClientIds(profileData.client_ids);
+        } else if (data) {
+          // Fallback to single client ID
+          setUserClientIds([data]);
+        }
       } catch (err) {
         console.error("Unexpected error when fetching client ID:", err);
       }
@@ -40,6 +56,7 @@ export function useUserPermissions() {
 
   return {
     userClientId,
+    userClientIds,
     isAdmin,
     isAdminClient,
     canSeeClientFilter,
