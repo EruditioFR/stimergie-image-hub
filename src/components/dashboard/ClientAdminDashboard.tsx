@@ -23,61 +23,77 @@ export function ClientAdminDashboard() {
     imagesCount: 0
   });
   const [loading, setLoading] = useState(true);
-  const [clientId, setClientId] = useState<string | null>(null);
-  const [clientName, setClientName] = useState<string>("");
+  const [clientIds, setClientIds] = useState<string[]>([]);
+  const [clientNames, setClientNames] = useState<string[]>([]);
 
   useEffect(() => {
-    async function fetchClientId() {
+    async function fetchClientIds() {
       if (!user) return;
 
       try {
+        // 1. Récupérer id_client ET client_ids depuis profiles
         const { data, error } = await supabase
           .from("profiles")
-          .select("id_client")
+          .select("id_client, client_ids")
           .eq("id", user.id)
           .single();
 
         if (error) {
-          console.error("Erreur lors de la récupération de l'ID client:", error);
+          console.error("❌ Erreur récupération client IDs:", error);
           return;
         }
 
-        if (data?.id_client) {
-          setClientId(data.id_client);
-          
-          const { data: clientData, error: clientError } = await supabase
-            .from("clients")
-            .select("nom")
-            .eq("id", data.id_client)
-            .single();
-            
-          if (clientError) {
-            console.error("Erreur lors de la récupération du nom du client:", clientError);
-          } else if (clientData) {
-            setClientName(clientData.nom);
-          }
+        // 2. Construire la liste complète des IDs clients
+        let allClientIds: string[] = [];
+        
+        if (data.client_ids && data.client_ids.length > 0) {
+          // Multi-clients via client_ids
+          allClientIds = data.client_ids;
+        } else if (data.id_client) {
+          // Mono-client via id_client
+          allClientIds = [data.id_client];
+        }
+
+        if (allClientIds.length === 0) {
+          console.log("⚠️ Aucun client associé");
+          return;
+        }
+
+        setClientIds(allClientIds);
+
+        // 3. Récupérer les noms de TOUS les clients
+        const { data: clientsData, error: clientsError } = await supabase
+          .from("clients")
+          .select("nom")
+          .in("id", allClientIds);
+
+        if (clientsError) {
+          console.error("❌ Erreur récupération noms clients:", clientsError);
+        } else if (clientsData) {
+          setClientNames(clientsData.map(c => c.nom));
         }
       } catch (error) {
-        console.error("Erreur inattendue:", error);
+        console.error("❌ Erreur inattendue:", error);
       }
     }
 
-    fetchClientId();
+    fetchClientIds();
   }, [user]);
 
   useEffect(() => {
-    if (!clientId) return;
+    if (clientIds.length === 0) return;
 
     async function fetchClientData() {
       setLoading(true);
       try {
+        // 1. Récupérer TOUS les projets de TOUS les clients
         const { data: projectsData, error: projectsError } = await supabase
           .from("projets")
           .select("id")
-          .eq("id_client", clientId);
+          .in("id_client", clientIds);
 
         if (projectsError) {
-          console.error("Erreur lors de la récupération des projets:", projectsError);
+          console.error("❌ Erreur récupération projets:", projectsError);
           return;
         }
 
@@ -89,24 +105,27 @@ export function ClientAdminDashboard() {
         });
 
         if (projectIds.length > 0) {
+          // 2. Récupérer les images de TOUS les projets (limit 20 pour preview)
           const { data: imagesData, error: imagesError } = await supabase
             .from("images")
             .select("id, title, url, url_miniature")
             .in("id_projet", projectIds)
+            .order("created_at", { ascending: false })
             .limit(20);
 
           if (imagesError) {
-            console.error("Erreur lors de la récupération des images:", imagesError);
+            console.error("❌ Erreur récupération images:", imagesError);
             return;
           }
 
+          // 3. Compter TOUTES les images
           const { count: imagesCount, error: countError } = await supabase
             .from("images")
             .select("id", { count: "exact", head: true })
             .in("id_projet", projectIds);
 
           if (countError) {
-            console.error("Erreur lors du comptage des images:", countError);
+            console.error("❌ Erreur comptage images:", countError);
           } else {
             setStats(prev => ({
               ...prev,
@@ -124,16 +143,16 @@ export function ClientAdminDashboard() {
           setClientImages(formattedImages);
         }
       } catch (error) {
-        console.error("Erreur inattendue:", error);
+        console.error("❌ Erreur inattendue:", error);
       } finally {
         setLoading(false);
       }
     }
 
     fetchClientData();
-  }, [clientId]);
+  }, [clientIds]);
 
-  if (!loading && !clientId) {
+  if (!loading && clientIds.length === 0) {
     return (
       <div className="text-center py-10">
         <h2 className="text-2xl font-bold mb-4">Aucun client associé</h2>
@@ -150,9 +169,9 @@ export function ClientAdminDashboard() {
         <h2 className="text-3xl font-bold">
           Tableau de bord {userProfile?.firstName} {userProfile?.lastName}
         </h2>
-        {clientName && (
+        {clientNames.length > 0 && (
           <h3 className="text-2xl font-bold mt-2" style={{ color: "#055e4c" }}>
-            {clientName}
+            {clientNames.join(", ")}
           </h3>
         )}
       </div>
