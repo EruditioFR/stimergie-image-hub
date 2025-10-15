@@ -122,8 +122,8 @@ const Images = () => {
     }
     
     if (tagFilter) {
-      query = query.contains('tags', `"${tagFilter}"`);
-      countQuery = countQuery.contains('tags', `"${tagFilter}"`);
+      query = query.contains('tags', [tagFilter]);
+      countQuery = countQuery.contains('tags', [tagFilter]);
     }
     
     if (searchQuery) {
