@@ -51,6 +51,14 @@ export function ProjectsFilter({ selectedProject, onProjectChange, className, se
     }
   }, [selectedClient]); // Only depend on selectedClient, not onProjectChange or selectedProject
 
+  // Clear project selection if it's no longer in the filtered list (happens when switching to "Tous les clients")
+  useEffect(() => {
+    if (selectedProject && !filteredProjects.some(p => p.id === selectedProject)) {
+      console.log(`Selected project ${selectedProject} is not in filtered list, clearing selection`);
+      onProjectChange(null);
+    }
+  }, [filteredProjects, selectedProject, onProjectChange]);
+
   // Show error if projects failed to load
   useEffect(() => {
     if (error) {

@@ -54,6 +54,9 @@ export const useGalleryQueryState = ({
 
   // Skip query only if we definitely don't have access (logged in user without client ID)
   const shouldSkipQuery = userId && ['admin_client', 'user'].includes(userRole) && userClientId === null;
+  
+  // Wait for userClientIds to load for non-admin users to avoid empty results
+  const shouldWaitForClientIds = ['admin_client', 'user'].includes(userRole) && !!userId && userClientIds.length === 0;
 
   // Fetch images query with all filters and access control
   const {
@@ -74,7 +77,8 @@ export const useGalleryQueryState = ({
       shouldFetchRandom,
       userRole,
       userClientId,
-      userId
+      userId,
+      userClientIds // Include to trigger refetch when client IDs are loaded
     ],
     queryFn: () => fetchGalleryImages(
       searchQuery,
@@ -91,7 +95,7 @@ export const useGalleryQueryState = ({
       userClientIds
     ),
     staleTime: 300000, // 5 minutes for better caching
-    enabled: !shouldSkipQuery, // Skip queries for non-admin users without client ID
+    enabled: !shouldSkipQuery && !shouldWaitForClientIds, // Wait for client IDs to load for non-admin users
   });
 
   // Format images for the grid

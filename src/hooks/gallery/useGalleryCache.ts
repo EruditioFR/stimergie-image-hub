@@ -97,7 +97,9 @@ export const useGalleryCache = () => {
     orientation: string | null,
     page: number,
     userRole: string,
-    userClientId: string | null
+    userClientId: string | null,
+    userId: string | null = null,
+    userClientIds: string[] = []
   ) => {
     try {
       // Prefetch the next page of data
@@ -113,7 +115,9 @@ export const useGalleryCache = () => {
           page, 
           false, // Force no random images on prefetch
           userRole,
-          userClientId
+          userClientId,
+          userId,
+          userClientIds
         ],
         queryFn: () => fetchGalleryImages(
           searchQuery, 
@@ -125,7 +129,9 @@ export const useGalleryCache = () => {
           false,
           userRole,
           userClientId,
-          orientation
+          orientation,
+          userId,
+          userClientIds
         ),
         staleTime: 60000, // 1 minute
       });

@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 
 interface GalleryDataFetchingProps {
   fetchTotalCount: (searchQuery: string, tagFilter: string, activeTab: string, client: string | null, project: string | null, orientation: string | null, userRole: string, userClientId: string | null, userId: string | null) => Promise<number>;
-  prefetchNextPage: (searchQuery: string, tagFilter: string, activeTab: string, client: string | null, project: string | null, orientation: string | null, page: number, userRole: string, userClientId: string | null) => void;
+  prefetchNextPage: (searchQuery: string, tagFilter: string, activeTab: string, client: string | null, project: string | null, orientation: string | null, page: number, userRole: string, userClientId: string | null, userId: string | null, userClientIds: string[]) => void;
   isLoading: boolean;
   isFetching: boolean;
   searchQuery: string;
@@ -19,6 +19,7 @@ interface GalleryDataFetchingProps {
   userId: string | null;
   shouldFetchRandom: boolean;
   setTotalCount: (count: number) => void;
+  userClientIds?: string[];
 }
 
 export const useGalleryDataFetching = ({
@@ -38,7 +39,8 @@ export const useGalleryDataFetching = ({
   userClientId,
   userId,
   shouldFetchRandom,
-  setTotalCount
+  setTotalCount,
+  userClientIds = []
 }: GalleryDataFetchingProps) => {
 
   // Prefetch total count for pagination
@@ -105,7 +107,9 @@ export const useGalleryDataFetching = ({
         selectedOrientation,
         currentPage + 1,
         userRole,
-        userClientId
+        userClientId,
+        userId,
+        userClientIds
       );
     }
   }, [

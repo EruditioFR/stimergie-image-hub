@@ -147,7 +147,8 @@ export const useGalleryImages = (isAdmin: boolean) => {
     userClientId,
     userId: user?.id || null,
     shouldFetchRandom,
-    setTotalCount
+    setTotalCount,
+    userClientIds
   });
 
   // Fonction pour rafraîchir la galerie avec invalidation de cache
