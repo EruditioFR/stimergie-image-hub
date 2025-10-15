@@ -83,7 +83,7 @@ const Images = () => {
     // Build base query for count
     let countQuery = supabase
       .from('images')
-      .select('*', { count: 'exact', head: true });
+      .select('id', { count: 'exact', head: true });
     
     // Build base query for data
     let query = supabase
