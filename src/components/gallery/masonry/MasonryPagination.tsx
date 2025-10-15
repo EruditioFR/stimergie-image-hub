@@ -18,17 +18,18 @@ interface MasonryPaginationProps {
   currentPage?: number;
   onPageChange?: (page: number) => void;
   isLoading?: boolean;
+  imagesPerPage?: number;
 }
 
 export function MasonryPagination({
   totalCount = 0,
   currentPage = 1,
   onPageChange,
-  isLoading = false
+  isLoading = false,
+  imagesPerPage = 100
 }: MasonryPaginationProps) {
   const [pageInput, setPageInput] = useState('');
   
-  const imagesPerPage = 100;
   const totalPages = totalCount > 0 ? Math.ceil(totalCount / imagesPerPage) : 0;
   
   console.log('🔍 MasonryPagination Debug:', { 

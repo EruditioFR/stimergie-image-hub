@@ -17,6 +17,9 @@ import { parseTagsString } from '@/utils/imageUtils';
 import { OrientationFilter } from '@/components/gallery/OrientationFilter';
 import { useUserPermissions } from '@/hooks/users/useUserPermissions';
 import { getAccessibleProjectIds } from '@/services/gallery/projectUtils';
+import { ClientsFilter } from '@/components/gallery/ClientsFilter';
+import { MasonryPagination } from '@/components/gallery/masonry/MasonryPagination';
+import { Input } from '@/components/ui/input';
 
 export interface Image {
   id: number;
@@ -53,6 +56,10 @@ const Images = () => {
   const [selectedOrientation, setSelectedOrientation] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMorePages, setHasMorePages] = useState(true);
+  const [selectedClient, setSelectedClient] = useState<string | null>(null);
+  const [tagFilter, setTagFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [totalCount, setTotalCount] = useState<number>(0);
   const { user, userRole } = useAuth();
   const { toast } = useToast();
   const { isAdmin, userClientIds } = useUserPermissions();
@@ -68,22 +75,65 @@ const Images = () => {
       
       if (accessibleProjectIds.length === 0) {
         console.log('User has no accessible projects');
+        setTotalCount(0);
         return [];
       }
     }
     
+    // Build base query for count
+    let countQuery = supabase
+      .from('images')
+      .select('*', { count: 'exact', head: true });
+    
+    // Build base query for data
     let query = supabase
       .from('images')
-      .select('*, projets!id_projet (nom_dossier, nom_projet, clients:id_client(id, nom))')
+      .select('*, projets!id_projet (nom_dossier, nom_projet, clients:id_client(id, nom))');
       
     // Filter by accessible projects for non-admin users
     if (!isAdmin && accessibleProjectIds.length > 0) {
       query = query.in('id_projet', accessibleProjectIds);
+      countQuery = countQuery.in('id_projet', accessibleProjectIds);
     }
-      
+    
+    // Apply filters to both queries
     if (selectedOrientation) {
       query = query.eq('orientation', selectedOrientation);
+      countQuery = countQuery.eq('orientation', selectedOrientation);
     }
+    
+    if (selectedClient) {
+      // Filter by client through project relationship
+      const { data: clientProjects } = await supabase
+        .from('projets')
+        .select('id')
+        .eq('id_client', selectedClient);
+      
+      if (clientProjects) {
+        const projectIds = clientProjects.map(p => p.id);
+        if (projectIds.length > 0) {
+          query = query.in('id_projet', projectIds);
+          countQuery = countQuery.in('id_projet', projectIds);
+        } else {
+          setTotalCount(0);
+          return [];
+        }
+      }
+    }
+    
+    if (tagFilter) {
+      query = query.contains('tags', `"${tagFilter}"`);
+      countQuery = countQuery.contains('tags', `"${tagFilter}"`);
+    }
+    
+    if (searchQuery) {
+      query = query.ilike('title', `%${searchQuery}%`);
+      countQuery = countQuery.ilike('title', `%${searchQuery}%`);
+    }
+    
+    // Fetch total count
+    const { count } = await countQuery;
+    setTotalCount(count || 0);
     
     // Add pagination to the query
     const from = (pageParam - 1) * IMAGES_PER_PAGE;
@@ -143,7 +193,7 @@ const Images = () => {
     isLoading,
     refetch
   } = useQuery({
-    queryKey: ['images', selectedOrientation, currentPage, userRole, user?.id, userClientIds],
+    queryKey: ['images', selectedOrientation, currentPage, userRole, user?.id, userClientIds, selectedClient, tagFilter, searchQuery],
     queryFn: () => fetchImages({ pageParam: currentPage }),
     enabled: !!user && (isAdmin || userClientIds.length > 0),
   });
@@ -226,11 +276,56 @@ const Images = () => {
         />
         
         <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="mb-6">
-            <div className="w-64">
+          {/* Filtres */}
+          <div className="mb-6 flex flex-wrap gap-4 items-center">
+            <div className="w-full sm:w-auto">
+              <ClientsFilter 
+                selectedClient={selectedClient}
+                onClientChange={(clientId) => {
+                  setSelectedClient(clientId);
+                  setCurrentPage(1);
+                }}
+                userRole={userRole}
+                userClientId={userClientIds[0] || null}
+                userClientIds={userClientIds}
+                isAdmin={isAdmin}
+              />
+            </div>
+            
+            <div className="w-full sm:w-auto">
               <OrientationFilter 
                 selectedOrientation={selectedOrientation}
-                onOrientationChange={handleOrientationChange}
+                onOrientationChange={(orientation) => {
+                  setSelectedOrientation(orientation);
+                  setCurrentPage(1);
+                  setHasMorePages(true);
+                }}
+              />
+            </div>
+            
+            <div className="flex-1 min-w-[200px]">
+              <Input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Rechercher par titre..."
+                className="w-full"
+              />
+            </div>
+            
+            <div className="w-full sm:w-auto min-w-[200px]">
+              <Input
+                type="text"
+                value={tagFilter}
+                onChange={(e) => {
+                  setTagFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Filtrer par tag..."
+                className="w-full"
               />
             </div>
           </div>
@@ -251,6 +346,18 @@ const Images = () => {
               )}
             </>
           )}
+          
+          {/* Pagination */}
+          <MasonryPagination
+            totalCount={totalCount}
+            currentPage={currentPage}
+            onPageChange={(page) => {
+              setCurrentPage(page);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            isLoading={isLoading}
+            imagesPerPage={IMAGES_PER_PAGE}
+          />
         </div>
       </main>
       
