@@ -242,21 +242,6 @@ export function ClientAdminDashboard() {
           </Card>
         </Link>
 
-        <Link to="/blog/new">
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <CardTitle>Blog</CardTitle>
-              <CardDescription>
-                Gérer vos articles
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Créer et publier des articles
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
       </div>
 
       <h3 className="text-xl font-semibold mt-8 mb-4">Vos dernières images</h3>
