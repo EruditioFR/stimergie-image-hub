@@ -52,6 +52,7 @@ export function useUserData(
         first_name: record.first_name,
         last_name: record.last_name,
         id_client: record.id_client,
+        client_ids: record.client_ids || [],
         client_name: record.client_name
       }));
       

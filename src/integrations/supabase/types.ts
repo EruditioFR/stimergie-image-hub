@@ -703,6 +703,7 @@ export type Database = {
           p_requesting_user_id?: string
         }
         Returns: {
+          client_ids: string[]
           client_name: string
           created_at: string
           email: string
