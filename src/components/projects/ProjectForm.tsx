@@ -173,7 +173,7 @@ export const ProjectForm = ({ project, onSuccess, onCancel, initialData, onSubmi
             <Select 
               value={formData.id_client} 
               onValueChange={handleClientChange}
-              disabled={!isAdmin}
+              disabled={!isAdmin()}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner un client">
@@ -208,7 +208,7 @@ export const ProjectForm = ({ project, onSuccess, onCancel, initialData, onSubmi
               name="nom_dossier" 
               value={formData.nom_dossier} 
               onChange={handleChange} 
-              disabled={!isAdmin}
+              disabled={!isAdmin()}
               required 
             />
           </div>
