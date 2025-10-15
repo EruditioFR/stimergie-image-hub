@@ -5,6 +5,7 @@ import { ProjectsEmptyState } from "./ProjectsEmptyState";
 import { ProjectCard } from "./ProjectCard";
 import { ProjectsTable } from "./ProjectsTable";
 import { ViewMode } from "@/components/ui/ViewToggle";
+import { useAuth } from "@/context/AuthContext";
 
 interface ProjectsListProps {
   projects: Project[];
@@ -21,6 +22,9 @@ export function ProjectsList({
   onDelete,
   viewMode = "card"
 }: ProjectsListProps) {
+  const { userRole } = useAuth();
+  const canManageProjects = userRole === 'admin';
+
   if (loading) {
     return <ProjectsLoadingState viewMode={viewMode} />;
   }
@@ -56,8 +60,8 @@ export function ProjectsList({
           <ProjectCard 
             key={project.id} 
             project={project} 
-            onEdit={onEdit} 
-            onDelete={onDelete} 
+            onEdit={canManageProjects ? onEdit : undefined} 
+            onDelete={canManageProjects ? onDelete : undefined} 
           />
         ))}
       </div>
@@ -65,5 +69,11 @@ export function ProjectsList({
   }
 
   // List view
-  return <ProjectsTable projects={sortedProjects} onEdit={onEdit} onDelete={onDelete} />;
+  return (
+    <ProjectsTable 
+      projects={sortedProjects} 
+      onEdit={canManageProjects ? onEdit : undefined} 
+      onDelete={canManageProjects ? onDelete : undefined} 
+    />
+  );
 }

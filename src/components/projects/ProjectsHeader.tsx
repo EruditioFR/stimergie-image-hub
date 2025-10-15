@@ -11,7 +11,7 @@ interface ProjectsHeaderProps {
 
 export function ProjectsHeader({ onAddClick, viewToggle }: ProjectsHeaderProps) {
   const { userRole } = useAuth();
-  const canAddProjects = userRole === 'admin' || userRole === 'admin_client';
+  const canAddProjects = userRole === 'admin';
   
   return (
     <div className="bg-muted/30 border-b border-border">
