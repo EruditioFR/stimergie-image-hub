@@ -15,6 +15,8 @@ import { Image as ImageType } from '@/utils/image/types';
 import { generateDisplayImageUrl, generateDownloadImageSDUrl, generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
 import { parseTagsString } from '@/utils/imageUtils';
 import { OrientationFilter } from '@/components/gallery/OrientationFilter';
+import { useUserPermissions } from '@/hooks/users/useUserPermissions';
+import { getAccessibleProjectIds } from '@/services/gallery/projectUtils';
 
 export interface Image {
   id: number;
@@ -51,14 +53,33 @@ const Images = () => {
   const [selectedOrientation, setSelectedOrientation] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMorePages, setHasMorePages] = useState(true);
-  const { userRole } = useAuth();
+  const { user, userRole } = useAuth();
   const { toast } = useToast();
+  const { isAdmin, userClientIds } = useUserPermissions();
   
   const fetchImages = async ({ pageParam = 1 }) => {
-    console.log(`Fetching images for page ${pageParam}`);
+    console.log(`Fetching images for page ${pageParam}, user role: ${userRole}`);
+    
+    // Get accessible projects for the user
+    let accessibleProjectIds: string[] = [];
+    if (!isAdmin && user) {
+      accessibleProjectIds = await getAccessibleProjectIds(user.id);
+      console.log(`User has access to ${accessibleProjectIds.length} projects`);
+      
+      if (accessibleProjectIds.length === 0) {
+        console.log('User has no accessible projects');
+        return [];
+      }
+    }
+    
     let query = supabase
       .from('images')
       .select('*, projets!id_projet (nom_dossier, nom_projet, clients:id_client(id, nom))')
+      
+    // Filter by accessible projects for non-admin users
+    if (!isAdmin && accessibleProjectIds.length > 0) {
+      query = query.in('id_projet', accessibleProjectIds);
+    }
       
     if (selectedOrientation) {
       query = query.eq('orientation', selectedOrientation);
@@ -122,8 +143,9 @@ const Images = () => {
     isLoading,
     refetch
   } = useQuery({
-    queryKey: ['images', selectedOrientation, currentPage],
+    queryKey: ['images', selectedOrientation, currentPage, userRole, user?.id, userClientIds],
     queryFn: () => fetchImages({ pageParam: currentPage }),
+    enabled: !!user && (isAdmin || userClientIds.length > 0),
   });
   
   const handleUploadSuccess = () => {
