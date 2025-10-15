@@ -27,20 +27,16 @@ export function ProjectsFilter({ selectedProject, onProjectChange, className, se
   useEffect(() => {
     console.log("Loading projects for ProjectsFilter, client:", selectedClient, "user role:", userRole);
     
-    // For regular users, always show all accessible projects since they can only see 
-    // projects they have access to through access periods or direct ownership
-    if (userRole === 'user') {
+    // Logique unifiée pour tous les rôles: filtrer par client sélectionné
+    if (!selectedClient) {
+      // Aucun client sélectionné = afficher tous les projets accessibles
       setFilteredProjects(projects.map(p => ({ id: p.id, nom_projet: p.nom_projet })));
-      console.log(`Retrieved ${projects.length} accessible projects for user`);
+      console.log(`Retrieved ${projects.length} accessible projects (all clients)`);
     } else {
-      // For admin users, filter by client if one is selected
-      if (!selectedClient) {
-        setFilteredProjects(projects.map(p => ({ id: p.id, nom_projet: p.nom_projet })));
-      } else {
-        const clientProjects = getProjectsForClient(selectedClient);
-        setFilteredProjects(clientProjects.map(p => ({ id: p.id, nom_projet: p.nom_projet })));
-        console.log(`Retrieved ${clientProjects.length} projects for client ${selectedClient}`);
-      }
+      // Client sélectionné = afficher uniquement les projets de ce client
+      const clientProjects = getProjectsForClient(selectedClient);
+      setFilteredProjects(clientProjects.map(p => ({ id: p.id, nom_projet: p.nom_projet })));
+      console.log(`Retrieved ${clientProjects.length} projects for client ${selectedClient}`);
     }
   }, [selectedClient, projects, getProjectsForClient, userRole]);
 

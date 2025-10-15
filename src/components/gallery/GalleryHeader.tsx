@@ -78,7 +78,7 @@ export function GalleryHeader({
             
             {canSeeClientFilter && <ClientsFilter selectedClient={selectedClient} onClientChange={onClientChange} className="w-full sm:w-auto" userRole={effectiveUserRole} userClientId={userClientId} userClientIds={userClientIds} isAdmin={effectiveUserRole === 'admin'} />}
             
-            {canSeeProjectFilter && <ProjectsFilter selectedProject={selectedProject} onProjectChange={onProjectChange} className="w-full sm:w-auto" selectedClient={effectiveUserRole === 'user' ? userClientId : selectedClient} />}
+            {canSeeProjectFilter && <ProjectsFilter selectedProject={selectedProject} onProjectChange={onProjectChange} className="w-full sm:w-auto" selectedClient={selectedClient} />}
           </div>
         </div>
       </div>

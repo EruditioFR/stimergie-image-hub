@@ -52,8 +52,12 @@ export const useGalleryQueryState = ({
     return selectedClient;
   }, [userRole, userClientId, userClientIds, selectedClient]);
 
-  // Skip query only if we definitely don't have access (logged in user without client ID)
-  const shouldSkipQuery = userId && ['admin_client', 'user'].includes(userRole) && userClientId === null;
+  // Skip query only if we definitely don't have access (logged in user without ANY client IDs)
+  const shouldSkipQuery = 
+    !!userId && 
+    ['admin_client', 'user'].includes(userRole) && 
+    userClientId === null && 
+    userClientIds.length === 0;
   
   // Wait for userClientIds to load for non-admin users to avoid empty results
   const shouldWaitForClientIds = ['admin_client', 'user'].includes(userRole) && !!userId && userClientIds.length === 0;
