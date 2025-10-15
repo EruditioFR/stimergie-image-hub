@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
         email: userData.email,
         first_name: userData.firstName,
         last_name: userData.lastName,
-        id_client: userData.clientId
+        client_ids: userData.clientIds || []
       })
       .eq('id', userId);
 

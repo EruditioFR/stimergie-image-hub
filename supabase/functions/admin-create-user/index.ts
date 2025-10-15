@@ -32,7 +32,7 @@ serve(async (req) => {
     });
 
     // Get request body
-    const { email, password, firstName, lastName, role, clientId } = await req.json();
+    const { email, password, firstName, lastName, role, clientIds } = await req.json();
 
     // Validate inputs
     if (!email || !password || !firstName || !lastName || !role) {
@@ -74,13 +74,28 @@ serve(async (req) => {
         first_name: firstName,
         last_name: lastName,
         role,
-        id_client: clientId,
+        client_ids: clientIds || [],
       })
       .eq("id", userData.user.id);
 
     if (updateProfileError) {
       console.error("Error updating profile:", updateProfileError);
       // Continue anyway since the user is created
+    }
+
+    // Also insert a user_role record
+    if (role) {
+      const { error: roleError } = await supabaseAdmin
+        .from("user_roles")
+        .insert({
+          user_id: userData.user.id,
+          role: role,
+        });
+
+      if (roleError) {
+        console.error("Error inserting user role:", roleError);
+        // Continue anyway since the user is created
+      }
     }
 
     return new Response(

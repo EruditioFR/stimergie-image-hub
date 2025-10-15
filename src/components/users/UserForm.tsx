@@ -21,7 +21,7 @@ import { PasswordField } from "./form/fields/PasswordField";
 import { UserFormActions } from "./form/UserFormActions";
 import { UserFormHeader } from "./form/UserFormHeader";
 import { RoleField } from "./form/fields/RoleField";
-import { ClientField } from "./form/fields/ClientField";
+import { ClientsMultiSelect } from "./form/fields/ClientsMultiSelect";
 
 export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing = false, isAdmin = false }: UserFormProps) {
   // Use the appropriate schema based on whether we're editing or creating
@@ -34,14 +34,14 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
       first_name: initialData.firstName || initialData.first_name || "",
       last_name: initialData.lastName || initialData.last_name || "",
       role: initialData.role as UserRole,
-      clientId: initialData.clientId || initialData.id_client || null,
+      clientIds: initialData.client_ids || [],
       password: "",
     } : {
       email: "",
       first_name: "",
       last_name: "",
       role: "user" as UserRole,
-      clientId: null,
+      clientIds: [],
       password: "",
     },
   });
@@ -82,13 +82,14 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
         fullName: `${values.first_name} ${values.last_name}`.trim(),
         avatarUrl: initialData.avatarUrl,
         role: values.role,
-        clientId: values.clientId,
+        clientId: null,
         createdAt: initialData.createdAt || "",
         updatedAt: new Date().toISOString(),
         // For backward compatibility
         first_name: values.first_name,
         last_name: values.last_name,
-        id_client: values.clientId,
+        id_client: null,
+        client_ids: values.clientIds,
       }, values.password); // Pass password even when editing
     } else {
       // For new user, pass without ID and include password
@@ -99,13 +100,14 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
         fullName: `${values.first_name} ${values.last_name}`.trim(),
         avatarUrl: null,
         role: values.role,
-        clientId: values.clientId,
+        clientId: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         // For backward compatibility
         first_name: values.first_name,
         last_name: values.last_name,
-        id_client: values.clientId,
+        id_client: null,
+        client_ids: values.clientIds,
       }, values.password || generatedPassword); // Use generated password if field is empty
     }
   };
@@ -120,7 +122,7 @@ export function UserForm({ clients, onSubmit, onCancel, initialData, isEditing =
             <EmailField form={form} isEditing={isEditing} />
             <RoleField form={form} availableRoles={availableRoles} />
             <NameFields form={form} />
-            <ClientField form={form} clients={clients} />
+            <ClientsMultiSelect form={form} clients={clients} />
             <PasswordField form={form} isEditing={isEditing} />
             
             {!isEditing && (
