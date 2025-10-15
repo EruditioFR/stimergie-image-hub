@@ -48,8 +48,8 @@ export function useUserPermissions() {
       { value: "admin_client", label: "Admin Client" },
       { value: "admin", label: "Administrateur" }
     ] : [
-      { value: "user", label: "Utilisateur" },
-      { value: "admin_client", label: "Admin Client" }
+      { value: "user", label: "Utilisateur" }
+      // Admin client ne peut créer que des "user"
     ]
   };
 }

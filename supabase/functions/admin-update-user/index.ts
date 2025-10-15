@@ -67,28 +67,68 @@ Deno.serve(async (req) => {
       });
     }
 
-    // If admin_client, check they're modifying a user from their client
+    // If admin_client, check they're modifying a user from their client(s)
     if (isAdminClient && !isAdmin) {
+      // Récupérer les client_ids de l'admin_client (caller)
       const { data: callerProfile } = await supabaseAdmin
         .from('profiles')
-        .select('id_client')
+        .select('id_client, client_ids')
         .eq('id', user.id)
         .single();
-
+      
+      let callerClientIds: string[] = [];
+      if (callerProfile?.client_ids && callerProfile.client_ids.length > 0) {
+        callerClientIds = callerProfile.client_ids;
+      } else if (callerProfile?.id_client) {
+        callerClientIds = [callerProfile.id_client];
+      }
+      
+      console.log('Admin client authorized clients:', callerClientIds);
+      
+      // Récupérer les client_ids de l'utilisateur cible
       const { data: targetProfile } = await supabaseAdmin
         .from('profiles')
-        .select('id_client')
+        .select('id_client, client_ids')
         .eq('id', userId)
         .single();
-
-      console.log('Client check:', { callerClient: callerProfile?.id_client, targetClient: targetProfile?.id_client });
-
-      if (callerProfile?.id_client !== targetProfile?.id_client) {
-        console.error('Client mismatch');
-        return new Response(JSON.stringify({ error: 'Vous ne pouvez modifier que les utilisateurs de votre client' }), {
+      
+      let targetClientIds: string[] = [];
+      if (targetProfile?.client_ids && targetProfile.client_ids.length > 0) {
+        targetClientIds = targetProfile.client_ids;
+      } else if (targetProfile?.id_client) {
+        targetClientIds = [targetProfile.id_client];
+      }
+      
+      console.log('Multi-client check:', { 
+        callerClientIds, 
+        targetClientIds 
+      });
+      
+      // Vérifier qu'au moins un client en commun existe
+      const hasCommonClient = targetClientIds.some(tId => callerClientIds.includes(tId));
+      
+      if (!hasCommonClient) {
+        console.error('No common client between caller and target user');
+        return new Response(JSON.stringify({ 
+          error: 'Vous ne pouvez modifier que les utilisateurs associés à vos clients' 
+        }), {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
+      }
+      
+      // Vérifier que les nouveaux clientIds sont autorisés
+      if (userData.clientIds && userData.clientIds.length > 0) {
+        const allNewClientsAllowed = userData.clientIds.every(cId => callerClientIds.includes(cId));
+        if (!allNewClientsAllowed) {
+          console.error('Admin client trying to assign unauthorized clients');
+          return new Response(JSON.stringify({ 
+            error: 'Vous ne pouvez assigner que vos propres clients' 
+          }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
       }
     }
 
