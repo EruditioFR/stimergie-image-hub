@@ -55,49 +55,60 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
       
       if (result.id) {
         console.log("New user created with ID:", result.id);
+
+        // Fetch the newly created user WITHOUT the clients join
         const { data: newUser, error: fetchError } = await supabase
           .from("profiles")
-          .select(`
-            id,
-          email,
-            first_name,
-            last_name,
-            role,
-            id_client,
-            client_ids,
-            clients(nom)
-          `)
+          .select('id, email, first_name, last_name, role, id_client, client_ids')
           .eq('id', result.id)
           .single();
           
         if (fetchError) {
           console.error("Erreur lors de la récupération du nouvel utilisateur:", fetchError);
           toast.warning("Utilisateur créé, mais erreur lors de la récupération des détails");
-        } else if (newUser) {
-          const formattedUser: User = {
-            id: newUser.id,
-            email: newUser.email,
-            firstName: newUser.first_name,
-            lastName: newUser.last_name,
-            fullName: newUser.first_name && newUser.last_name ? 
-              `${newUser.first_name} ${newUser.last_name}` : null,
-            avatarUrl: null,
-            role: newUser.role,
-            clientId: newUser.id_client,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            first_name: newUser.first_name,
-            last_name: newUser.last_name,
-            id_client: newUser.id_client,
-            client_ids: newUser.client_ids || [],
-            client_name: newUser.clients ? newUser.clients.nom : null
-          };
-          
-          setUsers(prev => [...prev, formattedUser]);
-          
-          toast.success("L'utilisateur a été créé avec succès");
-          console.log("User added successfully:", newUser);
+          return true; // User is still created, just refresh the page
+        } 
+
+        if (!newUser) {
+          toast.warning("Utilisateur créé avec succès. Veuillez rafraîchir la page.");
+          return true;
         }
+
+        // Manually fetch the client name for the first client_id
+        let clientName = null;
+        if (newUser.client_ids && newUser.client_ids.length > 0) {
+          const { data: clientData } = await supabase
+            .from('clients')
+            .select('nom')
+            .eq('id', newUser.client_ids[0])
+            .single();
+          
+          clientName = clientData?.nom || null;
+        }
+
+        const formattedUser: User = {
+          id: newUser.id,
+          email: newUser.email,
+          firstName: newUser.first_name,
+          lastName: newUser.last_name,
+          fullName: newUser.first_name && newUser.last_name ? 
+            `${newUser.first_name} ${newUser.last_name}` : null,
+          avatarUrl: null,
+          role: newUser.role,
+          clientId: newUser.id_client,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          first_name: newUser.first_name,
+          last_name: newUser.last_name,
+          id_client: newUser.id_client,
+          client_ids: newUser.client_ids || [],
+          client_name: clientName
+        };
+
+        setUsers(prev => [...prev, formattedUser]);
+
+        toast.success("L'utilisateur a été créé avec succès");
+        console.log("User added successfully:", formattedUser);
       }
       
       return true;

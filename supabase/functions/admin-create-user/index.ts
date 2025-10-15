@@ -197,6 +197,8 @@ serve(async (req) => {
       );
     }
 
+    console.log("User created successfully in auth:", userData.user.id);
+
     // The profile should be created via the trigger, but let's update it with additional info
     const { error: updateProfileError } = await supabaseAdmin
       .from("profiles")
@@ -211,6 +213,8 @@ serve(async (req) => {
     if (updateProfileError) {
       console.error("Error updating profile:", updateProfileError);
       // Continue anyway since the user is created
+    } else {
+      console.log("Profile updated successfully with client_ids:", clientIds);
     }
 
     // Also insert a user_role record
@@ -225,6 +229,8 @@ serve(async (req) => {
       if (roleError) {
         console.error("Error inserting user role:", roleError);
         // Continue anyway since the user is created
+      } else {
+        console.log("User role inserted successfully:", role);
       }
     }
 
