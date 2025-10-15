@@ -100,8 +100,10 @@ export function UserMenu({ user, userProfile, onLogout, formatRole }: UserMenuPr
           </DropdownMenuItem>
           
           <DropdownMenuItem>
-            <User className="mr-2 h-4 w-4" />
-            <span>Profil</span>
+            <Link to="/profile" className="flex w-full items-center">
+              <User className="mr-2 h-4 w-4" />
+              <span>Profil</span>
+            </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
 
