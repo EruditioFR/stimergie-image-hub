@@ -1,5 +1,6 @@
-
+import { useState } from 'react';
 import { Image } from '@/utils/image/types';
+import { MasonryDetailModal } from '@/components/gallery/masonry/MasonryDetailModal';
 import {
   Table,
   TableBody,
@@ -24,6 +25,20 @@ interface ImagesTableProps {
 }
 
 export function ImagesTable({ images }: ImagesTableProps) {
+  const [selectedImage, setSelectedImage] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+
+  const handleImageClick = (image: Image) => {
+    setSelectedImage(image);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedImage(null);
+  };
+
   return (
     <div className="border rounded-md overflow-hidden">
       <Table>
@@ -61,7 +76,18 @@ export function ImagesTable({ images }: ImagesTableProps) {
               return (
                 <TableRow key={image.id}>
                   <TableCell>
-                    <div className="h-16 w-16 relative overflow-hidden rounded">
+                    <div 
+                      className="h-16 w-16 relative overflow-hidden rounded cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => handleImageClick(image)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleImageClick(image);
+                        }
+                      }}
+                    >
                       <img 
                         src={image.display_url || image.src} 
                         alt={image.title} 
@@ -128,6 +154,18 @@ export function ImagesTable({ images }: ImagesTableProps) {
           </TableBody>
         </TooltipProvider>
       </Table>
+      
+      {selectedImage && (
+        <MasonryDetailModal
+          image={selectedImage}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          isShareDialogOpen={isShareDialogOpen}
+          setIsShareDialogOpen={setIsShareDialogOpen}
+          selectedImages={[selectedImage.id]}
+          images={images}
+        />
+      )}
     </div>
   );
 }
