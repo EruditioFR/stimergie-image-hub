@@ -15,6 +15,7 @@ interface GalleryQueryStateProps {
   shouldFetchRandom: boolean;
   userRole: string;
   userClientId: string | null;
+  userClientIds?: string[];
   userId?: string | null;
 }
 
@@ -29,15 +30,27 @@ export const useGalleryQueryState = ({
   shouldFetchRandom,
   userRole,
   userClientId,
+  userClientIds = [],
   userId
 }: GalleryQueryStateProps) => {
   const { formatImagesForGrid } = useGalleryImageFormatting();
 
   // Determine effective client for initial queries
-  const effectiveClient = useMemo(
-    () => (['admin_client', 'user'].includes(userRole) && userClientId ? userClientId : selectedClient),
-    [userRole, userClientId, selectedClient]
-  );
+  const effectiveClient = useMemo(() => {
+    // Si l'utilisateur a plusieurs clients et n'a pas sélectionné, ne pas filtrer
+    if (['admin_client', 'user'].includes(userRole) && userClientIds.length > 1 && !selectedClient) {
+      return null; // Voir tous les projets accessibles
+    }
+    // Si un seul client, le forcer
+    if (['admin_client', 'user'].includes(userRole) && userClientIds.length === 1) {
+      return userClientIds[0];
+    }
+    // Fallback sur userClientId si pas de userClientIds
+    if (['admin_client', 'user'].includes(userRole) && userClientId && userClientIds.length === 0) {
+      return userClientId;
+    }
+    return selectedClient;
+  }, [userRole, userClientId, userClientIds, selectedClient]);
 
   // Skip query only if we definitely don't have access (logged in user without client ID)
   const shouldSkipQuery = userId && ['admin_client', 'user'].includes(userRole) && userClientId === null;

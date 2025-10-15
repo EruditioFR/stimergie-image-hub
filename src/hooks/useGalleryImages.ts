@@ -1,4 +1,5 @@
 
+import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGalleryFilters } from './useGalleryFilters';
 import { useAuth } from '@/context/AuthContext';
@@ -16,15 +17,14 @@ export const useGalleryImages = (isAdmin: boolean) => {
   const clientFilter = searchParams.get('client') || null;
   const { userRole, user, userClientId } = useAuth();
 
-  // Only admin users can change the client filter
-  const canChangeClient = () => userRole === 'admin';
-  
+  // Users can change client if they are admin OR have multiple clients
   const {
     activeTab,
     selectedClient,
     selectedProject,
     selectedOrientation,
     hasActiveFilters,
+    userClientIds,
     handleTabChange,
     handleClientChange: baseHandleClientChange,
     handleProjectChange: baseHandleProjectChange,
@@ -32,6 +32,10 @@ export const useGalleryImages = (isAdmin: boolean) => {
     handleResetFilters,
     updateFilterStatus
   } = useGalleryFilters();
+
+  const canChangeClient = useCallback(() => {
+    return userRole === 'admin' || userClientIds.length > 1;
+  }, [userRole, userClientIds]);
 
   const {
     currentPage,
@@ -103,6 +107,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     shouldFetchRandom,
     userRole,
     userClientId,
+    userClientIds,
     userId: user?.id || null
   });
 
@@ -176,6 +181,7 @@ export const useGalleryImages = (isAdmin: boolean) => {
     refreshGallery: refreshGalleryWithCacheInvalidation,
     userRole,
     userClientId,
+    userClientIds,
     shouldFetchRandom,
     hasMorePages,
     // Exposer les méthodes de cache pour usage externe (targeted invalidation)

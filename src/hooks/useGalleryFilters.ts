@@ -15,35 +15,39 @@ export function useGalleryFilters() {
   const [selectedOrientation, setSelectedOrientation] = useState<string | null>(null);
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
   const [userClientId, setUserClientId] = useState<string | null>(null);
+  const [userClientIds, setUserClientIds] = useState<string[]>([]);
 
-  // Fetch user's client_id for regular users and admin_client
+  // Fetch user's client_ids for regular users and admin_client
   useEffect(() => {
-    const getUserClientId = async () => {
+    const getUserClientIds = async () => {
       if ((userRole === 'user' || userRole === 'admin_client') && user) {
         try {
-          const { data, error } = await supabase.rpc('get_user_client_id', {
+          const { data, error } = await supabase.rpc('get_user_client_ids', {
             user_id: user.id
           });
           
           if (error) {
-            console.error('Error fetching user client ID:', error);
+            console.error('Error fetching user client IDs:', error);
             return;
           }
           
-          if (data) {
-            setUserClientId(data);
-            // Auto-sélectionner le client pour les utilisateurs réguliers et admin_client
-            if (userRole === 'user' || userRole === 'admin_client') {
-              setSelectedClient(data);
+          if (data && data.length > 0) {
+            setUserClientIds(data);
+            // Set the first one for backward compatibility
+            setUserClientId(data[0]);
+            
+            // Auto-sélectionner le client seulement si l'utilisateur n'a qu'un seul client
+            if (data.length === 1) {
+              setSelectedClient(data[0]);
             }
           }
         } catch (error) {
-          console.error('Error fetching user client ID:', error);
+          console.error('Error fetching user client IDs:', error);
         }
       }
     };
     
-    getUserClientId();
+    getUserClientIds();
   }, [userRole, user]);
 
   // Synchronize client filter with URL parameter (admin only)
@@ -62,9 +66,11 @@ export function useGalleryFilters() {
   }, []);
 
   const handleClientChange = useCallback((clientId: string | null) => {
-    // Only allow client change for admin users
-    if (userRole === 'user' || userRole === 'admin_client') {
-      console.log('Non-admin users cannot change their client filter');
+    // Autoriser le changement pour les utilisateurs avec plusieurs clients
+    const hasMultipleClients = userClientIds.length > 1;
+    
+    if ((userRole === 'user' || userRole === 'admin_client') && !hasMultipleClients) {
+      console.log('Non-admin users with single client cannot change their client filter');
       return;
     }
     
@@ -74,7 +80,7 @@ export function useGalleryFilters() {
     // Clear project selection when client changes - the project will be auto-selected
     // in the ProjectsFilter component when the projects are loaded
     setSelectedProject(null);
-  }, [userRole]);
+  }, [userRole, userClientIds]);
   
   const handleProjectChange = useCallback((projectId: string | null) => {
     console.log('Project changed to:', projectId);
@@ -125,6 +131,7 @@ export function useGalleryFilters() {
     selectedOrientation,
     hasActiveFilters,
     userClientId,
+    userClientIds,
     userRole,
     handleTabChange,
     handleClientChange,

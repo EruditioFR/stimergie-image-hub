@@ -19,6 +19,7 @@ interface GalleryHeaderProps {
   userLastName?: string;
   userRole?: string;
   userClientId?: string | null;
+  userClientIds?: string[];
 }
 export function GalleryHeader({
   title,
@@ -34,13 +35,16 @@ export function GalleryHeader({
   userName = "",
   userLastName = "",
   userRole,
-  userClientId
+  userClientId,
+  userClientIds = []
 }: GalleryHeaderProps) {
   const {
     userRole: contextUserRole
   } = useAuth();
   const effectiveUserRole = userRole || contextUserRole;
   const isAdmin = ['admin', 'admin_client'].includes(effectiveUserRole);
+  const hasMultipleClients = userClientIds.length > 1;
+  const canSeeClientFilter = isAdmin || hasMultipleClients;
   const canSeeProjectFilter = ['admin', 'admin_client', 'user'].includes(effectiveUserRole);
   const [searchParams] = useSearchParams();
   const tagFilter = searchParams.get('tag') || '';
@@ -72,7 +76,7 @@ export function GalleryHeader({
           <div className="flex flex-col sm:flex-row gap-4 w-full md:ml-auto">
             <OrientationFilter selectedOrientation={selectedOrientation} onOrientationChange={onOrientationChange} className="w-full sm:w-auto" />
             
-            {isAdmin && <ClientsFilter selectedClient={selectedClient} onClientChange={onClientChange} className="w-full sm:w-auto" userRole={effectiveUserRole} userClientId={userClientId} isAdmin={effectiveUserRole === 'admin'} />}
+            {canSeeClientFilter && <ClientsFilter selectedClient={selectedClient} onClientChange={onClientChange} className="w-full sm:w-auto" userRole={effectiveUserRole} userClientId={userClientId} userClientIds={userClientIds} isAdmin={effectiveUserRole === 'admin'} />}
             
             {canSeeProjectFilter && <ProjectsFilter selectedProject={selectedProject} onProjectChange={onProjectChange} className="w-full sm:w-auto" selectedClient={effectiveUserRole === 'user' ? userClientId : selectedClient} />}
           </div>

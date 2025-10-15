@@ -49,6 +49,7 @@ const Gallery = () => {
     handleResetFilters,
     refreshGallery,
     userClientId,
+    userClientIds,
     hasMorePages
   } = galleryData;
 
@@ -142,6 +143,7 @@ const Gallery = () => {
           userLastName={userProfile?.lastName || ''} 
           userRole={userRole} 
           userClientId={userClientId}
+          userClientIds={userClientIds}
         />
 
         <div className="flex justify-between items-center px-4 mb-2 pt-[10px]">
