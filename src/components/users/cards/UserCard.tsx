@@ -1,5 +1,5 @@
 
-import { User } from "@/types/user";
+import { User, Client } from "@/types/user";
 import { UserRound, Building2, Mail, Shield, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,11 +13,18 @@ import { getRoleDisplay } from "@/utils/roleUtils";
 
 interface UserCardProps {
   user: User;
+  clients: Client[];
   onEdit?: (user: User) => void;
   onDelete?: (userId: string) => void;
 }
 
-export function UserCard({ user, onEdit, onDelete }: UserCardProps) {
+export function UserCard({ user, clients, onEdit, onDelete }: UserCardProps) {
+  // Get client names from client_ids
+  const clientNames = user.client_ids && user.client_ids.length > 0
+    ? clients.filter(c => user.client_ids?.includes(c.id)).map(c => c.nom)
+    : [];
+  
+  const hasClients = clientNames.length > 0;
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
@@ -70,11 +77,17 @@ export function UserCard({ user, onEdit, onDelete }: UserCardProps) {
             </Badge>
           </div>
           
-          {(user.client_name || user.clientId) && (
-            <p className="flex items-center gap-2">
-              <Building2 size={16} className="text-muted-foreground" />
-              {user.client_name || "Client"}
-            </p>
+          {hasClients && (
+            <div className="flex items-start gap-2">
+              <Building2 size={16} className="text-muted-foreground mt-1" />
+              <div className="flex flex-wrap gap-1">
+                {clientNames.map((name, index) => (
+                  <Badge key={index} variant="secondary" className="text-xs">
+                    {name}
+                  </Badge>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </CardContent>

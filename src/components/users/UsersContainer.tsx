@@ -122,7 +122,8 @@ export function UsersContainer() {
       />
       
       <UsersList 
-        users={users} 
+        users={users}
+        clients={clients}
         loading={loading} 
         onEdit={handleEditUser}
         onDelete={handleDeleteUser}

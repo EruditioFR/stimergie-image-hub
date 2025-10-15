@@ -1,5 +1,5 @@
 
-import { User } from "@/types/user";
+import { User, Client } from "@/types/user";
 import { UserRound, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,11 +15,18 @@ import { getRoleDisplay } from "@/utils/roleUtils";
 
 interface UsersTableProps {
   users: User[];
+  clients: Client[];
   onEdit?: (user: User) => void;
   onDelete?: (userId: string) => void;
 }
 
-export function UsersTable({ users, onEdit, onDelete }: UsersTableProps) {
+export function UsersTable({ users, clients, onEdit, onDelete }: UsersTableProps) {
+  const getClientNames = (user: User) => {
+    if (user.client_ids && user.client_ids.length > 0) {
+      return clients.filter(c => user.client_ids?.includes(c.id)).map(c => c.nom);
+    }
+    return [];
+  };
   return (
     <div className="w-full">
       <Table>
@@ -51,7 +58,22 @@ export function UsersTable({ users, onEdit, onDelete }: UsersTableProps) {
                   {getRoleDisplay(user.role).label}
                 </Badge>
               </TableCell>
-              <TableCell>{user.client_name || "Non spécifié"}</TableCell>
+              <TableCell>
+                {(() => {
+                  const clientNames = getClientNames(user);
+                  return clientNames.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {clientNames.map((name, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {name}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">Non spécifié</span>
+                  );
+                })()}
+              </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
                   {onEdit && (

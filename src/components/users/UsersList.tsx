@@ -1,5 +1,5 @@
 
-import { User } from "@/types/user";
+import { User, Client } from "@/types/user";
 import { ViewMode } from "@/components/ui/ViewToggle";
 import { UsersLoadingState } from "./states/UsersLoadingState";
 import { UsersEmptyState } from "./states/UsersEmptyState";
@@ -8,6 +8,7 @@ import { UsersTable } from "./tables/UsersTable";
 
 interface UsersListProps {
   users: User[];
+  clients: Client[];
   loading?: boolean;
   onEdit?: (user: User) => void;
   onDelete?: (userId: string) => void;
@@ -16,6 +17,7 @@ interface UsersListProps {
 
 export function UsersList({ 
   users, 
+  clients,
   loading = false, 
   onEdit, 
   onDelete,
@@ -36,7 +38,8 @@ export function UsersList({
         {users.map((user) => (
           <UserCard 
             key={user.id} 
-            user={user} 
+            user={user}
+            clients={clients}
             onEdit={onEdit} 
             onDelete={onDelete} 
           />
@@ -46,5 +49,5 @@ export function UsersList({
   }
 
   // List view
-  return <UsersTable users={users} onEdit={onEdit} onDelete={onDelete} />;
+  return <UsersTable users={users} clients={clients} onEdit={onEdit} onDelete={onDelete} />;
 }
