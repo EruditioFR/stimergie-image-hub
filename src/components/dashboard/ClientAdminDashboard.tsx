@@ -5,13 +5,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageIcon, FolderKanban } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ImageGallery } from "@/components/ImageGallery";
+import { MasonryDetailModal } from "@/components/gallery/masonry/MasonryDetailModal";
 
 interface ClientImage {
   id: string;
   src: string;
   alt: string;
   title: string;
+  display_url?: string;
+  download_url?: string;
+  download_url_sd?: string;
+  url?: string;
 }
 
 export function ClientAdminDashboard() {
@@ -25,6 +29,8 @@ export function ClientAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [clientIds, setClientIds] = useState<string[]>([]);
   const [clientNames, setClientNames] = useState<string[]>([]);
+  const [selectedImage, setSelectedImage] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     async function fetchClientIds() {
@@ -108,7 +114,7 @@ export function ClientAdminDashboard() {
           // 2. Récupérer les images de TOUS les projets (limit 20 pour preview)
           const { data: imagesData, error: imagesError } = await supabase
             .from("images")
-            .select("id, title, url, url_miniature")
+            .select("id, title, url, url_miniature, description, tags, width, height, orientation, created_at")
             .in("id_projet", projectIds)
             .order("created_at", { ascending: false })
             .limit(20);
@@ -137,7 +143,17 @@ export function ClientAdminDashboard() {
             id: img.id.toString(),
             src: img.url_miniature || img.url,
             alt: img.title,
-            title: img.title
+            title: img.title,
+            display_url: img.url_miniature || img.url,
+            download_url: img.url,
+            download_url_sd: img.url,
+            url: img.url,
+            description: img.description,
+            tags: img.tags,
+            width: img.width,
+            height: img.height,
+            orientation: img.orientation,
+            created_at: img.created_at
           }));
 
           setClientImages(formattedImages);
@@ -252,20 +268,42 @@ export function ClientAdminDashboard() {
           ))}
         </div>
       ) : clientImages.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {clientImages.map(image => (
-            <Link to={`/image/${image.id}`} key={image.id} className="block">
-              <div className="aspect-square overflow-hidden rounded-md border bg-muted hover:opacity-90 transition-opacity">
-                <img
-                  src={image.src}
-                  alt={image.alt}
-                  className="h-full w-full object-cover"
-                />
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {clientImages.map(image => (
+              <div 
+                key={image.id} 
+                onClick={() => {
+                  setSelectedImage(image);
+                  setIsModalOpen(true);
+                }}
+                className="block cursor-pointer"
+              >
+                <div className="aspect-square overflow-hidden rounded-md border bg-muted hover:opacity-90 transition-opacity">
+                  <img
+                    src={image.src}
+                    alt={image.alt}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <p className="text-sm mt-1 truncate">{image.title}</p>
               </div>
-              <p className="text-sm mt-1 truncate">{image.title}</p>
-            </Link>
-          ))}
-        </div>
+            ))}
+          </div>
+          
+          <MasonryDetailModal
+            image={selectedImage}
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false);
+              setSelectedImage(null);
+            }}
+            isShareDialogOpen={false}
+            setIsShareDialogOpen={() => {}}
+            selectedImages={[]}
+            images={[]}
+          />
+        </>
       ) : (
         <p className="text-muted-foreground">Aucune image disponible pour le moment.</p>
       )}

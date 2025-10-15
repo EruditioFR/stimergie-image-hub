@@ -4,12 +4,16 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { MasonryDetailModal } from "@/components/gallery/masonry/MasonryDetailModal";
 interface ClientImage {
   id: string;
   src: string;
   alt: string;
   title: string;
+  display_url?: string;
+  download_url?: string;
+  download_url_sd?: string;
+  url?: string;
 }
 export function UserDashboard() {
   const {
@@ -23,6 +27,8 @@ export function UserDashboard() {
   const [loading, setLoading] = useState(true);
   const [clientIds, setClientIds] = useState<string[]>([]);
   const [clientNames, setClientNames] = useState<string[]>([]);
+  const [selectedImage, setSelectedImage] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Fetch user's client IDs (multi-client support)
   useEffect(() => {
@@ -104,7 +110,7 @@ export function UserDashboard() {
           // 2. Récupérer les 12 dernières images de TOUS les projets
           const { data: imagesData, error: imagesError } = await supabase
             .from("images")
-            .select("id, title, url, url_miniature")
+            .select("id, title, url, url_miniature, description, tags, width, height, orientation, created_at")
             .in("id_projet", projectIds)
             .order("created_at", { ascending: false })
             .limit(12);
@@ -118,7 +124,17 @@ export function UserDashboard() {
             id: img.id.toString(),
             src: img.url_miniature || img.url,
             alt: img.title,
-            title: img.title
+            title: img.title,
+            display_url: img.url_miniature || img.url,
+            download_url: img.url,
+            download_url_sd: img.url,
+            url: img.url,
+            description: img.description,
+            tags: img.tags,
+            width: img.width,
+            height: img.height,
+            orientation: img.orientation,
+            created_at: img.created_at
           }));
           
           setClientImages(formattedImages);
@@ -186,17 +202,36 @@ export function UserDashboard() {
       }}>
             <CarouselContent>
               {clientImages.map(image => <CarouselItem key={image.id} className="basis-full md:basis-1/2 lg:basis-1/3 xl:basis-1/4 p-2">
-                  <Link to={`/image/${image.id}`} className="block h-full">
+                  <div 
+                    onClick={() => {
+                      setSelectedImage(image);
+                      setIsModalOpen(true);
+                    }}
+                    className="block h-full cursor-pointer"
+                  >
                     <div className="aspect-square overflow-hidden rounded-md border bg-muted hover:opacity-90 transition-opacity">
                       <img src={image.src} alt={image.alt} className="h-full w-full object-cover" />
                     </div>
                     <p className="text-sm mt-1 truncate">{image.title}</p>
-                  </Link>
+                  </div>
                 </CarouselItem>)}
             </CarouselContent>
             <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2" aria-label="Précédent" />
             <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2" aria-label="Suivant" />
           </Carousel>
+          
+          <MasonryDetailModal
+            image={selectedImage}
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false);
+              setSelectedImage(null);
+            }}
+            isShareDialogOpen={false}
+            setIsShareDialogOpen={() => {}}
+            selectedImages={[]}
+            images={[]}
+          />
         </div> : <p className="text-muted-foreground">Aucune image disponible pour le moment.</p>}
 
       {/* Afficher la section Fonctionnalités seulement pour les administrateurs */}
