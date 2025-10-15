@@ -92,9 +92,24 @@ Deno.serve(async (req) => {
 
     // Si c'est un admin_client, vérifier qu'il peut modifier cet utilisateur
     if (isAdminClient) {
+      // Récupérer les client_ids de l'admin_client (caller)
+      const { data: callerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id_client, client_ids')
+        .eq('id', user.id)
+        .single()
+      
+      let callerClientIds: string[] = []
+      if (callerProfile?.client_ids && callerProfile.client_ids.length > 0) {
+        callerClientIds = callerProfile.client_ids
+      } else if (callerProfile?.id_client) {
+        callerClientIds = [callerProfile.id_client]
+      }
+      
+      // Récupérer les client_ids de l'utilisateur cible
       const { data: targetUserProfile, error: targetProfileError } = await supabaseAdmin
         .from('profiles')
-        .select('id_client')
+        .select('id_client, client_ids')
         .eq('id', userId)
         .single()
 
@@ -107,11 +122,42 @@ Deno.serve(async (req) => {
           }
         )
       }
-
-      // Un admin_client ne peut modifier que les utilisateurs de son client
-      if (targetUserProfile.id_client !== currentUserProfile.id_client) {
+      
+      let targetClientIds: string[] = []
+      if (targetUserProfile.client_ids && targetUserProfile.client_ids.length > 0) {
+        targetClientIds = targetUserProfile.client_ids
+      } else if (targetUserProfile.id_client) {
+        targetClientIds = [targetUserProfile.id_client]
+      }
+      
+      // Vérifier qu'au moins un client en commun existe
+      const hasCommonClient = targetClientIds.some(tId => callerClientIds.includes(tId))
+      
+      if (!hasCommonClient) {
         return new Response(
-          JSON.stringify({ error: 'Vous ne pouvez modifier que les utilisateurs de votre client' }),
+          JSON.stringify({ 
+            error: 'Vous ne pouvez modifier que les utilisateurs associés à vos clients' 
+          }),
+          { 
+            status: 403, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
+
+      // Vérifier le rôle de l'utilisateur cible
+      const { data: targetUserRole } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .single()
+
+      // Un admin_client ne peut modifier que le mot de passe des utilisateurs avec le rôle 'user'
+      if (targetUserRole && targetUserRole.role !== 'user') {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Vous ne pouvez modifier le mot de passe que des utilisateurs standards (non admin)' 
+          }),
           { 
             status: 403, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
