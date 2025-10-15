@@ -67,25 +67,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (event, session) => {
         console.log("🔄 Auth state change:", event, "| User:", session?.user?.id || 'None');
         
-        // Handle token refresh errors
+        // Handle token refresh errors - Critical for detecting invalid refresh tokens
         if (event === 'TOKEN_REFRESHED') {
           if (!session) {
-            console.error("❌ Token refresh failed - no session returned");
+            console.error("❌ Token refresh failed - no session returned - forcing logout");
             
-            // Clear invalid tokens from storage
+            // Clear all invalid tokens from storage
             localStorage.removeItem('sb-mjhbugzaqmtfnbxaqpss-auth-token');
             
-            toast({
-              title: "Session expirée",
-              description: "Veuillez vous reconnecter",
-              variant: "destructive"
-            });
-            
+            // Reset all auth state
             setSession(null);
             setUser(null);
             setUserRole('user');
             setUserClientId(null);
             setLoading(false);
+            
+            toast({
+              title: "Session expirée",
+              description: "Votre session a expiré. Veuillez vous reconnecter.",
+              variant: "destructive"
+            });
+            
+            // Force redirect to auth page
+            setTimeout(() => {
+              window.location.href = '/auth';
+            }, 100);
             return;
           }
           console.log("✅ Token refreshed successfully");
@@ -129,6 +135,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     return () => subscription.unsubscribe();
+  }, [toast]);
+
+  // Periodic session validity check - helps catch invalid refresh tokens
+  useEffect(() => {
+    const checkSessionValidity = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error || !session) {
+          console.error("❌ Session invalide détectée lors de la vérification périodique:", error?.message);
+          
+          // Clear invalid tokens from storage
+          localStorage.removeItem('sb-mjhbugzaqmtfnbxaqpss-auth-token');
+          
+          // Reset all auth state
+          setSession(null);
+          setUser(null);
+          setUserRole('user');
+          setUserClientId(null);
+          
+          toast({
+            title: "Session invalide",
+            description: "Votre session n'est plus valide. Veuillez vous reconnecter.",
+            variant: "destructive"
+          });
+          
+          // Force redirect to auth page
+          setTimeout(() => {
+            window.location.href = '/auth';
+          }, 100);
+        }
+      } catch (error) {
+        console.error("❌ Erreur lors de la vérification de session:", error);
+      }
+    };
+    
+    // Check session validity every 5 minutes
+    const interval = setInterval(checkSessionValidity, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
   }, [toast]);
 
   const fetchUserClientId = async (userId: string) => {

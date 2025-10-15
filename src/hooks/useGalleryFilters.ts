@@ -27,22 +27,52 @@ export function useGalleryFilters() {
           });
           
           if (error) {
-            console.error('Error fetching user client IDs:', error);
+            console.error('❌ Error fetching user client IDs:', error);
+            
+            // Check if it's an authentication error (invalid refresh token)
+            if (error.message?.includes('Invalid Refresh Token') || 
+                error.message?.includes('JWT expired') ||
+                error.message?.includes('refresh_token_not_found')) {
+              console.error('🔐 Authentication error in get_user_client_ids - forcing logout');
+              
+              // Clear invalid tokens from storage
+              localStorage.removeItem('sb-mjhbugzaqmtfnbxaqpss-auth-token');
+              
+              // Force redirect to auth page
+              window.location.href = '/auth';
+              return;
+            }
+            
             return;
           }
           
           if (data && data.length > 0) {
+            console.log('✅ User client IDs fetched successfully:', data);
             setUserClientIds(data);
             // Set the first one for backward compatibility
             setUserClientId(data[0]);
             
             // Auto-sélectionner le client seulement si l'utilisateur n'a qu'un seul client
             if (data.length === 1) {
+              console.log('👤 Mono-client user - auto-selecting client:', data[0]);
               setSelectedClient(data[0]);
+            } else {
+              // Multi-client : laisser selectedClient à null pour afficher "Tous les clients"
+              console.log('👥 Multi-client user - leaving selectedClient as null for "Tous les clients"');
+              // Explicitly keep selectedClient as null (don't change it)
             }
           }
         } catch (error) {
-          console.error('Error fetching user client IDs:', error);
+          console.error('❌ Exception fetching user client IDs:', error);
+          
+          // Check if it's an authentication error
+          if (error instanceof Error && 
+              (error.message?.includes('Invalid Refresh Token') || 
+               error.message?.includes('JWT expired'))) {
+            console.error('🔐 Auth exception in get_user_client_ids - forcing logout');
+            localStorage.removeItem('sb-mjhbugzaqmtfnbxaqpss-auth-token');
+            window.location.href = '/auth';
+          }
         }
       }
     };
