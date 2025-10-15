@@ -142,7 +142,29 @@ export async function buildGalleryQuery(
       return { query, hasEmptyResult: true };
     }
     
-    query = query.in('id_projet', userAccessibleProjects);
+    // ✅ FILTRER par les projets des clients de l'utilisateur
+    if (userClientIds.length > 0) {
+      console.log('Filtering accessible projects by user client IDs:', userClientIds);
+      
+      const { data: userClientProjects } = await supabase
+        .from('projets')
+        .select('id')
+        .in('id_client', userClientIds);
+      
+      const userClientProjectIds = userClientProjects?.map(p => p.id) || [];
+      const filteredProjects = userAccessibleProjects.filter(id => userClientProjectIds.includes(id));
+      
+      console.log(`Filtered ${userAccessibleProjects.length} accessible projects to ${filteredProjects.length} projects from user clients`);
+      
+      if (filteredProjects.length === 0) {
+        console.log('No accessible projects within user clients');
+        return { query, hasEmptyResult: true };
+      }
+      
+      query = query.in('id_projet', filteredProjects);
+    } else {
+      query = query.in('id_projet', userAccessibleProjects);
+    }
   }
   
   // Appliquer le filtre de projet si fourni ET qu'on n'a pas de filtre de tag OU qu'on n'est pas admin
