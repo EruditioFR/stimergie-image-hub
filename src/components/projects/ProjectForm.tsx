@@ -9,6 +9,7 @@ import { useClientsData } from '@/hooks/projects/useClientsData';
 import { Project } from '@/types/project';
 import { ClientDB } from '@/types/user';
 import { useProjectMutations } from '@/hooks/projects/useProjectMutations';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
 interface ProjectFormProps {
@@ -20,6 +21,7 @@ interface ProjectFormProps {
 }
 
 export const ProjectForm = ({ project, onSuccess, onCancel, initialData, onSubmit }: ProjectFormProps) => {
+  const { isAdmin } = useAuth();
   const isEditMode = !!project || !!initialData;
   const projectData = initialData || project;
   
@@ -171,6 +173,7 @@ export const ProjectForm = ({ project, onSuccess, onCancel, initialData, onSubmi
             <Select 
               value={formData.id_client} 
               onValueChange={handleClientChange}
+              disabled={!isAdmin}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner un client">
@@ -205,6 +208,7 @@ export const ProjectForm = ({ project, onSuccess, onCancel, initialData, onSubmi
               name="nom_dossier" 
               value={formData.nom_dossier} 
               onChange={handleChange} 
+              disabled={!isAdmin}
               required 
             />
           </div>
