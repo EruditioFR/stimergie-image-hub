@@ -87,7 +87,8 @@ export const useGalleryQueryState = ({
       userRole,
       userClientId,
       selectedOrientation,
-      userId
+      userId,
+      userClientIds
     ),
     staleTime: 300000, // 5 minutes for better caching
     enabled: !shouldSkipQuery, // Skip queries for non-admin users without client ID

@@ -14,17 +14,30 @@ export async function buildGalleryQuery(
   project: string | null,
   userRole: string,
   userClientId: string | null,
-  userId: string | null
+  userId: string | null,
+  userClientIds: string[] = []
 ) {
-  console.log(`Building gallery query for user role: ${userRole}, client ID: ${userClientId}`);
+  console.log(`Building gallery query for user role: ${userRole}, client ID: ${userClientId}, client IDs: ${userClientIds.join(', ')}`);
   
   // Si on a un filtre de tag, on ignore les filtres client/projet SEULEMENT pour les admins
   const hasTagFilter = tag && tag.toLowerCase() !== 'toutes';
   
-  // For non-admin users, ALWAYS filter by their client ID (même avec un filtre de tag)
-  if (['admin_client', 'user'].includes(userRole) && userClientId) {
-    console.log('Non-admin user detected, forcing client filter even with tag filter:', userClientId);
-    client = userClientId;
+  // Pour les utilisateurs avec un SEUL client, forcer le filtre
+  // Pour les utilisateurs avec PLUSIEURS clients, ne forcer que si un seul client est assigné
+  if (['admin_client', 'user'].includes(userRole)) {
+    if (userClientIds.length === 1 && !client) {
+      // Utilisateur avec un seul client : le forcer
+      console.log('Single-client user detected, forcing client filter:', userClientIds[0]);
+      client = userClientIds[0];
+    } else if (userClientIds.length > 1 && !client) {
+      // Utilisateur avec plusieurs clients et aucun client sélectionné : ne rien forcer
+      // Les projets accessibles seront filtrés par getAccessibleProjectIds
+      console.log('Multi-client user with no selection: will use accessible projects filter');
+    } else if (client && userClientIds.length > 0 && !userClientIds.includes(client)) {
+      // Vérification de sécurité : l'utilisateur ne peut pas sélectionner un client auquel il n'a pas accès
+      console.log('User attempted to access unauthorized client:', client);
+      return { query: supabase.from('images').select('*'), hasEmptyResult: true };
+    }
   }
   
   // Si on recherche par nom de client ou nom de dossier et qu'on est admin, chercher les projets correspondants
@@ -116,9 +129,9 @@ export async function buildGalleryQuery(
 
       query = query.in('id_projet', allowedIds);
     }
-  } else if (['admin_client', 'user'].includes(userRole) && !userClientId) {
-    // If non-admin user with no client ID, this means the client ID is still loading
-    console.log('Non-admin user with no client ID yet (still loading), waiting...');
+  } else if (['admin_client', 'user'].includes(userRole) && userClientIds.length === 0) {
+    // If non-admin user with no client IDs, this means the client IDs are still loading
+    console.log('Non-admin user with no client IDs yet (still loading), waiting...');
     return { query, hasEmptyResult: true };
   } else if (['admin_client', 'user'].includes(userRole) && userId) {
     // Non-admin users without specific client: show all accessible projects

@@ -12,10 +12,11 @@ export async function fetchGalleryImages(
   userRole: string,
   userClientId: string | null,
   orientation: string | null = null,
-  userId: string | null = null
+  userId: string | null = null,
+  userClientIds: string[] = []
 ) {
   console.log(`fetchGalleryImages called with params:`, {
-    search, tag, tab, client, project, pageNum, shouldFetchRandom, userRole, userClientId, orientation, userId
+    search, tag, tab, client, project, pageNum, shouldFetchRandom, userRole, userClientId, orientation, userId, userClientIds
   });
 
   try {
@@ -28,7 +29,8 @@ export async function fetchGalleryImages(
       project, 
       userRole, 
       userClientId,
-      userId
+      userId,
+      userClientIds
     );
 
     if (hasEmptyResult) {
