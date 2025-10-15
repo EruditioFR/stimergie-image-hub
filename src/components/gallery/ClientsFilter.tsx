@@ -87,7 +87,7 @@ export function ClientsFilter({ selectedClient, onClientChange, className, userR
         </SelectTrigger>
         <SelectContent side="bottom" sideOffset={4} avoidCollisions={false} className="z-50 bg-background">
           <SelectGroup>
-            {(isAdmin || hasMultipleClients) && <SelectItem value="all">Tous les clients</SelectItem>}
+            {(isAdmin || userClientIds.length > 1) && <SelectItem value="all">Tous les clients</SelectItem>}
             {clients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.nom}
