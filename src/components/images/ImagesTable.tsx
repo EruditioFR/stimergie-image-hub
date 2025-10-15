@@ -38,8 +38,9 @@ export function ImagesTable({ images }: ImagesTableProps) {
             <TableHead>Date d'ajout</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
-          {images.length === 0 ? (
+        <TooltipProvider delayDuration={300} skipDelayDuration={100}>
+          <TableBody>
+            {images.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="text-center py-10">
                 Aucune image disponible
@@ -80,8 +81,7 @@ export function ImagesTable({ images }: ImagesTableProps) {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <TooltipProvider>
-                      <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1">
                         {displayTags.length > 0 ? (
                           <>
                             {displayTags.slice(0, 3).map((tag, index) => (
@@ -96,7 +96,7 @@ export function ImagesTable({ images }: ImagesTableProps) {
                                     +{displayTags.length - 3}
                                   </Badge>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-xs">
+                                <TooltipContent side="top" className="z-[9999] max-w-xs">
                                   <div className="flex flex-wrap gap-1">
                                     {displayTags.slice(3).map((tag, index) => (
                                       <Badge key={index} variant="secondary" className="text-xs">
@@ -112,7 +112,6 @@ export function ImagesTable({ images }: ImagesTableProps) {
                           <span className="text-muted-foreground text-xs">Aucun tag</span>
                         )}
                       </div>
-                    </TooltipProvider>
                   </TableCell>
                   <TableCell>
                     {formatDistanceToNow(new Date(image.created_at || ''), { 
@@ -124,7 +123,8 @@ export function ImagesTable({ images }: ImagesTableProps) {
               );
             })
           )}
-        </TableBody>
+          </TableBody>
+        </TooltipProvider>
       </Table>
     </div>
   );
