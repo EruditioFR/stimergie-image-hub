@@ -36,46 +36,22 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
 
       console.log("Calling admin-create-user function with email and user data");
 
-      const SUPABASE_URL = "https://mjhbugzaqmtfnbxaqpss.supabase.co";
-      const functionUrl = `${SUPABASE_URL}/functions/v1/admin-create-user`;
-      
-      console.log("Calling edge function at URL:", functionUrl);
-
-      const response = await fetch(functionUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-        body: JSON.stringify({
+      const { data: result, error: functionError } = await supabase.functions.invoke('admin-create-user', {
+        body: {
           email: trimmedEmail,
           password: trimmedPassword,
           firstName,
           lastName,
           role: userData.role || 'user',
           clientIds
-        })
+        }
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error response from server:", errorText);
-        
-        let errorMessage = "Erreur lors de la création de l'utilisateur";
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error || errorMessage;
-        } catch (e) {
-          errorMessage = errorText.includes("<") ? 
-            "Erreur de serveur lors de la création de l'utilisateur" : 
-            errorText || errorMessage;
-        }
-        
-        toast.error(errorMessage);
+      if (functionError) {
+        console.error("Error response from server:", functionError);
+        toast.error(functionError.message || "Erreur lors de la création de l'utilisateur");
         return false;
       }
-      
-      const result = await response.json();
       
       if (result.id) {
         console.log("New user created with ID:", result.id);
@@ -136,17 +112,8 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
     try {
       console.log("Mise à jour de l'utilisateur via Edge Function:", userData);
 
-      const SUPABASE_URL = "https://mjhbugzaqmtfnbxaqpss.supabase.co";
-      const functionUrl = `${SUPABASE_URL}/functions/v1/admin-update-user`;
-      
-      // Call the admin-update-user Edge Function
-      const response = await fetch(functionUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-        body: JSON.stringify({
+      const { error: updateError } = await supabase.functions.invoke('admin-update-user', {
+        body: {
           userId: userData.id,
           userData: {
             email: userData.email,
@@ -155,24 +122,12 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
             clientIds: userData.client_ids || [],
             role: userData.role
           }
-        })
+        }
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error response from admin-update-user:", errorText);
-        
-        let errorMessage = "Erreur lors de la mise à jour de l'utilisateur";
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error || errorMessage;
-        } catch (e) {
-          errorMessage = errorText.includes("<") ? 
-            "Erreur de serveur lors de la mise à jour" : 
-            errorText || errorMessage;
-        }
-        
-        toast.error(errorMessage);
+      if (updateError) {
+        console.error("Error response from admin-update-user:", updateError);
+        toast.error(updateError.message || "Erreur lors de la mise à jour de l'utilisateur");
         return false;
       }
 
@@ -182,23 +137,15 @@ export function useUserCrud(setUsers: React.Dispatch<React.SetStateAction<User[]
       if (password && password.trim() !== '') {
         console.log("Updating password for user:", userData.id);
         
-        const passwordFunctionUrl = `${SUPABASE_URL}/functions/v1/admin-update-password`;
-        
-        const passwordResponse = await fetch(passwordFunctionUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
-          body: JSON.stringify({
+        const { error: passwordError } = await supabase.functions.invoke('admin-update-password', {
+          body: {
             userId: userData.id,
             newPassword: password
-          })
+          }
         });
 
-        if (!passwordResponse.ok) {
-          const errorText = await passwordResponse.text();
-          console.error("Error response from password update:", errorText);
+        if (passwordError) {
+          console.error("Error response from password update:", passwordError);
           toast.error("Le profil a été mis à jour mais le mot de passe n'a pas pu être changé");
         } else {
           console.log("Mot de passe mis à jour avec succès");
