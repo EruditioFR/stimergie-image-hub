@@ -63,9 +63,9 @@ export function MobileMenu({
     },
     {
       path: '/images',
-      label: 'Images',
+      label: 'Gestion des images',
       icon: Image,
-      show: isAdmin || isAdminClient
+      show: !isAdmin // Afficher pour admin_client et user uniquement
     },
     {
       path: '/users',

@@ -66,6 +66,14 @@ export function Header() {
             >
               Banque d'images
             </Link>
+            {(userRole === 'admin_client' || userRole === 'user') && (
+              <Link 
+                to="/images" 
+                className="text-sm font-medium transition-colors hover:text-primary"
+              >
+                Gestion des images
+              </Link>
+            )}
             <ContactForm userProfile={userProfile} userEmail={user?.email} />
           </div>
         </div>
