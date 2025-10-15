@@ -6,9 +6,10 @@ import { ReactNode } from 'react';
 interface ImagesHeaderProps {
   onAddClick: () => void;
   viewToggle: ReactNode;
+  userRole?: string;
 }
 
-export function ImagesHeader({ onAddClick, viewToggle }: ImagesHeaderProps) {
+export function ImagesHeader({ onAddClick, viewToggle, userRole }: ImagesHeaderProps) {
   return (
     <div className="bg-muted/30 border-b border-border">
       <div className="max-w-7xl mx-auto px-6 py-16">
@@ -18,10 +19,12 @@ export function ImagesHeader({ onAddClick, viewToggle }: ImagesHeaderProps) {
           <div className="flex items-center gap-4">
             {viewToggle}
             
-            <Button onClick={onAddClick}>
-              <Plus size={16} className="mr-2" />
-              Ajouter une image
-            </Button>
+            {userRole === 'admin' && (
+              <Button onClick={onAddClick}>
+                <Plus size={16} className="mr-2" />
+                Ajouter une image
+              </Button>
+            )}
           </div>
         </div>
       </div>

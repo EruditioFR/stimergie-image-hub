@@ -25,6 +25,7 @@ export function ImagesTable({ images }: ImagesTableProps) {
           <TableRow>
             <TableHead>Image</TableHead>
             <TableHead>Titre</TableHead>
+            <TableHead>Client</TableHead>
             <TableHead>Dimensions</TableHead>
             <TableHead>Orientation</TableHead>
             <TableHead>Tags</TableHead>
@@ -34,7 +35,7 @@ export function ImagesTable({ images }: ImagesTableProps) {
         <TableBody>
           {images.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-10">
+              <TableCell colSpan={7} className="text-center py-10">
                 Aucune image disponible
               </TableCell>
             </TableRow>
@@ -63,6 +64,7 @@ export function ImagesTable({ images }: ImagesTableProps) {
                     </div>
                   </TableCell>
                   <TableCell className="font-medium">{image.title}</TableCell>
+                  <TableCell>{image.projets?.clients?.nom || 'N/A'}</TableCell>
                   <TableCell>{`${image.width} × ${image.height}`}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="capitalize">

@@ -33,13 +33,21 @@ export interface Image {
   display_url?: string;
   download_url?: string;
   download_url_sd?: string;
+  projets?: {
+    nom_projet?: string;
+    nom_dossier?: string;
+    clients?: {
+      id?: string;
+      nom?: string;
+    };
+  };
 }
 
 const IMAGES_PER_PAGE = 20;
 
 const Images = () => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('card');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedOrientation, setSelectedOrientation] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMorePages, setHasMorePages] = useState(true);
@@ -50,7 +58,7 @@ const Images = () => {
     console.log(`Fetching images for page ${pageParam}`);
     let query = supabase
       .from('images')
-      .select('*, projets!id_projet (nom_dossier, nom_projet)')
+      .select('*, projets!id_projet (nom_dossier, nom_projet, clients:id_client(id, nom))')
       
     if (selectedOrientation) {
       query = query.eq('orientation', selectedOrientation);
@@ -165,7 +173,8 @@ const Images = () => {
         width: image.width,
         height: image.height,
         orientation: image.orientation,
-        created_at: image.created_at
+        created_at: image.created_at,
+        projets: image.projets
       } as ImageType;
     });
   };
@@ -188,7 +197,11 @@ const Images = () => {
       <Header />
       
       <main className="flex-grow py-0">
-        <ImagesHeader onAddClick={() => setIsUploadOpen(true)} viewToggle={<ViewToggle currentView={viewMode} onViewChange={setViewMode} />} />
+        <ImagesHeader 
+          onAddClick={() => setIsUploadOpen(true)} 
+          viewToggle={<ViewToggle currentView={viewMode} onViewChange={setViewMode} />}
+          userRole={userRole}
+        />
         
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="mb-6">
