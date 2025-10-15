@@ -70,7 +70,7 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/images" element={
-                  <ProtectedRoute allowedRoles={['admin']}>
+                  <ProtectedRoute allowedRoles={['admin', 'admin_client', 'user']}>
                     <Images />
                   </ProtectedRoute>
                 } />
