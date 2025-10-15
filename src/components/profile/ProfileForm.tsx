@@ -39,18 +39,38 @@ export function ProfileForm({ user, userProfile }: ProfileFormProps) {
     try {
       setIsLoading(true);
 
+      // Check if email already exists (excluding current user)
+      if (values.email !== user.email) {
+        const { data: existingUser } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', values.email)
+          .maybeSingle();
+        
+        if (existingUser && existingUser.id !== user.id) {
+          toast({
+            title: "Erreur",
+            description: "Cet email est déjà utilisé par un autre utilisateur",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+
       // Update profile in profiles table
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
           first_name: values.firstName,
           last_name: values.lastName,
+          email: values.email,
         })
         .eq("id", user.id);
 
       if (profileError) throw profileError;
 
-      // Update email if changed
+      // Update email in auth if changed
       if (values.email !== user.email) {
         const { error: emailError } = await supabase.auth.updateUser({
           email: values.email,

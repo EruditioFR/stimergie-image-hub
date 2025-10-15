@@ -132,6 +132,26 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Check if email already exists (excluding current user)
+    if (userData.email) {
+      const { data: existingUser } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('email', userData.email)
+        .neq('id', userId)
+        .maybeSingle();
+      
+      if (existingUser) {
+        console.error('Email already exists');
+        return new Response(JSON.stringify({ 
+          error: 'Cet email est déjà utilisé par un autre utilisateur' 
+        }), {
+          status: 409,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
     // Update the profile
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
