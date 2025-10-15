@@ -122,8 +122,11 @@ const Images = () => {
     }
     
     if (tagFilter) {
-      query = query.contains('tags', [tagFilter]);
-      countQuery = countQuery.contains('tags', [tagFilter]);
+      const term = tagFilter.trim();
+      if (term) {
+        query = query.ilike('tags', `%${term}%`);
+        countQuery = countQuery.ilike('tags', `%${term}%`);
+      }
     }
     
     if (searchQuery) {
