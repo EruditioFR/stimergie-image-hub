@@ -660,6 +660,10 @@ export type Database = {
         Args: { user_id: string }
         Returns: string
       }
+      get_user_client_ids: {
+        Args: { user_id: string }
+        Returns: string[]
+      }
       get_user_profile_data: {
         Args: { user_id: string }
         Returns: {

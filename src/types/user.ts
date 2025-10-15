@@ -15,6 +15,7 @@ export interface User {
   first_name?: string | null;
   last_name?: string | null;
   id_client?: string | null;
+  client_ids?: string[] | null;
   client_name?: string | null;
 }
 

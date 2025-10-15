@@ -6,46 +6,51 @@ import { clearCorruptedProjectCache } from '@/services/gallery/projectUtils';
 
 export const useGalleryClient = (user: User | null, userRole: string) => {
   const [userClientId, setUserClientId] = useState<string | null>(user?.user_metadata?.client_id || null);
+  const [userClientIds, setUserClientIds] = useState<string[]>([]);
   
-  // Fetch the client ID from profiles if it's not in metadata
+  // Fetch all client IDs from profiles for non-admin users
   useEffect(() => {
-    if (user && userRole === 'user' && !userClientId) {
-      const fetchUserClientId = async () => {
+    if (user && ['admin_client', 'user'].includes(userRole)) {
+      const fetchUserClientIds = async () => {
         try {
-          const { data, error } = await supabase.rpc('get_user_client_id', {
+          // Use the new RPC function to get all client IDs
+          const { data, error } = await supabase.rpc('get_user_client_ids', {
             user_id: user.id
           });
           
           if (error) {
-            console.error("Error fetching user client ID:", error);
+            console.error("Error fetching user client IDs:", error);
             return;
           }
           
-          if (data) {
-            setUserClientId(data);
-            console.log("Fetched user client ID:", data);
+          if (data && data.length > 0) {
+            setUserClientIds(data);
+            // Set the first client as the default client ID for backward compatibility
+            setUserClientId(data[0]);
+            console.log("Fetched user client IDs:", data);
             
-            // Clear any corrupted project cache when we get the client ID
-            clearCorruptedProjectCache(data);
+            // Clear any corrupted project cache for all clients
+            data.forEach((clientId: string) => clearCorruptedProjectCache(clientId));
           }
         } catch (error) {
-          console.error("Unexpected error fetching client ID:", error);
+          console.error("Unexpected error fetching client IDs:", error);
         }
       };
       
-      fetchUserClientId();
+      fetchUserClientIds();
     }
-  }, [user, userRole, userClientId]);
+  }, [user, userRole]);
   
   const enforceClientForNonAdmin = useCallback(() => {
     // This function will be called in the useGalleryInitialization hook
-    // It will set the client filter for non-admin users
-    if (userRole === 'user' && userClientId) {
-      console.log('Enforcing client filter for user role with client ID:', userClientId);
+    // For non-admin users with multiple clients, use the first one as default
+    if (['admin_client', 'user'].includes(userRole) && userClientId) {
+      console.log('Enforcing client filter for non-admin role with client ID:', userClientId);
+      console.log('User has access to', userClientIds.length, 'client(s)');
       return userClientId;
     }
     return null;
-  }, [userRole, userClientId]);
+  }, [userRole, userClientId, userClientIds]);
   
   const canChangeClient = useCallback(() => {
     // Only admin users can change the client filter
@@ -54,6 +59,7 @@ export const useGalleryClient = (user: User | null, userRole: string) => {
   
   return {
     userClientId,
+    userClientIds,
     enforceClientForNonAdmin,
     canChangeClient
   };
