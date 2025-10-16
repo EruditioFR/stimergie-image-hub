@@ -33,6 +33,20 @@ const Downloads = () => {
     }
   }, [downloads, isLoading]);
 
+  // Auto-refresh silencieux toutes les 30 secondes
+  useEffect(() => {
+    if (!initialRefreshDone) return;
+    
+    const intervalId = setInterval(() => {
+      console.log('Auto-refresh: updating downloads (silent)');
+      refreshDownloads();
+    }, 30000);
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [refreshDownloads, initialRefreshDone]);
+
   const handleManualRefresh = async () => {
     if (isRefreshing) return;
     
