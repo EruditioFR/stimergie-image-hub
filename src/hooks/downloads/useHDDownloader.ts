@@ -8,8 +8,8 @@ import { downloadImage } from '@/utils/image/download';
 import { generateDownloadImageHDUrl } from '@/utils/image/imageUrlGenerator';
 import { transformToHDUrl } from '@/utils/image/download/networkUtils';
 
-// HD download threshold - use server for 20+ images
-const HD_SERVER_THRESHOLD = 20;
+// HD download threshold - use server for 3+ images
+const HD_SERVER_THRESHOLD = 3;
 
 export function useHDDownloader() {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -77,7 +77,7 @@ export function useHDDownloader() {
         
         return true;
       } 
-      // Pour 2 images, téléchargement direct en ZIP côté client
+      // Pour 2 images ou moins, téléchargement direct en ZIP côté client
       else if (selectedImages.length < HD_SERVER_THRESHOLD) {
         console.log(`HD download: Using client-side ZIP for ${selectedImages.length} images (below threshold: ${HD_SERVER_THRESHOLD})`);
         
@@ -122,7 +122,7 @@ export function useHDDownloader() {
         
         return true;
       }
-      // Pour 3+ images, utiliser le serveur
+      // Pour 3+ images, utiliser le serveur (ajout à la page Téléchargements)
       else {
         console.log(`HD download: Using server-side download for ${selectedImages.length} images (threshold: ${HD_SERVER_THRESHOLD})`);
         
