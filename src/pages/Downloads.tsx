@@ -4,10 +4,8 @@ import { useDownloads } from '@/hooks/useDownloads';
 import { Footer } from '@/components/ui/layout/Footer';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { useRealtimeStatus } from '@/hooks/useRealtimeStatus';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
 import { DownloadsHeader } from '@/components/downloads/DownloadsHeader';
-import { ConnectionStatusAlert } from '@/components/downloads/ConnectionStatusAlert';
 import { AdminDebugPanel } from '@/components/downloads/AdminDebugPanel';
 import { DownloadsContent } from '@/components/downloads/DownloadsContent';
 import { DownloadsFooter } from '@/components/downloads/DownloadsFooter';
@@ -17,7 +15,6 @@ const Downloads = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [initialRefreshDone, setInitialRefreshDone] = useState(false);
   const { user } = useAuth();
-  const { realtimeStatus, lastConnectedAt, reconnectAttempts, manualReconnect } = useRealtimeStatus();
   const { isAdmin } = useAdminStatus(user);
   
   // Force a refresh when the component mounts - but only once
@@ -35,14 +32,6 @@ const Downloads = () => {
       console.log('Downloads ready to render:', downloads.length);
     }
   }, [downloads, isLoading]);
-
-  // Add automatic refresh when connection is reestablished
-  useEffect(() => {
-    if (realtimeStatus === 'connected' && initialRefreshDone) {
-      console.log('Connection reestablished, refreshing downloads');
-      refreshDownloads();
-    }
-  }, [realtimeStatus, initialRefreshDone, refreshDownloads]);
 
   const handleManualRefresh = async () => {
     if (isRefreshing) return;
@@ -72,17 +61,9 @@ const Downloads = () => {
             isRefreshing={isRefreshing}
           />
 
-          <ConnectionStatusAlert 
-            realtimeStatus={realtimeStatus}
-            lastConnectedAt={lastConnectedAt}
-            reconnectAttempts={reconnectAttempts}
-            onManualReconnect={manualReconnect}
-          />
-
           <AdminDebugPanel 
             isAdmin={isAdmin}
             downloads={downloads}
-            realtimeStatus={realtimeStatus}
           />
 
           <DownloadsContent 

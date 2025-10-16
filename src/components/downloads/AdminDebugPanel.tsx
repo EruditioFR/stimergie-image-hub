@@ -8,10 +8,9 @@ import { DownloadRequest } from './DownloadsTable';
 interface AdminDebugPanelProps {
   isAdmin: boolean;
   downloads: DownloadRequest[];
-  realtimeStatus?: 'connected' | 'connecting' | 'disconnected';
 }
 
-export function AdminDebugPanel({ isAdmin, downloads, realtimeStatus }: AdminDebugPanelProps) {
+export function AdminDebugPanel({ isAdmin, downloads }: AdminDebugPanelProps) {
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [functionLogs, setFunctionLogs] = useState<Record<string, string[]>>({});
   
@@ -79,31 +78,6 @@ export function AdminDebugPanel({ isAdmin, downloads, realtimeStatus }: AdminDeb
                   downloads.filter(d => d.status === 'ready' && !d.downloadUrl).length
                 }
               </div>
-              {realtimeStatus && (
-                <div className="bg-white p-2 rounded col-span-2">
-                  <span className="font-medium">Statut Realtime:</span>{" "}
-                  <span className={`inline-flex items-center ${
-                    realtimeStatus === 'connected' 
-                      ? 'text-green-600' 
-                      : realtimeStatus === 'connecting' 
-                        ? 'text-amber-600' 
-                        : 'text-red-600'
-                  }`}>
-                    {realtimeStatus === 'connected' 
-                      ? 'Connecté' 
-                      : realtimeStatus === 'connecting' 
-                        ? 'Connexion en cours...' 
-                        : 'Déconnecté'}
-                    <span className={`ml-1.5 w-2 h-2 rounded-full ${
-                      realtimeStatus === 'connected' 
-                        ? 'bg-green-500' 
-                        : realtimeStatus === 'connecting' 
-                          ? 'bg-amber-500' 
-                          : 'bg-red-500'
-                    }`}></span>
-                  </span>
-                </div>
-              )}
             </div>
           </div>
           
