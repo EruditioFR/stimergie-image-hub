@@ -7,6 +7,7 @@ import { Edit2, Save, X, Plus } from 'lucide-react';
 import { parseTagsString } from '@/utils/imageUtils';
 import { useImageTags } from '@/hooks/useImageTags';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 interface TagsEditorProps {
   imageId: string;
@@ -20,6 +21,8 @@ export const TagsEditor = ({ imageId, initialTags, onTagsUpdated }: TagsEditorPr
   const [newTag, setNewTag] = useState('');
   const { updateImageTags, isUpdating } = useImageTags();
   const navigate = useNavigate();
+  const { isAdmin, isAdminClient } = useAuth();
+  const canEdit = isAdmin || isAdminClient;
 
   useEffect(() => {
     if (initialTags) {
@@ -78,14 +81,16 @@ export const TagsEditor = ({ imageId, initialTags, onTagsUpdated }: TagsEditorPr
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="block text-foreground font-medium">Mots-clés</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsEditing(true)}
-            className="h-6 w-6 p-0"
-          >
-            <Edit2 className="h-3 w-3" />
-          </Button>
+          {canEdit && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsEditing(true)}
+              className="h-6 w-6 p-0"
+            >
+              <Edit2 className="h-3 w-3" />
+            </Button>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
           {tags.length > 0 ? (
