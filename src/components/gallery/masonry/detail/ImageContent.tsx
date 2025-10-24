@@ -40,38 +40,41 @@ export const ImageContent = ({
   // Fallback to fetch project data if not embedded
   useEffect(() => {
     const fetchProjectData = async () => {
-      if ((!folderName || !clientInfo) && image?.id_projet) {
-        try {
+      try {
+        if ((!folderName || !clientInfo) && image?.id_projet) {
           const { data, error } = await supabase
             .from('projets')
             .select('nom_dossier, clients:id_client(id, nom)')
             .eq('id', image.id_projet)
             .maybeSingle();
           
-          if (error) {
-            console.error('Error fetching project data:', error);
-            return;
+          if (!error && data) {
+            if (data.nom_dossier && !folderName) setFolderName(data.nom_dossier);
+            if (data.clients && !clientInfo) setClientInfo({ id: data.clients.id, nom: data.clients.nom });
           }
+        } else if ((!folderName || !clientInfo) && image?.id) {
+          const { data, error } = await supabase
+            .from('images')
+            .select('id_projet, projets:projets(nom_dossier, clients:id_client(id, nom))')
+            .eq('id', image.id)
+            .maybeSingle();
           
-          if (data?.nom_dossier && !folderName) {
-            setFolderName(data.nom_dossier);
+          if (!error && data) {
+            if (!folderName) setFolderName(data.projets?.nom_dossier ?? null);
+            if (!clientInfo && data.projets?.clients) setClientInfo({ id: data.projets.clients.id, nom: data.projets.clients.nom });
           }
-          
-          if (data?.clients && !clientInfo) {
-            setClientInfo({ id: data.clients.id, nom: data.clients.nom });
-          }
-        } catch (err) {
-          console.error('Unexpected error fetching project data:', err);
         }
+      } catch (err) {
+        console.error('Unexpected error fetching project data:', err);
       }
     };
     
     fetchProjectData();
-  }, [image?.id_projet, folderName, clientInfo]);
+  }, [image?.id_projet, image?.id, folderName, clientInfo]);
 
   // Get the folder name to display from project
   const getFolderDisplayName = (): string | null => {
-    return folderName || image?.projets?.nom_dossier || null;
+    return folderName || image?.projets?.nom_dossier || image?.folder_name || null;
   };
 
   const handleFolderClick = () => {
