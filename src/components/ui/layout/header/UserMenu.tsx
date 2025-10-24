@@ -76,12 +76,14 @@ export function UserMenu({ user, userProfile, onLogout, formatRole }: UserMenuPr
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            <Link to="/gallery" className="flex w-full items-center">
-              <Image className="mr-2 h-4 w-4" />
-              <span>Galerie</span>
-            </Link>
-          </DropdownMenuItem>
+          {(isAdmin || isAdminClient) && (
+            <DropdownMenuItem>
+              <Link to="/gallery" className="flex w-full items-center">
+                <Image className="mr-2 h-4 w-4" />
+                <span>Galerie</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
 
           {isAdmin && (
             <DropdownMenuItem>
