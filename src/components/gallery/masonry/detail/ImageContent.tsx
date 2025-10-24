@@ -439,13 +439,11 @@ export const ImageContent = ({
         onTagsUpdated={handleTagsUpdated}
       />
       
-      {/* Image sharing for admins */}
-      {userRole === 'admin' && (
-        <ImageSharingManager 
-          imageId={parseInt(image?.id)}
-          primaryClientId={image?.projets?.clients?.id}
-        />
-      )}
+      {/* Image sharing */}
+      <ImageSharingManager 
+        imageId={parseInt(image?.id)}
+        primaryClientId={image?.projets?.clients?.id}
+      />
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
