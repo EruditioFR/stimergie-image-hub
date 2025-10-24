@@ -262,6 +262,78 @@ export type Database = {
         }
         Relationships: []
       }
+      ftp_folders: {
+        Row: {
+          last_count: number | null
+          last_mtime: string | null
+          last_signature: string | null
+          nom_dossier: string
+          processed_at: string | null
+        }
+        Insert: {
+          last_count?: number | null
+          last_mtime?: string | null
+          last_signature?: string | null
+          nom_dossier: string
+          processed_at?: string | null
+        }
+        Update: {
+          last_count?: number | null
+          last_mtime?: string | null
+          last_signature?: string | null
+          nom_dossier?: string
+          processed_at?: string | null
+        }
+        Relationships: []
+      }
+      ftp_sync_state: {
+        Row: {
+          id: number
+          last_sync_timestamp: string | null
+          processed_files: string
+          processed_folders: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          last_sync_timestamp?: string | null
+          processed_files?: string
+          processed_folders?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          last_sync_timestamp?: string | null
+          processed_files?: string
+          processed_folders?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ftp_tracking: {
+        Row: {
+          erreur: string | null
+          id: string
+          nom_dossier: string | null
+          timestamp: string | null
+          type_action: string | null
+        }
+        Insert: {
+          erreur?: string | null
+          id?: string
+          nom_dossier?: string | null
+          timestamp?: string | null
+          type_action?: string | null
+        }
+        Update: {
+          erreur?: string | null
+          id?: string
+          nom_dossier?: string | null
+          timestamp?: string | null
+          type_action?: string | null
+        }
+        Relationships: []
+      }
       image_shared_clients: {
         Row: {
           client_id: string
@@ -588,22 +660,10 @@ export type Database = {
         Args: { new_password: string; user_id: string }
         Returns: boolean
       }
-      bytea_to_text: {
-        Args: { data: string }
-        Returns: string
-      }
-      check_can_access_client: {
-        Args: { client_id: string }
-        Returns: boolean
-      }
-      check_is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      check_is_admin_client: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      bytea_to_text: { Args: { data: string }; Returns: string }
+      check_can_access_client: { Args: { client_id: string }; Returns: boolean }
+      check_is_admin: { Args: never; Returns: boolean }
+      check_is_admin_client: { Args: never; Returns: boolean }
       check_project_access: {
         Args: { check_time?: string; project_id: string; user_id: string }
         Returns: boolean
@@ -644,26 +704,11 @@ export type Database = {
           share_key: string
         }[]
       }
-      get_current_user_client_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_last_image_id: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      get_user_client_id: {
-        Args: { user_id: string }
-        Returns: string
-      }
-      get_user_client_ids: {
-        Args: { user_id: string }
-        Returns: string[]
-      }
+      get_current_user_client_id: { Args: never; Returns: string }
+      get_current_user_role: { Args: never; Returns: string }
+      get_last_image_id: { Args: never; Returns: number }
+      get_user_client_id: { Args: { user_id: string }; Returns: string }
+      get_user_client_ids: { Args: { user_id: string }; Returns: string[] }
       get_user_profile_data: {
         Args: { user_id: string }
         Returns: {
@@ -673,10 +718,7 @@ export type Database = {
           role: string
         }[]
       }
-      get_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_user_role: { Args: never; Returns: string }
       get_user_shared_albums: {
         Args: { limit_param?: number; offset_param?: number }
         Returns: {
@@ -692,10 +734,7 @@ export type Database = {
           share_key: string
         }[]
       }
-      get_user_shared_albums_count: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      get_user_shared_albums_count: { Args: never; Returns: number }
       get_users_with_roles: {
         Args: {
           p_filter_client_id?: string
@@ -715,40 +754,93 @@ export type Database = {
           updated_at: string
         }[]
       }
-      has_role: {
-        Args:
-          | { _role: Database["public"]["Enums"]["app_role"]; _user_id: string }
-          | { required_role: Database["public"]["Enums"]["user_role"] }
-        Returns: boolean
-      }
-      has_specific_role: {
-        Args: { required_role: string }
-        Returns: boolean
-      }
+      has_role:
+        | {
+            Args: { required_role: Database["public"]["Enums"]["user_role"] }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: boolean
+          }
+      has_specific_role: { Args: { required_role: string }; Returns: boolean }
       http: {
         Args: { request: Database["public"]["CompositeTypes"]["http_request"] }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
+        SetofOptions: {
+          from: "http_request"
+          to: "http_response"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
-      http_delete: {
-        Args:
-          | { content: string; content_type: string; uri: string }
-          | { uri: string }
-        Returns: Database["public"]["CompositeTypes"]["http_response"]
-      }
-      http_get: {
-        Args: { data: Json; uri: string } | { uri: string }
-        Returns: Database["public"]["CompositeTypes"]["http_response"]
-      }
+      http_delete:
+        | {
+            Args: { uri: string }
+            Returns: Database["public"]["CompositeTypes"]["http_response"]
+            SetofOptions: {
+              from: "*"
+              to: "http_response"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: { content: string; content_type: string; uri: string }
+            Returns: Database["public"]["CompositeTypes"]["http_response"]
+            SetofOptions: {
+              from: "*"
+              to: "http_response"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+      http_get:
+        | {
+            Args: { uri: string }
+            Returns: Database["public"]["CompositeTypes"]["http_response"]
+            SetofOptions: {
+              from: "*"
+              to: "http_response"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: { data: Json; uri: string }
+            Returns: Database["public"]["CompositeTypes"]["http_response"]
+            SetofOptions: {
+              from: "*"
+              to: "http_response"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       http_head: {
         Args: { uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
+        SetofOptions: {
+          from: "*"
+          to: "http_response"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       http_header: {
         Args: { field: string; value: string }
         Returns: Database["public"]["CompositeTypes"]["http_header"]
+        SetofOptions: {
+          from: "*"
+          to: "http_header"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       http_list_curlopt: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           curlopt: string
           value: string
@@ -757,41 +849,66 @@ export type Database = {
       http_patch: {
         Args: { content: string; content_type: string; uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
+        SetofOptions: {
+          from: "*"
+          to: "http_response"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
-      http_post: {
-        Args:
-          | { content: string; content_type: string; uri: string }
-          | { data: Json; uri: string }
-        Returns: Database["public"]["CompositeTypes"]["http_response"]
-      }
+      http_post:
+        | {
+            Args: { content: string; content_type: string; uri: string }
+            Returns: Database["public"]["CompositeTypes"]["http_response"]
+            SetofOptions: {
+              from: "*"
+              to: "http_response"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: { data: Json; uri: string }
+            Returns: Database["public"]["CompositeTypes"]["http_response"]
+            SetofOptions: {
+              from: "*"
+              to: "http_response"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       http_put: {
         Args: { content: string; content_type: string; uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
+        SetofOptions: {
+          from: "*"
+          to: "http_response"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
-      http_reset_curlopt: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      http_reset_curlopt: { Args: never; Returns: boolean }
       http_set_curlopt: {
         Args: { curlopt: string; value: string }
         Returns: boolean
       }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_admin_client: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      text_to_bytea: {
-        Args: { data: string }
-        Returns: string
-      }
-      urlencode: {
-        Args: { data: Json } | { string: string } | { string: string }
-        Returns: string
-      }
+      is_admin: { Args: never; Returns: boolean }
+      is_admin_client: { Args: never; Returns: boolean }
+      text_to_bytea: { Args: { data: string }; Returns: string }
+      urlencode:
+        | { Args: { data: Json }; Returns: string }
+        | {
+            Args: { string: string }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.urlencode(string => bytea), public.urlencode(string => varchar). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
+        | {
+            Args: { string: string }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.urlencode(string => bytea), public.urlencode(string => varchar). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
     }
     Enums: {
       app_role: "user" | "admin_client" | "admin"
@@ -803,7 +920,7 @@ export type Database = {
         value: string | null
       }
       http_request: {
-        method: unknown | null
+        method: unknown
         uri: string | null
         headers: Database["public"]["CompositeTypes"]["http_header"][] | null
         content_type: string | null
