@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { fetchImageAsBlob } from '@/utils/image/fetcher';
 import { fetchWithTimeout } from '@/utils/image/download/networkUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ImageContentProps {
   image: any;
@@ -29,12 +30,48 @@ export const ImageContent = ({
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
   const [imageError, setImageError] = useState(false);
   const [currentTags, setCurrentTags] = useState(image?.tags);
+  const [folderName, setFolderName] = useState<string | null>(image?.projets?.nom_dossier ?? null);
+  const [clientInfo, setClientInfo] = useState<{ id: string; nom: string } | null>(
+    image?.projets?.clients ? { id: image.projets.clients.id, nom: image.projets.clients.nom } : null
+  );
   const { userRole, isAdmin } = useAuth();
   const navigate = useNavigate();
 
+  // Fallback to fetch project data if not embedded
+  useEffect(() => {
+    const fetchProjectData = async () => {
+      if ((!folderName || !clientInfo) && image?.id_projet) {
+        try {
+          const { data, error } = await supabase
+            .from('projets')
+            .select('nom_dossier, clients:id_client(id, nom)')
+            .eq('id', image.id_projet)
+            .maybeSingle();
+          
+          if (error) {
+            console.error('Error fetching project data:', error);
+            return;
+          }
+          
+          if (data?.nom_dossier && !folderName) {
+            setFolderName(data.nom_dossier);
+          }
+          
+          if (data?.clients && !clientInfo) {
+            setClientInfo({ id: data.clients.id, nom: data.clients.nom });
+          }
+        } catch (err) {
+          console.error('Unexpected error fetching project data:', err);
+        }
+      }
+    };
+    
+    fetchProjectData();
+  }, [image?.id_projet, folderName, clientInfo]);
+
   // Get the folder name to display from project
   const getFolderDisplayName = (): string | null => {
-    return image?.projets?.nom_dossier || null;
+    return folderName || image?.projets?.nom_dossier || null;
   };
 
   const handleFolderClick = () => {
@@ -46,7 +83,7 @@ export const ImageContent = ({
   };
 
   const handleClientClick = () => {
-    const clientId = image?.projets?.clients?.id;
+    const clientId = clientInfo?.id || image?.projets?.clients?.id;
     if (!clientId) return;
     
     // Navigate to gallery filtering by client
@@ -381,13 +418,13 @@ export const ImageContent = ({
         )}
         
         {/* Display client name */}
-        {image?.projets?.clients?.nom && (
+        {(clientInfo?.nom || image?.projets?.clients?.nom) && (
           <button
             onClick={handleClientClick}
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer"
           >
             <User className="h-3 w-3" />
-            <span>{image.projets.clients.nom}</span>
+            <span>{clientInfo?.nom || image.projets.clients.nom}</span>
           </button>
         )}
         

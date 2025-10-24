@@ -22,7 +22,7 @@ export const TagsEditor = ({ imageId, initialTags, onTagsUpdated }: TagsEditorPr
   const { updateImageTags, isUpdating } = useImageTags();
   const navigate = useNavigate();
   const { isAdmin, isAdminClient } = useAuth();
-  const canEdit = isAdmin || isAdminClient;
+  const canEdit = isAdmin() || isAdminClient();
 
   useEffect(() => {
     if (initialTags) {
@@ -34,6 +34,7 @@ export const TagsEditor = ({ imageId, initialTags, onTagsUpdated }: TagsEditorPr
   }, [initialTags]);
 
   const handleAddTag = () => {
+    if (!canEdit) return;
     if (newTag.trim() && !tags.includes(newTag.trim())) {
       setTags([...tags, newTag.trim()]);
       setNewTag('');
@@ -41,10 +42,12 @@ export const TagsEditor = ({ imageId, initialTags, onTagsUpdated }: TagsEditorPr
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
+    if (!canEdit) return;
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
   const handleSave = async () => {
+    if (!canEdit) return;
     const success = await updateImageTags(imageId, tags);
     if (success) {
       setIsEditing(false);
