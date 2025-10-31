@@ -7,11 +7,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { User } from "@supabase/supabase-js";
 import JSZip from "jszip";
-import { uploadZipToO2Switch } from "./o2switchUploader";
+import { uploadZipToO2Switch, UploadResult } from "./o2switchUploader";
 import { ImageForZip } from "./types";
 
 // Limite pour diviser les téléchargements en plusieurs archives
 const MAX_IMAGES_PER_BATCH = 50;
+
+// Nombre d'images à télécharger simultanément (réduit pour limiter l'usage mémoire)
+const DOWNLOAD_BATCH_SIZE = 5;
 
 /**
  * Divise un tableau d'images en lots de taille maximale
@@ -150,10 +153,9 @@ async function processDownloadBatch(
         throw new Error("Échec de la création du dossier dans le ZIP");
       }
       
-      // Limiter à un maximum de 10 images simultanées pour éviter de surcharger la mémoire
-      const BATCH_SIZE = 10;
-      for (let i = 0; i < images.length; i += BATCH_SIZE) {
-        const batch = images.slice(i, i + BATCH_SIZE);
+      // Utiliser DOWNLOAD_BATCH_SIZE (5) pour éviter de surcharger la mémoire
+      for (let i = 0; i < images.length; i += DOWNLOAD_BATCH_SIZE) {
+        const batch = images.slice(i, i + DOWNLOAD_BATCH_SIZE);
         
         // Télécharger les images par lot
         const downloadPromises = batch.map(async (image) => {
@@ -185,27 +187,48 @@ async function processDownloadBatch(
         
         // Mettre à jour le toast pendant le traitement
         if (showToasts) {
-          const progress = Math.min((i + BATCH_SIZE), images.length);
+          const progress = Math.min((i + DOWNLOAD_BATCH_SIZE), images.length);
           toast.loading(`${batchPrefix}Téléchargement : ${progress}/${images.length}`, {
             id: toastId,
             duration: Infinity
           });
         }
       }
+      
+      console.log(`[requestDownload] All images downloaded, starting ZIP generation for ${images.length} images`);
+      
+      // Calculer la taille estimée du ZIP (approximativement 60% de la taille totale des images)
+      const estimatedSizeMB = Math.round((images.length * 2) * 0.6); // Estimation: 2MB par image en moyenne
 
-      // 2.2 Générer le ZIP
+      // 2.2 Générer le ZIP avec compression adaptative
       if (showToasts) {
-        toast.loading(`${batchPrefix}Compression du ZIP...`, {
+        toast.loading(`${batchPrefix}Compression du ZIP... (environ ${estimatedSizeMB}MB)`, {
           id: toastId,
           duration: Infinity
         });
       }
       
+      // Adapter le niveau de compression selon la taille estimée
+      let compressionLevel: number;
+      if (estimatedSizeMB < 50) {
+        compressionLevel = 6; // Compression équilibrée
+      } else if (estimatedSizeMB < 100) {
+        compressionLevel = 3; // Compression actuelle
+      } else {
+        compressionLevel = 1; // Compression minimale pour les gros fichiers
+      }
+      
+      console.log(`[requestDownload] Generating ZIP with compression level ${compressionLevel} (estimated: ${estimatedSizeMB}MB)`);
+      
       const zipBlob = await zip.generateAsync({
         type: "blob",
         compression: "DEFLATE",
-        compressionOptions: { level: 3 }
+        compressionOptions: { level: compressionLevel }
       });
+      
+      const actualSizeMB = Math.round(zipBlob.size / 1024 / 1024);
+      console.log(`[requestDownload] ZIP generated: ${actualSizeMB}MB (estimated: ${estimatedSizeMB}MB)`);
+      console.log(`[requestDownload] Starting upload to O2Switch...`);
       
       // 2.3 Générer un nom de fichier unique
       const date = new Date();
@@ -214,27 +237,31 @@ async function processDownloadBatch(
 
       // 2.4 Uploader le ZIP vers O2Switch
       if (showToasts) {
-        toast.loading(`${batchPrefix}Envoi vers le serveur... (${Math.round(zipBlob.size / 1024 / 1024)}MB)`, {
+        toast.loading(`${batchPrefix}Envoi vers le serveur... (${actualSizeMB}MB)`, {
           id: toastId,
           duration: Infinity
         });
       }
       
-      // Upload le ZIP et récupère directement l'URL retournée par le serveur
-      const downloadUrl = await uploadZipToO2Switch(zipBlob, zipFileName);
+      // Upload le ZIP et récupère le résultat détaillé
+      const uploadResult: UploadResult = await uploadZipToO2Switch(zipBlob, zipFileName);
       
-      // Si l'upload a échoué mais n'a pas généré d'erreur
-      if (!downloadUrl) {
-        throw new Error("Échec de l'upload du ZIP");
+      console.log('[requestDownload] Upload result:', uploadResult);
+      
+      // Si l'upload a échoué
+      if (!uploadResult.success || !uploadResult.url) {
+        const errorMsg = uploadResult.error || "Échec de l'upload du ZIP (raison inconnue)";
+        console.error(`[requestDownload] Upload failed: ${errorMsg}`);
+        throw new Error(errorMsg);
       }
 
-      console.log("Téléchargement URL générée par le serveur:", downloadUrl);
+      console.log("[requestDownload] Upload successful. URL:", uploadResult.url);
       
       // 2.5 Mettre à jour le statut de la demande avec l'URL de téléchargement
       const updateData = {
-        download_url: downloadUrl,
+        download_url: uploadResult.url,
         status: "ready" as const,
-        image_title: `${batchPrefix}${images.length} images (${isHD ? "HD" : "Web"})`
+        image_title: `${batchPrefix}${images.length} images (${isHD ? "HD" : "Web"}) - ${actualSizeMB}MB`
       };
 
       // Si processed_at est disponible dans le schéma, l'ajouter aux données
@@ -263,7 +290,7 @@ async function processDownloadBatch(
           }
         }
         
-        console.log("Mise à jour réussie dans la base de données avec l'URL:", downloadUrl);
+        console.log("[requestDownload] Database updated successfully with URL:", uploadResult.url);
       } catch (error) {
         console.error("Erreur lors de la mise à jour:", error);
         throw error;
@@ -281,36 +308,56 @@ async function processDownloadBatch(
       return true;
 
     } catch (err) {
-      console.error("Erreur lors de la création du ZIP:", err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error("[requestDownload] Error during ZIP creation/upload:", errorMessage);
+      console.error("[requestDownload] Full error:", err);
       
-      // Mettre à jour le statut de la demande en échec
+      // Mettre à jour le statut de la demande en échec avec détails complets
       try {
         await supabase
           .from("download_requests")
           .update({
             status: "failed",
             processed_at: new Date().toISOString(),
-            error_details: err instanceof Error ? err.message : String(err),
+            error_details: errorMessage,
             image_title: `${batchPrefix}Échec - ${images.length} images (${isHD ? "HD" : "Web"})`
           })
           .eq("id", recordData.id);
+        
+        console.log("[requestDownload] Database updated with error status");
       } catch (updateError) {
         // En cas d'échec de la mise à jour, tenter sans processed_at et error_details
-        console.error("Erreur lors de la mise à jour du statut d'erreur:", updateError);
+        console.error("[requestDownload] Error updating failure status:", updateError);
         
-        await supabase
-          .from("download_requests")
-          .update({
-            status: "expired",
-            image_title: `${batchPrefix}Échec - ${images.length} images (${isHD ? "HD" : "Web"})`
-          })
-          .eq("id", recordData.id);
+        try {
+          await supabase
+            .from("download_requests")
+            .update({
+              status: "expired",
+              image_title: `${batchPrefix}Échec - ${images.length} images (${isHD ? "HD" : "Web"})`
+            })
+            .eq("id", recordData.id);
+        } catch (fallbackError) {
+          console.error("[requestDownload] Failed to update with fallback status:", fallbackError);
+        }
       }
       
       if (showToasts) {
         toast.dismiss(toastId);
+        
+        // Afficher une description plus détaillée selon l'erreur
+        let description = errorMessage;
+        if (errorMessage.includes("Timeout")) {
+          description = `Le fichier est trop volumineux pour être traité. Essayez avec moins d'images (max ${Math.floor(images.length / 2)}).`;
+        } else if (errorMessage.includes("upload_max_filesize") || errorMessage.includes("post_max_size")) {
+          description = "Le serveur a refusé le fichier car il dépasse la taille maximale autorisée.";
+        } else if (errorMessage.includes("500") || errorMessage.includes("502") || errorMessage.includes("503")) {
+          description = "Le serveur rencontre des difficultés. Réessayez dans quelques minutes.";
+        }
+        
         toast.error("Échec de la préparation du téléchargement", {
-          description: err instanceof Error ? err.message : "Une erreur inconnue est survenue"
+          description: description.substring(0, 150),
+          duration: 7000
         });
       }
       

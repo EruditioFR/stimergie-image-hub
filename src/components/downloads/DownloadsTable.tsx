@@ -30,6 +30,10 @@ export interface DownloadRequest {
   errorDetails?: string;
 }
 
+interface ExtendedDownloadRequest extends DownloadRequest {
+  estimatedSizeMB?: number;
+}
+
 interface DownloadsTableProps {
   downloads: DownloadRequest[];
   onRefresh?: () => void;
@@ -315,11 +319,22 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
                   )}
                   
                   {/* Affichage des erreurs détaillées si disponibles */}
-                  {errorDetails[download.id] && (
-                    <div className="flex items-center gap-1 mt-1 text-xs text-red-600">
-                      <AlertTriangle className="h-3 w-3" />
-                      {errorDetails[download.id].substring(0, 50)}
-                      {errorDetails[download.id].length > 50 ? '...' : ''}
+                  {(download.errorDetails || errorDetails[download.id]) && (
+                    <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs">
+                      <div className="flex items-start gap-1 text-red-700 font-medium mb-1">
+                        <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                        <span>Détails de l'erreur:</span>
+                      </div>
+                      <div className="text-red-600 pl-4 whitespace-pre-wrap break-words">
+                        {download.errorDetails || errorDetails[download.id]}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Affichage de la taille estimée */}
+                  {download.imageTitle.includes('MB') && (
+                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                      Taille: {download.imageTitle.match(/(\d+)MB/)?.[1] || '?'} MB
                     </div>
                   )}
                   
@@ -354,6 +369,31 @@ export const DownloadsTable = ({ downloads, onRefresh }: DownloadsTableProps) =>
                       )}
                       Récupérer
                     </Button>
+                  ) : download.status === 'failed' ? (
+                    <div className="flex flex-col gap-1">
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        className="py-4 opacity-60"
+                        disabled
+                      >
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                        Échec
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="py-2 text-xs"
+                        onClick={() => {
+                          toast.info("Fonctionnalité de nouvelle tentative", {
+                            description: "Veuillez relancer le téléchargement depuis la galerie avec moins d'images."
+                          });
+                        }}
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Réessayer
+                      </Button>
+                    </div>
                   ) : (
                     <Button 
                       variant="outline" 
