@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Users, Image, FolderOpen, User, Settings, Shield, Download, Mail } from 'lucide-react';
+import { Users, Image, FolderOpen, User, Settings, Shield, Download, Mail, BookOpen } from 'lucide-react';
 import { ContactForm } from '@/components/contact/ContactForm';
 
 interface UserProfile {
@@ -77,6 +77,12 @@ export function MobileMenu({
       path: '/access-periods',
       label: 'Droits d\'accès',
       icon: Shield,
+      show: isAdmin
+    },
+    {
+      path: '/admin-guide',
+      label: 'Mode d\'emploi',
+      icon: BookOpen,
       show: isAdmin
     }
   ];
