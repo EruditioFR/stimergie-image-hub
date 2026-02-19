@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu } from 'lucide-react';
+import { Menu, BookOpen } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { UserMenu } from './header/UserMenu';
 import { MobileMenu } from './header/MobileMenu';
@@ -75,6 +75,15 @@ export function Header() {
               </Link>
             )}
             <ContactForm userProfile={userProfile} userEmail={user?.email} />
+            {userRole === 'admin' && (
+              <Link 
+                to="/admin-guide" 
+                className="text-sm font-medium transition-colors hover:text-primary flex items-center gap-1"
+              >
+                <BookOpen className="h-4 w-4" />
+                Mode d'emploi
+              </Link>
+            )}
           </div>
         </div>
 

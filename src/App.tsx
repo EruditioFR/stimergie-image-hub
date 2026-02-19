@@ -29,6 +29,7 @@ import TermsOfService from "./pages/TermsOfService";
 import Licenses from "./pages/Licenses";
 import About from "./pages/About";
 import Profile from "./pages/Profile";
+import AdminGuide from "./pages/AdminGuide";
 
 // Use the unified cache system
 const queryClient = unifiedCacheManager.getQueryClient();
@@ -107,6 +108,11 @@ function App() {
                 <Route path="/blog-editor" element={
                   <ProtectedRoute allowedRoles={['admin', 'admin_client']}>
                     <BlogEditor />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin-guide" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminGuide />
                   </ProtectedRoute>
                 } />
                 <Route path="*" element={<NotFound />} />
