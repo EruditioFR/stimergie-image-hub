@@ -197,6 +197,48 @@ const sections = [
       "En cas de problème d'affichage, lancez manuellement une synchronisation.",
       "Les images sont mises en cache dans le stockage Supabase pour un accès rapide."
     ]
+  },
+  {
+    id: "database-structure",
+    icon: Palette,
+    title: "Structure de la Base de Données",
+    badge: "Technique",
+    steps: [
+      "**profiles** : stocke les informations des utilisateurs (email, prénom, nom, rôle, id_client, client_ids). Lié à l'authentification Supabase.",
+      "**clients** : liste des clients (nom, email, téléphone, contact principal, logo).",
+      "**projets** : projets associés à un client (nom_projet, nom_dossier, type_projet, id_client).",
+      "**images** : banque d'images liées à un projet (title, url, url_miniature, tags, orientation, dimensions).",
+      "**project_access_periods** : périodes d'accès définissant quand un client peut voir un projet (access_start, access_end, is_active).",
+      "**user_roles** : table dédiée aux rôles (user, admin_client, admin). Source de vérité pour les permissions.",
+      "**albums** : albums partagés avec lien unique (name, share_key, recipients, access_from, access_until).",
+      "**album_images** : table de liaison entre albums et images.",
+      "**image_shared_clients** : partage d'images spécifiques vers des clients.",
+      "**download_requests** : suivi des demandes de téléchargement (status, is_hd, download_url).",
+      "**blog_posts** : articles et ressources (title, content, slug, content_type, published).",
+      "**legal_pages** : pages légales éditables (politique de confidentialité, CGU, licences).",
+      "**ftp_files / ftp_folders / ftp_sync_state** : tables de synchronisation Dropbox/FTP.",
+      "**logs_erreurs** : journal des erreurs système."
+    ]
+  },
+  {
+    id: "database-access",
+    icon: Shield,
+    title: "Contrôle d'Accès (RLS & Permissions)",
+    badge: "Technique",
+    steps: [
+      "Toutes les tables utilisent le **Row Level Security (RLS)** de Supabase pour sécuriser l'accès aux données.",
+      "**Administrateurs (admin)** : accès total en lecture/écriture sur toutes les tables via la politique `has_role(auth.uid(), 'admin')`.",
+      "**Admin Client** : accès en lecture aux clients, projets et images de leur propre client. Peuvent créer et gérer leurs propres albums.",
+      "**Utilisateurs** : accès en lecture aux images des projets avec une **période d'accès active** uniquement.",
+      "La fonction **get_accessible_projects()** détermine les projets visibles selon le rôle et les périodes d'accès.",
+      "La fonction **get_user_client_ids()** retourne tous les clients associés à un utilisateur (mono ou multi-client).",
+      "La fonction **check_project_access()** vérifie si un utilisateur a accès à un projet spécifique à un instant donné.",
+      "Les **profiles** sont lisibles par tout utilisateur authentifié, mais modifiables uniquement par le propriétaire.",
+      "Les **images** sont visibles par tous les utilisateurs authentifiés, mais seuls le créateur et les admins peuvent les modifier/supprimer.",
+      "Les **albums** ne sont visibles que par leur créateur, les admins, ou les destinataires (via l'email dans le champ recipients).",
+      "Les **download_requests** sont isolées par utilisateur : chacun ne voit que ses propres demandes.",
+      "En cas de doute sur un accès, vérifiez les politiques RLS dans le **SQL Editor** de Supabase."
+    ]
   }
 ];
 
