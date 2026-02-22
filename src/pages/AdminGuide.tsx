@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Users, FolderKanban, ImageIcon, Shield, Download, 
   BookOpen, Settings, Mail, Share2, Calendar, Eye,
-  Upload, Search, Tags, Palette, UserPlus, Lock
+  Upload, Search, Tags, Palette, UserPlus, Lock,
+  Server, Key, Globe, Code, Database, Rocket
 } from 'lucide-react';
 
 const sections = [
@@ -200,7 +201,7 @@ const sections = [
   },
   {
     id: "database-structure",
-    icon: Palette,
+    icon: Database,
     title: "Structure de la Base de Données",
     badge: "Technique",
     steps: [
@@ -238,6 +239,93 @@ const sections = [
       "Les **albums** ne sont visibles que par leur créateur, les admins, ou les destinataires (via l'email dans le champ recipients).",
       "Les **download_requests** sont isolées par utilisateur : chacun ne voit que ses propres demandes.",
       "En cas de doute sur un accès, vérifiez les politiques RLS dans le **SQL Editor** de Supabase."
+    ]
+  },
+  {
+    id: "stack-technique",
+    icon: Code,
+    title: "Stack Technique",
+    badge: "Développeur",
+    steps: [
+      "**Frontend** : React 18 + TypeScript + Vite (bundler rapide avec HMR).",
+      "**Styling** : Tailwind CSS + shadcn/ui (composants accessibles basés sur Radix UI).",
+      "**Routing** : React Router DOM v6 avec routes protégées par rôle.",
+      "**State Management** : TanStack React Query pour le cache et la synchronisation des données.",
+      "**Backend** : Supabase (PostgreSQL, Auth, Storage, Edge Functions en Deno/TypeScript).",
+      "**Emails** : Mailjet (API Key + Secret) pour l'envoi d'emails de contact et d'invitations d'albums.",
+      "**IA** : OpenAI API pour l'analyse automatique des images (tags, descriptions).",
+      "**Éditeur riche** : TipTap pour l'édition de contenu blog/ressources.",
+      "**ZIP** : JSZip pour la génération de téléchargements groupés côté client.",
+      "**Hébergement** : Lovable (frontend) + Supabase Cloud (backend, BDD, storage, edge functions)."
+    ]
+  },
+  {
+    id: "supabase-config",
+    icon: Server,
+    title: "Configuration Supabase",
+    badge: "Développeur",
+    steps: [
+      "**Project ID** : mjhbugzaqmtfnbxaqpss",
+      "**Dashboard** : https://supabase.com/dashboard/project/mjhbugzaqmtfnbxaqpss",
+      "**SQL Editor** : https://supabase.com/dashboard/project/mjhbugzaqmtfnbxaqpss/sql/new",
+      "**Auth Users** : https://supabase.com/dashboard/project/mjhbugzaqmtfnbxaqpss/auth/users",
+      "**Storage** : https://supabase.com/dashboard/project/mjhbugzaqmtfnbxaqpss/storage/buckets",
+      "**Edge Functions** : https://supabase.com/dashboard/project/mjhbugzaqmtfnbxaqpss/functions",
+      "**Buckets Storage** : **Client Assets** (public, logos clients) et **ZIP Downloads** (public, fichiers ZIP).",
+      "Les variables d'environnement frontend sont dans le fichier **.env** : VITE_SUPABASE_URL et VITE_SUPABASE_PUBLISHABLE_KEY."
+    ]
+  },
+  {
+    id: "secrets",
+    icon: Key,
+    title: "Secrets & Clés API",
+    badge: "Développeur",
+    steps: [
+      "Les secrets sont stockés de manière sécurisée dans Supabase et accessibles uniquement par les Edge Functions.",
+      "**SUPABASE_SERVICE_ROLE_KEY** : clé admin pour les opérations privilégiées (création d'utilisateurs, mise à jour de mots de passe).",
+      "**MAILJET_API_KEY / MAILJET_API_SECRET** : envoi d'emails (contact, invitations albums). Compte Mailjet à gérer sur mailjet.com.",
+      "**FTP_HOST / FTP_USERNAME / FTP_PASSWORD / FTP_PORT** : connexion au serveur FTP/Dropbox pour la synchronisation des images.",
+      "**OPENAI_API_KEY** : analyse IA des images (génération de tags et descriptions). Compte OpenAI à gérer sur platform.openai.com.",
+      "**PUBLIC_URL** : URL publique du site, utilisée dans les emails et liens de partage.",
+      "Pour modifier un secret : Supabase Dashboard → Settings → Edge Functions → Secrets.",
+      "⚠️ Ne jamais exposer les secrets dans le code frontend. Ils ne sont accessibles que via les Edge Functions."
+    ]
+  },
+  {
+    id: "edge-functions",
+    icon: Globe,
+    title: "Edge Functions (API Backend)",
+    badge: "Développeur",
+    steps: [
+      "**admin-create-user** : création d'un utilisateur avec rôle et association client (requiert SERVICE_ROLE_KEY).",
+      "**admin-update-user** : mise à jour des informations d'un utilisateur existant.",
+      "**admin-update-password** : changement de mot de passe par un administrateur.",
+      "**send-contact-email** : envoi du formulaire de contact via Mailjet.",
+      "**send-album-invitation** : envoi d'invitations par email pour les albums partagés.",
+      "**cache-dropbox-images** : mise en cache des miniatures depuis Dropbox/FTP vers Supabase Storage.",
+      "**cron-cache-dropbox** : tâche CRON automatique de synchronisation des images.",
+      "**generate-zip / generate-hd-zip** : génération de fichiers ZIP pour les téléchargements groupés.",
+      "**process-queue / cron-process-queue** : traitement de la file d'attente des téléchargements HD.",
+      "**analyze-image / analyze-image-ai** : analyse d'images via OpenAI pour générer tags et descriptions.",
+      "**check-download-url** : vérification de la validité d'une URL de téléchargement.",
+      "**debug-album-share** : fonction de débogage pour les albums partagés.",
+      "Les Edge Functions sont déployées automatiquement. Code source dans **supabase/functions/**."
+    ]
+  },
+  {
+    id: "deployment",
+    icon: Rocket,
+    title: "Déploiement & Self-Hosting",
+    badge: "Développeur",
+    steps: [
+      "**Déploiement Lovable** : cliquez sur **Publier** en haut à droite. Les changements frontend nécessitent un clic sur 'Update', les changements backend (Edge Functions, migrations) sont déployés automatiquement.",
+      "**URL de production** : https://stimergie-image-hub.lovable.app",
+      "**Domaine personnalisé** : configurable dans Project → Settings → Domains (plan payant requis).",
+      "**Connexion GitHub** : Settings → GitHub → Connect project pour synchroniser le code en temps réel.",
+      "**Self-hosting** : 1) Cloner le repo GitHub. 2) `npm install` puis `npm run build`. 3) Déployer le dossier `dist/` sur Vercel, Netlify ou tout serveur web.",
+      "**Variables d'environnement requises** : VITE_SUPABASE_URL et VITE_SUPABASE_PUBLISHABLE_KEY (à configurer sur la plateforme d'hébergement).",
+      "Les Edge Functions restent hébergées sur Supabase, indépendamment du frontend.",
+      "**Transfert de projet** : inviter le nouveau développeur au workspace Lovable (Settings → People) et au projet Supabase (Organization → Members)."
     ]
   }
 ];
